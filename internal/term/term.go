@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/JMO-Labs/tdog/internal/audit"
 	"github.com/JMO-Labs/tdog/internal/frame"
 	"github.com/coder/websocket"
 	"github.com/creack/pty"
@@ -27,7 +28,10 @@ const (
 
 // Handler returns the /ws/term handler. shell "" means $SHELL, then /bin/sh.
 // Callers must wrap it with authentication.
-func Handler(shell string) http.Handler {
+func Handler(shell string) http.Handler { return HandlerAudit(shell, nil) }
+
+// HandlerAudit is Handler that records term_start/term_end in l (nil = off).
+func HandlerAudit(shell string, l *audit.Logger) http.Handler {
 	if shell == "" {
 		shell = os.Getenv("SHELL")
 	}
@@ -42,11 +46,11 @@ func Handler(shell string) http.Handler {
 			return // Accept already replied (includes Origin check).
 		}
 		defer func() { _ = c.CloseNow() }()
-		serve(c, shell)
+		serve(c, shell, l)
 	})
 }
 
-func serve(c *websocket.Conn, shell string) {
+func serve(c *websocket.Conn, shell string, l *audit.Logger) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -59,6 +63,9 @@ func serve(c *websocket.Conn, shell string) {
 		return
 	}
 	defer func() { _ = ptmx.Close() }()
+	pid := cmd.Process.Pid
+	l.Log(audit.Entry{Event: "term_start", Target: "container", PID: pid})
+	defer l.Log(audit.Entry{Event: "term_end", Target: "container", PID: pid})
 
 	waitCh := make(chan int, 1)
 	go func() {

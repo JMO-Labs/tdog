@@ -7,10 +7,13 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/JMO-Labs/tdog/internal/audit"
 )
 
 const (
@@ -29,6 +32,7 @@ type Auth struct {
 	lim        *limiter
 	totp       *totpState
 	now        func() time.Time
+	audit      *audit.Logger
 	verify     func(hash, pw string) bool
 }
 
@@ -43,7 +47,8 @@ func New(dir string, logf func(string, ...any)) (*Auth, error) {
 	if err != nil {
 		return nil, err
 	}
-	a := &Auth{dir: dir, logf: logf, hash: h, sessions: newSessions(), lim: newLimiter(time.Now), verify: verifyPassword, totp: t, now: time.Now}
+	a := &Auth{dir: dir, logf: logf, hash: h, sessions: newSessions(), lim: newLimiter(time.Now), verify: verifyPassword, totp: t, now: time.Now,
+		audit: audit.New(filepath.Join(dir, "audit.log"))}
 	if h == "" {
 		a.setupToken = randToken(16)
 		logf("tdog first run: POST /api/setup with setup token %s", a.setupToken)
@@ -61,6 +66,23 @@ func (a *Auth) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/totp/confirm", a.handleTOTPConfirm)
 	mux.HandleFunc("POST /api/totp/disable", a.handleTOTPDisable)
 	mux.HandleFunc("GET /api/status", a.handleStatus)
+	mux.HandleFunc("POST /api/sessions/revoke-all", a.handleRevokeAll)
+	mux.Handle("GET /api/audit", a.audit.Handler())
+}
+
+// Audit returns the audit logger (never nil).
+func (a *Auth) Audit() *audit.Logger { return a.audit }
+
+func (a *Auth) log(r *http.Request, event string) {
+	a.audit.Log(audit.Entry{Event: event, IP: clientIP(r)})
+}
+
+// handleRevokeAll invalidates every session, including the caller's.
+func (a *Auth) handleRevokeAll(w http.ResponseWriter, r *http.Request) {
+	a.sessions.clear()
+	a.log(r, "sessions_revoke_all")
+	clearSessionCookie(w, r)
+	w.WriteHeader(http.StatusOK)
 }
 
 // handleStatus tells the UI whether first-run setup is pending and whether
@@ -109,6 +131,7 @@ func (a *Auth) handleSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.hash, a.setupToken = h, ""
+	a.log(r, "setup")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -152,6 +175,7 @@ func (a *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	if !a.verify(hash, in.Password) {
 		a.lim.fail(ip)
+		a.log(r, "login_fail")
 		msg(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
@@ -164,11 +188,13 @@ func (a *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		if !a.totp.check(in.Code, a.now().Unix(), true) {
 			a.lim.fail(ip)
+			a.log(r, "login_fail")
 			msg(w, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
 	}
 	a.lim.ok(ip)
+	a.log(r, "login_ok")
 	id, csrf := a.sessions.create()
 	setSessionCookie(w, r, id)
 	w.Header().Set("Content-Type", "application/json")
@@ -186,9 +212,14 @@ func (a *Auth) handleLogout(w http.ResponseWriter, r *http.Request) {
 	if c, err := r.Cookie(cookieName); err == nil {
 		a.sessions.delete(c.Value)
 	}
+	a.log(r, "logout")
+	clearSessionCookie(w, r)
+	w.WriteHeader(http.StatusOK)
+}
+
+func clearSessionCookie(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: "", Path: "/", MaxAge: -1,
 		HttpOnly: true, Secure: !isLocalhost(r.Host), SameSite: http.SameSiteStrictMode})
-	w.WriteHeader(http.StatusOK)
 }
 
 func isWS(r *http.Request) bool {

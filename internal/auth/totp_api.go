@@ -177,6 +177,7 @@ func (a *Auth) handleTOTPConfirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	t.pending = nil
+	a.log(r, "totp_enroll")
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string][]string{"recovery_codes": plain})
 }
@@ -213,5 +214,6 @@ func (a *Auth) handleTOTPDisable(w http.ResponseWriter, r *http.Request) {
 		msg(w, 500, "disable failed")
 		return
 	}
+	a.log(r, "totp_disable")
 	w.WriteHeader(http.StatusOK)
 }
