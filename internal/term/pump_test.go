@@ -3,6 +3,7 @@ package term
 import (
 	"bytes"
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -86,5 +87,36 @@ func TestPumpFlushesLoneChunkPromptly(t *testing.T) {
 	// flushAfter is 4 ms; allow scheduler slack on CI.
 	if d := time.Since(start); d > 100*time.Millisecond {
 		t.Fatalf("flush took %v", d)
+	}
+}
+
+func failingPump(chunks chan []byte) bool {
+	errBoom := errors.New("boom")
+	return pumpOutput(context.Background(), func([]byte) error { return errBoom }, chunks)
+}
+
+func TestPumpReportsWriteFailureOnSizeFlush(t *testing.T) {
+	chunks := make(chan []byte, 1)
+	chunks <- bytes.Repeat([]byte("x"), flushSize)
+	if failingPump(chunks) {
+		t.Fatal("want false on write failure")
+	}
+}
+
+func TestPumpReportsWriteFailureOnTimerFlush(t *testing.T) {
+	chunks := make(chan []byte, 1)
+	chunks <- []byte("a")
+	if failingPump(chunks) {
+		t.Fatal("want false on write failure")
+	}
+}
+
+func TestPumpCloseFlushFailureStillReportsClosed(t *testing.T) {
+	chunks := make(chan []byte, 1)
+	chunks <- []byte("pending")
+	close(chunks)
+	// Closed channel path: flush fails (ignored), still reports PTY closed.
+	if !failingPump(chunks) {
+		t.Fatal("want true when PTY closed")
 	}
 }

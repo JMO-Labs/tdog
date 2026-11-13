@@ -7,6 +7,7 @@ package term
 import (
 	"context"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -84,26 +85,12 @@ func serve(c *websocket.Conn, shell string, l *audit.Logger) {
 	// Client → PTY. On socket close, hang up the process group.
 	go func() {
 		defer cancel()
-		for {
+		pumpInput(ctx, func(ctx context.Context) ([]byte, error) {
 			_, data, err := c.Read(ctx)
-			if err != nil {
-				return
-			}
-			typ, p, err := frame.Decode(data)
-			if err != nil {
-				continue
-			}
-			switch typ {
-			case frame.Input:
-				if _, err := ptmx.Write(p); err != nil {
-					return
-				}
-			case frame.Resize:
-				if cols, rows, err := frame.ParseResize(p); err == nil {
-					_ = pty.Setsize(ptmx, &pty.Winsize{Rows: rows, Cols: cols})
-				}
-			}
-		}
+			return data, err
+		}, ptmx, func(cols, rows uint16) {
+			_ = pty.Setsize(ptmx, &pty.Winsize{Rows: rows, Cols: cols})
+		})
 	}()
 
 	// PTY → chunks.
@@ -191,6 +178,32 @@ func pumpOutput(ctx context.Context, write func(frame []byte) error, chunks <-ch
 			}
 		case <-ctx.Done():
 			return false
+		}
+	}
+}
+
+// pumpInput decodes client frames and applies them: Input is written to w,
+// Resize calls resize. Undecodable or unknown frames are skipped. It returns
+// on a read error or a failed write.
+func pumpInput(ctx context.Context, read func(context.Context) ([]byte, error), w io.Writer, resize func(cols, rows uint16)) {
+	for {
+		data, err := read(ctx)
+		if err != nil {
+			return
+		}
+		typ, p, err := frame.Decode(data)
+		if err != nil {
+			continue
+		}
+		switch typ {
+		case frame.Input:
+			if _, err := w.Write(p); err != nil {
+				return
+			}
+		case frame.Resize:
+			if cols, rows, err := frame.ParseResize(p); err == nil && resize != nil {
+				resize(cols, rows)
+			}
 		}
 	}
 }
