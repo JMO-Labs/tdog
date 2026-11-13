@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { TerminalSession, type SessionState } from "./terminal/session";
-import { XtermRenderer } from "./terminal/xtermRenderer";
+import type { TerminalRenderer } from "./terminal/renderer";
+import { pickRenderer } from "./terminal/select";
+
+async function createRenderer(el: HTMLElement): Promise<TerminalRenderer> {
+  if (pickRenderer(location.search) === "restty") {
+    const { ResttyRenderer } = await import("./terminal/resttyRenderer");
+    return new ResttyRenderer(el);
+  }
+  const { XtermRenderer } = await import("./terminal/xtermRenderer");
+  return new XtermRenderer(el);
+}
 
 function wsUrl(): string {
   const proto = location.protocol === "https:" ? "wss" : "ws";
@@ -14,15 +24,23 @@ export function TerminalPane() {
 
   useEffect(() => {
     const el = host.current!;
-    const r = new XtermRenderer(el);
-    const s = new TerminalSession(r, () => new WebSocket(wsUrl()), setState);
-    session.current = s;
-    s.connect();
-    const ro = new ResizeObserver(() => r.resize());
-    ro.observe(el);
+    let cleanup = () => {};
+    let cancelled = false;
+    void createRenderer(el).then((r) => {
+      if (cancelled) return r.dispose();
+      const s = new TerminalSession(r, () => new WebSocket(wsUrl()), setState);
+      session.current = s;
+      s.connect();
+      const ro = new ResizeObserver(() => r.resize());
+      ro.observe(el);
+      cleanup = () => {
+        ro.disconnect();
+        s.dispose();
+      };
+    });
     return () => {
-      ro.disconnect();
-      s.dispose();
+      cancelled = true;
+      cleanup();
     };
   }, []);
 
