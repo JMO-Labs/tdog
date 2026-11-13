@@ -189,4 +189,3 @@ func TestTOFUAppendFails(t *testing.T) {
 		t.Fatal("want error")
 	}
 }
-
