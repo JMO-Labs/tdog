@@ -27,6 +27,7 @@ type Auth struct {
 	setupToken string
 	sessions   *sessions
 	lim        *limiter
+	verify     func(hash, pw string) bool
 }
 
 // New loads auth state from dir/auth.json. With no user it creates a
@@ -36,7 +37,7 @@ func New(dir string, logf func(string, ...any)) (*Auth, error) {
 	if err != nil {
 		return nil, err
 	}
-	a := &Auth{dir: dir, logf: logf, hash: h, sessions: newSessions(), lim: newLimiter(time.Now)}
+	a := &Auth{dir: dir, logf: logf, hash: h, sessions: newSessions(), lim: newLimiter(time.Now), verify: verifyPassword}
 	if h == "" {
 		a.setupToken = randToken(16)
 		logf("tdog first run: POST /api/setup with setup token %s", a.setupToken)
@@ -103,13 +104,15 @@ func isLocalhost(host string) bool {
 
 func (a *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 	ip := clientIP(r)
-	if d := a.lim.wait(ip); d > 0 {
+	d, ok := a.lim.begin(ip)
+	if !ok {
 		w.Header().Set("Retry-After", strconv.Itoa(int(d.Seconds())+1))
 		msg(w, http.StatusTooManyRequests, "too many attempts")
 		return
 	}
 	var in struct{ Password string }
 	if json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&in) != nil {
+		a.lim.release(ip)
 		msg(w, 400, "bad request")
 		return
 	}
@@ -117,22 +120,27 @@ func (a *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 	hash := a.hash
 	a.mu.Unlock()
 	if hash == "" {
+		a.lim.release(ip)
 		msg(w, http.StatusConflict, "setup required")
 		return
 	}
-	if !verifyPassword(hash, in.Password) {
+	if !a.verify(hash, in.Password) {
 		a.lim.fail(ip)
 		msg(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 	a.lim.ok(ip)
 	id, csrf := a.sessions.create()
+	setSessionCookie(w, r, id)
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{"csrf": csrf})
+}
+
+func setSessionCookie(w http.ResponseWriter, r *http.Request, id string) {
 	http.SetCookie(w, &http.Cookie{
 		Name: cookieName, Value: id, Path: "/", MaxAge: int(idleTimeout.Seconds()),
 		HttpOnly: true, Secure: !isLocalhost(r.Host), SameSite: http.SameSiteStrictMode,
 	})
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"csrf": csrf})
 }
 
 func (a *Auth) handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -192,7 +200,9 @@ func (a *Auth) Middleware(next http.Handler) http.Handler {
 		}
 		var s *session
 		if c, err := r.Cookie(cookieName); err == nil {
-			s = a.sessions.touch(c.Value)
+			if s = a.sessions.touch(c.Value); s != nil {
+				setSessionCookie(w, r, c.Value) // slide the browser expiry with the idle timer
+			}
 		}
 		if s == nil {
 			msg(w, http.StatusUnauthorized, "unauthorized")

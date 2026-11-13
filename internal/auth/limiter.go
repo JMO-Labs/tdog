@@ -15,6 +15,7 @@ type limiter struct {
 
 type entry struct {
 	fails int
+	busy  bool
 	until time.Time
 }
 
@@ -22,16 +23,40 @@ func newLimiter(now func() time.Time) *limiter {
 	return &limiter{now: now, base: time.Second, max: 5 * time.Minute, m: map[string]*entry{}}
 }
 
-// wait returns how long key must still wait before another attempt.
-func (l *limiter) wait(key string) time.Duration {
+// begin atomically checks the delay and reserves the key: it returns false
+// (with the remaining wait) if the key is delayed or has an attempt in flight.
+// Every successful begin must be completed with fail, ok or release.
+func (l *limiter) begin(key string) (time.Duration, bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	now := l.now()
+	for k, e := range l.m {
+		if !e.busy && now.After(e.until.Add(l.max)) {
+			delete(l.m, k)
+		}
+	}
+	e := l.m[key]
+	if e == nil {
+		e = &entry{}
+		l.m[key] = e
+	}
+	if e.busy {
+		return l.base, false
+	}
+	if d := e.until.Sub(now); d > 0 {
+		return d, false
+	}
+	e.busy = true
+	return 0, true
+}
+
+// release ends a reserved attempt without counting it.
+func (l *limiter) release(key string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if e := l.m[key]; e != nil {
-		if d := e.until.Sub(l.now()); d > 0 {
-			return d
-		}
+		e.busy = false
 	}
-	return 0
 }
 
 func (l *limiter) fail(key string) {
@@ -43,6 +68,7 @@ func (l *limiter) fail(key string) {
 		l.m[key] = e
 	}
 	e.fails++
+	e.busy = false
 	d := l.max
 	if e.fails <= 20 {
 		if x := l.base << (e.fails - 1); x < l.max {
