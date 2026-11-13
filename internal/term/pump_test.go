@@ -111,11 +111,11 @@ func TestPumpReportsWriteFailureOnTimerFlush(t *testing.T) {
 	}
 }
 
-func TestPumpFlushSplitStopsOnWriteFailure(t *testing.T) {
+func TestPumpCloseFlushFailureStillReportsClosed(t *testing.T) {
 	chunks := make(chan []byte, 1)
-	chunks <- bytes.Repeat([]byte("x"), 2*flushSize)
+	chunks <- []byte("pending")
 	close(chunks)
-	// Closed channel path: flush result ignored, still reports PTY closed.
+	// Closed channel path: flush fails (ignored), still reports PTY closed.
 	if !failingPump(chunks) {
 		t.Fatal("want true when PTY closed")
 	}
