@@ -1,0 +1,29 @@
+name: ci
+on:
+  pull_request: {branches: [dev, main]}
+  push: {branches: [main]}
+permissions: {contents: read}
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version-file: go.mod}
+      - uses: golangci/golangci-lint-action@v8
+      - uses: actions/setup-node@v4
+        with: {node-version: 24, cache: npm, cache-dependency-path: web/package-lock.json}
+      - run: cd web && npm ci && npm run typecheck && npm run fmt:check
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquasecurity/trivy-action@0.33.1
+        with: {scan-type: fs, severity: 'CRITICAL,HIGH', exit-code: '1', ignore-unfixed: true}
+  commitlint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - run: npx --yes -p @commitlint/cli -p @commitlint/config-conventional commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}

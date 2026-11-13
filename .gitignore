@@ -1,0 +1,8 @@
+node_modules/
+web/dist/
+web/coverage/
+web/junit.xml
+/junit.xml
+/coverage.xml
+/tdog
+.env
