@@ -143,3 +143,96 @@ func TestSocketCloseKillsHUPIgnoringGroup(t *testing.T) {
 	}
 	t.Fatalf("pid %d still alive after SIGHUP grace", pid)
 }
+
+func dialHandler(t *testing.T, shell string) (*websocket.Conn, context.Context) {
+	t.Helper()
+	srv := httptest.NewServer(Handler(shell))
+	t.Cleanup(srv.Close)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	t.Cleanup(cancel)
+	c, _, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(srv.URL, "http"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = c.CloseNow() })
+	return c, ctx
+}
+
+func TestHandlerUsesSHELLEnv(t *testing.T) {
+	t.Setenv("SHELL", "/bin/sh")
+	c, ctx := dialHandler(t, "")
+	send(t, ctx, c, frame.Input, "echo $((20+22))\n")
+	if out, _ := readUntil(t, ctx, c, "42"); !strings.Contains(out, "42") {
+		t.Fatalf("got %q", out)
+	}
+}
+
+func TestHandlerFallsBackToBinSh(t *testing.T) {
+	t.Setenv("SHELL", "")
+	c, ctx := dialHandler(t, "")
+	send(t, ctx, c, frame.Input, "echo $((20+22))\n")
+	if out, _ := readUntil(t, ctx, c, "42"); !strings.Contains(out, "42") {
+		t.Fatalf("got %q", out)
+	}
+}
+
+func TestNonUpgradeRequestRejected(t *testing.T) {
+	rec := httptest.NewRecorder()
+	Handler("/bin/sh").ServeHTTP(rec, httptest.NewRequest("GET", "/ws/term", nil))
+	if rec.Code < 400 {
+		t.Fatalf("got status %d, want 4xx", rec.Code)
+	}
+}
+
+func TestPTYStartFailureClosesSocket(t *testing.T) {
+	c, ctx := dialHandler(t, "/nonexistent/tdog-shell")
+	_, _, err := c.Read(ctx)
+	if websocket.CloseStatus(err) != websocket.StatusInternalError {
+		t.Fatalf("got %v, want internal error close", err)
+	}
+}
+
+func TestMalformedFrameIgnored(t *testing.T) {
+	c, ctx := dial(t)
+	if err := c.Write(ctx, websocket.MessageBinary, nil); err != nil {
+		t.Fatal(err)
+	}
+	send(t, ctx, c, frame.Input, "echo $((20+22))\n")
+	if out, _ := readUntil(t, ctx, c, "42"); !strings.Contains(out, "42") {
+		t.Fatalf("got %q", out)
+	}
+}
+
+// Input after the shell exited must not wedge the handler (PTY write error path).
+func TestInputAfterExitDoesNotHang(t *testing.T) {
+	c, ctx := dial(t)
+	send(t, ctx, c, frame.Input, "exit 0\n")
+	for i := 0; i < 20; i++ {
+		if err := c.Write(ctx, websocket.MessageBinary, frame.Encode(frame.Input, []byte("x\n"))); err != nil {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	readUntil(t, ctx, c, "")
+}
+
+// Closing the socket while the shell floods output exercises the reader's ctx.Done exit.
+func TestCloseDuringOutputFlood(t *testing.T) {
+	c, ctx := dial(t)
+	f := filepath.Join(t.TempDir(), "pid")
+	send(t, ctx, c, frame.Input, "echo $$ > "+f+"; yes\n")
+	pid, err := strconv.Atoi(strings.TrimSpace(string(waitFile(t, f, 5*time.Second))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(200 * time.Millisecond)
+	_ = c.CloseNow()
+	deadline := time.Now().Add(hupGrace + 5*time.Second)
+	for time.Now().Before(deadline) {
+		if err := syscall.Kill(pid, 0); errors.Is(err, syscall.ESRCH) {
+			return
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	t.Fatalf("pid %d still alive", pid)
+}
