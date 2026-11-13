@@ -102,6 +102,22 @@ func sshFail(c *websocket.Conn, msg string) {
 	_ = c.Close(websocket.StatusNormalClosure, "ssh error")
 }
 
+// exitCode maps a session Wait error to a process-style exit code.
+func exitCode(err error) int {
+	var ee *ssh.ExitError
+	var em *ssh.ExitMissingError
+	switch {
+	case err == nil:
+		return 0
+	case errors.As(err, &ee):
+		return ee.ExitStatus()
+	case errors.As(err, &em):
+		return 1
+	default:
+		return 255
+	}
+}
+
 func serveSSH(c *websocket.Conn, cfg SSHConfig, l *audit.Logger) {
 	client, err := dialSSH(cfg)
 	if err != nil {
@@ -130,20 +146,7 @@ func serveSSH(c *websocket.Conn, cfg SSHConfig, l *audit.Logger) {
 	defer l.Log(audit.Entry{Event: "term_end", Target: "ssh-host"})
 	waitCh := make(chan int, 1)
 	go func() {
-		err := sess.Wait()
-		code := 0
-		var ee *ssh.ExitError
-		var em *ssh.ExitMissingError
-		switch {
-		case err == nil:
-		case errors.As(err, &ee):
-			code = ee.ExitStatus()
-		case errors.As(err, &em):
-			code = 1
-		default:
-			code = 255
-		}
-		waitCh <- code
+		waitCh <- exitCode(sess.Wait())
 	}()
 	closeAll := func() { _ = client.Close() }
 	runSession(c, &session{
