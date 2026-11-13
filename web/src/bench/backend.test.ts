@@ -27,3 +27,10 @@ describe("detectBackend", () => {
     expect(await detectBackend({}, canvas(false))).toBe("none");
   });
 });
+
+describe("detectBackend defaults", () => {
+  it("creates its own canvas when none is injected", async () => {
+    // jsdom has no webgl2 context, so the default canvas probe yields none.
+    expect(await detectBackend({})).toBe("none");
+  });
+});
