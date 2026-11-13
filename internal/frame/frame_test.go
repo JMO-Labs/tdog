@@ -64,6 +64,9 @@ func TestParseResize(t *testing.T) {
 		{"zero cols", `{"cols":0,"rows":40}`, 0, 0, true},
 		{"zero rows", `{"cols":80,"rows":0}`, 0, 0, true},
 		{"negative", `{"cols":-1,"rows":5}`, 0, 0, true},
+		{"max", `{"cols":65535,"rows":65535}`, 65535, 65535, false},
+		{"cols too big", `{"cols":65536,"rows":5}`, 0, 0, true},
+		{"rows too big", `{"cols":5,"rows":65536}`, 0, 0, true},
 		{"bad json", `nope`, 0, 0, true},
 	}
 	for _, tc := range tests {

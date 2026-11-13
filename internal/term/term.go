@@ -22,6 +22,7 @@ import (
 const (
 	flushAfter = 4 * time.Millisecond
 	flushSize  = 16 * 1024
+	hupGrace   = 2 * time.Second
 )
 
 // Handler returns the /ws/term handler. shell "" means $SHELL, then /bin/sh.
@@ -119,12 +120,12 @@ func serve(c *websocket.Conn, shell string) {
 		}
 	}()
 
-	exited := pumpOutput(ctx, c, chunks)
+	write := func(f []byte) error { return c.Write(ctx, websocket.MessageBinary, f) }
+	exited := pumpOutput(ctx, write, chunks)
 
 	if !exited { // socket went away first: SIGHUP the group (pty.Start sets Setsid, pgid == pid).
-		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGHUP)
 		_ = c.CloseNow()
-		<-waitCh
+		hangup(cmd.Process.Pid, waitCh)
 		return
 	}
 	code := <-waitCh
@@ -134,15 +135,27 @@ func serve(c *websocket.Conn, shell string) {
 	_ = c.Close(websocket.StatusNormalClosure, "exit")
 }
 
+// hangup sends SIGHUP to the process group and escalates to SIGKILL if it
+// has not exited within hupGrace (e.g. a shell or child ignoring SIGHUP).
+func hangup(pid int, waitCh <-chan int) {
+	_ = syscall.Kill(-pid, syscall.SIGHUP)
+	select {
+	case <-waitCh:
+	case <-time.After(hupGrace):
+		_ = syscall.Kill(-pid, syscall.SIGKILL)
+		<-waitCh
+	}
+}
+
 // pumpOutput coalesces chunks into ≤flushSize frames, flushing after flushAfter.
 // It returns true if the PTY closed (process exit), false if ctx ended or a write failed.
-func pumpOutput(ctx context.Context, c *websocket.Conn, chunks <-chan []byte) bool {
+func pumpOutput(ctx context.Context, write func(frame []byte) error, chunks <-chan []byte) bool {
 	var pend []byte
 	var timer <-chan time.Time
 	flush := func() bool {
 		for len(pend) > 0 {
 			n := min(len(pend), flushSize)
-			if err := c.Write(ctx, websocket.MessageBinary, frame.Encode(frame.Output, pend[:n])); err != nil {
+			if err := write(frame.Encode(frame.Output, pend[:n])); err != nil {
 				return false
 			}
 			pend = pend[n:]

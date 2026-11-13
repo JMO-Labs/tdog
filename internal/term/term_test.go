@@ -3,8 +3,13 @@ package term
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -93,4 +98,48 @@ func TestExitSendsControlWithCode(t *testing.T) {
 	if v.Type != "exit" || v.Code != 3 {
 		t.Fatalf("got %+v", v)
 	}
+}
+
+func waitFile(t *testing.T, path string, d time.Duration) []byte {
+	t.Helper()
+	deadline := time.Now().Add(d)
+	for time.Now().Before(deadline) {
+		if b, err := os.ReadFile(path); err == nil && len(b) > 0 {
+			return b
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("%s not written within %v", path, d)
+	return nil
+}
+
+func TestSocketCloseSendsSIGHUP(t *testing.T) {
+	c, ctx := dial(t)
+	f := filepath.Join(t.TempDir(), "hup")
+	send(t, ctx, c, frame.Input, "trap 'echo hup > "+f+"; exit' HUP; echo re\"\"ady; while :; do sleep 0.1; done\n")
+	readUntil(t, ctx, c, "ready")
+	_ = c.CloseNow()
+	if b := waitFile(t, f, 5*time.Second); !strings.Contains(string(b), "hup") {
+		t.Fatalf("got %q", b)
+	}
+}
+
+func TestSocketCloseKillsHUPIgnoringGroup(t *testing.T) {
+	c, ctx := dial(t)
+	f := filepath.Join(t.TempDir(), "pid")
+	send(t, ctx, c, frame.Input, "trap '' HUP; echo $$ > "+f+"; echo re\"\"ady; while :; do sleep 0.1; done\n")
+	readUntil(t, ctx, c, "ready")
+	pid, err := strconv.Atoi(strings.TrimSpace(string(waitFile(t, f, 5*time.Second))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = c.CloseNow()
+	deadline := time.Now().Add(hupGrace + 5*time.Second)
+	for time.Now().Before(deadline) {
+		if err := syscall.Kill(pid, 0); errors.Is(err, syscall.ESRCH) {
+			return
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	t.Fatalf("pid %d still alive after SIGHUP grace", pid)
 }
