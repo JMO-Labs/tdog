@@ -25,5 +25,6 @@ jobs:
     with:
       reruns: 1
       test-cmd: ./scripts/test.sh
-      fix-cmd: gofmt -w cmd internal && cd web && npm ci --silent && npx prettier --write .
+      # go mod tidy: workers have no Go toolchain; autofix resolves new imports into go.mod/go.sum.
+      fix-cmd: go mod tidy && gofmt -w cmd internal && cd web && npm ci --silent && npx prettier --write .
     secrets: inherit
