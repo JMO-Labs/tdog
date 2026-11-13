@@ -30,13 +30,6 @@ func hasEvents(t *testing.T, a *Auth, want ...string) {
 	}
 }
 
-func authed(e *env) func(*http.Request) {
-	return func(r *http.Request) {
-		r.AddCookie(e.c)
-		r.Header.Set("X-CSRF-Token", e.csrf)
-	}
-}
-
 func TestAuditSetupLoginLogout(t *testing.T) {
 	a, h := newTest(t)
 	setup(t, a, h)
