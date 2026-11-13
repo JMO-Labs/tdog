@@ -44,13 +44,23 @@ vi.stubGlobal(
 
 import { TerminalPane } from "./TerminalPane";
 
-test("unmount disconnects the resize observer", async () => {
+test("unmount after init disconnects observer and disposes session", async () => {
   const before = h.disconnected;
   const n = h.sockets.length;
   const { unmount } = render(<TerminalPane />);
   await waitFor(() => expect(h.sockets.length).toBe(n + 1));
   unmount();
   expect(h.disconnected).toBe(before + 1);
+});
+
+test("unmount before renderer resolves skips session creation", async () => {
+  const before = h.disconnected;
+  const n = h.sockets.length;
+  const { unmount } = render(<TerminalPane />);
+  unmount();
+  await new Promise((r) => setTimeout(r, 0));
+  expect(h.sockets.length).toBe(n);
+  expect(h.disconnected).toBe(before);
 });
 
 test("reconnect button opens a new socket", async () => {
