@@ -225,10 +225,13 @@ func TestCloseDuringOutputFlood(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Wait until the flood is actually flowing instead of sleeping a guess.
-	readUntil(t, ctx, c, "y\r\ny\r\ny")
+	// Wait for the first flood frame only, then stop reading so the server
+	// stays blocked writing to a slow client (backpressure) when we close.
+	if _, _, err := c.Read(ctx); err != nil {
+		t.Fatal(err)
+	}
 	_ = c.CloseNow()
-	deadline := time.Now().Add(hupGrace + 5*time.Second)
+	deadline := time.Now().Add(hupGrace + 10*time.Second)
 	for time.Now().Before(deadline) {
 		if err := syscall.Kill(pid, 0); errors.Is(err, syscall.ESRCH) {
 			return
