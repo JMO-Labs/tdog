@@ -69,9 +69,6 @@ func NewHandler(cfg Config) http.Handler {
 	})
 }
 
-})
-}
-
 // session is a running shell, whatever its target.
 type session struct {
 	r      io.Reader               // shell output
