@@ -160,12 +160,13 @@ func TestDisableErrors(t *testing.T) {
 	if w.Code != 429 || w.Header().Get("Retry-After") == "" {
 		t.Fatalf("throttled: %d retry-after=%q", w.Code, w.Header().Get("Retry-After"))
 	}
-	// save failure: stays enabled
+	// save failure: stays enabled (check() persists LastStep first, so the
+	// failed save surfaces as invalid credentials)
 	e.a.lim = newLimiter(time.Now)
 	*e.clk += 60
 	good := e.a.totp.dir
 	e.a.totp.dir = badDir(t)
-	if got := dis(map[string]string{"password": pw, "code": totpAt(secret, *e.clk, 6)}); got != 500 {
+	if got := dis(map[string]string{"password": pw, "code": totpAt(secret, *e.clk, 6)}); got != 401 {
 		t.Fatalf("disable save failure: %d", got)
 	}
 	e.a.totp.dir = good
