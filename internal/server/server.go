@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"net/http"
 
+	"github.com/JMO-Labs/tdog/internal/auth"
 	"github.com/JMO-Labs/tdog/web"
 )
 
@@ -19,4 +20,13 @@ func NewWithUI(ui fs.FS) http.Handler {
 	})
 	mux.Handle("GET /", uiHandler(ui))
 	return mux
+}
+
+// NewSecured returns the embedded-UI handler behind a's authentication
+// middleware, with the login/logout/setup routes registered.
+func NewSecured(ui fs.FS, a *auth.Auth) http.Handler {
+	mux := http.NewServeMux()
+	a.Register(mux)
+	mux.Handle("/", NewWithUI(ui))
+	return a.Middleware(mux)
 }
