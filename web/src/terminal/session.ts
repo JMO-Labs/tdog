@@ -18,9 +18,9 @@ export const ACK_BATCH_BYTES = 32 * 1024;
 
 export interface SocketLike {
   binaryType: string;
-  onopen: (() => void) | null;
-  onmessage: ((e: { data: ArrayBuffer }) => void) | null;
-  onclose: (() => void) | null;
+  onopen: ((ev: Event) => void) | null;
+  onmessage: ((e: MessageEvent) => void) | null;
+  onclose: ((ev: CloseEvent) => void) | null;
   send(data: Uint8Array): void;
   close(): void;
 }
