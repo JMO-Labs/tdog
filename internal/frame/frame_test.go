@@ -88,3 +88,10 @@ func TestExitControl(t *testing.T) {
 		t.Fatalf("got %s", got)
 	}
 }
+
+func TestErrorControl(t *testing.T) {
+	typ, p, err := Decode(ErrorControl("boom"))
+	if err != nil || typ != Control || string(p) != `{"type":"error","message":"boom"}` {
+		t.Fatalf("%v %q %v", typ, p, err)
+	}
+}

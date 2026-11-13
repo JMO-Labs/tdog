@@ -27,12 +27,26 @@ const (
 	hupGrace   = 2 * time.Second
 )
 
-// Handler returns the /ws/term handler. shell "" means $SHELL, then /bin/sh.
+// Config selects and parameterises the shell targets.
+type Config struct {
+	Shell string        // container target shell; "" means $SHELL, then /bin/sh
+	SSH   SSHConfig     // ssh-host target
+	Audit *audit.Logger // nil = off
+}
+
+// Handler returns the /ws/term handler with SSH settings from the environment.
 // Callers must wrap it with authentication.
 func Handler(shell string) http.Handler { return HandlerAudit(shell, nil) }
 
 // HandlerAudit is Handler that records term_start/term_end in l (nil = off).
 func HandlerAudit(shell string, l *audit.Logger) http.Handler {
+	return NewHandler(Config{Shell: shell, SSH: SSHConfigFromEnv(), Audit: l})
+}
+
+// NewHandler serves /ws/term; ?target=ssh-host|container picks the target
+// (default container). Callers must wrap it with authentication.
+func NewHandler(cfg Config) http.Handler {
+	shell := cfg.Shell
 	if shell == "" {
 		shell = os.Getenv("SHELL")
 	}
@@ -40,6 +54,11 @@ func HandlerAudit(shell string, l *audit.Logger) http.Handler {
 		shell = "/bin/sh"
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		target := r.URL.Query().Get("target")
+		if target != "" && target != "ssh-host" && target != "container" {
+			http.Error(w, "unknown target", http.StatusBadRequest)
+			return
+		}
 		c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 			CompressionMode: websocket.CompressionDisabled,
 		})
@@ -47,14 +66,25 @@ func HandlerAudit(shell string, l *audit.Logger) http.Handler {
 			return // Accept already replied (includes Origin check).
 		}
 		defer func() { _ = c.CloseNow() }()
-		serve(c, shell, l)
+		if target == "ssh-host" {
+			serveSSH(c, cfg.SSH, cfg.Audit)
+			return
+		}
+		serve(c, shell, cfg.Audit)
 	})
 }
 
-func serve(c *websocket.Conn, shell string, l *audit.Logger) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+// session is a running shell, whatever its target.
+type session struct {
+	r      io.Reader               // shell output
+	w      io.Writer               // shell input
+	resize func(cols, rows uint16) // window size change
+	wait   <-chan int              // receives the exit code once
+	kill   func()                  // hang up the shell (socket went away)
+	close  func()                  // release resources
+}
 
+func serve(c *websocket.Conn, shell string, l *audit.Logger) {
 	cmd := exec.Command(shell)
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Rows: 24, Cols: 80})
@@ -63,7 +93,6 @@ func serve(c *websocket.Conn, shell string, l *audit.Logger) {
 		_ = c.Close(websocket.StatusInternalError, "pty start failed")
 		return
 	}
-	defer func() { _ = ptmx.Close() }()
 	pid := cmd.Process.Pid
 	l.Log(audit.Entry{Event: "term_start", Target: "container", PID: pid})
 	defer l.Log(audit.Entry{Event: "term_end", Target: "container", PID: pid})
@@ -81,25 +110,38 @@ func serve(c *websocket.Conn, shell string, l *audit.Logger) {
 		}
 		waitCh <- code
 	}()
+	runSession(c, &session{
+		r: ptmx, w: ptmx,
+		resize: func(cols, rows uint16) { _ = pty.Setsize(ptmx, &pty.Winsize{Rows: rows, Cols: cols}) },
+		wait:   waitCh,
+		// pty.Start sets Setsid, so pgid == pid.
+		kill:  func() { hangup(cmd.Process.Pid, waitCh) },
+		close: func() { _ = ptmx.Close() },
+	})
+}
 
-	// Client → PTY. On socket close, hang up the process group.
+// runSession pumps frames between the socket and s until either side ends.
+func runSession(c *websocket.Conn, s *session) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer s.close()
+
+	// Client → shell. On socket close, hang up the shell.
 	go func() {
 		defer cancel()
 		pumpInput(ctx, func(ctx context.Context) ([]byte, error) {
 			_, data, err := c.Read(ctx)
 			return data, err
-		}, ptmx, func(cols, rows uint16) {
-			_ = pty.Setsize(ptmx, &pty.Winsize{Rows: rows, Cols: cols})
-		})
+		}, s.w, s.resize)
 	}()
 
-	// PTY → chunks.
+	// Shell → chunks.
 	chunks := make(chan []byte, 64)
 	go func() {
 		defer close(chunks)
 		buf := make([]byte, flushSize)
 		for {
-			n, err := ptmx.Read(buf)
+			n, err := s.r.Read(buf)
 			if n > 0 {
 				b := append([]byte(nil), buf[:n]...)
 				select {
@@ -117,12 +159,12 @@ func serve(c *websocket.Conn, shell string, l *audit.Logger) {
 	write := func(f []byte) error { return c.Write(ctx, websocket.MessageBinary, f) }
 	exited := pumpOutput(ctx, write, chunks)
 
-	if !exited { // socket went away first: SIGHUP the group (pty.Start sets Setsid, pgid == pid).
+	if !exited { // socket went away first
 		_ = c.CloseNow()
-		hangup(cmd.Process.Pid, waitCh)
+		s.kill()
 		return
 	}
-	code := <-waitCh
+	code := <-s.wait
 	wctx, wcancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer wcancel()
 	_ = c.Write(wctx, websocket.MessageBinary, frame.ExitControl(code))
