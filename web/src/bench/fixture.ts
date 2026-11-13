@@ -20,10 +20,7 @@ function colors(): string {
   return s;
 }
 
-const NERD = [
-  "", "", "", "", "", "", "",
-  "", "", "", "󰄉", "",
-];
+const NERD = ["", "", "", "", "", "", "", "", "", "", "󰄉", ""];
 
 function nerdfont(): string {
   let s = "";
@@ -32,7 +29,8 @@ function nerdfont(): string {
   return s;
 }
 
-const LIGS = "=> -> <- <=> != !== === >= <= |> <| :: ++ && || ... /* */ // ### www 0xFF";
+const LIGS =
+  "=> -> <- <=> != !== === >= <= |> <| :: ++ && || ... /* */ // ### www 0xFF";
 
 function ligatures(): string {
   let s = "";
@@ -57,7 +55,10 @@ function htop(frames = 60, rows = 30, cols = 80): string {
         const pid = 1000 + r * 7;
         const cpu = (rnd() * 100).toFixed(1).padStart(5);
         const line = `${pid} user  20 0 ${Math.round(rnd() * 9e5)} S ${cpu} 0.3 0:0${f % 10}.00 /usr/bin/proc-${r}`;
-        s += (r === 5 ? `${ESC}30;46m` : "") + line.padEnd(cols).slice(0, cols) + RESET;
+        s +=
+          (r === 5 ? `${ESC}30;46m` : "") +
+          line.padEnd(cols).slice(0, cols) +
+          RESET;
       }
     }
   }

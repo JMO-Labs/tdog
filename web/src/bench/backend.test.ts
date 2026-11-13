@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { detectBackend } from "./backend";
 
 const canvas = (webgl2: boolean) => () =>
-  ({ getContext: (k: string) => (k === "webgl2" && webgl2 ? {} : null) }) as unknown as HTMLCanvasElement;
+  ({
+    getContext: (k: string) => (k === "webgl2" && webgl2 ? {} : null),
+  }) as unknown as HTMLCanvasElement;
 
 describe("detectBackend", () => {
   it("WebGPU when an adapter is granted", async () => {

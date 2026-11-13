@@ -54,9 +54,10 @@ export function BenchPage() {
     };
   }, [kind]);
 
-  useEffect(() => term.current?.setTheme(transparent ? CLEAR : OPAQUE), [
-    transparent,
-  ]);
+  useEffect(
+    () => term.current?.setTheme(transparent ? CLEAR : OPAQUE),
+    [transparent],
+  );
 
   async function run() {
     const r = term.current;

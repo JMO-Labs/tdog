@@ -4,7 +4,9 @@ import { isBenchRoute } from "./routes";
 
 // Dead-code eliminated from production builds (import.meta.env.DEV is false).
 const BenchPage = import.meta.env.DEV
-  ? lazy(() => import("./bench/BenchPage").then((m) => ({ default: m.BenchPage })))
+  ? lazy(() =>
+      import("./bench/BenchPage").then((m) => ({ default: m.BenchPage })),
+    )
   : null;
 
 export function App() {
