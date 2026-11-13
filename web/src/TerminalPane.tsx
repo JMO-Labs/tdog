@@ -17,10 +17,14 @@ function wsUrl(): string {
   return `${proto}://${location.host}/ws/term`;
 }
 
-export function TerminalPane() {
+export function TerminalPane({ onClosed }: { onClosed?: () => void } = {}) {
   const host = useRef<HTMLDivElement>(null);
   const session = useRef<TerminalSession | null>(null);
   const [state, setState] = useState<SessionState>({ status: "connecting" });
+
+  useEffect(() => {
+    if (state.status === "closed") onClosed?.();
+  }, [state.status, onClosed]);
 
   useEffect(() => {
     const el = host.current!;

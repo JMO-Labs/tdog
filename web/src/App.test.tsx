@@ -38,9 +38,17 @@ vi.stubGlobal(
 );
 
 import { App } from "./App";
+import { json, mockFetch } from "./auth/testutil";
 
 test("renders the terminal pane and reconnect on close", async () => {
+  vi.stubGlobal(
+    "fetch",
+    mockFetch({
+      "GET /api/status": json({ setup: false, authenticated: true }),
+    }),
+  );
   const { container } = render(<App />);
+  await screen.findByTestId("terminal-pane");
   expect(container.querySelector("[data-testid=terminal-pane]")).not.toBeNull();
   await waitFor(() => expect(WS.last).toBeDefined());
   WS.last.onclose!();

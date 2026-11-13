@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
+    setupFiles: ["src/setupTests.ts"],
     reporters: ["default", ["junit", { outputFile: "junit.xml" }]],
     coverage: {
       provider: "v8",

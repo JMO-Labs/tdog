@@ -60,6 +60,22 @@ func (a *Auth) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/totp/enroll", a.handleTOTPEnroll)
 	mux.HandleFunc("POST /api/totp/confirm", a.handleTOTPConfirm)
 	mux.HandleFunc("POST /api/totp/disable", a.handleTOTPDisable)
+	mux.HandleFunc("GET /api/status", a.handleStatus)
+}
+
+// handleStatus tells the UI whether first-run setup is pending and whether
+// the caller already holds a valid session. It exposes no secrets.
+func (a *Auth) handleStatus(w http.ResponseWriter, r *http.Request) {
+	a.mu.Lock()
+	setup := a.hash == ""
+	a.mu.Unlock()
+	authed := false
+	if c, err := r.Cookie(cookieName); err == nil {
+		authed = a.sessions.touch(c.Value) != nil
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	_ = json.NewEncoder(w).Encode(map[string]bool{"setup": setup, "authenticated": authed})
 }
 
 func msg(w http.ResponseWriter, code int, m string) { http.Error(w, m, code) }
@@ -142,6 +158,7 @@ func (a *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if a.totp.enabled() {
 		if in.Code == "" {
 			a.lim.release(ip)
+			w.Header().Set("X-TOTP-Required", "1")
 			msg(w, http.StatusUnauthorized, "totp required")
 			return
 		}
@@ -200,7 +217,7 @@ func stateChanging(r *http.Request) bool {
 func isPublic(r *http.Request) bool {
 	p := r.URL.Path
 	switch p {
-	case "/healthz", "/api/login", "/api/setup":
+	case "/healthz", "/api/login", "/api/setup", "/api/status":
 		return true
 	}
 	api := p == "/api" || strings.HasPrefix(p, "/api/")

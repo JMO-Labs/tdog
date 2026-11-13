@@ -303,3 +303,29 @@ func TestLoginThrottled(t *testing.T) {
 		t.Fatalf("throttle: %d", w.Code)
 	}
 }
+
+func TestStatus(t *testing.T) {
+	a, h := newTest(t)
+	get := func(mod func(*http.Request)) map[string]bool {
+		w := do(h, "GET", "/api/status", "localhost", nil, mod)
+		if w.Code != 200 {
+			t.Fatalf("status: %d", w.Code)
+		}
+		var m map[string]bool
+		if err := json.Unmarshal(w.Body.Bytes(), &m); err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	if m := get(nil); !m["setup"] || m["authenticated"] {
+		t.Fatalf("first run: %v", m)
+	}
+	setup(t, a, h)
+	if m := get(nil); m["setup"] || m["authenticated"] {
+		t.Fatalf("after setup: %v", m)
+	}
+	c, _ := login(t, h, "localhost")
+	if m := get(func(r *http.Request) { r.AddCookie(c) }); m["setup"] || !m["authenticated"] {
+		t.Fatalf("logged in: %v", m)
+	}
+}
