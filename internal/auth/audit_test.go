@@ -41,6 +41,7 @@ func TestAuditSetupLoginLogout(t *testing.T) {
 	a, h := newTest(t)
 	setup(t, a, h)
 	do(h, "POST", "/api/login", "localhost", map[string]string{"password": "wrong password"}, nil)
+	a.lim = newLimiter(time.Now) // skip the post-failure delay
 	c, csrf := login(t, h, "localhost")
 	do(h, "POST", "/api/logout", "localhost", nil, func(r *http.Request) {
 		r.AddCookie(c)
