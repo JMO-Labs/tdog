@@ -36,3 +36,12 @@ func TestSecuredRequiresSession(t *testing.T) {
 		t.Fatalf("/: %d", rec.Code)
 	}
 }
+
+func TestUnsecuredHasNoTerm(t *testing.T) {
+	rec := httptest.NewRecorder()
+	NewWithUI(fstest.MapFS{"index.html": {Data: []byte("x")}}).
+		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/ws/term", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("unsecured handler exposes /ws/term: %d", rec.Code)
+	}
+}
