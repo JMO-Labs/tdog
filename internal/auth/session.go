@@ -60,3 +60,10 @@ func (s *sessions) delete(id string) {
 	defer s.mu.Unlock()
 	delete(s.m, id)
 }
+
+// clear drops every session.
+func (s *sessions) clear() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	clear(s.m)
+}

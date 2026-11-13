@@ -30,7 +30,7 @@ func NewWithUI(ui fs.FS) http.Handler {
 func NewSecured(ui fs.FS, a *auth.Auth) http.Handler {
 	mux := http.NewServeMux()
 	a.Register(mux)
-	mux.Handle("GET /ws/term", term.Handler(""))
+	mux.Handle("GET /ws/term", term.HandlerAudit("", a.Audit()))
 	mux.Handle("/", NewWithUI(ui))
 	return a.Middleware(mux)
 }

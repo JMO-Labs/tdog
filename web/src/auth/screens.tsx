@@ -64,7 +64,7 @@ function Err({ msg }: { msg: string }) {
   );
 }
 
-function message(r: Exclude<api.AuthResult, { ok: true }>): string {
+export function message(r: Exclude<api.AuthResult, { ok: true }>): string {
   switch (r.kind) {
     case "token":
       return "Invalid setup token.";
