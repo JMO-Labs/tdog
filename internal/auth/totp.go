@@ -61,9 +61,12 @@ func matchTOTP(secret []byte, code string, now, lastStep int64) (int64, bool) {
 	return found, found >= 0
 }
 
+// randRead is a seam for tests.
+var randRead = rand.Read
+
 func newSecret() ([]byte, error) {
 	b := make([]byte, 20)
-	_, err := rand.Read(b)
+	_, err := randRead(b)
 	return b, err
 }
 
@@ -86,7 +89,7 @@ func hashRecovery(c string) string {
 func newRecoveryCodes() (plain, hashed []string, err error) {
 	for i := 0; i < recoveryN; i++ {
 		b := make([]byte, 5)
-		if _, err = rand.Read(b); err != nil {
+		if _, err = randRead(b); err != nil {
 			return nil, nil, err
 		}
 		h := hex.EncodeToString(b)

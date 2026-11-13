@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/JMO-Labs/tdog/internal/audit"
 	"github.com/JMO-Labs/tdog/internal/frame"
 	"github.com/coder/websocket"
 	"github.com/creack/pty"
@@ -28,14 +29,18 @@ const (
 
 // Config selects and parameterises the shell targets.
 type Config struct {
-	Shell string    // container target shell; "" means $SHELL, then /bin/sh
-	SSH   SSHConfig // ssh-host target
+	Shell string        // container target shell; "" means $SHELL, then /bin/sh
+	SSH   SSHConfig     // ssh-host target
+	Audit *audit.Logger // nil = off
 }
 
 // Handler returns the /ws/term handler with SSH settings from the environment.
 // Callers must wrap it with authentication.
-func Handler(shell string) http.Handler {
-	return NewHandler(Config{Shell: shell, SSH: SSHConfigFromEnv()})
+func Handler(shell string) http.Handler { return HandlerAudit(shell, nil) }
+
+// HandlerAudit is Handler that records term_start/term_end in l (nil = off).
+func HandlerAudit(shell string, l *audit.Logger) http.Handler {
+	return NewHandler(Config{Shell: shell, SSH: SSHConfigFromEnv(), Audit: l})
 }
 
 // NewHandler serves /ws/term; ?target=ssh-host|container picks the target
@@ -62,10 +67,10 @@ func NewHandler(cfg Config) http.Handler {
 		}
 		defer func() { _ = c.CloseNow() }()
 		if target == "ssh-host" {
-			serveSSH(c, cfg.SSH)
+			serveSSH(c, cfg.SSH, cfg.Audit)
 			return
 		}
-		serve(c, shell)
+		serve(c, shell, cfg.Audit)
 	})
 }
 
@@ -79,7 +84,7 @@ type session struct {
 	close  func()                  // release resources
 }
 
-func serve(c *websocket.Conn, shell string) {
+func serve(c *websocket.Conn, shell string, l *audit.Logger) {
 	cmd := exec.Command(shell)
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Rows: 24, Cols: 80})
@@ -88,6 +93,10 @@ func serve(c *websocket.Conn, shell string) {
 		_ = c.Close(websocket.StatusInternalError, "pty start failed")
 		return
 	}
+	pid := cmd.Process.Pid
+	l.Log(audit.Entry{Event: "term_start", Target: "container", PID: pid})
+	defer l.Log(audit.Entry{Event: "term_end", Target: "container", PID: pid})
+
 	waitCh := make(chan int, 1)
 	go func() {
 		err := cmd.Wait()

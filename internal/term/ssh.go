@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/JMO-Labs/tdog/internal/audit"
 	"github.com/JMO-Labs/tdog/internal/frame"
 	"github.com/coder/websocket"
 	"golang.org/x/crypto/ssh"
@@ -101,7 +102,7 @@ func sshFail(c *websocket.Conn, msg string) {
 	_ = c.Close(websocket.StatusNormalClosure, "ssh error")
 }
 
-func serveSSH(c *websocket.Conn, cfg SSHConfig) {
+func serveSSH(c *websocket.Conn, cfg SSHConfig, l *audit.Logger) {
 	client, err := dialSSH(cfg)
 	if err != nil {
 		sshFail(c, "ssh connect failed: "+err.Error())
@@ -125,6 +126,8 @@ func serveSSH(c *websocket.Conn, cfg SSHConfig) {
 		sshFail(c, "ssh shell failed: "+err.Error())
 		return
 	}
+	l.Log(audit.Entry{Event: "term_start", Target: "ssh-host"})
+	defer l.Log(audit.Entry{Event: "term_end", Target: "ssh-host"})
 	waitCh := make(chan int, 1)
 	go func() {
 		err := sess.Wait()
