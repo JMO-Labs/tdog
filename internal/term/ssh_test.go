@@ -89,7 +89,7 @@ func (d *fakeSSHD) handle(nc net.Conn, cfg *ssh.ServerConfig) {
 				case "window-change":
 					rows := int(r.Payload[4])<<24 | int(r.Payload[5])<<16 | int(r.Payload[6])<<8 | int(r.Payload[7])
 					cols := int(r.Payload[0])<<24 | int(r.Payload[1])<<16 | int(r.Payload[2])<<8 | int(r.Payload[3])
-					_, _ = ch.Write([]byte(fmt.Sprintf("size:%03dx%d\n", rows, cols)))
+					_, _ = fmt.Fprintf(ch, "size:%03dx%d\n", rows, cols)
 				}
 			}
 			d.mu.Lock()
