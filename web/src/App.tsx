@@ -1,3 +1,9 @@
+import { TerminalPane } from "./TerminalPane";
+
 export function App() {
-  return <h1>tdog</h1>;
+  return (
+    <div style={{ height: "100vh", background: "#000" }}>
+      <TerminalPane />
+    </div>
+  );
 }
