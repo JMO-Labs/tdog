@@ -226,9 +226,9 @@ func TestCloseDuringOutputFlood(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Wait until the flood is actually flowing instead of sleeping a guess.
-	readUntil(t, ctx, c, "y\ny\ny\ny")
+	readUntil(t, ctx, c, "y\r\ny\r\ny")
 	_ = c.CloseNow()
-	deadline := time.Now().Add(hupGrace + 10*time.Second)
+	deadline := time.Now().Add(hupGrace + 5*time.Second)
 	for time.Now().Before(deadline) {
 		if err := syscall.Kill(pid, 0); errors.Is(err, syscall.ESRCH) {
 			return
