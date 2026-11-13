@@ -154,4 +154,3 @@ func serveSSH(c *websocket.Conn, cfg SSHConfig) {
 		close: closeAll,
 	})
 }
-

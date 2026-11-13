@@ -2,11 +2,11 @@ package term
 
 import (
 	"context"
-	"fmt"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"net"
 	"net/http/httptest"
 	"os"
@@ -118,7 +118,6 @@ func (d *fakeSSHD) handle(nc net.Conn, cfg *ssh.ServerConfig) {
 		}()
 	}
 }
-
 
 func sshDial(t *testing.T, cfg SSHConfig) (*websocket.Conn, context.Context) {
 	t.Helper()
