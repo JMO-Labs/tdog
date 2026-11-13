@@ -14,19 +14,22 @@ export type Decoded =
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
-function frame(type: number, payload: Uint8Array): Uint8Array {
+function frame(type: number, payload: Uint8Array): Uint8Array<ArrayBuffer> {
   const f = new Uint8Array(payload.length + 1);
   f[0] = type;
   f.set(payload, 1);
   return f;
 }
 
-export function encodeInput(data: Uint8Array): Uint8Array {
+export function encodeInput(data: Uint8Array): Uint8Array<ArrayBuffer> {
   return frame(FrameType.Input, data);
 }
 
 /** Payload: cols u16 BE, rows u16 BE. */
-export function encodeResize(cols: number, rows: number): Uint8Array {
+export function encodeResize(
+  cols: number,
+  rows: number,
+): Uint8Array<ArrayBuffer> {
   const p = new Uint8Array(4);
   const v = new DataView(p.buffer);
   v.setUint16(0, cols);
@@ -35,7 +38,7 @@ export function encodeResize(cols: number, rows: number): Uint8Array {
 }
 
 /** Flow-control ack: bytes the client has finished rendering. */
-export function encodeAck(bytes: number): Uint8Array {
+export function encodeAck(bytes: number): Uint8Array<ArrayBuffer> {
   return frame(
     FrameType.Control,
     enc.encode(JSON.stringify({ type: "ack", bytes })),

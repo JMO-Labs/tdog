@@ -21,7 +21,7 @@ export interface SocketLike {
   onopen: ((ev: Event) => void) | null;
   onmessage: ((e: MessageEvent) => void) | null;
   onclose: ((ev: CloseEvent) => void) | null;
-  send(data: Uint8Array): void;
+  send(data: Uint8Array<ArrayBuffer>): void;
   close(): void;
 }
 
@@ -73,7 +73,7 @@ export class TerminalSession {
     this.r.dispose();
   }
 
-  private send(f: Uint8Array): void {
+  private send(f: Uint8Array<ArrayBuffer>): void {
     this.sock?.send(f);
   }
 
