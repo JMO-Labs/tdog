@@ -1,0 +1,35 @@
+.bench {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  color: #ddd;
+  font:
+    13px system-ui,
+    sans-serif;
+}
+.bench header {
+  padding: 6px 10px;
+  background: #111c;
+}
+.bench header button,
+.bench header label {
+  margin-left: 10px;
+}
+.bench-term {
+  flex: 1;
+  min-height: 0;
+}
+.bench-anim {
+  background: linear-gradient(120deg, #3a0ca3, #f72585, #4cc9f0, #3a0ca3);
+  background-size: 400% 400%;
+  animation: bench-bg 6s linear infinite;
+}
+@keyframes bench-bg {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
