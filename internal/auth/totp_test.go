@@ -59,8 +59,6 @@ func totpEnv(t *testing.T) *env {
 	return &env{a, h, c, csrf, &clk}
 }
 
-
-
 func enroll(t *testing.T, e *env) (secret []byte, codes []string) {
 	t.Helper()
 	w := do(e.h, "POST", "/api/totp/enroll", "localhost", nil, func(r *http.Request) {
