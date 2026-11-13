@@ -40,7 +40,7 @@ func Handler(shell string) http.Handler {
 		if err != nil {
 			return // Accept already replied (includes Origin check).
 		}
-		defer c.CloseNow()
+		defer func() { _ = c.CloseNow() }()
 		serve(c, shell)
 	})
 }
@@ -57,7 +57,7 @@ func serve(c *websocket.Conn, shell string) {
 		_ = c.Close(websocket.StatusInternalError, "pty start failed")
 		return
 	}
-	defer ptmx.Close()
+	defer func() { _ = ptmx.Close() }()
 
 	waitCh := make(chan int, 1)
 	go func() {
