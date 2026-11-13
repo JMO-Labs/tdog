@@ -48,3 +48,19 @@ func TestRunAuthInitError(t *testing.T) {
 		t.Fatalf("err=%v called=%v", err, called)
 	}
 }
+
+func TestMainReportsRunErrorViaFatal(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "auth.json"), []byte("{bad"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TDOG_DATA", dir)
+	var got []any
+	old := fatal
+	fatal = func(v ...any) { got = v }
+	defer func() { fatal = old }()
+	main()
+	if len(got) != 1 || got[0] == nil {
+		t.Fatalf("fatal not called with error: %v", got)
+	}
+}
