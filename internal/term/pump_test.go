@@ -10,7 +10,7 @@ import (
 )
 
 // runPump starts pumpOutput and returns the channel of written frames.
-func runPump(t *testing.T, chunks chan []byte) (<-chan []byte, <-chan bool) {
+func runPump(t *testing.T, chunks chan []byte) (chan []byte, <-chan bool) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
