@@ -11,6 +11,13 @@ import (
 	"sync"
 )
 
+// Seams for fault injection in tests.
+var (
+	removeFile = os.Remove
+	tmpWrite   = func(f *os.File, b []byte) (int, error) { return f.Write(b) }
+	tmpClose   = func(f *os.File) error { return f.Close() }
+)
+
 type totpFile struct {
 	Secret   string   `json:"secret"`
 	Recovery []string `json:"recovery"` // sha256 hex of unused codes
@@ -42,7 +49,7 @@ func loadTOTP(dir string) (*totpState, error) {
 func (t *totpState) save() error {
 	p := filepath.Join(t.dir, "totp.json")
 	if t.f == nil {
-		if err := os.Remove(p); err != nil && !errors.Is(err, os.ErrNotExist) {
+		if err := removeFile(p); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return err
 		}
 		return nil
@@ -56,11 +63,11 @@ func (t *totpState) save() error {
 		return err
 	}
 	defer func() { _ = os.Remove(tmp.Name()) }()
-	if _, err := tmp.Write(b); err != nil {
+	if _, err := tmpWrite(tmp, b); err != nil {
 		_ = tmp.Close()
 		return err
 	}
-	if err := tmp.Close(); err != nil {
+	if err := tmpClose(tmp); err != nil {
 		return err
 	}
 	return os.Rename(tmp.Name(), p)

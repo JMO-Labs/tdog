@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -172,5 +173,64 @@ func TestDisableErrors(t *testing.T) {
 	e.a.totp.dir = good
 	if !e.a.totp.enabled() {
 		t.Fatal("must stay enabled after save failure")
+	}
+}
+
+var errBoom = errors.New("boom")
+
+func stub[T any](t *testing.T, p *T, v T) {
+	t.Helper()
+	old := *p
+	*p = v
+	t.Cleanup(func() { *p = old })
+}
+
+func TestSaveWriteCloseErrors(t *testing.T) {
+	ts := &totpState{dir: t.TempDir(), f: &totpFile{}}
+	stub(t, &tmpWrite, func(*os.File, []byte) (int, error) { return 0, errBoom })
+	if err := ts.save(); !errors.Is(err, errBoom) {
+		t.Fatalf("write failure: %v", err)
+	}
+	tmpWrite = func(f *os.File, b []byte) (int, error) { return f.Write(b) }
+	stub(t, &tmpClose, func(f *os.File) error { _ = f.Close(); return errBoom })
+	if err := ts.save(); !errors.Is(err, errBoom) {
+		t.Fatalf("close failure: %v", err)
+	}
+}
+
+func TestRandFailures(t *testing.T) {
+	stub(t, &randRead, func([]byte) (int, error) { return 0, errBoom })
+	if _, _, err := newRecoveryCodes(); !errors.Is(err, errBoom) {
+		t.Fatalf("newRecoveryCodes: %v", err)
+	}
+	e := totpEnv(t)
+	if w := do(e.h, "POST", "/api/totp/enroll", "localhost", nil, authed(e)); w.Code != 500 {
+		t.Fatalf("enroll rand failure: %d", w.Code)
+	}
+}
+
+func TestConfirmRecoveryCodeFailure(t *testing.T) {
+	e := totpEnv(t)
+	w := do(e.h, "POST", "/api/totp/enroll", "localhost", nil, authed(e))
+	var out struct{ Secret string }
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &out) != nil {
+		t.Fatalf("enroll: %d", w.Code)
+	}
+	secret, _ := b32.DecodeString(out.Secret)
+	stub(t, &randRead, func([]byte) (int, error) { return 0, errBoom })
+	got := do(e.h, "POST", "/api/totp/confirm", "localhost", map[string]string{"code": totpAt(secret, *e.clk, 6)}, authed(e)).Code
+	if got != 500 || e.a.totp.enabled() {
+		t.Fatalf("confirm rand failure: %d enabled=%v", got, e.a.totp.enabled())
+	}
+}
+
+func TestDisableSaveFailure(t *testing.T) {
+	e := totpEnv(t)
+	secret, _ := enroll(t, e)
+	*e.clk += 60
+	stub(t, &removeFile, func(string) error { return errBoom })
+	w := do(e.h, "POST", "/api/totp/disable", "localhost", map[string]string{"password": pw, "code": totpAt(secret, *e.clk, 6)}, authed(e))
+	if w.Code != 500 || !e.a.totp.enabled() {
+		t.Fatalf("disable save failure: %d enabled=%v", w.Code, e.a.totp.enabled())
 	}
 }
