@@ -61,3 +61,12 @@ func ExitControl(code int) []byte {
 	}{"exit", code})
 	return Encode(Control, p)
 }
+
+// ErrorControl builds a control frame reporting a connection/target error.
+func ErrorControl(msg string) []byte {
+	p, _ := json.Marshal(struct {
+		Type    string `json:"type"`
+		Message string `json:"message"`
+	}{"error", msg})
+	return Encode(Control, p)
+}

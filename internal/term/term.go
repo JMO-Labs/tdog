@@ -7,6 +7,7 @@ package term
 import (
 	"context"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -25,9 +26,22 @@ const (
 	hupGrace   = 2 * time.Second
 )
 
-// Handler returns the /ws/term handler. shell "" means $SHELL, then /bin/sh.
+// Config selects and parameterises the shell targets.
+type Config struct {
+	Shell string    // container target shell; "" means $SHELL, then /bin/sh
+	SSH   SSHConfig // ssh-host target
+}
+
+// Handler returns the /ws/term handler with SSH settings from the environment.
 // Callers must wrap it with authentication.
 func Handler(shell string) http.Handler {
+	return NewHandler(Config{Shell: shell, SSH: SSHConfigFromEnv()})
+}
+
+// NewHandler serves /ws/term; ?target=ssh-host|container picks the target
+// (default container). Callers must wrap it with authentication.
+func NewHandler(cfg Config) http.Handler {
+	shell := cfg.Shell
 	if shell == "" {
 		shell = os.Getenv("SHELL")
 	}
@@ -35,6 +49,11 @@ func Handler(shell string) http.Handler {
 		shell = "/bin/sh"
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		target := r.URL.Query().Get("target")
+		if target != "" && target != "ssh-host" && target != "container" {
+			http.Error(w, "unknown target", http.StatusBadRequest)
+			return
+		}
 		c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 			CompressionMode: websocket.CompressionDisabled,
 		})
@@ -42,14 +61,28 @@ func Handler(shell string) http.Handler {
 			return // Accept already replied (includes Origin check).
 		}
 		defer func() { _ = c.CloseNow() }()
+		if target == "ssh-host" {
+			serveSSH(c, cfg.SSH)
+			return
+		}
 		serve(c, shell)
 	})
 }
 
-func serve(c *websocket.Conn, shell string) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+})
+}
 
+// session is a running shell, whatever its target.
+type session struct {
+	r      io.Reader               // shell output
+	w      io.Writer               // shell input
+	resize func(cols, rows uint16) // window size change
+	wait   <-chan int              // receives the exit code once
+	kill   func()                  // hang up the shell (socket went away)
+	close  func()                  // release resources
+}
+
+func serve(c *websocket.Conn, shell string) {
 	cmd := exec.Command(shell)
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Rows: 24, Cols: 80})
@@ -58,8 +91,6 @@ func serve(c *websocket.Conn, shell string) {
 		_ = c.Close(websocket.StatusInternalError, "pty start failed")
 		return
 	}
-	defer func() { _ = ptmx.Close() }()
-
 	waitCh := make(chan int, 1)
 	go func() {
 		err := cmd.Wait()
@@ -73,8 +104,23 @@ func serve(c *websocket.Conn, shell string) {
 		}
 		waitCh <- code
 	}()
+	runSession(c, &session{
+		r: ptmx, w: ptmx,
+		resize: func(cols, rows uint16) { _ = pty.Setsize(ptmx, &pty.Winsize{Rows: rows, Cols: cols}) },
+		wait:   waitCh,
+		// pty.Start sets Setsid, so pgid == pid.
+		kill:  func() { hangup(cmd.Process.Pid, waitCh) },
+		close: func() { _ = ptmx.Close() },
+	})
+}
 
-	// Client → PTY. On socket close, hang up the process group.
+// runSession pumps frames between the socket and s until either side ends.
+func runSession(c *websocket.Conn, s *session) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer s.close()
+
+	// Client → shell. On socket close, hang up the shell.
 	go func() {
 		defer cancel()
 		for {
@@ -88,24 +134,24 @@ func serve(c *websocket.Conn, shell string) {
 			}
 			switch typ {
 			case frame.Input:
-				if _, err := ptmx.Write(p); err != nil {
+				if _, err := s.w.Write(p); err != nil {
 					return
 				}
 			case frame.Resize:
 				if cols, rows, err := frame.ParseResize(p); err == nil {
-					_ = pty.Setsize(ptmx, &pty.Winsize{Rows: rows, Cols: cols})
+					s.resize(cols, rows)
 				}
 			}
 		}
 	}()
 
-	// PTY → chunks.
+	// Shell → chunks.
 	chunks := make(chan []byte, 64)
 	go func() {
 		defer close(chunks)
 		buf := make([]byte, flushSize)
 		for {
-			n, err := ptmx.Read(buf)
+			n, err := s.r.Read(buf)
 			if n > 0 {
 				b := append([]byte(nil), buf[:n]...)
 				select {
@@ -123,12 +169,12 @@ func serve(c *websocket.Conn, shell string) {
 	write := func(f []byte) error { return c.Write(ctx, websocket.MessageBinary, f) }
 	exited := pumpOutput(ctx, write, chunks)
 
-	if !exited { // socket went away first: SIGHUP the group (pty.Start sets Setsid, pgid == pid).
+	if !exited { // socket went away first
 		_ = c.CloseNow()
-		hangup(cmd.Process.Pid, waitCh)
+		s.kill()
 		return
 	}
-	code := <-waitCh
+	code := <-s.wait
 	wctx, wcancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer wcancel()
 	_ = c.Write(wctx, websocket.MessageBinary, frame.ExitControl(code))
