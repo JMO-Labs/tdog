@@ -27,6 +27,8 @@ type Auth struct {
 	setupToken string
 	sessions   *sessions
 	lim        *limiter
+	totp       *totpState
+	now        func() time.Time
 	verify     func(hash, pw string) bool
 }
 
@@ -37,7 +39,11 @@ func New(dir string, logf func(string, ...any)) (*Auth, error) {
 	if err != nil {
 		return nil, err
 	}
-	a := &Auth{dir: dir, logf: logf, hash: h, sessions: newSessions(), lim: newLimiter(time.Now), verify: verifyPassword}
+	t, err := loadTOTP(dir)
+	if err != nil {
+		return nil, err
+	}
+	a := &Auth{dir: dir, logf: logf, hash: h, sessions: newSessions(), lim: newLimiter(time.Now), verify: verifyPassword, totp: t, now: time.Now}
 	if h == "" {
 		a.setupToken = randToken(16)
 		logf("tdog first run: POST /api/setup with setup token %s", a.setupToken)
@@ -50,6 +56,10 @@ func (a *Auth) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/setup", a.handleSetup)
 	mux.HandleFunc("POST /api/login", a.handleLogin)
 	mux.HandleFunc("POST /api/logout", a.handleLogout)
+	mux.HandleFunc("GET /api/session", a.handleSession)
+	mux.HandleFunc("POST /api/totp/enroll", a.handleTOTPEnroll)
+	mux.HandleFunc("POST /api/totp/confirm", a.handleTOTPConfirm)
+	mux.HandleFunc("POST /api/totp/disable", a.handleTOTPDisable)
 }
 
 func msg(w http.ResponseWriter, code int, m string) { http.Error(w, m, code) }
@@ -110,7 +120,7 @@ func (a *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 		msg(w, http.StatusTooManyRequests, "too many attempts")
 		return
 	}
-	var in struct{ Password string }
+	var in struct{ Password, Code string }
 	if json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&in) != nil {
 		a.lim.release(ip)
 		msg(w, 400, "bad request")
@@ -128,6 +138,18 @@ func (a *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 		a.lim.fail(ip)
 		msg(w, http.StatusUnauthorized, "invalid credentials")
 		return
+	}
+	if a.totp.enabled() {
+		if in.Code == "" {
+			a.lim.release(ip)
+			msg(w, http.StatusUnauthorized, "totp required")
+			return
+		}
+		if !a.totp.check(in.Code, a.now().Unix(), true) {
+			a.lim.fail(ip)
+			msg(w, http.StatusUnauthorized, "invalid credentials")
+			return
+		}
 	}
 	a.lim.ok(ip)
 	id, csrf := a.sessions.create()
