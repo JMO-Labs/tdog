@@ -8,6 +8,11 @@ Read `docs/spec.md` before feature work; ADRs in `docs/decisions/` are binding.
 - Go: `gofmt -w cmd internal`, `go vet ./...`, golangci-lint in CI.
 - Web: `cd web && npm run typecheck && npm run fmt:check`.
 
+## No local Go toolchain (swarm workers)
+- Workers can't compile Go; CI is the build + test gate. Write Go carefully, keep it gofmt-clean.
+- New Go dependency: just import it. CI autofix runs `go mod tidy` and commits go.mod/go.sum.
+- Prefer stdlib; approved deps so far: creack/pty, coder/websocket, golang.org/x/crypto.
+
 ## Rules
 - Conventional Commits (commitlint enforced). SemVer via semantic-release on `main`.
 - PRs target `dev`. Never edit `.github/workflows/*` (owner only).
