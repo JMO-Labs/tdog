@@ -11,9 +11,12 @@ import (
 	"github.com/JMO-Labs/tdog/web"
 )
 
+// fatal is swapped in tests so main's error path is observable.
+var fatal = log.Fatal
+
 func main() {
 	if err := run(os.Getenv, http.ListenAndServe); err != nil {
-		log.Fatal(err)
+		fatal(err)
 	}
 }
 
