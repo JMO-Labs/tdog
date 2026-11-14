@@ -1,7 +1,7 @@
 /** Tiled split tree (ADR-0004): leaves are panes, splits hold two children. */
 export type Dir = "row" | "col";
 export type Node =
-  | { t: "leaf"; id: string }
+  | { t: "leaf"; id: string; title?: string }
   | { t: "split"; id: string; dir: Dir; ratio: number; a: Node; b: Node };
 
 export const MIN_RATIO = 0.1;
@@ -9,6 +9,27 @@ export const MAX_RATIO = 0.9;
 
 export function leaves(n: Node): string[] {
   return n.t === "leaf" ? [n.id] : [...leaves(n.a), ...leaves(n.b)];
+}
+
+/** Custom pane titles by leaf id (only renamed panes appear). */
+export function titles(n: Node): Record<string, string> {
+  if (n.t === "leaf") return n.title ? { [n.id]: n.title } : {};
+  return { ...titles(n.a), ...titles(n.b) };
+}
+
+/** Set (or, when blank, clear) a leaf's custom title. */
+export function renameLeaf(n: Node, id: string, title: string): Node {
+  if (n.t === "leaf") {
+    if (n.id !== id) return n;
+    const t = title.trim();
+    return t ? { ...n, title: t } : { t: "leaf", id: n.id };
+  }
+  return { ...n, a: renameLeaf(n.a, id, title), b: renameLeaf(n.b, id, title) };
+}
+
+/** Title shown in a pane header: rename beats shell title beats "Shell N". */
+export function paneTitle(custom?: string, shell?: string, index = 0): string {
+  return custom || shell || `Shell ${index + 1}`;
 }
 
 /** Replace leaf `id` with a split holding it and a new leaf `newId`. */

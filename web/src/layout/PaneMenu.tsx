@@ -6,13 +6,28 @@ export interface PaneMenuProps {
   scenes: { id: string; name: string }[];
   onSwap: (id: string, delta: 1 | -1) => void;
   onMoveToScene: (id: string, scene: string) => void;
+  onRename?: () => void;
+  onDuplicate?: (id: string) => void;
+  onClear?: (id: string) => void;
+  onClose?: (id: string) => void;
 }
 
-/** Keyboard-reachable alternative to dragging: swap with a neighbour or move to a scene. */
-export function PaneMenu({ id, scenes, onSwap, onMoveToScene }: PaneMenuProps) {
+/** Everything you can do to one pane, reachable without dragging. */
+export function PaneMenu({
+  id,
+  scenes,
+  onSwap,
+  onMoveToScene,
+  onRename,
+  onDuplicate,
+  onClear,
+  onClose,
+}: PaneMenuProps) {
   const [open, setOpen] = useState(false);
+  const [sub, setSub] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (!open) setSub(false);
     if (open)
       menu.current?.querySelector<HTMLElement>("[role=menuitem]")?.focus();
   }, [open]);
@@ -56,21 +71,71 @@ export function PaneMenu({ id, scenes, onSwap, onMoveToScene }: PaneMenuProps) {
           <h3 className="pop-title" role="presentation">
             Pane actions
           </h3>
+          {onRename && (
+            <button role="menuitem" onClick={run(onRename)}>
+              Rename pane
+            </button>
+          )}
+          <button
+            role="menuitem"
+            aria-haspopup="menu"
+            aria-expanded={sub}
+            disabled={scenes.length === 0}
+            onClick={() => setSub((v) => !v)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowRight") setSub(true);
+            }}
+          >
+            Move to scene
+          </button>
+          {sub && (
+            <div
+              role="menu"
+              aria-label="Move to scene"
+              className="pane-submenu"
+              onKeyDown={(e) => {
+                if (e.key === "Escape" || e.key === "ArrowLeft") {
+                  e.stopPropagation();
+                  setSub(false);
+                }
+              }}
+            >
+              {scenes.map((s) => (
+                <button
+                  key={s.id}
+                  role="menuitem"
+                  onClick={run(() => onMoveToScene(id, s.id))}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          )}
+          {onDuplicate && (
+            <button role="menuitem" onClick={run(() => onDuplicate(id))}>
+              Duplicate pane
+            </button>
+          )}
+          {onClear && (
+            <button role="menuitem" onClick={run(() => onClear(id))}>
+              Clear scrollback
+            </button>
+          )}
           <button role="menuitem" onClick={run(() => onSwap(id, -1))}>
             Swap with previous
           </button>
           <button role="menuitem" onClick={run(() => onSwap(id, 1))}>
             Swap with next
           </button>
-          {scenes.map((s) => (
+          {onClose && (
             <button
-              key={s.id}
               role="menuitem"
-              onClick={run(() => onMoveToScene(id, s.id))}
+              className="danger"
+              onClick={run(() => onClose(id))}
             >
-              Move to {s.name}
+              Close pane
             </button>
-          ))}
+          )}
         </div>
       )}
     </span>
