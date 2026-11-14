@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { TerminalPane } from "../TerminalPane";
+import { useCallback, useEffect, useState } from "react";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
 import { Sheet } from "../overlays/Sheet";
@@ -9,13 +8,19 @@ import { usePref } from "../settings/prefs";
 import { THEMES } from "../theme/registry";
 import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
+import { SplitView } from "../layout/SplitView";
+import { leaves } from "../layout/tree";
+import { useLayout } from "../layout/useLayout";
 import { Icon } from "./icons";
 import { Mascot } from "./Mascot";
+import { PaneSlot } from "./PaneSlot";
 import { Pet, usePetAwake } from "./pet";
 import { Tabs } from "./Tabs";
 import "./shell.css";
 
+type Size = { cols: number; rows: number };
 const noop = () => {};
+const SCENE = "scene 1";
 /** Latency above this gets the dial-up icon. */
 const SLOW_MS = 150;
 
@@ -27,26 +32,26 @@ export function Workspace({
   onSignedOut?: () => void;
 }) {
   const { mode, cycle } = useThemeMode();
-  const [size, setSize] = useState<{ cols: number; rows: number } | null>(null);
-  const [open, setOpen] = useState(false);
-  const [everOpen, setEverOpen] = useState(false);
-  const [latency, setLatency] = useState<number | null>(null);
+  const [sizes, setSizes] = useState<Record<string, Size>>({});
+  const [latencies, setLatencies] = useState<Record<string, number>>({});
+  const [focused, setFocused] = useState<string | null>(null);
   const [stamp, setStamp] = useState(0);
   const [petShown, setPetShown] = usePref("pet");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
-  const reconnectRef = useRef<(() => void) | null>(null);
   const awake = usePetAwake(stamp);
+  const layout = useLayout(SCENE);
 
   const onSize = useCallback(
-    (cols: number, rows: number) => setSize({ cols, rows }),
+    (id: string, cols: number, rows: number) =>
+      setSizes((m) => ({ ...m, [id]: { cols, rows } })),
+    [],
+  );
+  const onLatency = useCallback(
+    (id: string, ms: number) => setLatencies((m) => ({ ...m, [id]: ms })),
     [],
   );
   const onOutput = useCallback(() => setStamp((n) => n + 1), []);
-  const onOpenChange = useCallback((o: boolean) => {
-    setOpen(o);
-    if (o) setEverOpen(true);
-  }, []);
 
   // App owns sign-out: it sends the CSRF token and only celebrates on success.
   const signOut = useCallback(() => {
@@ -97,7 +102,11 @@ export function Workspace({
   }, [cycle, signOut]);
 
   const themeLabel = `Theme: ${mode[0].toUpperCase()}${mode.slice(1)}`;
-  const closed = everOpen && !open;
+  // Status bar follows the focused pane, else the first one.
+  const ids = layout.tree ? leaves(layout.tree) : [];
+  const shown = focused && ids.includes(focused) ? focused : ids[0];
+  const size = shown ? sizes[shown] : undefined;
+  const latency = shown !== undefined ? (latencies[shown] ?? null) : null;
 
   return (
     <div className="ws">
@@ -142,26 +151,36 @@ export function Workspace({
       </header>
 
       <main className="panes">
-        <TerminalPane
-          onClosed={onClosed}
-          onSize={onSize}
-          onOutput={onOutput}
-          onLatency={setLatency}
-          onOpenChange={onOpenChange}
-          reconnectRef={reconnectRef}
-        />
-        {closed && (
-          <div className="empty">
+        {layout.tree ? (
+          <SplitView
+            tree={layout.tree}
+            onSplit={layout.split}
+            onClose={layout.close}
+            onRatio={layout.ratio}
+            renderPane={(id, settled) => (
+              <div
+                style={{ height: "100%" }}
+                onFocusCapture={() => setFocused(id)}
+                onPointerDownCapture={() => setFocused(id)}
+              >
+                <PaneSlot
+                  id={id}
+                  settled={settled}
+                  onClosed={onClosed}
+                  onSize={onSize}
+                  onOutput={onOutput}
+                  onLatency={onLatency}
+                />
+              </div>
+            )}
+          />
+        ) : (
+          <div className="empty" data-testid="empty-panes">
             <Mascot />
-            <p className="empty-big">Nothing playing.</p>
-            <p className="muted">
-              Reconnect, or press <kbd>⌘K</kbd> for commands.
-            </p>
-            <button
-              className="btn reconnect"
-              onClick={() => reconnectRef.current?.()}
-            >
-              Reconnect
+            <p className="empty-big">No panes.</p>
+            <p className="muted">Every shell is closed.</p>
+            <button className="btn reconnect" onClick={layout.reset}>
+              New pane
             </button>
           </div>
         )}

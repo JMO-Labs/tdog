@@ -79,3 +79,19 @@ test("reconnect button opens a new socket", async () => {
   fireEvent.click(screen.getByRole("button", { name: /reconnect/i }));
   expect(h.sockets.length).toBe(n + 1);
 });
+
+test("with a sceneKey, reconnects to the live session id after reload", async () => {
+  const n = h.sockets.length;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => ({
+      ok: true,
+      json: async () => [{ id: "sess-9", scene: "pane-x" }],
+    })),
+  );
+  render(<TerminalPane sceneKey="pane-x" />);
+  await waitFor(() => expect(h.sockets.length).toBeGreaterThan(n));
+  const url = new URL(h.sockets[h.sockets.length - 1].url);
+  expect(url.searchParams.get("scene")).toBe("pane-x");
+  expect(url.searchParams.get("id")).toBe("sess-9");
+});
