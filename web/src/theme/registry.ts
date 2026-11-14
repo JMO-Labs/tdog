@@ -15,6 +15,11 @@ import llamaSkin from "./themes/llama-skin.json";
 import simGrid from "./themes/sim-grid.json";
 import cartridgeBlast from "./themes/cartridge-blast.json";
 import slimeTime from "./themes/slime-time.json";
+import bayside from "./themes/bayside.json";
+import morphSquad from "./themes/morph-squad.json";
+import truthIsOutThere from "./themes/truth-is-out-there.json";
+import laserBinder from "./themes/laser-binder.json";
+import rainbowLeopard from "./themes/rainbow-leopard.json";
 import missionControl from "./themes/mission-control.json";
 import deepGravity from "./themes/deep-gravity.json";
 import ackAck from "./themes/ack-ack.json";
@@ -49,6 +54,11 @@ export const THEMES: Theme[] = Object.entries({
   "sim-grid": simGrid,
   "cartridge-blast": cartridgeBlast,
   "slime-time": slimeTime,
+  bayside: bayside,
+  "morph-squad": morphSquad,
+  "truth-is-out-there": truthIsOutThere,
+  "laser-binder": laserBinder,
+  "rainbow-leopard": rainbowLeopard,
   "mission-control": missionControl,
   "deep-gravity": deepGravity,
   "ack-ack": ackAck,
