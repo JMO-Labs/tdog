@@ -43,7 +43,7 @@ export function TerminalPane({
   sceneKey?: string;
   onClosed?: () => void;
   onSize?: (cols: number, rows: number) => void;
-  onOutput?: () => void;
+  onOutput?: (data: Uint8Array) => void;
   /** Round-trip ms from the control-frame ping. */
   onLatency?: (ms: number) => void;
   /** True while the socket is open. */
@@ -117,8 +117,8 @@ export function TerminalPane({
         setState,
         {
           onSize: (c, r2) => hooks.current.onSize?.(c, r2),
-          onOutput: () => {
-            hooks.current.onOutput?.();
+          onOutput: (data) => {
+            hooks.current.onOutput?.(data);
             noteRef.current();
           },
           onLatency: (ms) => hooks.current.onLatency?.(ms),

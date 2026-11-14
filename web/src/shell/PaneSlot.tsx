@@ -22,7 +22,7 @@ export function PaneSlot({
   onOpenChange: (id: string, open: boolean) => void;
   onClosed?: () => void;
   onSize: (id: string, cols: number, rows: number) => void;
-  onOutput: () => void;
+  onOutput: (data?: Uint8Array) => void;
   onLatency: (id: string, ms: number) => void;
 }) {
   const { open, everOpen } = state ?? { open: false, everOpen: false };
