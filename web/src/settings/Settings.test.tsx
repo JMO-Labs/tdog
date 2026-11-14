@@ -39,7 +39,7 @@ test("serious mode and pet persist and apply immediately", async () => {
   fireEvent.click(sw(/pet/i));
   expect(localStorage.getItem("tdog.pet")).toBe("0");
   expect(getPref("pet")).toBe(false);
-  setPref("pet", true);
+  act(() => setPref("pet", true));
   expect(sw(/pet/i).getAttribute("aria-checked")).toBe("true");
 });
 

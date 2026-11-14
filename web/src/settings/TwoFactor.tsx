@@ -99,7 +99,7 @@ export function TwoFactor({
       onChange(false);
     });
 
-  const shown = enabled || step === "enroll";
+  const shown = enabled;
   return (
     <>
       <div className="row">
