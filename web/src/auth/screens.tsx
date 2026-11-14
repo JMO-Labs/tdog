@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type InputHTMLAttributes,
+  type Ref,
+} from "react";
 import * as api from "./api";
 import { MIN_PASSWORD } from "./constants";
 import { OtpBoxes } from "./otp";
@@ -194,6 +201,7 @@ export function LoginScreen(props: {
 
 export function SetupScreen(props: { onDone: () => void }) {
   const [token, setToken] = useState("");
+  const [showToken, setShowToken] = useState(false);
   const [pw, setPw] = useState("");
   const [confirm, setConfirm] = useState("");
   const [err, setErr] = useState("");
@@ -229,14 +237,16 @@ export function SetupScreen(props: { onDone: () => void }) {
         <p className="muted">
           Paste the setup token from the server log, then pick a password.
         </p>
-        <Field label="Setup token">
-          <Input
-            ref={input}
-            type="password"
-            className="mono"
-            autoComplete="off"
+        <Field
+          label="Setup token"
+          hint="Find it in the server log: run docker logs tdog."
+        >
+          <TokenInput
+            inputRef={input}
+            shown={showToken}
+            onToggle={() => setShowToken((v) => !v)}
             value={token}
-            onChange={(e) => setToken(e.target.value)}
+            onChange={setToken}
           />
         </Field>
         <Field label="Password">
@@ -281,5 +291,40 @@ export function SetupScreen(props: { onDone: () => void }) {
         />
       )}
     </AuthShell>
+  );
+}
+
+/** Token input with a show/hide button; receives id/aria props from Field. */
+function TokenInput({
+  inputRef,
+  shown,
+  onToggle,
+  onChange,
+  ...rest
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> & {
+  inputRef: Ref<HTMLInputElement>;
+  shown: boolean;
+  onToggle: () => void;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="token-row">
+      <Input
+        {...rest}
+        ref={inputRef}
+        type={shown ? "text" : "password"}
+        className="mono"
+        autoComplete="off"
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <button
+        type="button"
+        className="btn sm"
+        aria-pressed={shown}
+        onClick={onToggle}
+      >
+        {shown ? "Hide setup token" : "Show setup token"}
+      </button>
+    </div>
   );
 }
