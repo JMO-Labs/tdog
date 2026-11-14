@@ -35,8 +35,8 @@ type Config struct {
 	Audit *audit.Logger // nil = off
 
 	Presets    *config.Store // preset store for ?preset=; nil = presets off
-	Registry   *Registry // shared session registry; nil = private one
-	Scrollback int       // per-session scrollback bytes when Registry is nil; 0 = 1 MiB
+	Registry   *Registry     // shared session registry; nil = private one
+	Scrollback int           // per-session scrollback bytes when Registry is nil; 0 = 1 MiB
 }
 
 // Handler returns the /ws/term handler with SSH settings from the environment.
