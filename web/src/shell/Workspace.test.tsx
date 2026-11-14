@@ -5,7 +5,7 @@ import { json, mockFetch } from "../auth/testutil";
 let cb: {
   onSize?: (c: number, r: number) => void;
   onOutput?: () => void;
-  onState?: (open: boolean) => void;
+  onOpenChange?: (open: boolean) => void;
 } = {};
 vi.mock("../TerminalPane", () => ({
   TerminalPane: (p: typeof cb) => {
@@ -62,7 +62,8 @@ test("pet sleeps after 3s idle, wakes on output, click hides", () => {
 test("closed session shows the empty state", () => {
   render(<Workspace onSignedOut={() => {}} />);
   expect(screen.queryByText("Nothing playing.")).toBeNull();
-  act(() => cb.onState?.(false));
+  act(() => cb.onOpenChange?.(true));
+  act(() => cb.onOpenChange?.(false));
   expect(screen.getByText("Nothing playing.")).toBeTruthy();
 });
 
