@@ -91,10 +91,7 @@ function NodeView({
     drag(false);
   };
   return (
-    <div
-      className={`split ${n.dir}`}
-      data-testid={`split-${n.id}`}
-    >
+    <div className={`split ${n.dir}`} data-testid={`split-${n.id}`}>
       <div className="split-cell" style={{ flex: `${n.ratio} 1 0` }}>
         <NodeView n={n.a} p={p} settled={settled} drag={drag} />
       </div>
