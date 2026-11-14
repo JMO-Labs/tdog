@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { confetti } from "./confetti";
+import { confetti, prefersReducedMotion } from "./confetti";
 
 function fakeCanvas() {
   const ctx = new Proxy({} as Record<string, unknown>, {
@@ -44,5 +44,24 @@ describe("confetti", () => {
     expect(frames).toBeGreaterThan(80);
     expect(frames).toBeLessThan(120);
     expect(ctx.clearRect).toHaveBeenCalled();
+  });
+});
+
+describe("prefersReducedMotion", () => {
+  it("is false when matchMedia is unavailable", () => {
+    vi.stubGlobal("matchMedia", undefined);
+    expect(prefersReducedMotion()).toBe(false);
+  });
+  it.each([true, false])("reflects the media query (matches=%s)", (m) => {
+    const mm = vi.fn(() => ({ matches: m }));
+    vi.stubGlobal("matchMedia", mm);
+    expect(prefersReducedMotion()).toBe(m);
+    expect(mm).toHaveBeenCalledWith("(prefers-reduced-motion: reduce)");
+  });
+  it("makes confetti a no-op by default when reduced", () => {
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    const { canvas } = fakeCanvas();
+    confetti(canvas);
+    expect(canvas.getContext).not.toHaveBeenCalled();
   });
 });
