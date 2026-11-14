@@ -1,7 +1,6 @@
 import type { Effect } from "../theme/schema";
 import { GlyphRain } from "./GlyphRain";
-import { resolveEffects } from "./resolve";
-import { useFx, usePageVisible, useReducedMotionPref } from "./store";
+import { useActiveEffects } from "./useActiveEffects";
 import "./effects.css";
 
 /**
@@ -11,20 +10,25 @@ import "./effects.css";
 export function EffectsOverlay({
   effects,
   force = false,
+  layer = "front",
 }: {
   effects: readonly Effect[];
   /** Bench only: draw `effects` as given, ignoring user settings. */
   force?: boolean;
+  /** "behind" draws glyph-rain under the text; "front" draws the rest over it. */
+  layer?: "front" | "behind";
 }) {
-  const settings = useFx();
-  const reduced = useReducedMotionPref();
-  const visible = usePageVisible();
-  const active = force
-    ? [...effects]
-    : resolveEffects(effects, settings, reduced, visible);
+  const behind = layer === "behind";
+  const active = useActiveEffects(effects, force).filter(
+    (e) => (e.id === "glyph-rain") === behind,
+  );
   if (!active.length) return null;
   return (
-    <div className="fx-root" data-testid="fx-root" aria-hidden="true">
+    <div
+      className={behind ? "fx-root fx-behind" : "fx-root"}
+      data-testid="fx-root"
+      aria-hidden="true"
+    >
       {active.map((e) =>
         e.id === "glyph-rain" ? (
           <GlyphRain key={e.id} intensity={e.intensity} />

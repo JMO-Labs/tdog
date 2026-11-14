@@ -46,3 +46,20 @@ test("force bypasses settings and renders every listed effect", () => {
   );
   expect(container.querySelectorAll("[data-fx]").length).toBe(2);
 });
+
+test("layers split: glyph-rain is behind, the rest in front", () => {
+  const effects = [
+    { id: "glyph-rain" as const, intensity: 1 },
+    { id: "scanlines" as const, intensity: 1 },
+  ];
+  const back = render(<EffectsOverlay layer="behind" effects={effects} />);
+  expect(back.container.querySelector(".fx-glyph-rain")).not.toBeNull();
+  expect(back.container.querySelector("[data-fx]")).toBeNull();
+  expect(
+    back.container.querySelector(".fx-root")?.classList.contains("fx-behind"),
+  ).toBe(true);
+  back.unmount();
+  const front = render(<EffectsOverlay layer="front" effects={effects} />);
+  expect(front.container.querySelector(".fx-glyph-rain")).toBeNull();
+  expect(front.container.querySelectorAll("[data-fx]").length).toBe(1);
+});

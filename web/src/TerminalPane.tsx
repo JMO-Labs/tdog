@@ -7,6 +7,7 @@ import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
 import { EffectsOverlay } from "./effects/EffectsOverlay";
+import { useActiveEffects } from "./effects/useActiveEffects";
 import { findSessionId } from "./terminal/sessions";
 
 /** Retry cadence while a dropped socket is being re-established. */
@@ -91,10 +92,21 @@ export function TerminalPane({
     sync();
     return themeStore.subscribe(sync);
   }, [theme]);
+  const rainBehind = useActiveEffects(effects).some(
+    (e) => e.id === "glyph-rain",
+  );
+  const rainRef = useRef(rainBehind);
+  rainRef.current = rainBehind;
+  /** Theme for xterm; transparent background lets the rain show through. */
+  const termTheme = () => {
+    const t = themeStore.terminal(themeRef.current);
+    return rainRef.current ? { ...t, background: "rgba(0,0,0,0)" } : t;
+  };
   const dropped = state.status === "closed" && state.exitCode === undefined;
   useEffect(() => {
-    renderer.current?.setTheme(themeStore.terminal(theme));
-  }, [theme]);
+    renderer.current?.setTheme(termTheme());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme, rainBehind]);
   useEffect(() => {
     if (!dropped) return;
     const id = setTimeout(connect, RETRY_MS);
@@ -141,10 +153,8 @@ export function TerminalPane({
       );
       session.current = s;
       renderer.current = r;
-      r.setTheme(themeStore.terminal(themeRef.current));
-      const offTheme = themeStore.subscribe(() =>
-        r.setTheme(themeStore.terminal(themeRef.current)),
-      );
+      r.setTheme(termTheme());
+      const offTheme = themeStore.subscribe(() => r.setTheme(termTheme()));
       connect();
       const ro = new ResizeObserver(() => {
         if (settledRef.current) r.resize();
@@ -166,9 +176,17 @@ export function TerminalPane({
   return (
     <div
       data-testid="terminal-pane"
-      style={{ position: "relative", height: "100%" }}
+      style={{
+        position: "relative",
+        height: "100%",
+        background: themeStore.terminal(theme).background,
+      }}
     >
-      <div ref={host} style={{ height: "100%" }} />
+      <EffectsOverlay layer="behind" effects={effects} />
+      <div
+        ref={host}
+        style={{ position: "relative", zIndex: 1, height: "100%" }}
+      />
       <EffectsOverlay effects={effects} />
       <ConnectionGag phase={phase} onReconnect={connect} />
       {state.status === "closed" && state.exitCode !== undefined && (

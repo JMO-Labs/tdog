@@ -51,7 +51,7 @@ export function GlyphRain({ intensity }: { intensity: number }) {
     <canvas
       ref={ref}
       className="fx fx-glyph-rain"
-      style={{ opacity: 0.15 * intensity }}
+      style={{ opacity: 0.35 * intensity }}
     />
   );
 }

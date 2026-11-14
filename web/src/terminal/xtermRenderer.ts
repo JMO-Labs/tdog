@@ -10,6 +10,7 @@ const enc = new TextEncoder();
 export class XtermRenderer implements TerminalRenderer {
   private term = new Terminal({
     allowProposedApi: true,
+    allowTransparency: true, // glyph-rain draws behind the text
     cursorBlink: true,
     scrollback: 10000,
   });

@@ -102,6 +102,7 @@ export function BenchPage() {
           <div className="bench-panes">
             {[0, 1, 2, 3].map((n) => (
               <div key={n} className="bench-pane">
+                <EffectsOverlay force layer="behind" effects={fx} />
                 <EffectsOverlay force effects={fx} />
               </div>
             ))}

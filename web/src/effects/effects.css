@@ -10,6 +10,9 @@
   overflow: hidden;
   contain: strict;
 }
+.fx-behind {
+  z-index: 0;
+}
 .fx-glyph-rain {
   width: 100%;
   height: 100%;
