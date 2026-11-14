@@ -47,6 +47,9 @@ export function SceneView({
           onSnap={layout.snap}
           onMove={layout.move}
           onSwap={layout.swap}
+          onRename={layout.rename}
+          onDuplicate={layout.duplicate}
+          active={active}
           scenes={scenes.filter((x) => x.id !== scene)}
           onMoveToScene={(id, to) => onMoveScene(id, scene, to)}
           renderPane={(id, settled) => (

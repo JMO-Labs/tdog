@@ -39,7 +39,16 @@ export const EFFECTS = [
   "flicker",
   "vignette",
 ] as const;
-export const BOOTS = ["default"] as const;
+export const BOOTS = [
+  "drop",
+  "tracker",
+  "rain",
+  "post",
+  "dialup",
+  "rewind",
+  "cartridge",
+  "wipe",
+] as const;
 export const SHADOWS = ["hard", "soft", "bevel", "glow", "none"] as const;
 export const CURSOR_SHAPES = ["block", "bar", "underline"] as const;
 export const MOTIF_SHAPES = ["path", "circle", "rect", "polygon"] as const;

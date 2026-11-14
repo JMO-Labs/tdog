@@ -15,6 +15,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   const [pet, setPet] = usePref("pet");
   const [motif, setMotif] = useMotifOpacity();
   const [dress, setDress] = usePref("dress");
+  const [boot, setBoot] = usePref("boot");
 
   useEffect(() => {
     let live = true;
@@ -85,6 +86,13 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
           <p className="muted">Wears the costume of the active theme.</p>
         </div>
         <Switch labelledBy="sw-dress" checked={dress} onChange={setDress} />
+      </div>
+      <div className="row">
+        <div>
+          <b id="sw-boot">Boot animation</b>
+          <p className="muted">Short intro, once per session. Any key skips.</p>
+        </div>
+        <Switch labelledBy="sw-boot" checked={boot} onChange={setBoot} />
       </div>
       <h3>Sessions</h3>
       <Button

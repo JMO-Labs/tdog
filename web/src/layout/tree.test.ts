@@ -1,5 +1,14 @@
 import { expect, test } from "vitest";
-import { closeLeaf, leaves, setRatio, splitLeaf, type Node } from "./tree";
+import {
+  closeLeaf,
+  leaves,
+  paneTitle,
+  renameLeaf,
+  setRatio,
+  splitLeaf,
+  titles,
+  type Node,
+} from "./tree";
 
 const leaf = (id: string): Node => ({ t: "leaf", id });
 
@@ -42,4 +51,18 @@ test("setRatio recurses into nested splits and leaves others untouched", () => {
   const r = setRatio(t2, "s2", 0.3);
   expect(r.t === "split" && r.ratio).toBe(0.5);
   expect(r.t === "split" && r.b.t === "split" && r.b.ratio).toBe(0.3);
+});
+
+test("renameLeaf sets, trims and clears a title", () => {
+  const t = splitLeaf(leaf("a"), "a", "row", "b", "s1");
+  const r = renameLeaf(t, "b", "  logs ");
+  expect(titles(r)).toEqual({ b: "logs" });
+  expect(titles(renameLeaf(r, "b", "   "))).toEqual({});
+  expect(titles(renameLeaf(r, "zzz", "x"))).toEqual({ b: "logs" });
+});
+
+test("paneTitle: rename wins over shell title, then fallback", () => {
+  expect(paneTitle("mine", "zsh", 0)).toBe("mine");
+  expect(paneTitle(undefined, "zsh", 0)).toBe("zsh");
+  expect(paneTitle(undefined, undefined, 1)).toBe("Shell 2");
 });

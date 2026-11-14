@@ -117,8 +117,6 @@ func exitCode(err error) int {
 	}
 }
 
-func spawnSSH(cfg SSHConfig) (*session, error) { return spawnSSHCmd(cfg, "") }
-
 // spawnSSHCmd runs cmd in a pty on the host; "" starts the login shell.
 func spawnSSHCmd(cfg SSHConfig, cmd string) (*session, error) {
 	client, err := dialSSH(cfg)
