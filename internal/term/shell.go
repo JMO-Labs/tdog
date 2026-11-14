@@ -1,11 +1,13 @@
 package term
 
 import (
+	"encoding/json"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 // pickShell chooses the container shell: configured, then $SHELL, then bash
@@ -25,14 +27,48 @@ func pickShell(cfg, env string, look func(string) (string, error)) string {
 
 func lookPath(name string) (string, error) { return exec.LookPath(name) }
 
-// bashPS1 is a coloured user@host:cwd prompt using ANSI colours (so themes apply).
-const bashPS1 = `\[\033[32m\]\u@\h\[\033[0m\]:\[\033[34m\]\w\[\033[0m\]\$ `
+// bashRC is our bash rcfile: it sources the system and user rc files (Debian's
+// /etc/bash.bashrc overwrites PS1 unconditionally), then sets a coloured
+// user@host:cwd prompt (ANSI colours so themes apply) and emits OSC 7 (cwd)
+// before each prompt. ${USER:-user} avoids "I have no name!" for uids
+// without a passwd entry.
+const bashRC = `[ -r /etc/bash.bashrc ] && . /etc/bash.bashrc
+[ -r "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+PS1='\[\033[32m\]'"${USER:-user}"'@\h\[\033[0m\]:\[\033[34m\]\w\[\033[0m\]\$ '
+PROMPT_COMMAND='printf "\033]7;file://%s%s\033\\\\" "$HOSTNAME" "$PWD"'
+`
 
-// bashPromptCmd emits OSC 7 (cwd) before each prompt.
-const bashPromptCmd = `printf '\033]7;file://%s%s\033\\' "$HOSTNAME" "$PWD"`
+var (
+	rcOnce sync.Once
+	rcPath string
+)
 
-// shellEnv returns base plus TERM; for bash it also sets the coloured prompt
-// and an OSC 7 cwd report.
+// bashRCFile writes bashRC to a private temp file once and returns its path.
+func bashRCFile() string {
+	rcOnce.Do(func() {
+		f, err := os.CreateTemp("", "tdog-bashrc-*")
+		if err != nil {
+			return
+		}
+		defer f.Close()
+		if _, err := f.WriteString(bashRC); err == nil {
+			rcPath = f.Name()
+		}
+	})
+	return rcPath
+}
+
+// shellArgs returns extra arguments for the shell: bash gets our rcfile.
+func shellArgs(shell string) []string {
+	if filepath.Base(shell) == "bash" {
+		if rc := bashRCFile(); rc != "" {
+			return []string{"--rcfile", rc}
+		}
+	}
+	return nil
+}
+
+// shellEnv returns base plus TERM, without inherited prompt variables for bash.
 func shellEnv(shell string, base []string) []string {
 	env := append([]string{}, base...)
 	if filepath.Base(shell) == "bash" {
@@ -42,7 +78,7 @@ func shellEnv(shell string, base []string) []string {
 				kept = append(kept, e)
 			}
 		}
-		env = append(kept, "PS1="+bashPS1, "PROMPT_COMMAND="+bashPromptCmd)
+		env = kept
 	}
 	return append(env, "TERM=xterm-256color")
 }
@@ -52,7 +88,7 @@ func shellEnv(shell string, base []string) []string {
 func ShellInfoHandler(shell string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"shell":"` + filepath.Base(shell) + `"}`))
+		_ = json.NewEncoder(w).Encode(map[string]string{"shell": filepath.Base(shell)})
 	})
 }
 

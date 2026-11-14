@@ -160,6 +160,7 @@ export function TerminalPane({
     return () => {
       cancelled = true;
       cleanup();
+      if (keyRef.current) titleStore.remove(keyRef.current);
     };
   }, [connect]);
 

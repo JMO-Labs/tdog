@@ -1,6 +1,8 @@
 package term
 
 import (
+	"encoding/json"
+	"os"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -29,15 +31,48 @@ func TestPickShell(t *testing.T) {
 	}
 }
 
-func TestShellEnvBashPrompt(t *testing.T) {
-	env := strings.Join(shellEnv("/usr/bin/bash", []string{"A=1", "PS1=old"}), "\n")
-	for _, w := range []string{"TERM=xterm-256color", "A=1", "PROMPT_COMMAND=", "\\033]7;file://"} {
-		if !strings.Contains(env, w) {
-			t.Errorf("env missing %q: %s", w, env)
+func TestShellEnvBashDropsInheritedPrompt(t *testing.T) {
+	env := strings.Join(shellEnv("/usr/bin/bash", []string{"A=1", "PS1=old", "PROMPT_COMMAND=x"}), "\n")
+	if !strings.Contains(env, "A=1") || !strings.Contains(env, "TERM=xterm-256color") ||
+		strings.Contains(env, "PS1=") || strings.Contains(env, "PROMPT_COMMAND") {
+		t.Errorf("unexpected env: %s", env)
+	}
+}
+
+func TestShellArgsBashRCFile(t *testing.T) {
+	args := shellArgs("/usr/bin/bash")
+	if len(args) != 2 || args[0] != "--rcfile" {
+		t.Fatalf("args = %v", args)
+	}
+	b, err := os.ReadFile(args[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	rc := string(b)
+	iSys := strings.Index(rc, "/etc/bash.bashrc")
+	iPS1 := strings.Index(rc, "PS1=")
+	if iSys < 0 || iPS1 < iSys {
+		t.Errorf("PS1 must be set after sourcing /etc/bash.bashrc:\n%s", rc)
+	}
+	for _, w := range []string{".bashrc", "${USER:-user}", "\\033[32m", "PROMPT_COMMAND=", "\\033]7;file://"} {
+		if !strings.Contains(rc, w) {
+			t.Errorf("rcfile missing %q:\n%s", w, rc)
 		}
 	}
-	if strings.Contains(env, "PS1=old") || !strings.Contains(env, "\\[\\033[") {
-		t.Errorf("PS1 not replaced with coloured prompt: %s", env)
+}
+
+func TestShellArgsOtherShell(t *testing.T) {
+	if a := shellArgs("/bin/zsh"); a != nil {
+		t.Errorf("zsh args = %v", a)
+	}
+}
+
+func TestShellInfoHandlerEscapes(t *testing.T) {
+	rec := httptest.NewRecorder()
+	ShellInfoHandler(`/x/ba"sh\`).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/shell", nil))
+	var v map[string]string
+	if err := json.Unmarshal(rec.Body.Bytes(), &v); err != nil || v["shell"] != `ba"sh\` {
+		t.Errorf("got %q err %v", rec.Body.String(), err)
 	}
 }
 

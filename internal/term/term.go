@@ -129,7 +129,7 @@ func (w *waiter) finish(code int) {
 }
 
 func spawnPTY(shell string) (*session, error) {
-	cmd := exec.Command(shell)
+	cmd := exec.Command(shell, shellArgs(shell)...)
 	cmd.Env = shellEnv(shell, os.Environ())
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Rows: 24, Cols: 80})
 	if err != nil {
