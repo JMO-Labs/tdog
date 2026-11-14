@@ -80,3 +80,7 @@ export async function setup(
   if (r.status === 409) return { ok: false, kind: "done" };
   return { ok: false, kind: "other" };
 }
+
+export async function logout(): Promise<void> {
+  await post("/api/logout", {}).catch(() => {});
+}
