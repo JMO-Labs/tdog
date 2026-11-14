@@ -142,3 +142,39 @@ describe("bundled themes", () => {
     expect(validateTheme(t).ok).toBe(false);
   });
 });
+
+describe("90s theme pack 4", () => {
+  const byId = (id: string) => THEMES.find((t) => t.id === id)!;
+  const ids = [
+    "mission-control",
+    "deep-gravity",
+    "ack-ack",
+    "pocket-monochrome",
+    "rip-and-tear",
+  ];
+  it("registers all five with an inspired-by description", () => {
+    for (const id of ids) {
+      expect(byId(id), id).toBeDefined();
+      expect(byId(id).description).toMatch(/inspired by/i);
+    }
+  });
+  it("Mission Control ships a light variant", () => {
+    expect(byId("mission-control").light).toBeDefined();
+  });
+  it("Pocket Monochrome uses exactly 4 greens and ships a light variant", () => {
+    const t = byId("pocket-monochrome");
+    expect(t.light).toBeDefined();
+    const used = new Set<string>();
+    for (const v of [t, t.light!])
+      for (const c of [
+        v.terminal.fg,
+        v.terminal.bg,
+        v.terminal.cursor,
+        v.terminal.selection,
+        ...v.terminal.ansi,
+        ...Object.values(v.chrome),
+      ])
+        used.add(c.toLowerCase());
+    expect(used.size).toBe(4);
+  });
+});

@@ -1,0 +1,38 @@
+{
+  "name": "Deep Gravity",
+  "description": "Cold steel, hazard red and a sickly green glow. Inspired by Event Horizon.",
+  "appearance": "dark",
+  "pattern": "zebra",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#c4d0d8",
+    "bg": "#0a0f12",
+    "cursor": "#ff3b30",
+    "selection": "#2a3a44",
+    "ansi": [
+      "#6a7c88",
+      "#ff3b30",
+      "#8fd14f",
+      "#e0b020",
+      "#5a8ab0",
+      "#a070a0",
+      "#4fb0a8",
+      "#c4d0d8",
+      "#8aa0ae",
+      "#ff6a5e",
+      "#b0e878",
+      "#f0cc50",
+      "#80b0d4",
+      "#c090c0",
+      "#78d0c8",
+      "#f0f6fa"
+    ]
+  },
+  "chrome": {
+    "bg": "#06090b",
+    "surface": "#121a1f",
+    "fg": "#c4d0d8",
+    "muted": "#7a8c98",
+    "link": "#8fd14f"
+  }
+}
