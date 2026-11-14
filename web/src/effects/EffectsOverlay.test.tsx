@@ -28,5 +28,7 @@ test("draws enabled effects as inert layers", () => {
     />,
   );
   expect(container.querySelectorAll("[data-fx]").length).toBe(2);
-  expect(screen.getByTestId("fx-root").getAttribute("aria-hidden")).toBe("true");
+  expect(screen.getByTestId("fx-root").getAttribute("aria-hidden")).toBe(
+    "true",
+  );
 });
