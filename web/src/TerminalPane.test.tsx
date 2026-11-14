@@ -75,7 +75,7 @@ test("reconnect button opens a new socket", async () => {
   await waitFor(() => expect(h.sockets.length).toBe(before + 1));
   const n = h.sockets.length;
   h.sockets[n - 1].onclose!();
-  expect(await screen.findByText(/disconnected/i)).toBeTruthy();
+  expect(await screen.findByText(/adjusting tracking/i)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: /reconnect/i }));
   expect(h.sockets.length).toBe(n + 1);
 });
