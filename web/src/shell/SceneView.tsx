@@ -39,6 +39,7 @@ export function SceneView({
           onSplit={layout.split}
           onClose={layout.close}
           onRatio={layout.ratio}
+          onSnap={layout.snap}
           renderPane={(id, settled) => (
             <div
               style={{ height: "100%" }}
