@@ -73,6 +73,7 @@ test("output and latency frames reach the pane hooks", async () => {
   act(() => sock.onmessage!({ data: output(65) }));
   act(() => sock.onmessage!({ data: pong(performance.now()) }));
   expect(onOutput).toHaveBeenCalledTimes(1);
+  expect(Array.from(onOutput.mock.calls[0][0])).toEqual([65]);
   expect(onLatency).toHaveBeenCalledTimes(1);
 });
 

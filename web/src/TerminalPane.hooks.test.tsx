@@ -68,3 +68,19 @@ test("re-applies the terminal theme when the theme store changes", async () => {
   expect(h.setTheme).toHaveBeenCalledWith(themeStore.terminal());
   themeStore.reset();
 });
+
+test("a pane theme overrides the page theme and follows prop changes", async () => {
+  themeStore.select("memphis-pop");
+  const { rerender } = render(<TerminalPane theme="night-market" />);
+  await waitFor(() => expect(h.sockets.length).toBeGreaterThan(0));
+  expect(h.setTheme).toHaveBeenLastCalledWith(
+    themeStore.terminal("night-market"),
+  );
+  themeStore.select("black-box");
+  expect(h.setTheme).toHaveBeenLastCalledWith(
+    themeStore.terminal("night-market"),
+  );
+  rerender(<TerminalPane />);
+  expect(h.setTheme).toHaveBeenLastCalledWith(themeStore.terminal());
+  themeStore.reset();
+});

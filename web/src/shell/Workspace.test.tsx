@@ -43,6 +43,8 @@ import { clearCommands } from "../overlays/commands";
 
 beforeEach(() => {
   vi.useFakeTimers();
+  // Pin to midday: the pet engine sleeps at night (22:00-07:00).
+  vi.setSystemTime(new Date(2026, 5, 1, 12));
   localStorage.clear();
 });
 afterEach(() => {
@@ -69,12 +71,12 @@ test("status bar shows live cols×rows and opens palette", () => {
   expect(screen.getByRole("combobox")).toBeTruthy();
 });
 
-test("pet sleeps after 3s idle, wakes on output, click hides", () => {
+test("pet sleeps after 5min idle, wakes on output, click hides", () => {
   render(<Workspace />);
   const pet = () => screen.getByTestId("pet");
   act(() => cb.onOutput?.());
   expect(pet().className).toContain("awake");
-  act(() => void vi.advanceTimersByTime(3600));
+  act(() => void vi.advanceTimersByTime(5 * 60e3 + 1000));
   expect(pet().className).toContain("sleep");
   act(() => cb.onOutput?.());
   act(() => void vi.advanceTimersByTime(600));

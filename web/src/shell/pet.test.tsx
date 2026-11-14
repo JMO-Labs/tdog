@@ -1,6 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 import { Pet } from "./pet";
+import { themeStore } from "../theme/store";
+import { setPref } from "../settings/prefs";
+import { PetEngine } from "./petEngine";
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -124,4 +127,41 @@ test("no interval under reduced motion; caption tracks awake state", () => {
   setup(false);
   fireEvent.click(screen.getByTestId("pet"));
   expect(screen.getByTestId("pet-cap").textContent).toMatch(/asleep/);
+});
+
+test("engine drives meters, pip, buttons and dim night LCD", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(2026, 5, 1, 23));
+  localStorage.clear();
+  const engine = new PetEngine();
+  render(<Pet awake={false} onHide={vi.fn()} engine={engine} />);
+  fireEvent.click(screen.getByTestId("pet"));
+  expect(screen.getByRole("img", { name: /night/ }).className).toContain("dim");
+  expect(
+    screen.getByRole("meter", { name: "Full" }).getAttribute("aria-valuenow"),
+  ).toBe("3");
+  fireEvent.click(screen.getByRole("button", { name: "Feed" }));
+  expect(engine.view().hunger).toBe(4);
+  expect(screen.getByTestId("pet-cap").textContent).toBe("Dogbert is eating.");
+  vi.useRealTimers();
+});
+
+test("theme change shows the costume caption once; off by default when pref is off", () => {
+  vi.useFakeTimers();
+  localStorage.clear();
+  themeStore.select("memphis-pop");
+  setup(false);
+  fireEvent.click(screen.getByTestId("pet"));
+  act(() => themeStore.select("isla-nublar"));
+  expect(screen.getByTestId("pet-cap").textContent).toBe(
+    "Dogbert put on a safari hat.",
+  );
+  act(() => void vi.advanceTimersByTime(5000));
+  expect(screen.getByTestId("pet-cap").textContent).toMatch(/asleep/);
+  setPref("dress", false);
+  act(() => themeStore.select("memphis-pop"));
+  act(() => themeStore.select("isla-nublar"));
+  expect(screen.getByTestId("pet-cap").textContent).toMatch(/asleep/);
+  setPref("dress", true);
+  vi.useRealTimers();
 });
