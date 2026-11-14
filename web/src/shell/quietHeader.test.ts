@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
 import { expect, test } from "vitest";
+import css from "./shell.css?raw";
 
-const css = readFileSync(new URL("./shell.css", import.meta.url), "utf8");
 const rule = (sel: string) => {
   const esc = sel.replace(/[.[\]"=()]/g, "\\$&");
   const m = css.match(new RegExp(`(?:^|\\n)${esc}\\s*\\{([^}]*)\\}`));
