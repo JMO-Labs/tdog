@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { json, mockFetch } from "../auth/testutil";
 
@@ -16,6 +17,25 @@ vi.mock("../TerminalPane", () => ({
     if (p.reconnectRef) p.reconnectRef.current = reconnect;
     return <div data-testid="terminal-pane" />;
   },
+}));
+
+// Fake timers freeze motion's exit animation; use a synchronous Sheet stand-in.
+vi.mock("../overlays/Sheet", () => ({
+  Sheet: (p: {
+    open: boolean;
+    title: string;
+    onClose: () => void;
+    children: ReactNode;
+  }) =>
+    p.open ? (
+      <div
+        role="dialog"
+        aria-label={p.title}
+        onKeyDown={(e) => e.key === "Escape" && p.onClose()}
+      >
+        {p.children}
+      </div>
+    ) : null,
 }));
 
 import { Workspace } from "./Workspace";
@@ -83,7 +103,9 @@ test("palette commands: theme, settings, sign out", async () => {
   open();
   fireEvent.click(screen.getByText("Open Settings"));
   expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
-  fireEvent.keyDown(document, { key: "Escape" });
+  fireEvent.keyDown(screen.getByRole("dialog", { name: "Settings" }), {
+    key: "Escape",
+  });
   open();
   await act(async () => {
     fireEvent.click(screen.getByText("Sign out"));
@@ -112,8 +134,17 @@ test("⌘, opens settings; hiding the pet persists", () => {
   expect(screen.queryByTestId("pet")).toBeNull();
 });
 
+test("Settings button opens the sheet; Escape closes it", () => {
+  render(<Workspace />);
+  expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+  const sheet = screen.getByRole("dialog", { name: "Settings" });
+  fireEvent.keyDown(sheet, { key: "Escape" });
+  expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+});
+
 test("latency chip shows ms, and a dial-up icon above 150 ms", () => {
-  render(<Workspace onSignedOut={() => {}} />);
+  render(<Workspace />);
   expect(screen.queryByTestId("latency")).toBeNull();
   act(() => cb.onLatency!(12));
   const chip = screen.getByTestId("latency");
