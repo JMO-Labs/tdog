@@ -1,6 +1,6 @@
 # ADR-0001: Terminal renderer
 
-Status: proposed · 2026-11-13
+Status: accepted · 2026-11-14 (xterm.js default; restty experimental)
 
 ## Context
 "Feels local" depends mostly on renderer: font shaping, ligatures, Nerd Fonts, input edge cases
@@ -20,3 +20,8 @@ ghostty-web (no releases), wterm (experimental DOM renderer).
 
 ## Consequences
 Small adapter cost; swap stays cheap as restty/ghostty-web mature.
+
+## Outcome (2026-11-14)
+Owner accepted xterm.js as the default without running the full spike; restty stays selectable
+with `?renderer=restty` and the `/bench` harness stays (`docs/spikes/renderer.md`).
+Re-run the comparison as part of v0.6 ("feels local"), or earlier if typing lag shows up.
