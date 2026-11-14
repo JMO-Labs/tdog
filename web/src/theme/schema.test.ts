@@ -312,3 +312,82 @@ describe("90s theme pack 4", () => {
     expect(used.size).toBe(4);
   });
 });
+
+describe("theme schema error branches", () => {
+  const bad = (mutate: (t: any) => void) => {
+    const t = ok();
+    mutate(t);
+    return validateTheme(t).ok;
+  };
+  const motif = {
+    viewBox: [0, 0, 20, 20],
+    tile: [20, 20],
+    shapes: [],
+  };
+  it("rejects malformed motif geometry", () => {
+    expect(bad((t) => (t.chrome.motif = { ...motif, viewBox: [0, 0, 20] }))).toBe(
+      false,
+    );
+    expect(
+      bad((t) => (t.chrome.motif = { ...motif, viewBox: [0, 0, 0, 20] })),
+    ).toBe(false);
+    expect(bad((t) => (t.chrome.motif = { ...motif, tile: [0, 20] }))).toBe(
+      false,
+    );
+    expect(
+      bad((t) => (t.chrome.motif = { ...motif, shapes: "nope" })),
+    ).toBe(false);
+    expect(
+      bad(
+        (t) =>
+          (t.chrome.motif = {
+            ...motif,
+            shapes: Array.from({ length: 65 }, () => ({
+              type: "circle",
+              cx: 1,
+              cy: 1,
+              r: 1,
+            })),
+          }),
+      ),
+    ).toBe(false);
+  });
+  it("rejects malformed cursor and effects lists", () => {
+    expect(bad((t) => (t.terminal.cursor = "block"))).toBe(false);
+    expect(bad((t) => (t.terminal.cursor.extra = 1))).toBe(false);
+    expect(bad((t) => (t.terminal.effects = "none"))).toBe(false);
+    expect(
+      bad(
+        (t) =>
+          (t.terminal.effects = Array.from({ length: 9 }, () => ({
+            id: "scanlines",
+            intensity: 0.5,
+          }))),
+      ),
+    ).toBe(false);
+  });
+  it("rejects malformed light variants", () => {
+    const light = (over: object) => {
+      const t = ok();
+      return {
+        ...t,
+        light: {
+          terminal: { palette: t.terminal.palette },
+          chrome: { tokens: {} },
+          ...over,
+        },
+      };
+    };
+    expect(validateTheme(light({})).ok).toBe(true);
+    expect(validateTheme(light({ extra: 1 })).ok).toBe(false);
+    expect(validateTheme({ ...ok(), light: "x" }).ok).toBe(false);
+    expect(validateTheme(light({ terminal: { palette: {}, x: 1 } })).ok).toBe(
+      false,
+    );
+    expect(validateTheme(light({ terminal: null })).ok).toBe(false);
+    expect(validateTheme(light({ chrome: { tokens: {}, x: 1 } })).ok).toBe(
+      false,
+    );
+    expect(validateTheme(light({ chrome: null })).ok).toBe(false);
+  });
+});
