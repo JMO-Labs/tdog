@@ -20,6 +20,7 @@ const P = {
     '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 12h18"/>',
   layout:
     '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 4v16M10 12h11"/>',
+  more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
 };
 export type IconName = keyof typeof P;

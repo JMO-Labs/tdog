@@ -3,7 +3,9 @@ package server
 
 import (
 	"io/fs"
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/JMO-Labs/tdog/internal/auth"
 	"github.com/JMO-Labs/tdog/internal/config"
@@ -36,7 +38,17 @@ func NewSecuredPresets(ui fs.FS, a *auth.Auth, store *config.Store) http.Handler
 	mux := http.NewServeMux()
 	a.Register(mux)
 	reg := term.NewRegistry(a.Audit(), 0)
-	mux.Handle("GET /ws/term", term.NewHandler(term.Config{SSH: term.SSHConfigFromEnv(), Audit: a.Audit(), Registry: reg}))
+	sshCfg := term.SSHConfigFromEnv()
+	if _, err := os.Stat(sshCfg.KeyPath); err == nil { // reattach persistent tmux sessions
+		go func() {
+			if n, err := reg.RediscoverSSH(sshCfg); err != nil {
+				log.Printf("term: tmux rediscovery: %v", err)
+			} else if n > 0 {
+				log.Printf("term: reattached %d tmux session(s)", n)
+			}
+		}()
+	}
+	mux.Handle("GET /ws/term", term.NewHandler(term.Config{SSH: sshCfg, Audit: a.Audit(), Registry: reg}))
 	mux.Handle("GET /api/sessions", reg.ListHandler())
 	reg.RegisterKill(mux)
 	if store != nil {

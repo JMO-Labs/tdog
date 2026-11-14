@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TerminalSession, type SessionState } from "./terminal/session";
-import type { TerminalRenderer } from "./terminal/renderer";
+import type { TerminalRenderer, TerminalTheme } from "./terminal/renderer";
 import { themeStore } from "./theme/store";
 import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
+import { useMotifOpacity } from "./settings/prefs";
 import { findSessionId } from "./terminal/sessions";
 
 /** Retry cadence while a dropped socket is being re-established. */
@@ -18,6 +19,11 @@ async function createRenderer(el: HTMLElement): Promise<TerminalRenderer> {
   }
   const { XtermRenderer } = await import("./terminal/xtermRenderer");
   return new XtermRenderer(el);
+}
+
+/** Clear the background when a motif is painted behind the text. */
+function terminalPaint(t: TerminalTheme, motif: boolean): TerminalTheme {
+  return motif ? { ...t, background: "rgba(0,0,0,0)" } : t;
 }
 
 function wsUrl(scene?: string, id?: string): string {
@@ -84,10 +90,22 @@ export function TerminalPane({
   const hooks = useRef({ onSize, onOutput, onLatency });
   hooks.current = { onSize, onOutput, onLatency };
 
+  const [motifPct] = useMotifOpacity();
+  const motifUrl = motifPct > 0 ? themeStore.terminalMotif(theme) : null;
+  const motifOn = motifUrl !== null;
+  const motifOnRef = useRef(motifOn);
+  motifOnRef.current = motifOn;
+  /** Renderer colours; transparent background while a motif shows through. */
+  const paintTheme = useCallback(
+    () =>
+      terminalPaint(themeStore.terminal(themeRef.current), motifOnRef.current),
+    [],
+  );
+
   const dropped = state.status === "closed" && state.exitCode === undefined;
   useEffect(() => {
-    renderer.current?.setTheme(themeStore.terminal(theme));
-  }, [theme]);
+    renderer.current?.setTheme(paintTheme());
+  }, [theme, motifOn, paintTheme]);
   useEffect(() => {
     if (!dropped) return;
     const id = setTimeout(connect, RETRY_MS);
@@ -134,10 +152,8 @@ export function TerminalPane({
       );
       session.current = s;
       renderer.current = r;
-      r.setTheme(themeStore.terminal(themeRef.current));
-      const offTheme = themeStore.subscribe(() =>
-        r.setTheme(themeStore.terminal(themeRef.current)),
-      );
+      r.setTheme(paintTheme());
+      const offTheme = themeStore.subscribe(() => r.setTheme(paintTheme()));
       connect();
       const ro = new ResizeObserver(() => {
         if (settledRef.current) r.resize();
@@ -154,14 +170,28 @@ export function TerminalPane({
       cancelled = true;
       cleanup();
     };
-  }, [connect]);
+  }, [connect, paintTheme]);
 
+  const bg = themeStore.terminal(theme).background;
   return (
     <div
       data-testid="terminal-pane"
-      style={{ position: "relative", height: "100%" }}
+      style={{ position: "relative", height: "100%", background: bg }}
     >
-      <div ref={host} style={{ height: "100%" }} />
+      {motifUrl && (
+        <div
+          data-testid="terminal-motif"
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            backgroundImage: motifUrl,
+            opacity: motifPct / 100,
+          }}
+        />
+      )}
+      <div ref={host} style={{ position: "relative", height: "100%" }} />
       <ConnectionGag phase={phase} onReconnect={connect} />
       {state.status === "closed" && state.exitCode !== undefined && (
         <div
