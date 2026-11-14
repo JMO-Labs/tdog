@@ -3,7 +3,7 @@ import { confetti } from "./confetti";
 
 function fakeCanvas() {
   const ctx = new Proxy({} as Record<string, unknown>, {
-    get: (t, k) => (k in t ? t[k as string] : vi.fn()),
+    get: (t, k) => (t[k as string] ??= vi.fn()),
     set: (t, k, v) => ((t[k as string] = v), true),
   });
   return {
