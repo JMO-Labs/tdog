@@ -46,6 +46,9 @@ const fire = (
   pos: { clientX?: number; clientY?: number } = {},
 ) => {
   const e = createEvent[type](el, { dataTransfer: data, ...pos });
+  // jsdom has no DragEvent, so init coords are dropped: set them explicitly.
+  for (const [k, v] of Object.entries(pos))
+    Object.defineProperty(e, k, { value: v });
   fireEvent(el, e);
 };
 const order = () =>

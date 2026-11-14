@@ -76,7 +76,10 @@ function Pane({ id }: { id: string }) {
   const [zone, setZone] = useState<Zone | null>(null);
   const over = (e: DragEvent<HTMLElement>) => {
     const d = draggedPane();
-    if (!d || !p.onMove) return;
+    if (!d || !p.onMove) {
+      setZone(null);
+      return;
+    }
     e.preventDefault();
     setZone(
       d === id
