@@ -1,13 +1,12 @@
 package config
 
-import "fmt"
-
 // Hook is a command list: a bare string, or { mode, run }.
 type Hook struct {
 	Mode string   `toml:"mode,omitempty"`
 	Run  []string `toml:"run,omitempty"`
 
-	bad string // decode problem, reported by validation with the field path
+	bad   string // decode problem, reported by validation with the field path
+	badAt string // sub-key the problem is at ("" = the hook itself)
 }
 
 // UnmarshalTOML accepts the string shorthand and the table form.
@@ -21,23 +20,23 @@ func (h *Hook) UnmarshalTOML(data any) error {
 			case "mode":
 				s, ok := val.(string)
 				if !ok {
-					h.bad = "mode must be a string"
+					h.bad, h.badAt = "must be a string", "mode"
 				}
 				h.Mode = s
 			case "run":
 				l, ok := val.([]any)
 				if !ok {
-					h.bad = "run must be a list of strings"
+					h.bad, h.badAt = "must be a list of strings", "run"
 				}
 				for _, e := range l {
 					s, ok := e.(string)
 					if !ok {
-						h.bad = "run must be a list of strings"
+						h.bad, h.badAt = "must be a list of strings", "run"
 					}
 					h.Run = append(h.Run, s)
 				}
 			default:
-				h.bad = fmt.Sprintf("unknown key %q", k)
+				h.bad, h.badAt = "unknown key", k
 			}
 		}
 		if h.Mode == "" {
@@ -54,6 +53,9 @@ func (h *Hook) validate(path string) *ValidationError {
 		return nil
 	}
 	if h.bad != "" {
+		if h.badAt != "" {
+			path += "." + h.badAt
+		}
 		return verr(path, "%s", h.bad)
 	}
 	if h.Mode != "all" && h.Mode != "stop_on_fail" {
