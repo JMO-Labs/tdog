@@ -18,6 +18,16 @@ var (
 	kindDir = map[string]string{KindTerminal: "terminals", KindScene: "scenes"}
 )
 
+// tmpFile is the slice of *os.File that Put uses; a seam for failure tests.
+type tmpFile interface {
+	Write([]byte) (int, error)
+	Sync() error
+	Close() error
+	Name() string
+}
+
+var createTemp = func(dir, pattern string) (tmpFile, error) { return os.CreateTemp(dir, pattern) }
+
 func validName(n string) bool { return slug.MatchString(n) }
 
 // Store keeps config.toml and presets/{terminals,scenes}/*.toml under dir.
@@ -101,7 +111,7 @@ func (s *Store) Put(kind, name string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
 		return err
 	}
-	f, err := os.CreateTemp(filepath.Dir(p), ".tmp-*")
+	f, err := createTemp(filepath.Dir(p), ".tmp-*")
 	if err != nil {
 		return err
 	}

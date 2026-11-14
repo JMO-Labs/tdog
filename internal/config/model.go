@@ -29,14 +29,14 @@ func verr(path, format string, a ...any) *ValidationError {
 type Font struct {
 	Family    string `toml:"family,omitempty" json:"family,omitempty"`
 	Size      int    `toml:"size,omitempty" json:"size,omitempty"`
-	Ligatures bool   `toml:"ligatures,omitempty" json:"ligatures,omitempty"`
+	Ligatures *bool  `toml:"ligatures,omitempty" json:"ligatures,omitempty"`
 }
 
 type Background struct {
-	Kind    string  `toml:"kind,omitempty" json:"kind,omitempty"`
-	Ref     string  `toml:"ref,omitempty" json:"ref,omitempty"`
-	Opacity float64 `toml:"opacity,omitempty" json:"opacity,omitempty"`
-	Blur    int     `toml:"blur,omitempty" json:"blur,omitempty"`
+	Kind    string   `toml:"kind,omitempty" json:"kind,omitempty"`
+	Ref     string   `toml:"ref,omitempty" json:"ref,omitempty"`
+	Opacity *float64 `toml:"opacity,omitempty" json:"opacity,omitempty"`
+	Blur    *int     `toml:"blur,omitempty" json:"blur,omitempty"`
 }
 
 // Terminal is a terminal preset.
@@ -45,7 +45,7 @@ type Terminal struct {
 	Target     string            `toml:"target,omitempty"`
 	Cwd        string            `toml:"cwd,omitempty"`
 	Env        map[string]string `toml:"env,omitempty"`
-	Persistent bool              `toml:"persistent,omitempty"`
+	Persistent *bool             `toml:"persistent,omitempty"`
 	PreExec    *Hook             `toml:"pre_exec,omitempty"`
 	Command    string            `toml:"command,omitempty"`
 	PostExec   *Hook             `toml:"post_exec,omitempty"`
