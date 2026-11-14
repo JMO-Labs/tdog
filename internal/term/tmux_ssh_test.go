@@ -114,8 +114,7 @@ func TestHandlerPersistentSSHUsesTmux(t *testing.T) {
 	cfg, d, _ := sshSetup(t)
 	testReg = NewRegistry(nil, 0)
 	t.Cleanup(testReg.KillAll)
-	c, ctx := dialHandlerQuery(t, Config{SSH: cfg, Registry: testReg}, "?target=ssh-host&persistent=1")
-	_ = ctx
+	_, _ = dialHandlerQuery(t, Config{SSH: cfg, Registry: testReg}, "?target=ssh-host&persistent=1")
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
 		if l := d.execLog(); len(l) > 0 {
