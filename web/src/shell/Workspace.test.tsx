@@ -98,3 +98,14 @@ test("empty state offers a visible Reconnect action", () => {
   fireEvent.click(screen.getByRole("button", { name: "Reconnect" }));
   expect(reconnect).toHaveBeenCalledTimes(1);
 });
+
+test("⌘, opens settings; hiding the pet persists", () => {
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("x")));
+  render(<Workspace onSignedOut={() => {}} />);
+  fireEvent.keyDown(document, { key: ",", metaKey: true });
+  expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
+  fireEvent.keyDown(document, { key: "Escape" });
+  fireEvent.click(screen.getByTestId("pet"));
+  expect(localStorage.getItem("tdog.pet")).toBe("0");
+  expect(screen.queryByTestId("pet")).toBeNull();
+});

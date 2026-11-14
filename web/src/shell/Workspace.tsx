@@ -5,6 +5,8 @@ import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
 import { Sheet } from "../overlays/Sheet";
 import { registerCommand } from "../overlays/commands";
+import { SettingsPanel } from "../settings/SettingsPanel";
+import { usePref } from "../settings/prefs";
 import { useThemeMode } from "../theme/useThemeMode";
 import { Icon } from "./icons";
 import { Mascot } from "./Mascot";
@@ -26,7 +28,7 @@ export function Workspace({
   const [open, setOpen] = useState(false);
   const [everOpen, setEverOpen] = useState(false);
   const [stamp, setStamp] = useState(0);
-  const [petShown, setPetShown] = useState(true);
+  const [petShown, setPetShown] = usePref("pet");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
   const reconnectRef = useRef<(() => void) | null>(null);
@@ -49,6 +51,17 @@ export function Workspace({
       onSignedOut();
     }
   }, [onSignedOut]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault();
+        setSettings(true);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     const offs = [
@@ -171,7 +184,7 @@ export function Workspace({
         title="Settings"
         onClose={() => setSettings(false)}
       >
-        <p className="muted">More settings are on the way.</p>
+        <SettingsPanel onSignedOut={onSignedOut} />
       </Sheet>
     </div>
   );

@@ -2,6 +2,8 @@ import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Workspace } from "./shell/Workspace";
 import { getStatus, setUnauthorizedHandler } from "./auth/api";
 import { LoginScreen, SetupScreen } from "./auth/screens";
+import { ToastProvider } from "./overlays/toast";
+import { usePref } from "./settings/prefs";
 import { isBenchRoute, isKitRoute } from "./routes";
 
 // Dead-code eliminated from production builds (import.meta.env.DEV is false).
@@ -35,6 +37,7 @@ export function App() {
 
 function AuthApp() {
   const [view, setView] = useState<View>("loading");
+  const [serious] = usePref("serious");
 
   const check = useCallback(async () => {
     try {
@@ -79,5 +82,9 @@ function AuthApp() {
         onNeedSetup={() => setView("setup")}
       />
     );
-  return <Workspace onSignedOut={() => setView("login")} onClosed={onClosed} />;
+  return (
+    <ToastProvider serious={serious}>
+      <Workspace onSignedOut={() => setView("login")} onClosed={onClosed} />
+    </ToastProvider>
+  );
 }
