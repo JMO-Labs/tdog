@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
@@ -47,8 +53,10 @@ import { TerminalPane } from "./TerminalPane";
 
 const output = (...b: number[]) => new Uint8Array([0x00, ...b]).buffer;
 const pong = (t: number) =>
-  new Uint8Array([0x03, ...new TextEncoder().encode(`{"type":"pong","t":${t}}`)])
-    .buffer;
+  new Uint8Array([
+    0x03,
+    ...new TextEncoder().encode(`{"type":"pong","t":${t}}`),
+  ]).buffer;
 
 async function mount(props: Parameters<typeof TerminalPane>[0] = {}) {
   const n = h.sockets.length;
