@@ -58,9 +58,10 @@ func (s *Session) pump() {
 		s.att = nil
 	}
 	s.mu.Unlock()
-	s.reg.remove(s.id)
 	s.s.close()
+	// Log before removal: once the session is gone from the registry, its end is on record.
 	s.reg.audit.Log(audit.Entry{Event: "term_end", Target: s.target, PID: s.s.pid, Session: s.id})
+	s.reg.remove(s.id)
 }
 
 // feed records b and forwards it to the attached socket. A client too slow to
@@ -121,8 +122,9 @@ func (s *Session) serve(c *websocket.Conn) {
 		return
 	}
 	s.auditEvent("attach")
-	defer s.auditEvent("detach")
+	// LIFO: "detach" is logged before the attachment clears (see detach).
 	defer s.detach(a)
+	defer s.auditEvent("detach")
 	// Socket I/O must not use a.ctx: cancelling a context mid-Read/Write makes
 	// coder/websocket tear the connection down, so the close reason (e.g.
 	// "replaced") would never reach the client. a.ctx only stops the output loop.
