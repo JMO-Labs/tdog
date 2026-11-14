@@ -1,12 +1,28 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { expect, test, vi } from "vitest";
-import { SplitView } from "./SplitView";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, expect, test, vi } from "vitest";
 import { splitLeaf, type Node } from "./tree";
+
+// Real dockview; only capture each split's relayout callback to drive it.
+const relayout: Record<string, (r: number) => void> = {};
+vi.mock("./dock", async (orig) => {
+  const m = await orig<typeof import("./dock")>();
+  return {
+    ...m,
+    mountSplit: (...a: Parameters<typeof m.mountSplit>) => {
+      relayout[a[1] + a[2]] = a[3];
+      m.mountSplit(...a);
+    },
+  };
+});
+
+import { SETTLE_MS, SplitView } from "./SplitView";
+
+afterEach(() => vi.useRealTimers());
 
 const one: Node = { t: "leaf", id: "a" };
 const two = splitLeaf(one, "a", "row", "b", "s1");
 
-function setup(tree: Node, over = {}) {
+function setup(tree: Node) {
   const p = {
     onSplit: vi.fn(),
     onClose: vi.fn(),
@@ -14,14 +30,13 @@ function setup(tree: Node, over = {}) {
     renderPane: (id: string, settled: boolean) => (
       <div data-testid={`pane-${id}`} data-settled={settled} />
     ),
-    ...over,
   };
-  render(<SplitView tree={tree} {...p} />);
-  return p;
+  const r = render(<SplitView tree={tree} {...p} />);
+  return { p, r };
 }
 
 test("each leaf renders a pane with split and close buttons", () => {
-  const p = setup(two);
+  const { p } = setup(two);
   expect(screen.getAllByRole("button", { name: "Split right" })).toHaveLength(
     2,
   );
@@ -33,27 +48,28 @@ test("each leaf renders a pane with split and close buttons", () => {
   expect(p.onClose).toHaveBeenCalledWith("a");
 });
 
-test("dragging the divider resizes and panes are unsettled until release", () => {
-  const p = setup(two);
-  const split = screen.getByTestId("split-s1");
-  split.getBoundingClientRect = () =>
-    ({ left: 0, top: 0, width: 1000, height: 500 }) as DOMRect;
-  const div = screen.getByRole("separator");
-  fireEvent.pointerDown(div, { clientX: 500, clientY: 0, pointerId: 1 });
-  expect(screen.getByTestId("pane-a").dataset.settled).toBe("false");
-  fireEvent.pointerMove(div, { clientX: 250, clientY: 0, pointerId: 1 });
-  expect(p.onRatio).toHaveBeenLastCalledWith("s1", 0.25);
-  fireEvent.pointerUp(div, { pointerId: 1 });
-  expect(screen.getByTestId("pane-a").dataset.settled).toBe("true");
+test("nested splits render inside dockview splitviews in order", () => {
+  const three = splitLeaf(two, "b", "col", "c", "s2");
+  const { r } = setup(three);
+  const ids = screen.getAllByTestId(/^pane-/).map((e) => e.dataset.testid);
+  expect(ids).toEqual(["pane-a", "pane-b", "pane-c"]);
+  const outer = screen.getByTestId("split-s1");
+  expect(outer.querySelector(".dv-split-view-container")).toBeTruthy();
+  expect(outer.querySelector("[data-testid=split-s2]")).toBeTruthy();
+  const views = r.container.querySelectorAll(".dv-split-view-container");
+  expect(views).toHaveLength(2);
 });
 
-test("column split drags vertically", () => {
-  const col = splitLeaf(one, "a", "col", "b", "s2");
-  const p = setup(col);
-  screen.getByTestId("split-s2").getBoundingClientRect = () =>
-    ({ left: 0, top: 100, width: 1000, height: 400 }) as DOMRect;
-  const div = screen.getByRole("separator");
-  fireEvent.pointerDown(div, { clientX: 0, clientY: 300, pointerId: 1 });
-  fireEvent.pointerMove(div, { clientX: 0, clientY: 200, pointerId: 1 });
-  expect(p.onRatio).toHaveBeenLastCalledWith("s2", 0.25);
+test("a sash relayout reports the ratio; panes settle after it stops", () => {
+  const { p } = setup(two);
+  vi.useFakeTimers();
+  act(() => relayout["row0.5"](0.25));
+  expect(p.onRatio).toHaveBeenLastCalledWith("s1", 0.25);
+  expect(screen.getByTestId("pane-a").dataset.settled).toBe("false");
+  act(() => vi.advanceTimersByTime(SETTLE_MS - 1));
+  act(() => relayout["row0.5"](0.3));
+  act(() => vi.advanceTimersByTime(SETTLE_MS - 1));
+  expect(screen.getByTestId("pane-b").dataset.settled).toBe("false");
+  act(() => vi.advanceTimersByTime(1));
+  expect(screen.getByTestId("pane-b").dataset.settled).toBe("true");
 });

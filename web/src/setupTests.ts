@@ -9,5 +9,12 @@ Object.assign(timing, { step: 0, reducedStep: 0, hold: 0, nono: 0 });
 // Motion animations finish instantly in jsdom; exit animations otherwise never resolve.
 MotionGlobalConfig.skipAnimations = true;
 
+// jsdom has no ResizeObserver; dockview's splitview needs one. Tests may stub their own.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 // Vitest globals are off, so RTL does not auto-register cleanup.
 afterEach(() => cleanup());

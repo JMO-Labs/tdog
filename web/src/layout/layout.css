@@ -1,6 +1,5 @@
 .split-root,
 .split,
-.split-cell,
 .pane {
   min-width: 0;
   min-height: 0;
@@ -9,48 +8,23 @@
   position: absolute;
   inset: 0;
   display: flex;
+  /* dockview sashes and view separators */
+  --dv-sash-color: transparent;
+  --dv-active-sash-color: var(--accent, #6cf);
+  --dv-separator-border: var(--border, #0006);
 }
 .split-root > .pane,
 .split-root > .split {
   flex: 1;
 }
 .split {
-  display: flex;
-}
-.split.row {
-  flex-direction: row;
-}
-.split.col {
-  flex-direction: column;
-}
-.split-cell {
-  display: flex;
-  overflow: hidden;
-}
-.split-cell > * {
-  flex: 1;
-}
-.divider {
-  flex: none;
-  background: var(--border, #0006);
-  touch-action: none;
-  z-index: 1;
-}
-.split.row > .divider {
-  width: 5px;
-  cursor: col-resize;
-}
-.split.col > .divider {
-  height: 5px;
-  cursor: row-resize;
-}
-.divider:hover,
-.divider[data-drag] {
-  background: var(--accent, #6cf);
+  width: 100%;
+  height: 100%;
 }
 .pane {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 .pane-head {
   display: flex;
