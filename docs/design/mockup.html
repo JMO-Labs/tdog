@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=JetBrains+Mono:wght@400;600;800&display=swap">
 <link rel="stylesheet" href="mockup.css">
 <link rel="stylesheet" href="mockup-studio.css">
+<link rel="stylesheet" href="mockup-pet.css">
 
 <!-- ============ AUTH (boot / setup / totp) ============ -->
 <section id="auth" class="auth pat-bg" hidden>
@@ -110,7 +111,7 @@
     <span class="chip num">132×40</span>
     <span class="chip num" id="latency"><span data-icon="bolt"></span><b>3 ms</b></span>
     <div class="spacer"></div>
-    <button class="pet" id="pet" data-tip="Dogbert is asleep. Click to hide" aria-label="Pet"></button>
+    <button class="pet-egg" id="pet" data-tip="Dogbert" aria-label="Open Dogbert" aria-haspopup="dialog" aria-expanded="false"><canvas width="28" height="26"></canvas><span class="pet-pip" hidden></span></button>
     <button class="chip kbd-chip" id="open-cmdk" data-tip="Command palette" aria-label="Command palette"><kbd>⌘K</kbd></button>
   </footer>
 </section>
@@ -240,6 +241,30 @@
   </div>
 </div>
 
+<!-- Dogbert pocket pet -->
+<div id="pet-pop" class="pet-pop" role="dialog" aria-label="Dogbert" hidden>
+  <div class="pet-card">
+    <div class="egg">
+      <span class="egg-ring" aria-hidden="true"></span>
+      <div class="egg-face">
+        <p class="egg-brand" aria-hidden="true">dogbert</p>
+        <div class="lcd-wrap"><canvas class="lcd" id="pet-lcd" width="128" height="96" role="img" aria-label="Dogbert"></canvas></div>
+        <div class="egg-stats">
+          <span>Full</span><span class="pips" id="pet-full" style="--n:3" role="meter" aria-label="Full" aria-valuemin="0" aria-valuemax="4"></span>
+          <span>Happy</span><span class="pips" id="pet-happy" style="--n:3" role="meter" aria-label="Happy" aria-valuemin="0" aria-valuemax="4"></span>
+        </div>
+      </div>
+      <div class="egg-btns">
+        <button data-pet="feed" data-tip="Feed" aria-label="Feed"><span>A</span></button>
+        <button data-pet="play" data-tip="Play fetch" aria-label="Play fetch"><span>B</span></button>
+        <button data-pet="clean" data-tip="Clean up" aria-label="Clean up"><span>C</span></button>
+      </div>
+    </div>
+    <p class="pet-cap" id="pet-cap" aria-live="polite"></p>
+    <button class="btn sm ghost" id="pet-hide">Hide pet</button>
+  </div>
+</div>
+
 <div id="saver" class="saver" hidden></div>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="tip" class="tip" role="tooltip" hidden></div>
@@ -255,8 +280,12 @@
     <button data-gag="drop">Drop connection</button><button data-gag="lag">Lag spike</button>
     <button data-gag="bg">Background job done</button><button data-gag="fail">Shell crashed</button>
     <button data-gag="saver">Screensaver</button><button data-gag="boot">Replay boot</button>
+    <b>Dogbert</b>
+    <button data-gag="petBell">Bell / error</button><button data-gag="petPass">Tests passed</button>
+    <button data-gag="petNight">Toggle night</button><button data-gag="petHungry">Neglect him</button>
   </div>
 </details>
 
 <script src="mockup.js"></script>
 <script src="mockup-studio.js"></script>
+<script src="mockup-pet.js"></script>
