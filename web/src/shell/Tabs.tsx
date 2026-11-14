@@ -9,6 +9,7 @@ type Props = {
   onRename: (id: string, name: string) => void;
   onClose: (id: string) => void;
   onReorder: (id: string, to: number) => void;
+  onKill: (id: string) => void;
 };
 
 /** Scene tab strip: sliding pill, inline rename, drag reorder, close, add. */
@@ -18,6 +19,11 @@ export function Tabs(p: Props) {
   const drag = useRef<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [menu, setMenu] = useState<{
+    id: string;
+    x: number;
+    y: number;
+  } | null>(null);
   const names = p.scenes.map((s) => s.name).join("\n");
 
   useLayoutEffect(() => {
@@ -76,6 +82,10 @@ export function Tabs(p: Props) {
                 role="tab"
                 aria-selected={s.id === p.active}
                 onClick={() => p.onSelect(s.id)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setMenu({ id: s.id, x: e.clientX, y: e.clientY });
+                }}
                 onDoubleClick={() => {
                   setDraft(s.name);
                   setEditing(s.id);
@@ -96,6 +106,27 @@ export function Tabs(p: Props) {
           </div>
         ))}
       </nav>
+      {menu && (
+        <div
+          className="tab-menu"
+          role="menu"
+          style={{ left: menu.x, top: menu.y }}
+          onMouseLeave={() => setMenu(null)}
+        >
+          <button
+            role="menuitem"
+            className="btn danger"
+            autoFocus
+            onBlur={() => setMenu(null)}
+            onClick={() => {
+              p.onKill(menu.id);
+              setMenu(null);
+            }}
+          >
+            Kill scene
+          </button>
+        </div>
+      )}
       <button
         className="tab-add"
         aria-label="New scene"

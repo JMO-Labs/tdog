@@ -14,13 +14,14 @@ export async function findSessionId(
   }
 }
 
-/** Hang up the shell behind a pane (best effort). */
-export async function killScene(scene: string): Promise<void> {
+/** Hang up the shell behind a pane (best effort). True if a kill went out. */
+export async function killScene(scene: string): Promise<boolean> {
   const id = await findSessionId(scene);
-  if (!id) return;
+  if (!id) return false;
   try {
     await apiPost(`/api/sessions/${id}/kill`);
+    return true;
   } catch {
-    /* already gone */
+    return false;
   }
 }

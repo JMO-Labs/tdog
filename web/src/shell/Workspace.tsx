@@ -9,6 +9,8 @@ import { THEMES } from "../theme/registry";
 import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
 import { Dialog } from "../overlays/Dialog";
+import { useToast } from "../overlays/toast";
+import { KillDialog } from "./KillDialog";
 import { clearLayout } from "../layout/store";
 import { newId } from "../layout/tree";
 import { killScene } from "../terminal/sessions";
@@ -51,6 +53,8 @@ export function Workspace({
   const [sc, setSc] = useState(loadScenes);
   const [leafMap, setLeafMap] = useState<Record<string, string[]>>({});
   const [closing, setClosing] = useState<string | null>(null);
+  const [kill, setKill] = useState<string | null>(null); // "all" or scene id
+  const toast = useToast();
   useEffect(() => saveScenes(sc), [sc]);
   const onLeaves = useCallback(
     (scene: string, ids: string[]) =>
@@ -79,6 +83,19 @@ export function Workspace({
     const running = (leafMap[id] ?? []).some((p) => paneOpen[p]?.open);
     if (running) setClosing(id);
     else finishClose(id);
+  };
+
+  const killTargets = (scope: string | null) =>
+    (scope === "all"
+      ? Object.values(leafMap).flat()
+      : (leafMap[scope ?? ""] ?? [])
+    ).filter((p) => paneOpen[p]?.open);
+  const runKill = async () => {
+    const targets = killTargets(kill);
+    setKill(null);
+    const done = await Promise.all(targets.map((p) => killScene(p)));
+    const n = done.filter(Boolean).length;
+    toast("success", `Killed ${n} shell${n === 1 ? "" : "s"}.`);
   };
 
   const onSize = useCallback(
@@ -186,6 +203,7 @@ export function Workspace({
           onAdd={add}
           onRename={(id, n) => setSc((s) => renameScene(s, id, n))}
           onClose={requestClose}
+          onKill={setKill}
           onReorder={(id, to) => setSc((s) => reorderScene(s, id, to))}
         />
         <div className="spacer" />
@@ -215,9 +233,7 @@ export function Workspace({
         <IconButton
           label="Kill all shells"
           variant="danger"
-          tip="Available in v0.2"
-          aria-disabled="true"
-          onClick={noop}
+          onClick={() => setKill("all")}
         >
           <Icon name="power" />
         </IconButton>
@@ -298,6 +314,17 @@ export function Workspace({
           </button>
         </div>
       </Dialog>
+      <KillDialog
+        open={kill !== null}
+        count={killTargets(kill).length}
+        scope={
+          kill === "all" || kill === null
+            ? "all"
+            : (sc.scenes.find((x) => x.id === kill)?.name ?? "")
+        }
+        onClose={() => setKill(null)}
+        onConfirm={() => void runKill()}
+      />
       <CommandPalette open={palette} onOpenChange={setPalette} />
       <Sheet
         open={settings}
