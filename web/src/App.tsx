@@ -100,13 +100,5 @@ function AuthApp() {
         onNeedSetup={() => setView("setup")}
       />
     );
-  return (
-    <Workspace
-      onSignedOut={() => {
-        setView("login");
-        toast("info", "Session ended. See you next time.", "Be kind, rewind.");
-      }}
-      onClosed={onClosed}
-    />
-  );
+  return <Workspace onClosed={onClosed} />;
 }

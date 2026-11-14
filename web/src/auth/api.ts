@@ -1,6 +1,7 @@
 export interface Status {
   setup: boolean;
   authenticated: boolean;
+  csrf?: string;
 }
 
 export type AuthResult =
@@ -23,7 +24,9 @@ export type AuthResult =
 export async function getStatus(): Promise<Status> {
   const r = await fetch("/api/status", { credentials: "same-origin" });
   if (!r.ok) throw new Error(`status ${r.status}`);
-  return (await r.json()) as Status;
+  const s = (await r.json()) as Status;
+  if (s.authenticated && s.csrf) csrfToken = s.csrf;
+  return s;
 }
 
 let onUnauthorized: (() => void) | null = null;

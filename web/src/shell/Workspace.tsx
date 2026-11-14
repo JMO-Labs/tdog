@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TerminalPane } from "../TerminalPane";
-import { apiFetch } from "../auth/api";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
 import { Sheet } from "../overlays/Sheet";
@@ -14,13 +13,7 @@ import "./shell.css";
 
 const noop = () => {};
 
-export function Workspace({
-  onSignedOut,
-  onClosed,
-}: {
-  onSignedOut: () => void;
-  onClosed?: () => void;
-}) {
+export function Workspace({ onClosed }: { onClosed?: () => void }) {
   const { mode, cycle } = useThemeMode();
   const [size, setSize] = useState<{ cols: number; rows: number } | null>(null);
   const [open, setOpen] = useState(false);
@@ -42,13 +35,10 @@ export function Workspace({
     if (o) setEverOpen(true);
   }, []);
 
-  const signOut = useCallback(async () => {
-    try {
-      await apiFetch("/api/logout", { method: "POST" });
-    } finally {
-      onSignedOut();
-    }
-  }, [onSignedOut]);
+  // App owns sign-out: it sends the CSRF token and only celebrates on success.
+  const signOut = useCallback(() => {
+    dispatchEvent(new Event("tdog:signout"));
+  }, []);
 
   useEffect(() => {
     const offs = [
@@ -67,7 +57,7 @@ export function Workspace({
       registerCommand({
         id: "signout",
         title: "Sign out",
-        run: () => void signOut(),
+        run: signOut,
       }),
     ];
     return () => offs.forEach((f) => f());

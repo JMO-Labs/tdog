@@ -1,4 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
 vi.mock("./terminal/xtermRenderer", () => ({
@@ -80,4 +86,23 @@ test("?renderer=restty mounts the restty renderer", async () => {
   render(<TerminalPane />);
   await waitFor(() => expect(made).toEqual(["restty"]));
   window.history.pushState({}, "", "/");
+});
+
+test("palette sign out sends the CSRF token (from /api/status) and toasts", async () => {
+  const fetchMock = mockFetch({
+    "GET /api/status": json({ setup: false, authenticated: true, csrf: "tok" }),
+    "POST /api/logout": json({}),
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  render(<App />);
+  await screen.findByTestId("terminal-pane");
+  fireEvent.click(screen.getByRole("button", { name: "Command palette" }));
+  await act(async () => {
+    fireEvent.click(screen.getByText("Sign out"));
+  });
+  const call = fetchMock.mock.calls.find(([u]) => u === "/api/logout")!;
+  expect((call[1]!.headers as Record<string, string>)["X-CSRF-Token"]).toBe(
+    "tok",
+  );
+  expect(await screen.findByText("Be kind, rewind.")).toBeTruthy();
 });
