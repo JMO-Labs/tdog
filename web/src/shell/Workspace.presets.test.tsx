@@ -69,8 +69,9 @@ test("New pane from preset… lists terminal presets and opens a pane with it", 
   mount();
   expect(panes()).toHaveLength(1);
   await runCommand("New pane from preset…");
+  const btn = await screen.findByRole("button", { name: "app-dev" });
   await act(async () => {
-    fireEvent.click(await screen.findByRole("button", { name: "app-dev" }));
+    fireEvent.click(btn);
   });
   await waitFor(() => expect(panes()).toHaveLength(2));
   const map = JSON.parse(localStorage.getItem("tdog.panePresets") ?? "{}");
@@ -84,8 +85,9 @@ test("a rejected preset toasts the server message naming the field", async () =>
     json({ error: "font.size: must be positive" }, 400);
   mount();
   await runCommand("New pane from preset…");
+  const btn = await screen.findByRole("button", { name: "bad" });
   await act(async () => {
-    fireEvent.click(await screen.findByRole("button", { name: "bad" }));
+    fireEvent.click(btn);
   });
   expect(await screen.findByText("font.size: must be positive")).toBeTruthy();
   expect(panes()).toHaveLength(1);
@@ -113,8 +115,9 @@ test("Open scene preset… starts it in a new scene tab", async () => {
     });
   mount();
   await runCommand("Open scene preset…");
+  const btn = await screen.findByRole("button", { name: "dev" });
   await act(async () => {
-    fireEvent.click(await screen.findByRole("button", { name: "dev" }));
+    fireEvent.click(btn);
   });
   const tab = await screen.findByRole("tab", { name: "dev" });
   expect(tab.ariaSelected).toBe("true");
@@ -128,8 +131,9 @@ test("start errors toast the server message", async () => {
     new Response("panes[1]: unknown preset\n", { status: 400 });
   mount();
   await runCommand("Open scene preset…");
+  const btn = await screen.findByRole("button", { name: "dev" });
   await act(async () => {
-    fireEvent.click(await screen.findByRole("button", { name: "dev" }));
+    fireEvent.click(btn);
   });
   expect(await screen.findByText("panes[1]: unknown preset")).toBeTruthy();
   expect(screen.getAllByRole("tab")).toHaveLength(1);
@@ -179,8 +183,9 @@ test("empty-pane state lists terminal presets; picking one opens a pane", async 
   routes["GET /api/presets/resolve?terminal=app-dev"] = () => json({});
   mount();
   expect(screen.getByTestId("empty-panes")).toBeTruthy();
+  const btn = await screen.findByRole("button", { name: "app-dev" });
   await act(async () => {
-    fireEvent.click(await screen.findByRole("button", { name: "app-dev" }));
+    fireEvent.click(btn);
   });
   await waitFor(() => expect(panes()).toHaveLength(1));
   const map = JSON.parse(localStorage.getItem("tdog.panePresets") ?? "{}");
