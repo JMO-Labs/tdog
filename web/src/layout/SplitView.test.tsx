@@ -53,7 +53,7 @@ test("each leaf renders a pane with split and close buttons", () => {
 test("nested splits render inside dockview splitviews in order", () => {
   const three = splitLeaf(two, "b", "col", "c", "s2");
   const { r } = setup(three);
-  const ids = screen.getAllByTestId(/^pane-/).map((e) => e.dataset.testid);
+  const ids = screen.getAllByTestId(/^pane-[a-z]$/).map((e) => e.dataset.testid);
   expect(ids).toEqual(["pane-a", "pane-b", "pane-c"]);
   const outer = screen.getByTestId("split-s1");
   expect(outer.querySelector(".dv-split-view-container")).toBeTruthy();
