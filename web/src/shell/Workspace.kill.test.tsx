@@ -86,3 +86,23 @@ test("early release does not call the API", async () => {
   });
   expect(killScene).not.toHaveBeenCalled();
 });
+
+test("cancel closes the kill dialog without killing", () => {
+  render(<Workspace />);
+  openAll();
+  fireEvent.click(screen.getByRole("button", { name: "Kill all shells" }));
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(screen.queryByRole("button", { name: /hold to nuke/i })).toBeNull();
+  expect(killScene).not.toHaveBeenCalled();
+});
+
+test("scene tab menu closes on mouse leave and on blur", () => {
+  render(<Workspace />);
+  const tab = () => screen.getByRole("tab", { name: "scene 1" });
+  fireEvent.contextMenu(tab());
+  fireEvent.mouseLeave(screen.getByRole("menu"));
+  expect(screen.queryByRole("menu")).toBeNull();
+  fireEvent.contextMenu(tab());
+  fireEvent.blur(screen.getByRole("menuitem", { name: "Kill scene" }));
+  expect(screen.queryByRole("menu")).toBeNull();
+});

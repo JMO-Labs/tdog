@@ -43,3 +43,12 @@ test("killScene does nothing when no session matches", async () => {
   await killScene("none");
   expect(f).toHaveBeenCalledTimes(1);
 });
+
+test("killScene is false when the kill request fails", async () => {
+  const f = vi
+    .fn()
+    .mockResolvedValueOnce(ok(list))
+    .mockRejectedValueOnce(new Error("down"));
+  vi.stubGlobal("fetch", f);
+  expect(await killScene("pa")).toBe(false);
+});
