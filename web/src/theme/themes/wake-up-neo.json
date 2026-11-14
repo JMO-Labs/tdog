@@ -1,0 +1,47 @@
+{
+  "name": "Wake Up Neo",
+  "description": "Phosphor green on black with a dim-green ANSI ramp. Inspired by The Matrix.",
+  "appearance": "dark",
+  "pattern": "none",
+  "terminal": {
+    "fg": "#33ff66",
+    "bg": "#000000",
+    "cursor": "#33ff66",
+    "selection": "#0b4d1f",
+    "ansi": [
+      "#3fae5c",
+      "#4dbb68",
+      "#33d65c",
+      "#5fe37f",
+      "#2fb350",
+      "#47c96b",
+      "#62d98a",
+      "#33ff66",
+      "#5ccb7c",
+      "#6fd88a",
+      "#52f07e",
+      "#7dea9a",
+      "#46d070",
+      "#68e08c",
+      "#86efa6",
+      "#b8ffcc"
+    ]
+  },
+  "chrome": {
+    "bg": "#000000",
+    "surface": "#04120a",
+    "surface-2": "#082010",
+    "fg": "#33ff66",
+    "muted": "#3fae5c",
+    "line": "#000000",
+    "shadow": "#0b4d1f",
+    "link": "#62d98a",
+    "pink": "#6fd88a",
+    "cyan": "#46d070",
+    "yellow": "#7dea9a",
+    "purple": "#47c96b",
+    "term-bg": "#000000",
+    "term-fg": "#33ff66",
+    "term-dim": "#3fae5c"
+  }
+}
