@@ -17,12 +17,15 @@ import "dockview-react/dist/styles/dockview.css";
 import { Icon } from "../shell/icons";
 import { mountSplit, orientation } from "./dock";
 import type { Dir, Node } from "./tree";
+import { SnapPicker } from "./SnapPicker";
+import type { TemplateId } from "./templates";
 import "./layout.css";
 
 export interface SplitViewProps {
   tree: Node;
   onSplit: (id: string, dir: Dir) => void;
   onClose: (id: string) => void;
+  onSnap: (t: TemplateId, confirmed?: boolean) => string[];
   onRatio: (splitId: string, ratio: number) => void;
   /** `settled` is false while a sash drag / resize is still moving. */
   renderPane: (id: string, settled: boolean) => ReactNode;
@@ -65,6 +68,7 @@ function Pane({ id }: { id: string }) {
   return (
     <section className="pane" data-pane={id}>
       <header className="pane-head">
+        <SnapPicker onSnap={p.onSnap} />
         <span className="spacer" />
         <button
           className="pane-btn"

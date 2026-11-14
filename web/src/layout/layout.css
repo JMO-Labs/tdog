@@ -61,3 +61,58 @@
   min-height: 0;
   position: relative;
 }
+.snap-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.snap-pop {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  padding-top: 4px;
+}
+.snap-pop[hidden] {
+  display: none;
+}
+.snap-panel {
+  display: grid;
+  grid-template-columns: repeat(3, 76px);
+  gap: 6px;
+  padding: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border, #0006);
+  border-radius: 8px;
+}
+.snap {
+  all: unset;
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: 6px 4px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.snap:hover,
+.snap:focus-visible {
+  outline: 1px solid var(--accent, #6cf);
+}
+.snap .mini {
+  display: grid;
+  gap: 2px;
+  width: 56px;
+  height: 36px;
+}
+.snap .mini i {
+  background: currentColor;
+  opacity: 0.45;
+  border-radius: 2px;
+}
+.snap-ask {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  width: 232px;
+  font-size: 12px;
+}
