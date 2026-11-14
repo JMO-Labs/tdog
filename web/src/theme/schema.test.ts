@@ -59,6 +59,19 @@ describe("bundled themes", () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids[0]).toBe("memphis-pop");
   });
+  it("bundles the 90s pack 2 themes with an inspired-by line", () => {
+    for (const id of [
+      "wetwired",
+      "sewer-squad",
+      "wake-up-neo",
+      "section-9",
+      "mainframe",
+    ]) {
+      const t = THEMES.find((x) => x.id === id);
+      expect(t, id).toBeDefined();
+      expect(t!.description).toMatch(/inspired by/i);
+    }
+  });
   it("bundles the 90s pack 5", () => {
     const ids = THEMES.map((t) => t.id);
     for (const id of [

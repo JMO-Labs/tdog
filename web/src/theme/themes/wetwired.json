@@ -1,0 +1,47 @@
+{
+  "name": "Wetwired",
+  "description": "Cyber-blue wireframe in a violet haze. Inspired by Johnny Mnemonic.",
+  "appearance": "dark",
+  "pattern": "none",
+  "terminal": {
+    "fg": "#e6eeff",
+    "bg": "#0a0720",
+    "cursor": "#4dc8ff",
+    "selection": "#3a2a8a",
+    "ansi": [
+      "#8a85c8",
+      "#ff6b9d",
+      "#5fe3a1",
+      "#ffd866",
+      "#4da3ff",
+      "#b28cff",
+      "#4dd8ff",
+      "#e6eeff",
+      "#a9a4e0",
+      "#ff94b8",
+      "#8ff0c0",
+      "#ffe699",
+      "#8cc4ff",
+      "#cdb2ff",
+      "#8ce8ff",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#07051a",
+    "surface": "#130d33",
+    "surface-2": "#1d1450",
+    "fg": "#e6eeff",
+    "muted": "#a9a4e0",
+    "line": "#02010a",
+    "shadow": "#7a4dff",
+    "link": "#4dc8ff",
+    "pink": "#ff6b9d",
+    "cyan": "#4dd8ff",
+    "yellow": "#ffd866",
+    "purple": "#b28cff",
+    "term-bg": "#0a0720",
+    "term-fg": "#e6eeff",
+    "term-dim": "#8a85c8"
+  }
+}
