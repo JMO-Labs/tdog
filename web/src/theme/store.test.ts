@@ -11,9 +11,11 @@ beforeEach(() => {
 });
 
 describe("themeStore", () => {
-  it("defaults to memphis-pop and leaves chrome untouched", () => {
+  it("defaults to memphis-pop and leaves colour tokens untouched", () => {
     expect(themeStore.get().id).toBe("memphis-pop");
-    expect(document.documentElement.getAttribute("style") ?? "").toBe("");
+    const s = document.documentElement.style;
+    expect(s.getPropertyValue("--bg")).toBe("");
+    expect(s.getPropertyValue("--pattern")).toBe("");
   });
   it("persists selection and ignores unknown ids", () => {
     const other = THEMES[1] ?? THEMES[0];
