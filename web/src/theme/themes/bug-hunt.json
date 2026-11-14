@@ -1,0 +1,43 @@
+{
+  "name": "Bug Hunt",
+  "description": "Olive drab, propaganda red and khaki. Inspired by Starship Troopers.",
+  "appearance": "dark",
+  "pattern": "zebra",
+  "font": "Courier Prime",
+  "terminal": {
+    "fg": "#e3dcc0",
+    "bg": "#1d2014",
+    "cursor": "#e03a2f",
+    "selection": "#4a5230",
+    "ansi": [
+      "#8f946f",
+      "#ee5a4d",
+      "#a6c46a",
+      "#d9b857",
+      "#8aa6bf",
+      "#c98aa0",
+      "#7fbfa8",
+      "#e3dcc0",
+      "#acb08b",
+      "#ff8479",
+      "#c4de8c",
+      "#ecd283",
+      "#adc3d6",
+      "#e0aabd",
+      "#a3d6c4",
+      "#f6f1dc"
+    ]
+  },
+  "chrome": {
+    "bg": "#14170d",
+    "surface": "#2a2e1c",
+    "surface-2": "#363b24",
+    "fg": "#e3dcc0",
+    "muted": "#a9aa8a",
+    "line": "#080a05",
+    "shadow": "#e03a2f",
+    "link": "#d9b857",
+    "term-bg": "#1d2014",
+    "term-fg": "#e3dcc0"
+  }
+}
