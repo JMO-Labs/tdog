@@ -65,8 +65,12 @@ func (r *Registry) remove(id string) {
 
 // add registers a running shell and starts pumping its output.
 func (r *Registry) add(target, scene string, s *session) *Session {
+	return r.addID(newID(), target, scene, s)
+}
+
+func (r *Registry) addID(id, target, scene string, s *session) *Session {
 	sess := &Session{
-		id: newID(), scene: scene, target: target, started: time.Now().UTC(),
+		id: id, scene: scene, target: target, started: time.Now().UTC(),
 		s: s, reg: r, ring: newRing(r.scrollback),
 	}
 	r.mu.Lock()
