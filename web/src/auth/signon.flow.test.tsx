@@ -74,3 +74,19 @@ test("sign out shows Be kind, rewind.", async () => {
   });
   expect(await screen.findByText("Be kind, rewind.")).toBeTruthy();
 });
+
+test("card shakes on wrong password", async () => {
+  vi.stubGlobal(
+    "fetch",
+    mockFetch({
+      "GET /api/status": json({ setup: false, authenticated: false }),
+      "POST /api/login": json({}, 401),
+    }),
+  );
+  render(<App />);
+  await screen.findByText("Welcome back");
+  pw("nope");
+  fireEvent.submit(document.querySelector("form")!);
+  await screen.findByText("Ah ah ah!");
+  expect(document.querySelector("form.shake")).not.toBeNull();
+});

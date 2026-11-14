@@ -291,3 +291,25 @@
   z-index: 60;
   pointer-events: none;
 }
+.shake {
+  animation: shake 0.52s linear;
+}
+@keyframes shake {
+  20% {
+    transform: translateX(-14px) rotate(-2deg);
+  }
+  40% {
+    transform: translateX(12px) rotate(2deg);
+  }
+  60% {
+    transform: translateX(-8px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shake {
+    animation: none;
+  }
+}

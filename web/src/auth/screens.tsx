@@ -159,7 +159,11 @@ export function LoginScreen(props: {
 
   return (
     <AuthShell>
-      <form className="card auth-card" onSubmit={submit} noValidate>
+      <form
+        className={`card auth-card${nono ? " shake" : ""}`}
+        onSubmit={submit}
+        noValidate
+      >
         <h2 className="card-title">Welcome back</h2>
         <p className="muted">
           Sign in to get your shells back where you left them.
