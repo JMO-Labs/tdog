@@ -51,6 +51,8 @@ test("enable 2FA: enroll, confirm, show recovery codes", async () => {
   });
   await act(async () => void fireEvent.click(sw(/two-factor/i)));
   expect(screen.getByText("ABCD")).toBeTruthy();
+  const qr = screen.getByRole("img", { name: /qr/i });
+  expect(qr.querySelector("path")!.getAttribute("d")).toMatch(/^M\d+ \d+h/);
   type("123456");
   await act(async () => void fireEvent.click(screen.getByText("Confirm")));
   const call = f.mock.calls.find(([u]) => u === "/api/totp/confirm")!;

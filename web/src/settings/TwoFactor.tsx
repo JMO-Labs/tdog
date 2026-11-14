@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { apiFetch } from "../auth/api";
 import { OtpBoxes } from "../auth/otp";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { encodeQr, qrPath } from "./qr";
 import { Switch } from "./Switch";
 
 type Step = "idle" | "enroll" | "recovery" | "disable";
@@ -18,6 +19,31 @@ const post = (path: string, body?: unknown) =>
           body: JSON.stringify(body),
         }),
   });
+
+function QrCode({ text }: { text: string }) {
+  const qr = useMemo(() => {
+    try {
+      return encodeQr(text);
+    } catch {
+      return null;
+    }
+  }, [text]);
+  if (!qr) return null;
+  const n = qr.size + 8;
+  return (
+    <svg
+      role="img"
+      aria-label="QR code for your authenticator app"
+      viewBox={`0 0 ${n} ${n}`}
+      width={176}
+      height={176}
+      shapeRendering="crispEdges"
+      style={{ display: "block", background: "#fff", borderRadius: 6 }}
+    >
+      <path transform="translate(4 4)" d={qrPath(qr)} fill="#000" />
+    </svg>
+  );
+}
 
 /** Two-factor switch with the enroll/confirm and disable flows. */
 export function TwoFactor({
@@ -121,6 +147,7 @@ export function TwoFactor({
           <p className="muted">
             Add this key to your authenticator app, then enter the 6-digit code.
           </p>
+          <QrCode text={enroll.uri} />
           <code className="secret">{enroll.secret}</code>{" "}
           <a href={enroll.uri}>Open in app</a>
           <OtpBoxes value={code} onChange={setCode} autoFocus />
