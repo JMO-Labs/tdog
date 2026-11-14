@@ -13,6 +13,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   const [totp, setTotp] = useState(false);
   const [serious, setSerious] = usePref("serious");
   const [pet, setPet] = usePref("pet");
+  const [boot, setBoot] = usePref("boot");
 
   useEffect(() => {
     let live = true;
@@ -61,6 +62,13 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
           <p className="muted">Sleeps when shells idle, wakes on output.</p>
         </div>
         <Switch labelledBy="sw-pet" checked={pet} onChange={setPet} />
+      </div>
+      <div className="row">
+        <div>
+          <b id="sw-boot">Boot animation</b>
+          <p className="muted">Short intro, once per session. Any key skips.</p>
+        </div>
+        <Switch labelledBy="sw-boot" checked={boot} onChange={setBoot} />
       </div>
       <h3>Sessions</h3>
       <Button

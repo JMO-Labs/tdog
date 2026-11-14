@@ -167,3 +167,11 @@ test("confirm server error shows a generic retry message", async () => {
   await act(async () => void fireEvent.click(screen.getByText("Confirm")));
   expect(screen.getByRole("alert").textContent).toMatch(/went wrong\. try/i);
 });
+
+test("boot animation toggle defaults on and persists", async () => {
+  await mount({ "GET /api/session": session(false) });
+  expect(sw(/boot animation/i).getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(sw(/boot animation/i));
+  expect(localStorage.getItem("tdog.boot")).toBe("0");
+  expect(getPref("boot")).toBe(false);
+});
