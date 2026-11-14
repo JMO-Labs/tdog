@@ -57,7 +57,7 @@
       "border": 1
     },
     "pattern": "zigzag",
-    "boot": "default",
+    "boot": "drop",
     "costume": "none"
   }
 }

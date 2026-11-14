@@ -53,7 +53,7 @@
       "border": 1
     },
     "pattern": "none",
-    "boot": "default",
+    "boot": "dialup",
     "costume": "none"
   }
 }
