@@ -1,0 +1,38 @@
+{
+  "name": "Rip and Tear",
+  "description": "Hell reds, HUD browns and toxic green. Inspired by Doom.",
+  "appearance": "dark",
+  "pattern": "zigzag",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#e0cfc0",
+    "bg": "#150a08",
+    "cursor": "#ff2a10",
+    "selection": "#5a1a10",
+    "ansi": [
+      "#8a7468",
+      "#ff3a20",
+      "#5fe040",
+      "#e0a020",
+      "#6a8ac8",
+      "#c05080",
+      "#40c0a0",
+      "#e0cfc0",
+      "#a8907f",
+      "#ff6a50",
+      "#8aff6a",
+      "#f0c850",
+      "#90a8e0",
+      "#e080a8",
+      "#70e0c0",
+      "#fff4ea"
+    ]
+  },
+  "chrome": {
+    "bg": "#0e0605",
+    "surface": "#2a1a12",
+    "fg": "#e0cfc0",
+    "muted": "#a08a78",
+    "link": "#5fe040"
+  }
+}

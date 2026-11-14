@@ -1,0 +1,172 @@
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { json, mockFetch } from "../auth/testutil";
+
+let cb: {
+  onSize?: (c: number, r: number) => void;
+  onOutput?: () => void;
+  onLatency?: (ms: number) => void;
+  onOpenChange?: (open: boolean) => void;
+  reconnectRef?: { current: (() => void) | null };
+} = {};
+const reconnect = vi.fn();
+vi.mock("../TerminalPane", () => ({
+  TerminalPane: (p: typeof cb) => {
+    cb = p;
+    if (p.reconnectRef) p.reconnectRef.current = reconnect;
+    return <div data-testid="terminal-pane" />;
+  },
+}));
+
+// Fake timers freeze motion's exit animation; use a synchronous Sheet stand-in.
+vi.mock("../overlays/Sheet", () => ({
+  Sheet: (p: {
+    open: boolean;
+    title: string;
+    onClose: () => void;
+    children: ReactNode;
+  }) =>
+    p.open ? (
+      <div
+        role="dialog"
+        aria-label={p.title}
+        onKeyDown={(e) => e.key === "Escape" && p.onClose()}
+      >
+        {p.children}
+      </div>
+    ) : null,
+}));
+
+import { Workspace } from "./Workspace";
+import { clearCommands } from "../overlays/commands";
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  localStorage.clear();
+});
+afterEach(() => {
+  vi.useRealTimers();
+  clearCommands();
+});
+
+test("header: wordmark, one tab, icon buttons with disabled ones", () => {
+  render(<Workspace />);
+  expect(screen.getByRole("tab", { selected: true })).toBeTruthy();
+  const studio = screen.getByRole("button", { name: "Studio" });
+  expect(studio.getAttribute("aria-disabled")).toBe("true");
+  const kill = screen.getByRole("button", { name: "Kill all shells" });
+  expect(kill.getAttribute("aria-disabled")).toBe("true");
+  expect(screen.getByRole("button", { name: "Theme" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Settings" })).toBeTruthy();
+});
+
+test("status bar shows live cols×rows and opens palette", () => {
+  render(<Workspace />);
+  act(() => cb.onSize?.(132, 40));
+  expect(screen.getByText("132×40")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Command palette" }));
+  expect(screen.getByRole("combobox")).toBeTruthy();
+});
+
+test("pet sleeps after 3s idle, wakes on output, click hides", () => {
+  render(<Workspace />);
+  const pet = () => screen.getByTestId("pet");
+  act(() => cb.onOutput?.());
+  expect(pet().className).toContain("awake");
+  act(() => void vi.advanceTimersByTime(3600));
+  expect(pet().className).toContain("sleep");
+  act(() => cb.onOutput?.());
+  act(() => void vi.advanceTimersByTime(600));
+  expect(pet().className).toContain("awake");
+  fireEvent.click(pet());
+  expect(screen.queryByTestId("pet")).toBeNull();
+});
+
+test("closed session shows the empty state", () => {
+  render(<Workspace />);
+  expect(screen.queryByText("Nothing playing.")).toBeNull();
+  act(() => cb.onOpenChange?.(true));
+  act(() => cb.onOpenChange?.(false));
+  expect(screen.getByText("Nothing playing.")).toBeTruthy();
+});
+
+test("palette commands: theme, settings, sign out", async () => {
+  const out = vi.fn();
+  addEventListener("tdog:signout", out);
+  render(<Workspace />);
+  const open = () =>
+    fireEvent.click(screen.getByRole("button", { name: "Command palette" }));
+  open();
+  fireEvent.click(screen.getByText("Cycle theme"));
+  expect(document.documentElement.dataset.theme).toBe("light");
+  open();
+  fireEvent.click(screen.getByText("Open Settings"));
+  expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
+  fireEvent.keyDown(screen.getByRole("dialog", { name: "Settings" }), {
+    key: "Escape",
+  });
+  open();
+  await act(async () => {
+    fireEvent.click(screen.getByText("Sign out"));
+  });
+  expect(out).toHaveBeenCalled();
+  removeEventListener("tdog:signout", out);
+});
+
+test("empty state offers a visible Reconnect action", () => {
+  render(<Workspace />);
+  act(() => cb.onOpenChange?.(true));
+  act(() => cb.onOpenChange?.(false));
+  expect(screen.getByText("Nothing playing.")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Reconnect" }));
+  expect(reconnect).toHaveBeenCalledTimes(1);
+});
+
+test("⌘, opens settings; hiding the pet persists", () => {
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("x")));
+  render(<Workspace onSignedOut={() => {}} />);
+  fireEvent.keyDown(document, { key: ",", metaKey: true });
+  expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
+  fireEvent.keyDown(document, { key: "Escape" });
+  fireEvent.click(screen.getByTestId("pet"));
+  expect(localStorage.getItem("tdog.pet")).toBe("0");
+  expect(screen.queryByTestId("pet")).toBeNull();
+});
+
+test("Settings button opens the sheet; Escape closes it", () => {
+  render(<Workspace />);
+  expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+  const sheet = screen.getByRole("dialog", { name: "Settings" });
+  fireEvent.keyDown(sheet, { key: "Escape" });
+  expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+});
+
+test("latency chip shows ms, and a dial-up icon above 150 ms", () => {
+  render(<Workspace />);
+  expect(screen.queryByTestId("latency")).toBeNull();
+  act(() => cb.onLatency!(12));
+  const chip = screen.getByTestId("latency");
+  expect(chip.textContent).toContain("12 ms");
+  expect(chip.classList.contains("slow")).toBe(false);
+  act(() => cb.onLatency!(412));
+  expect(screen.getByTestId("latency").classList.contains("slow")).toBe(true);
+  expect(screen.getByTestId("latency").textContent).toContain("412 ms");
+  expect(
+    screen.getByTestId("latency").querySelector("[data-icon=modem]"),
+  ).toBeTruthy();
+});
+
+test("palette lists a Theme command per bundled theme and switches", async () => {
+  render(<Workspace />);
+  fireEvent.click(screen.getByRole("button", { name: "Command palette" }));
+  const input = screen.getByRole("combobox");
+  fireEvent.change(input, { target: { value: "Theme: Night" } });
+  const opt = screen.getByRole("option", { name: /Theme: Night Market/ });
+  expect(opt).toBeTruthy();
+  fireEvent.click(opt);
+  expect(localStorage.getItem("tdog.theme.id")).toBe("night-market");
+  const { themeStore } = await import("../theme/store");
+  themeStore.select("memphis-pop");
+});

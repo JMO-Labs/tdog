@@ -1,0 +1,134 @@
+@import "tailwindcss";
+@import "@fontsource/lilita-one/400.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/600.css";
+@import "@fontsource/jetbrains-mono/800.css";
+@import "./components/ui/ui.css";
+@import "./auth/auth.css";
+
+/* Design tokens: copied from docs/design/mockup.css. Light on :root, dark via prefers-color-scheme / [data-theme=dark]. */
+:root {
+  color-scheme: light;
+  --pink: #ff2d95;
+  --cyan: #22d3ee;
+  --yellow: #ffe14d;
+  --purple: #8b3dff;
+  --ink: #160b2e;
+  --bg: #e4e2ea;
+  --surface: #fbfaff;
+  --surface-2: #efecf7;
+  --fg: #160b2e;
+  --muted: #4e4568;
+  --line: #160b2e;
+  --shadow: #160b2e;
+  --link: #0b7285;
+  --term-bg: #1a0f33;
+  --term-fg: #ede7ff;
+  --term-dim: #9d90c9;
+  --display: "Lilita One", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --pat-confetti: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 34q10-14 20 0t20 0t20 0' stroke='%23FF2D95' stroke-width='6'/%3E%3Cpath d='M98 150q10-14 20 0t20 0' stroke='%2322D3EE' stroke-width='6'/%3E%3Cpath d='M118 22l10 12 10-12 10 12 10-12' stroke='%238B3DFF' stroke-width='5'/%3E%3Cpath d='M20 120l10-10M38 104l10-10M150 92l12 6M70 168l14-4M86 96l6 12' stroke='%23160B2E' stroke-width='4'/%3E%3C/g%3E%3Cpolygon points='78,40 100,80 56,80' fill='%2322D3EE' stroke='%23160B2E' stroke-width='3'/%3E%3Ccircle cx='150' cy='70' r='13' fill='%23FFE14D' stroke='%23160B2E' stroke-width='3'/%3E%3Crect x='30' y='136' width='24' height='24' transform='rotate(20 42 148)' fill='%23FF2D95' stroke='%23160B2E' stroke-width='3'/%3E%3Ccircle cx='120' cy='118' r='5' fill='%238B3DFF'/%3E%3Ccircle cx='16' cy='76' r='4' fill='%23160B2E'/%3E%3C/svg%3E");
+  --pat-zebra: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%2322D3EE'/%3E%3Cg fill='%23160B2E'%3E%3Cpath d='M0 14C30 0 46 30 76 12S112 18 120 8V20C100 34 84 22 70 30S24 18 0 28Z'/%3E%3Cpath d='M0 52C22 40 40 64 64 48S104 58 120 44V56C98 72 84 58 62 66S20 56 0 66Z'/%3E%3Cpath d='M0 92C26 80 46 104 74 86S108 96 120 84V96C96 112 82 98 60 106S22 96 0 106Z'/%3E%3C/g%3E%3Cpath d='M40 40l8 8M96 70l-6 8' stroke='%23FF2D95' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E");
+  --pat-leopard: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%23FFB3D9'/%3E%3Cg fill='%238B3DFF' stroke='%23160B2E' stroke-width='4'%3E%3Cellipse cx='24' cy='26' rx='13' ry='9' transform='rotate(-20 24 26)'/%3E%3Cellipse cx='84' cy='40' rx='11' ry='8' transform='rotate(25 84 40)'/%3E%3Cellipse cx='44' cy='86' rx='12' ry='9' transform='rotate(10 44 86)'/%3E%3Cellipse cx='100' cy='98' rx='9' ry='7'/%3E%3C/g%3E%3Cpath d='M64 66l10-8M8 104l12 4' stroke='%2322D3EE' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E");
+  --pat-zigzag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cg fill='none' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 30l14-14 14 14 14-14' stroke='%23FF2D95'/%3E%3Cpath d='M80 100l14-14 14 14 14-14' stroke='%2322D3EE'/%3E%3Crect x='86' y='18' width='26' height='26' stroke='%238B3DFF' transform='rotate(15 99 31)'/%3E%3Cpath d='M20 86l22 34H-2z' stroke='%23FFE14D'/%3E%3C/g%3E%3C/svg%3E");
+  --pattern: var(--pat-confetti);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #160b2e;
+    --surface: #24164a;
+    --surface-2: #2f1d5e;
+    --fg: #f5f0ff;
+    --muted: #b8add9;
+    --line: #05020d;
+    --shadow: #8b3dff;
+    --link: #22d3ee;
+    --term-bg: #0f0820;
+    color-scheme: dark;
+  }
+}
+[data-theme="light"] {
+  --bg: #e4e2ea;
+  --surface: #fbfaff;
+  --surface-2: #efecf7;
+  --fg: #160b2e;
+  --muted: #4e4568;
+  --line: #160b2e;
+  --shadow: #160b2e;
+  --link: #0b7285;
+  --term-bg: #1a0f33;
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  --bg: #160b2e;
+  --surface: #24164a;
+  --surface-2: #2f1d5e;
+  --fg: #f5f0ff;
+  --muted: #b8add9;
+  --line: #05020d;
+  --shadow: #8b3dff;
+  --link: #22d3ee;
+  --term-bg: #0f0820;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-pink: var(--pink);
+  --color-cyan: var(--cyan);
+  --color-yellow: var(--yellow);
+  --color-purple: var(--purple);
+  --color-ink: var(--ink);
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-link: var(--link);
+  --color-term-bg: var(--term-bg);
+  --color-term-fg: var(--term-fg);
+  --color-term-dim: var(--term-dim);
+  --font-display: var(--display);
+  --font-mono: var(--mono);
+  --radius-card: 18px;
+  --radius-pane: 14px;
+  --radius-button: 10px;
+  --radius-input: 8px;
+  --shadow-hard: 4px 4px 0 var(--shadow);
+  --shadow-hard-lg: 8px 8px 0 var(--shadow);
+  --ease-spring: var(--spring);
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.5 var(--mono);
+}
+:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--bg),
+    0 0 0 6px var(--cyan),
+    0 0 18px 4px rgb(34 211 238 / 0.55) !important;
+}
+[hidden] {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-property: opacity !important;
+    transition-duration: 0.2s !important;
+  }
+}

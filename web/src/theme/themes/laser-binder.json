@@ -1,0 +1,41 @@
+{
+  "name": "Laser Binder",
+  "description": "Laser-grid neon zig-zags on black, like a well-doodled school binder. Inspired by 90s school binders.",
+  "appearance": "dark",
+  "pattern": "zigzag",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#f3eaff",
+    "bg": "#050308",
+    "cursor": "#00f0ff",
+    "selection": "#2b1659",
+    "ansi": [
+      "#9a86c4",
+      "#ff3d81",
+      "#39ff88",
+      "#fff23d",
+      "#3d7bff",
+      "#d13dff",
+      "#00f0ff",
+      "#f3eaff",
+      "#b8a6de",
+      "#ff7aa8",
+      "#86ffb5",
+      "#fff77a",
+      "#7aa2ff",
+      "#e47aff",
+      "#7af6ff",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#050308",
+    "surface": "#0f0a1a",
+    "fg": "#f3eaff",
+    "pink": "#ff3d81",
+    "cyan": "#00f0ff",
+    "yellow": "#fff23d",
+    "purple": "#d13dff",
+    "link": "#00f0ff"
+  }
+}

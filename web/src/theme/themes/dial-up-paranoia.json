@@ -1,0 +1,43 @@
+{
+  "name": "Dial-Up Paranoia",
+  "description": "Beige-box grey, dial-up blues and warning red. Inspired by The Net.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "Courier Prime",
+  "terminal": {
+    "fg": "#d9d6cc",
+    "bg": "#1c1e22",
+    "cursor": "#ff4a3d",
+    "selection": "#2f4a7a",
+    "ansi": [
+      "#8a8d94",
+      "#ff5a4d",
+      "#6fcf7f",
+      "#e6c35c",
+      "#5b9bff",
+      "#c08bff",
+      "#4fd0e0",
+      "#d9d6cc",
+      "#a9acb3",
+      "#ff857a",
+      "#9be3a6",
+      "#f2d98a",
+      "#8ab8ff",
+      "#d6b0ff",
+      "#8fe3ee",
+      "#f4f2ea"
+    ]
+  },
+  "chrome": {
+    "bg": "#14161a",
+    "surface": "#23262b",
+    "surface-2": "#2c3036",
+    "fg": "#d9d6cc",
+    "muted": "#9fa2a8",
+    "line": "#0a0b0d",
+    "shadow": "#ff4a3d",
+    "link": "#5b9bff",
+    "term-bg": "#1c1e22",
+    "term-fg": "#d9d6cc"
+  }
+}

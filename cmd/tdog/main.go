@@ -6,14 +6,34 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/JMO-Labs/tdog/internal/auth"
 	"github.com/JMO-Labs/tdog/internal/server"
+	"github.com/JMO-Labs/tdog/web"
 )
 
+// fatal is swapped in tests so main's error path is observable.
+var fatal = log.Fatal
+
 func main() {
-	addr := os.Getenv("TDOG_ADDR")
+	if err := run(os.Getenv, http.ListenAndServe); err != nil {
+		fatal(err)
+	}
+}
+
+// run wires config, auth and the server; serve is injectable for tests.
+func run(getenv func(string) string, serve func(string, http.Handler) error) error {
+	addr := getenv("TDOG_ADDR")
 	if addr == "" {
 		addr = ":7681"
 	}
+	dir := getenv("TDOG_DATA")
+	if dir == "" {
+		dir = "/data"
+	}
+	a, err := auth.New(dir, log.Printf)
+	if err != nil {
+		return err
+	}
 	log.Printf("tdog listening on %s", addr)
-	log.Fatal(http.ListenAndServe(addr, server.New()))
+	return serve(addr, server.NewSecured(web.FS(), a))
 }

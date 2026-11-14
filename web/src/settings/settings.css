@@ -1,0 +1,83 @@
+/* Ported from docs/design/mockup.css (.drawer, .row, .switch). */
+.settings h3 {
+  margin: 18px 0 6px;
+  font: 400 14px/1 var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.settings .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 2px dashed var(--line);
+}
+.settings .muted {
+  margin: 2px 0 0;
+  font-size: 12px;
+  opacity: 0.75;
+}
+.settings .subpanel {
+  display: grid;
+  gap: 10px;
+  padding: 10px 0;
+  justify-items: start;
+}
+.settings .secret {
+  font-family: var(--mono, monospace);
+  word-break: break-all;
+}
+.settings .recovery {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  font-family: var(--mono, monospace);
+}
+.settings .form-err {
+  color: var(--red, #ff4d4d);
+  margin: 6px 0;
+}
+.settings .wide {
+  width: 100%;
+  margin-top: 8px;
+}
+.switch {
+  width: 52px;
+  height: 30px;
+  border-radius: 99px;
+  border: 2px solid var(--line);
+  background: var(--surface-2);
+  position: relative;
+  cursor: pointer;
+  flex: none;
+  box-shadow: 3px 3px 0 var(--shadow);
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--fg);
+  border: 2px solid var(--line);
+  transition:
+    transform 0.3s var(--spring, ease),
+    background 0.2s;
+}
+.switch[aria-checked="true"] {
+  background: var(--cyan);
+}
+.switch[aria-checked="true"]::after {
+  transform: translateX(22px) rotate(180deg);
+  background: var(--yellow);
+  border-radius: 30%;
+}
+.switch:disabled {
+  opacity: 0.6;
+}

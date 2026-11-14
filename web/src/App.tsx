@@ -1,3 +1,110 @@
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { Workspace } from "./shell/Workspace";
+import { getStatus, logout, setUnauthorizedHandler } from "./auth/api";
+import { LoginScreen, SetupScreen } from "./auth/screens";
+import { ToastProvider, useToast } from "./overlays/toast";
+import { usePref } from "./settings/prefs";
+import { isBenchRoute, isKitRoute } from "./routes";
+
+// Dead-code eliminated from production builds (import.meta.env.DEV is false).
+const BenchPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("./bench/BenchPage").then((m) => ({ default: m.BenchPage })),
+    )
+  : null;
+
+const KitPage = import.meta.env.DEV
+  ? lazy(() => import("./kit/KitPage").then((m) => ({ default: m.KitPage })))
+  : null;
+
+type View = "loading" | "setup" | "login" | "app";
+
 export function App() {
-  return <h1>tdog</h1>;
+  if (BenchPage && isBenchRoute(import.meta.env.DEV, location.pathname))
+    return (
+      <Suspense fallback={null}>
+        <BenchPage />
+      </Suspense>
+    );
+  if (KitPage && isKitRoute(import.meta.env.DEV, location.pathname))
+    return (
+      <Suspense fallback={null}>
+        <KitPage />
+      </Suspense>
+    );
+  return <Root />;
+}
+
+function Root() {
+  const [serious] = usePref("serious");
+  return (
+    <ToastProvider serious={serious}>
+      <AuthApp />
+    </ToastProvider>
+  );
+}
+
+function AuthApp() {
+  const [view, setView] = useState<View>("loading");
+  const toast = useToast();
+
+  // Explicit sign out (not a 401): end the session, rewind.
+  const signOut = useCallback(async () => {
+    if (!(await logout())) {
+      toast("fail", "Couldn't sign out. Reload and try again.");
+      return;
+    }
+    setView("login");
+    toast("info", "Session ended. See you next time.", "Be kind, rewind.");
+  }, [toast]);
+  useEffect(() => {
+    const h = () => void signOut();
+    addEventListener("tdog:signout", h);
+    return () => removeEventListener("tdog:signout", h);
+  }, [signOut]);
+
+  const check = useCallback(async () => {
+    try {
+      const s = await getStatus();
+      setView(s.setup ? "setup" : s.authenticated ? "app" : "login");
+    } catch {
+      setView("login");
+    }
+  }, []);
+
+  useEffect(() => {
+    void check();
+  }, [check]);
+
+  // Any 401 from an authenticated API call returns the user to login.
+  useEffect(() => {
+    setUnauthorizedHandler(() => setView("login"));
+    return () => setUnauthorizedHandler(null);
+  }, []);
+
+  // Terminal socket closed: if the session is gone (401), go back to login.
+  const onClosed = useCallback(() => {
+    void getStatus().then(
+      (s) => {
+        if (!s.authenticated) setView(s.setup ? "setup" : "login");
+      },
+      () => {},
+    );
+  }, []);
+
+  if (view === "loading")
+    return (
+      <div role="status" style={{ color: "var(--fg)", padding: 16 }}>
+        Loading…
+      </div>
+    );
+  if (view === "setup") return <SetupScreen onDone={() => setView("login")} />;
+  if (view === "login")
+    return (
+      <LoginScreen
+        onDone={() => setView("app")}
+        onNeedSetup={() => setView("setup")}
+      />
+    );
+  return <Workspace onSignedOut={() => setView("login")} onClosed={onClosed} />;
 }
