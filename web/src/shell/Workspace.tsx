@@ -9,6 +9,8 @@ import { usePref } from "../settings/prefs";
 import { THEMES } from "../theme/registry";
 import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
+import { SplitView } from "../layout/SplitView";
+import { useLayout } from "../layout/useLayout";
 import { Icon } from "./icons";
 import { Mascot } from "./Mascot";
 import { Pet, usePetAwake } from "./pet";
@@ -16,6 +18,7 @@ import { Tabs } from "./Tabs";
 import "./shell.css";
 
 const noop = () => {};
+const SCENE = "scene 1";
 /** Latency above this gets the dial-up icon. */
 const SLOW_MS = 150;
 
@@ -37,6 +40,7 @@ export function Workspace({
   const [palette, setPalette] = useState(false);
   const reconnectRef = useRef<(() => void) | null>(null);
   const awake = usePetAwake(stamp);
+  const layout = useLayout(SCENE);
 
   const onSize = useCallback(
     (cols: number, rows: number) => setSize({ cols, rows }),
@@ -142,15 +146,37 @@ export function Workspace({
       </header>
 
       <main className="panes">
-        <TerminalPane
-          onClosed={onClosed}
-          onSize={onSize}
-          onOutput={onOutput}
-          onLatency={setLatency}
-          onOpenChange={onOpenChange}
-          reconnectRef={reconnectRef}
-        />
-        {closed && (
+        {layout.tree ? (
+          <SplitView
+            tree={layout.tree}
+            onSplit={layout.split}
+            onClose={layout.close}
+            onRatio={layout.ratio}
+            renderPane={(id, settled) => (
+              <TerminalPane
+                key={id}
+                sceneKey={id}
+                settled={settled}
+                onClosed={onClosed}
+                onSize={onSize}
+                onOutput={onOutput}
+                onLatency={setLatency}
+                onOpenChange={onOpenChange}
+                reconnectRef={reconnectRef}
+              />
+            )}
+          />
+        ) : (
+          <div className="empty" data-testid="empty-panes">
+            <Mascot />
+            <p className="empty-big">No panes.</p>
+            <p className="muted">Every shell is closed.</p>
+            <button className="btn reconnect" onClick={layout.reset}>
+              New pane
+            </button>
+          </div>
+        )}
+        {layout.tree && closed && (
           <div className="empty">
             <Mascot />
             <p className="empty-big">Nothing playing.</p>

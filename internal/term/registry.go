@@ -123,3 +123,15 @@ func (r *Registry) ListHandler() http.Handler {
 		_ = json.NewEncoder(w).Encode(r.List())
 	})
 }
+
+// KillHandler serves POST /api/sessions/{id}/kill (204, or 404 if unknown).
+// Callers must wrap it with authentication and register it with an {id} wildcard.
+func (r *Registry) KillHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if !r.Kill(req.PathValue("id")) {
+			http.Error(w, "unknown session", http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+}

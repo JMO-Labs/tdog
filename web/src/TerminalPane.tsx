@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TerminalSession, type SessionState } from "./terminal/session";
 import type { TerminalRenderer } from "./terminal/renderer";
 import { themeStore } from "./theme/store";
@@ -6,6 +6,7 @@ import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
+import { findSessionId } from "./terminal/sessions";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -19,9 +20,13 @@ async function createRenderer(el: HTMLElement): Promise<TerminalRenderer> {
   return new XtermRenderer(el);
 }
 
-function wsUrl(): string {
+function wsUrl(scene?: string, id?: string): string {
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  return `${proto}://${location.host}/ws/term`;
+  const q = new URLSearchParams();
+  if (scene) q.set("scene", scene);
+  if (id) q.set("id", id);
+  const qs = q.toString();
+  return `${proto}://${location.host}/ws/term${qs ? `?${qs}` : ""}`;
 }
 
 export function TerminalPane({
@@ -32,7 +37,10 @@ export function TerminalPane({
   onLatency,
   onOpenChange,
   reconnectRef,
+  sceneKey,
 }: {
+  /** Stable pane key sent as the session `scene`; reload reattaches by it. */
+  sceneKey?: string;
   onClosed?: () => void;
   onSize?: (cols: number, rows: number) => void;
   onOutput?: () => void;
@@ -49,6 +57,17 @@ export function TerminalPane({
   const renderer = useRef<TerminalRenderer | null>(null);
   const host = useRef<HTMLDivElement>(null);
   const session = useRef<TerminalSession | null>(null);
+  const idRef = useRef<string | undefined>(undefined);
+  const keyRef = useRef(sceneKey);
+  /** (Re)connect; with a sceneKey, re-resolves the live session id first. */
+  const connect = useCallback(() => {
+    const key = keyRef.current;
+    if (!key) return session.current?.connect();
+    void findSessionId(key).then((id) => {
+      idRef.current = id;
+      session.current?.connect();
+    });
+  }, []);
   const [state, setState] = useState<SessionState>({ status: "connecting" });
 
   const toast = useToast();
@@ -63,16 +82,16 @@ export function TerminalPane({
   const dropped = state.status === "closed" && state.exitCode === undefined;
   useEffect(() => {
     if (!dropped) return;
-    const id = setTimeout(() => session.current?.connect(), RETRY_MS);
+    const id = setTimeout(connect, RETRY_MS);
     return () => clearTimeout(id);
-  }, [dropped]);
+  }, [dropped, connect]);
   useEffect(() => {
     if (!reconnectRef) return;
-    reconnectRef.current = () => session.current?.connect();
+    reconnectRef.current = connect;
     return () => {
       reconnectRef.current = null;
     };
-  }, [reconnectRef]);
+  }, [reconnectRef, connect]);
   useEffect(() => {
     onOpenChange?.(state.status === "open");
   }, [state.status, onOpenChange]);
@@ -92,21 +111,26 @@ export function TerminalPane({
     let cancelled = false;
     void createRenderer(el).then((r) => {
       if (cancelled) return r.dispose();
-      const s = new TerminalSession(r, () => new WebSocket(wsUrl()), setState, {
-        onSize: (c, r2) => hooks.current.onSize?.(c, r2),
-        onOutput: () => {
-          hooks.current.onOutput?.();
-          noteRef.current();
+      const s = new TerminalSession(
+        r,
+        () => new WebSocket(wsUrl(keyRef.current, idRef.current)),
+        setState,
+        {
+          onSize: (c, r2) => hooks.current.onSize?.(c, r2),
+          onOutput: () => {
+            hooks.current.onOutput?.();
+            noteRef.current();
+          },
+          onLatency: (ms) => hooks.current.onLatency?.(ms),
         },
-        onLatency: (ms) => hooks.current.onLatency?.(ms),
-      });
+      );
       session.current = s;
       renderer.current = r;
       r.setTheme(themeStore.terminal());
       const offTheme = themeStore.subscribe(() =>
         r.setTheme(themeStore.terminal()),
       );
-      s.connect();
+      connect();
       const ro = new ResizeObserver(() => {
         if (settledRef.current) r.resize();
       });
@@ -114,6 +138,7 @@ export function TerminalPane({
       cleanup = () => {
         offTheme();
         ro.disconnect();
+        session.current = null;
         s.dispose();
       };
     });
@@ -121,7 +146,7 @@ export function TerminalPane({
       cancelled = true;
       cleanup();
     };
-  }, []);
+  }, [connect]);
 
   return (
     <div
@@ -129,10 +154,7 @@ export function TerminalPane({
       style={{ position: "relative", height: "100%" }}
     >
       <div ref={host} style={{ height: "100%" }} />
-      <ConnectionGag
-        phase={phase}
-        onReconnect={() => session.current?.connect()}
-      />
+      <ConnectionGag phase={phase} onReconnect={connect} />
       {state.status === "closed" && state.exitCode !== undefined && (
         <div
           style={{
@@ -145,7 +167,7 @@ export function TerminalPane({
           }}
         >
           {`Shell exited with code ${state.exitCode}`}{" "}
-          <button onClick={() => session.current?.connect()}>Reconnect</button>
+          <button onClick={connect}>Reconnect</button>
         </div>
       )}
     </div>
