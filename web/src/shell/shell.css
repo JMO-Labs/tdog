@@ -28,7 +28,8 @@
   right: 0;
   bottom: 0;
   height: 4px;
-  background: var(--header-motif, none) repeat-x 0 0 / auto 100%,
+  background:
+    var(--header-motif, none) repeat-x 0 0 / auto 100%,
     repeating-linear-gradient(
       90deg,
       var(--pink) 0 28px,

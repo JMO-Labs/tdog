@@ -15,7 +15,10 @@ describe("motifSvg", () => {
     [{ type: "path", d: "M0 0L5 5", stroke: "#fff" }, '<path d="M0 0L5 5"'],
     [{ type: "circle", cx: 1, cy: 2, r: 3, fill: "#000" }, '<circle cx="1"'],
     [{ type: "rect", x: 1, y: 2, width: 3, height: 4 }, '<rect x="1"'],
-    [{ type: "polygon", points: "0,0 4,0 2,4" }, '<polygon points="0,0 4,0 2,4"'],
+    [
+      { type: "polygon", points: "0,0 4,0 2,4" },
+      '<polygon points="0,0 4,0 2,4"',
+    ],
   ] as const)("renders %j", (shape, expected) => {
     const svg = decode(motifSvg(motif([shape as never])));
     expect(svg).toContain(expected);
