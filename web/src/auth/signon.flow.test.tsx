@@ -52,7 +52,8 @@ test("successful login runs dial-up, then toast and app", async () => {
   pw("right");
   fireEvent.submit(document.querySelector("form")!);
   expect(await screen.findByText("Dialing…")).toBeTruthy();
-  await act(() => vi.advanceTimersByTimeAsync(650 * 3 + 100));
+  for (let i = 0; i < 3; i++)
+    await act(() => vi.advanceTimersByTimeAsync(650 + 10));
   expect(screen.getByRole("img", { name: /waving/ })).toBeTruthy();
   await act(() => vi.advanceTimersByTimeAsync(1500));
   expect(screen.getByText("term")).toBeTruthy();
