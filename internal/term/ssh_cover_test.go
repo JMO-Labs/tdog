@@ -50,6 +50,8 @@ func scriptedSSHD(t *testing.T, hostKey ssh.Signer, mode string) (host, port str
 							switch r.Type {
 							case "pty-req":
 								_ = r.Reply(mode != "nopty", nil)
+							case "exec":
+								_ = r.Reply(mode != "noexec", nil)
 							case "shell":
 								_ = r.Reply(mode != "noshell", nil)
 								if mode == "exit0" {
