@@ -1,20 +1,12 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
-import { MotionGlobalConfig } from "motion/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { json, mockFetch } from "../auth/testutil";
-
-// Exit animations never settle reliably in jsdom; skip them.
-MotionGlobalConfig.skipAnimations = true;
 
 let cb: {
   onSize?: (c: number, r: number) => void;
   onOutput?: () => void;
+  onLatency?: (ms: number) => void;
   onOpenChange?: (open: boolean) => void;
   reconnectRef?: { current: (() => void) | null };
 } = {};
@@ -25,6 +17,25 @@ vi.mock("../TerminalPane", () => ({
     if (p.reconnectRef) p.reconnectRef.current = reconnect;
     return <div data-testid="terminal-pane" />;
   },
+}));
+
+// Fake timers freeze motion's exit animation; use a synchronous Sheet stand-in.
+vi.mock("../overlays/Sheet", () => ({
+  Sheet: (p: {
+    open: boolean;
+    title: string;
+    onClose: () => void;
+    children: ReactNode;
+  }) =>
+    p.open ? (
+      <div
+        role="dialog"
+        aria-label={p.title}
+        onKeyDown={(e) => e.key === "Escape" && p.onClose()}
+      >
+        {p.children}
+      </div>
+    ) : null,
 }));
 
 import { Workspace } from "./Workspace";
@@ -40,7 +51,7 @@ afterEach(() => {
 });
 
 test("header: wordmark, one tab, icon buttons with disabled ones", () => {
-  render(<Workspace onSignedOut={() => {}} />);
+  render(<Workspace />);
   expect(screen.getByRole("tab", { selected: true })).toBeTruthy();
   const studio = screen.getByRole("button", { name: "Studio" });
   expect(studio.getAttribute("aria-disabled")).toBe("true");
@@ -51,7 +62,7 @@ test("header: wordmark, one tab, icon buttons with disabled ones", () => {
 });
 
 test("status bar shows live cols×rows and opens palette", () => {
-  render(<Workspace onSignedOut={() => {}} />);
+  render(<Workspace />);
   act(() => cb.onSize?.(132, 40));
   expect(screen.getByText("132×40")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Command palette" }));
@@ -59,7 +70,7 @@ test("status bar shows live cols×rows and opens palette", () => {
 });
 
 test("pet sleeps after 3s idle, wakes on output, click hides", () => {
-  render(<Workspace onSignedOut={() => {}} />);
+  render(<Workspace />);
   const pet = () => screen.getByTestId("pet");
   act(() => cb.onOutput?.());
   expect(pet().className).toContain("awake");
@@ -73,7 +84,7 @@ test("pet sleeps after 3s idle, wakes on output, click hides", () => {
 });
 
 test("closed session shows the empty state", () => {
-  render(<Workspace onSignedOut={() => {}} />);
+  render(<Workspace />);
   expect(screen.queryByText("Nothing playing.")).toBeNull();
   act(() => cb.onOpenChange?.(true));
   act(() => cb.onOpenChange?.(false));
@@ -81,9 +92,9 @@ test("closed session shows the empty state", () => {
 });
 
 test("palette commands: theme, settings, sign out", async () => {
-  vi.stubGlobal("fetch", mockFetch({ "POST /api/logout": json({}) }));
   const out = vi.fn();
-  render(<Workspace onSignedOut={out} />);
+  addEventListener("tdog:signout", out);
+  render(<Workspace />);
   const open = () =>
     fireEvent.click(screen.getByRole("button", { name: "Command palette" }));
   open();
@@ -100,10 +111,11 @@ test("palette commands: theme, settings, sign out", async () => {
     fireEvent.click(screen.getByText("Sign out"));
   });
   expect(out).toHaveBeenCalled();
+  removeEventListener("tdog:signout", out);
 });
 
 test("empty state offers a visible Reconnect action", () => {
-  render(<Workspace onSignedOut={() => {}} />);
+  render(<Workspace />);
   act(() => cb.onOpenChange?.(true));
   act(() => cb.onOpenChange?.(false));
   expect(screen.getByText("Nothing playing.")).toBeTruthy();
@@ -111,13 +123,26 @@ test("empty state offers a visible Reconnect action", () => {
   expect(reconnect).toHaveBeenCalledTimes(1);
 });
 
-test("Settings button opens the sheet; Escape closes it", async () => {
-  render(<Workspace onSignedOut={() => {}} />);
+test("Settings button opens the sheet; Escape closes it", () => {
+  render(<Workspace />);
   expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Settings" }));
   const sheet = screen.getByRole("dialog", { name: "Settings" });
   fireEvent.keyDown(sheet, { key: "Escape" });
-  await waitFor(() =>
-    expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull(),
-  );
+  expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+});
+
+test("latency chip shows ms, and a dial-up icon above 150 ms", () => {
+  render(<Workspace onSignedOut={() => {}} />);
+  expect(screen.queryByTestId("latency")).toBeNull();
+  act(() => cb.onLatency!(12));
+  const chip = screen.getByTestId("latency");
+  expect(chip.textContent).toContain("12 ms");
+  expect(chip.classList.contains("slow")).toBe(false);
+  act(() => cb.onLatency!(412));
+  expect(screen.getByTestId("latency").classList.contains("slow")).toBe(true);
+  expect(screen.getByTestId("latency").textContent).toContain("412 ms");
+  expect(
+    screen.getByTestId("latency").querySelector("[data-icon=modem]"),
+  ).toBeTruthy();
 });

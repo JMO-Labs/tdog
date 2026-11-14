@@ -132,7 +132,7 @@ func runSession(c *websocket.Conn, s *session) {
 		pumpInput(ctx, func(ctx context.Context) ([]byte, error) {
 			_, data, err := c.Read(ctx)
 			return data, err
-		}, s.w, s.resize)
+		}, s.w, s.resize, func(f []byte) error { return c.Write(ctx, websocket.MessageBinary, f) })
 	}()
 
 	// Shell → chunks.
@@ -225,9 +225,10 @@ func pumpOutput(ctx context.Context, write func(frame []byte) error, chunks <-ch
 }
 
 // pumpInput decodes client frames and applies them: Input is written to w,
-// Resize calls resize. Undecodable or unknown frames are skipped. It returns
+// Resize calls resize, and a ping control frame is answered with a pong via
+// reply (may be nil). Undecodable or unknown frames are skipped. It returns
 // on a read error or a failed write.
-func pumpInput(ctx context.Context, read func(context.Context) ([]byte, error), w io.Writer, resize func(cols, rows uint16)) {
+func pumpInput(ctx context.Context, read func(context.Context) ([]byte, error), w io.Writer, resize func(cols, rows uint16), reply func([]byte) error) {
 	for {
 		data, err := read(ctx)
 		if err != nil {
@@ -245,6 +246,10 @@ func pumpInput(ctx context.Context, read func(context.Context) ([]byte, error), 
 		case frame.Resize:
 			if cols, rows, err := frame.ParseResize(p); err == nil && resize != nil {
 				resize(cols, rows)
+			}
+		case frame.Control:
+			if pong, ok := frame.Pong(p); ok && reply != nil {
+				_ = reply(pong)
 			}
 		}
 	}

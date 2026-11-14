@@ -3,6 +3,7 @@ import {
   decodeFrame,
   encodeAck,
   encodeInput,
+  encodePing,
   encodeResize,
   FrameType,
 } from "./frames";
@@ -49,6 +50,29 @@ describe("frame codec", () => {
 
   test("malformed control JSON is unknown", () => {
     const buf = new Uint8Array([FrameType.Control, 123]).buffer;
+    expect(decodeFrame(buf).kind).toBe("unknown");
+  });
+});
+
+describe("ping/pong", () => {
+  test("encodes ping as JSON control frame", () => {
+    const f = encodePing(12.5);
+    expect(f[0]).toBe(FrameType.Control);
+    expect(JSON.parse(new TextDecoder().decode(f.subarray(1)))).toEqual({
+      type: "ping",
+      t: 12.5,
+    });
+  });
+
+  test("decodes pong echoing t", () => {
+    const body = new TextEncoder().encode('{"type":"pong","t":12.5}');
+    const buf = new Uint8Array([FrameType.Control, ...body]).buffer;
+    expect(decodeFrame(buf)).toEqual({ kind: "pong", t: 12.5 });
+  });
+
+  test("pong without numeric t is unknown", () => {
+    const body = new TextEncoder().encode('{"type":"pong"}');
+    const buf = new Uint8Array([FrameType.Control, ...body]).buffer;
     expect(decodeFrame(buf).kind).toBe("unknown");
   });
 });

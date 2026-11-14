@@ -1,7 +1,12 @@
 import { describe, expect, test, vi } from "vitest";
 import { FrameType } from "../protocol/frames";
 import type { TerminalRenderer } from "./renderer";
-import { ACK_BATCH_BYTES, TerminalSession, type SocketLike } from "./session";
+import {
+  ACK_BATCH_BYTES,
+  PING_INTERVAL_MS,
+  TerminalSession,
+  type SocketLike,
+} from "./session";
 
 class FakeSocket implements SocketLike {
   binaryType = "";
@@ -141,5 +146,45 @@ describe("TerminalSession hooks", () => {
     expect(hooks.onSize).toHaveBeenCalledWith(100, 30);
     sock.onmessage?.({ data: out(65) });
     expect(hooks.onOutput).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("latency ping", () => {
+  const pong = (t: number) => {
+    const b = new TextEncoder().encode(JSON.stringify({ type: "pong", t }));
+    return new Uint8Array([FrameType.Control, ...b]).buffer;
+  };
+  const pings = (sock: FakeSocket) =>
+    sock.sent.filter(
+      (f) =>
+        f[0] === FrameType.Control &&
+        new TextDecoder().decode(f.subarray(1)).includes('"ping"'),
+    );
+
+  test("pings on open and every interval; pong reports round-trip", () => {
+    vi.useFakeTimers();
+    try {
+      let now = 1000;
+      vi.spyOn(performance, "now").mockImplementation(() => now);
+      const sock = new FakeSocket();
+      const onLatency = vi.fn();
+      const s = new TerminalSession(mockRenderer(), () => sock, vi.fn(), {
+        onLatency,
+      });
+      s.connect();
+      sock.onopen!();
+      expect(pings(sock)).toHaveLength(1);
+      now = 1042.4;
+      sock.onmessage!({ data: pong(1000) });
+      expect(onLatency).toHaveBeenCalledWith(42);
+      vi.advanceTimersByTime(PING_INTERVAL_MS);
+      expect(pings(sock)).toHaveLength(2);
+      sock.onclose!();
+      vi.advanceTimersByTime(PING_INTERVAL_MS * 2);
+      expect(pings(sock)).toHaveLength(2);
+    } finally {
+      vi.restoreAllMocks();
+      vi.useRealTimers();
+    }
   });
 });
