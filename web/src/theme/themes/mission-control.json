@@ -57,11 +57,11 @@
         "#2a5fa0",
         "#a03a80",
         "#1a7a76",
-        "#f4f1e6"
+        "#3a3a34"
       ]
     },
     "chrome": {
-      "bg": "#3a3a34",
+      "bg": "#f4f1e6",
       "surface": "#ece8da",
       "fg": "#2a2a26",
       "muted": "#5a5a52",
