@@ -59,6 +59,9 @@
     },
     "pattern": "none",
     "boot": "drop",
-    "costume": "none"
+    "costume": {
+      "name": "visor",
+      "rows": ["..########..", ".##########."]
+    }
   }
 }

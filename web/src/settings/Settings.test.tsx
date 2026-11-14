@@ -175,3 +175,10 @@ test("boot animation toggle defaults on and persists", async () => {
   expect(localStorage.getItem("tdog.boot")).toBe("0");
   expect(getPref("boot")).toBe(false);
 });
+
+test("Dress up Dogbert defaults on and persists", () => {
+  localStorage.clear();
+  expect(getPref("dress")).toBe(true);
+  setPref("dress", false);
+  expect(localStorage.getItem("tdog.dress")).toBe("0");
+});

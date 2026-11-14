@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tdog/schema/global.schema.json",
+  "title": "tdog global config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "default_target": {
+      "$ref": "#/$defs/target"
+    },
+    "theme": {
+      "type": "string"
+    },
+    "font": {
+      "$ref": "#/$defs/font"
+    },
+    "background": {
+      "$ref": "#/$defs/background"
+    }
+  },
+  "$defs": {
+    "font": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "type": "string"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 6,
+          "maximum": 72
+        },
+        "ligatures": {
+          "type": "boolean"
+        }
+      }
+    },
+    "background": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "none",
+            "color",
+            "image",
+            "shader"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "blur": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "hook": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "run"
+          ],
+          "properties": {
+            "mode": {
+              "enum": [
+                "all",
+                "stop_on_fail"
+              ]
+            },
+            "run": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "target": {
+      "enum": [
+        "ssh-host",
+        "container",
+        "nsenter"
+      ]
+    }
+  }
+}

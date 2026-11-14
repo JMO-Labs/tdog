@@ -59,6 +59,9 @@
     },
     "pattern": "zigzag",
     "boot": "drop",
-    "costume": "none"
+    "costume": {
+      "name": "headband",
+      "rows": ["############", "#.#.#.#.#.#."]
+    }
   }
 }
