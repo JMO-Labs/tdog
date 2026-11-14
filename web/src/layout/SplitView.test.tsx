@@ -27,6 +27,7 @@ function setup(tree: Node) {
     onSplit: vi.fn(),
     onClose: vi.fn(),
     onRatio: vi.fn(),
+    onSnap: vi.fn(() => []),
     renderPane: (id: string, settled: boolean) => (
       <div data-testid={`pane-${id}`} data-settled={settled} />
     ),

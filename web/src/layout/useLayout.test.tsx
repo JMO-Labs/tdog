@@ -53,3 +53,29 @@ test("ratio updates the split", () => {
   act(() => result.current.ratio(id, 0.3));
   expect(result.current.tree).toMatchObject({ ratio: 0.3 });
 });
+
+test("snap keeps panes, adds empty slots", () => {
+  const { result } = renderHook(() => useLayout("s"));
+  const first = leaves(result.current.tree!)[0];
+  act(() => void result.current.snap("2x2"));
+  const ids = leaves(result.current.tree!);
+  expect(ids).toHaveLength(4);
+  expect(ids[0]).toBe(first);
+  expect(killScene).not.toHaveBeenCalled();
+});
+
+test("snap asks before dropping panes, kills them once confirmed", () => {
+  const { result } = renderHook(() => useLayout("s"));
+  act(() => void result.current.snap("2x2"));
+  const ids = leaves(result.current.tree!);
+  let surplus: string[] = [];
+  act(() => {
+    surplus = result.current.snap("single");
+  });
+  expect(surplus).toEqual(ids.slice(1));
+  expect(leaves(result.current.tree!)).toHaveLength(4);
+  expect(killScene).not.toHaveBeenCalled();
+  act(() => void result.current.snap("single", true));
+  expect(leaves(result.current.tree!)).toEqual([ids[0]]);
+  expect(killScene.mock.calls.map((c) => c[0])).toEqual(ids.slice(1));
+});
