@@ -22,7 +22,7 @@ export function Workspace({
   onSignedOut,
 }: {
   onClosed?: () => void;
-  onSignedOut: () => void;
+  onSignedOut?: () => void;
 }) {
   const { mode, cycle } = useThemeMode();
   const [size, setSize] = useState<{ cols: number; rows: number } | null>(null);
@@ -198,7 +198,7 @@ export function Workspace({
         title="Settings"
         onClose={() => setSettings(false)}
       >
-        <SettingsPanel onSignedOut={onSignedOut} />
+        <SettingsPanel onSignedOut={onSignedOut ?? (() => {})} />
       </Sheet>
     </div>
   );
