@@ -21,6 +21,7 @@ type Session struct {
 	ring   *ring
 	att    *attachment
 	exited bool
+	killed bool // ended by a kill request; clients get a "killed" control
 }
 
 // attachment is one socket's live view of a session.
@@ -151,6 +152,12 @@ func (s *Session) serve(c *websocket.Conn) {
 	if pumpOutput(a.ctx, write, a.ch) { // shell exited
 		wctx, wcancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer wcancel()
+		s.mu.Lock()
+		killed := s.killed
+		s.mu.Unlock()
+		if killed {
+			_ = c.Write(wctx, websocket.MessageBinary, frame.KilledControl())
+		}
 		_ = c.Write(wctx, websocket.MessageBinary, frame.ExitControl(s.s.wait.code))
 		_ = c.Close(websocket.StatusNormalClosure, "exit")
 		return

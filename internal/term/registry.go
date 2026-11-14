@@ -108,6 +108,15 @@ func (r *Registry) Kill(id string) bool {
 	return true
 }
 
+// kill marks the session as user-killed and hangs it up in the background
+// (SIGHUP, SIGKILL after hupGrace); it returns at once.
+func (s *Session) kill() {
+	s.mu.Lock()
+	s.killed = true
+	s.mu.Unlock()
+	go s.s.kill()
+}
+
 // KillAll hangs up every session (shutdown).
 func (r *Registry) KillAll() {
 	for _, i := range r.List() {

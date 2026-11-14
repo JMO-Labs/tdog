@@ -24,7 +24,7 @@ import (
 const (
 	flushAfter = 4 * time.Millisecond
 	flushSize  = 16 * 1024
-	hupGrace   = 2 * time.Second
+	hupGrace   = 3 * time.Second
 )
 
 // Config selects and parameterises the shell targets.
