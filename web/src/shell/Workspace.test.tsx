@@ -43,6 +43,8 @@ import { clearCommands } from "../overlays/commands";
 
 beforeEach(() => {
   vi.useFakeTimers();
+  // Pin to midday: the pet engine sleeps at night (22:00-07:00).
+  vi.setSystemTime(new Date(2026, 5, 1, 12));
   localStorage.clear();
 });
 afterEach(() => {
