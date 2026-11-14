@@ -1,9 +1,10 @@
 /* Ported from docs/design/mockup.css (.drawer, .row, .switch). */
 .settings h3 {
   margin: 18px 0 6px;
-  font: 400 14px/1 var(--display);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font: 400 20px/1.1 var(--display);
+}
+.settings h3:first-child {
+  margin-top: 4px;
 }
 .settings .row {
   display: flex;
@@ -41,9 +42,68 @@
   color: var(--red, #ff4d4d);
   margin: 6px 0;
 }
-.settings .wide {
-  width: 100%;
-  margin-top: 8px;
+.settings .actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  border-bottom: 0;
+}
+.settings .seg {
+  display: flex;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+.settings .seg button {
+  flex: 1;
+  padding: 8px;
+  font: inherit;
+  color: var(--fg);
+  background: var(--surface-2);
+  border: 0;
+  cursor: pointer;
+}
+.settings .seg button + button {
+  border-left: 2px solid var(--line);
+}
+.settings .seg button[aria-checked="true"] {
+  background: var(--yellow);
+  color: var(--ink);
+}
+.settings .theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  padding: 6px 0 12px;
+  border-bottom: 2px dashed var(--line);
+}
+.settings .theme-card {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: var(--fg);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.settings .theme-card[aria-pressed="true"] {
+  outline: 3px solid var(--cyan);
+}
+.settings .swatch {
+  display: flex;
+  height: 36px;
+  border-bottom: 2px solid var(--line);
+}
+.settings .swatch i {
+  flex: 1;
+}
+.settings .theme-name {
+  padding: 2px 8px 6px;
+  font-size: 12px;
 }
 .switch {
   width: 52px;
