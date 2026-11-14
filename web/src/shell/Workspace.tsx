@@ -4,6 +4,8 @@ import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
 import { Sheet } from "../overlays/Sheet";
 import { registerCommand } from "../overlays/commands";
+import { THEMES } from "../theme/registry";
+import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
 import { Icon } from "./icons";
 import { Mascot } from "./Mascot";
@@ -51,6 +53,15 @@ export function Workspace({ onClosed }: { onClosed?: () => void }) {
         shortcut: "⇧⌘L",
         run: cycle,
       }),
+      ...THEMES.map((t) =>
+        registerCommand({
+          id: `theme:${t.id}`,
+          title: `Theme: ${t.name}`,
+          run: () => themeStore.select(t.id),
+          preview: () => themeStore.preview(t.id),
+          revert: () => themeStore.preview(null),
+        }),
+      ),
       registerCommand({
         id: "settings",
         title: "Open Settings",

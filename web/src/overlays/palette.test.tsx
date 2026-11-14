@@ -74,3 +74,44 @@ describe("CommandPalette", () => {
     expect(screen.queryAllByRole("option")).toHaveLength(0);
   });
 });
+
+describe("CommandPalette preview", () => {
+  const setup = () => {
+    const preview = vi.fn();
+    const revert = vi.fn();
+    const run = vi.fn();
+    registerCommand({ id: "x", title: "Plain", run: vi.fn() });
+    registerCommand({ id: "t", title: "Theme: X", run, preview, revert });
+    return { preview, revert, run };
+  };
+  it("previews while highlighted and reverts when it moves away", () => {
+    const { preview, revert } = setup();
+    render(<CommandPalette defaultOpen />);
+    const input = screen.getByRole("combobox");
+    expect(preview).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(preview).toHaveBeenCalledOnce();
+    fireEvent.keyDown(input, { key: "ArrowUp" });
+    expect(revert).toHaveBeenCalledOnce();
+  });
+  it("reverts on Escape", async () => {
+    const { preview, revert } = setup();
+    render(<CommandPalette defaultOpen />);
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "ArrowDown" });
+    expect(preview).toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    });
+    expect(revert).toHaveBeenCalled();
+  });
+  it("runs on Enter", async () => {
+    const { run } = setup();
+    render(<CommandPalette defaultOpen />);
+    const input = screen.getByRole("combobox");
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    await act(async () => {
+      fireEvent.keyDown(input, { key: "Enter" });
+    });
+    expect(run).toHaveBeenCalledOnce();
+  });
+});

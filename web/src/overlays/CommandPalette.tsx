@@ -49,6 +49,11 @@ export function CommandPalette({
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, []);
+  const hl = open ? list[sel] : undefined;
+  useEffect(() => {
+    hl?.preview?.();
+    return () => hl?.revert?.();
+  }, [hl]);
   const run = (i: number) => {
     const c = list[i];
     if (!c) return;

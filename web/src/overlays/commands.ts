@@ -3,6 +3,10 @@ export type Command = {
   title: string;
   shortcut?: string;
   run: () => void;
+  /** Called while highlighted in the palette (live preview). */
+  preview?: () => void;
+  /** Called when the highlight leaves or the palette closes. */
+  revert?: () => void;
 };
 
 const registry = new Map<string, Command>();
