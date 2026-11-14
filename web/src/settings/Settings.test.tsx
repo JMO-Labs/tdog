@@ -1,4 +1,11 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { json, mockFetch } from "../auth/testutil";
 import { ToastProvider } from "../overlays/toast";
@@ -156,7 +163,7 @@ test("Escape closes the confirm dialog without revoking", async () => {
   const { out } = await mount({ "GET /api/session": session(false) });
   fireEvent.click(screen.getByRole("button", { name: "Sign out everywhere" }));
   fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
-  expect(screen.queryByRole("dialog")).toBeNull();
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(out).not.toHaveBeenCalled();
 });
 
