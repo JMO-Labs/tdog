@@ -5,8 +5,12 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { MotionGlobalConfig } from "motion/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { json, mockFetch } from "../auth/testutil";
+
+// Exit animations never settle reliably in jsdom; skip them.
+MotionGlobalConfig.skipAnimations = true;
 
 let cb: {
   onSize?: (c: number, r: number) => void;
