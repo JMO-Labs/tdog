@@ -45,3 +45,18 @@ func TestUnsecuredHasNoTerm(t *testing.T) {
 		t.Fatalf("unsecured handler exposes /ws/term: %d", rec.Code)
 	}
 }
+
+func TestKillRoutesAuthenticated(t *testing.T) {
+	a, err := auth.New(t.TempDir(), func(string, ...any) {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := NewSecured(fstest.MapFS{"index.html": {Data: []byte("x")}}, a)
+	for _, p := range []string{"/api/sessions/x/kill", "/api/scenes/x/kill", "/api/sessions/kill-all"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, p, nil))
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("%s: %d", p, rec.Code)
+		}
+	}
+}

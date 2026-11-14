@@ -121,3 +121,17 @@ func TestPong(t *testing.T) {
 		})
 	}
 }
+
+func TestSessionControl(t *testing.T) {
+	typ, p, err := Decode(SessionControl("abc123"))
+	if err != nil || typ != Control || string(p) != `{"type":"session","id":"abc123"}` {
+		t.Fatalf("%v %q %v", typ, p, err)
+	}
+}
+
+func TestKilledControl(t *testing.T) {
+	typ, p, err := Decode(KilledControl())
+	if err != nil || typ != Control || string(p) != `{"type":"killed"}` {
+		t.Fatalf("%v %q %v", typ, p, err)
+	}
+}

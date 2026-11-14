@@ -94,3 +94,11 @@ func SessionControl(id string) []byte {
 	}{"session", id})
 	return Encode(Control, p)
 }
+
+// KilledControl builds the control frame announcing the shell was killed by the user.
+func KilledControl() []byte {
+	p, _ := json.Marshal(struct {
+		Type string `json:"type"`
+	}{"killed"})
+	return Encode(Control, p)
+}

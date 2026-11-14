@@ -108,6 +108,15 @@ func (r *Registry) Kill(id string) bool {
 	return true
 }
 
+// kill marks the session as user-killed and hangs it up in the background
+// (SIGHUP, SIGKILL after hupGrace); it returns at once.
+func (s *Session) kill() {
+	s.mu.Lock()
+	s.killed = true
+	s.mu.Unlock()
+	go s.s.kill()
+}
+
 // KillAll hangs up every session (shutdown).
 func (r *Registry) KillAll() {
 	for _, i := range r.List() {
@@ -121,17 +130,5 @@ func (r *Registry) ListHandler() http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
 		_ = json.NewEncoder(w).Encode(r.List())
-	})
-}
-
-// KillHandler serves POST /api/sessions/{id}/kill (204, or 404 if unknown).
-// Callers must wrap it with authentication and register it with an {id} wildcard.
-func (r *Registry) KillHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if !r.Kill(req.PathValue("id")) {
-			http.Error(w, "unknown session", http.StatusNotFound)
-			return
-		}
-		w.WriteHeader(http.StatusNoContent)
 	})
 }
