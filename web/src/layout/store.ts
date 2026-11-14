@@ -6,7 +6,8 @@ function valid(n: unknown): n is Node {
   if (!n || typeof n !== "object") return false;
   const o = n as Record<string, unknown>;
   if (typeof o.id !== "string") return false;
-  if (o.t === "leaf") return true;
+  if (o.t === "leaf")
+    return o.title === undefined || typeof o.title === "string";
   return (
     o.t === "split" &&
     (o.dir === "row" || o.dir === "col") &&

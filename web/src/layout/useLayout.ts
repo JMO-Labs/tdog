@@ -7,6 +7,7 @@ import { onLayoutChange } from "./transfer";
 import {
   closeLeaf,
   newId,
+  renameLeaf,
   setRatio,
   splitLeaf,
   type Dir,
@@ -69,7 +70,30 @@ export function useLayout(scene: string) {
       }),
     [],
   );
+  const rename = useCallback(
+    (id: string, title: string) =>
+      setTree((t) => (t ? renameLeaf(t, id, title) : t)),
+    [],
+  );
+  /** New pane to the right. Panes are all local shells and the client does not
+   * know a shell's cwd, so "same target and cwd" is a fresh local shell. */
+  const duplicate = useCallback(
+    (id: string) =>
+      setTree((t) => (t ? splitLeaf(t, id, "row", newId("p"), newId("s")) : t)),
+    [],
+  );
   const reset = useCallback(() => setTree(fresh()), []);
 
-  return { tree, split, close, ratio, snap, move, swap, reset };
+  return {
+    tree,
+    split,
+    close,
+    ratio,
+    snap,
+    move,
+    swap,
+    rename,
+    duplicate,
+    reset,
+  };
 }

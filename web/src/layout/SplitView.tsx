@@ -17,7 +17,9 @@ import {
 import "dockview-react/dist/styles/dockview.css";
 import { Icon } from "../shell/icons";
 import { PANE_MIME, dragPane, draggedPane, dropZone, type Zone } from "./dnd";
-import { leaves } from "./tree";
+import { leaves, paneTitle, titles } from "./tree";
+import { clearScrollback } from "../terminal/paneActions";
+import { registerCommand } from "../overlays/commands";
 import { mountSplit, orientation } from "./dock";
 import type { Dir, Node } from "./tree";
 import { PaneMenu } from "./PaneMenu";
@@ -36,6 +38,10 @@ export interface SplitViewProps {
   onMove?: (id: string, target: string, zone: Zone) => void;
   onSwap?: (id: string, delta: 1 | -1) => void;
   onMoveToScene?: (id: string, scene: string) => void;
+  onRename?: (id: string, title: string) => void;
+  onDuplicate?: (id: string) => void;
+  /** Only the visible scene registers ⌘K pane commands. */
+  active?: boolean;
   /** `settled` is false while a sash drag / resize is still moving. */
   renderPane: (id: string, settled: boolean) => ReactNode;
 }
@@ -48,6 +54,7 @@ type Shared = {
   settled: boolean;
   busy: () => void;
   order: string[];
+  names: Record<string, string>;
   focus: string | null;
   setFocus: (id: string) => void;
 };
@@ -67,7 +74,8 @@ export function SplitView(props: SplitViewProps) {
   useEffect(() => () => clearTimeout(timer.current), []);
   const [focus, setFocus] = useState<string | null>(null);
   const order = useMemo(() => leaves(props.tree), [props.tree]);
-  const shared = { p: props, settled, busy, order, focus, setFocus };
+  const names = useMemo(() => titles(props.tree), [props.tree]);
+  const shared = { p: props, settled, busy, order, names, focus, setFocus };
   return (
     <SharedCtx.Provider value={shared}>
       <div className="split-root">
@@ -82,8 +90,37 @@ function NodeView({ n }: { n: Node }) {
 }
 
 function Pane({ id }: { id: string }) {
-  const { p, settled, order, focus, setFocus } = useContext(SharedCtx)!;
+  const { p, settled, order, names, focus, setFocus } = useContext(SharedCtx)!;
   const [zone, setZone] = useState<Zone | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const clear = useCallback(() => void clearScrollback(id), [id]);
+  const live = useRef(p);
+  live.current = p;
+  const isFocused = focus === id && p.active !== false;
+  // ⌘K actions target the focused pane of the visible scene.
+  useEffect(() => {
+    if (!isFocused) return;
+    const cmd = (key: string, title: string, run: () => void) =>
+      registerCommand({ id: `pane:${key}`, title: `Pane: ${title}`, run });
+    const offs = [
+      cmd("rename", "Rename", () => setRenaming(true)),
+      cmd("duplicate", "Duplicate", () => live.current.onDuplicate?.(id)),
+      cmd("clear", "Clear scrollback", clear),
+      cmd("swap-prev", "Swap with previous", () =>
+        live.current.onSwap?.(id, -1),
+      ),
+      cmd("swap-next", "Swap with next", () => live.current.onSwap?.(id, 1)),
+      cmd("close", "Close", () => live.current.onClose(id)),
+      ...(live.current.scenes ?? []).map((s) =>
+        registerCommand({
+          id: `pane:move:${s.id}`,
+          title: `Pane: Move to scene ${s.name}`,
+          run: () => live.current.onMoveToScene?.(id, s.id),
+        }),
+      ),
+    ];
+    return () => offs.forEach((f) => f());
+  }, [isFocused, id, clear, p.scenes]);
   const over = (e: DragEvent<HTMLElement>) => {
     const d = draggedPane();
     if (!d || !p.onMove) {
@@ -142,7 +179,32 @@ function Pane({ id }: { id: string }) {
           setZone(null);
         }}
       >
-        <span className="title">Shell {order.indexOf(id) + 1}</span>
+        {renaming ? (
+          <input
+            className="pane-title-input"
+            aria-label="Pane name"
+            autoFocus
+            defaultValue={names[id] ?? ""}
+            placeholder={paneTitle(undefined, undefined, order.indexOf(id))}
+            draggable={false}
+            onBlur={(e) => {
+              if (!e.currentTarget.dataset.cancel)
+                p.onRename?.(id, e.currentTarget.value);
+              setRenaming(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+              else if (e.key === "Escape") {
+                e.currentTarget.dataset.cancel = "1";
+                e.currentTarget.blur();
+              }
+            }}
+          />
+        ) : (
+          <span className="title">
+            {paneTitle(names[id], undefined, order.indexOf(id))}
+          </span>
+        )}
         {/* Panes are always local PTYs for now (no remote targets in spec). */}
         <span className="chip">local</span>
         <span className="spacer" />
@@ -153,6 +215,10 @@ function Pane({ id }: { id: string }) {
             scenes={p.scenes ?? []}
             onSwap={p.onSwap}
             onMoveToScene={p.onMoveToScene}
+            onRename={p.onRename && (() => setRenaming(true))}
+            onDuplicate={p.onDuplicate}
+            onClear={clear}
+            onClose={p.onClose}
           />
         )}
         <button

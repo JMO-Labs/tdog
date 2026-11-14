@@ -7,6 +7,7 @@ import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
 import { findSessionId } from "./terminal/sessions";
+import { registerClear } from "./terminal/paneActions";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -134,6 +135,12 @@ export function TerminalPane({
       );
       session.current = s;
       renderer.current = r;
+      // ED 3: erase scrollback only; works the same in both renderers.
+      const offClear = sceneKey
+        ? registerClear(sceneKey, () =>
+            r.write(new TextEncoder().encode("\x1b[3J")),
+          )
+        : () => {};
       r.setTheme(themeStore.terminal(themeRef.current));
       const offTheme = themeStore.subscribe(() =>
         r.setTheme(themeStore.terminal(themeRef.current)),
@@ -144,6 +151,7 @@ export function TerminalPane({
       });
       ro.observe(el);
       cleanup = () => {
+        offClear();
         offTheme();
         ro.disconnect();
         session.current = null;
@@ -154,7 +162,7 @@ export function TerminalPane({
       cancelled = true;
       cleanup();
     };
-  }, [connect]);
+  }, [connect, sceneKey]);
 
   return (
     <div

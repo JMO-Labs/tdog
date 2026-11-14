@@ -79,3 +79,22 @@ test("snap asks before dropping panes, kills them once confirmed", () => {
   expect(leaves(result.current.tree!)).toEqual([ids[0]]);
   expect(killScene.mock.calls.map((c) => c[0])).toEqual(ids.slice(1));
 });
+
+test("rename persists with the layout and survives a remount", () => {
+  const a = renderHook(() => useLayout("s"));
+  const first = leaves(a.result.current.tree!)[0];
+  act(() => a.result.current.rename(first, "build"));
+  expect(loadLayout("s")).toEqual({ t: "leaf", id: first, title: "build" });
+  a.unmount();
+  const b = renderHook(() => useLayout("s"));
+  expect(b.result.current.tree).toMatchObject({ title: "build" });
+});
+
+test("duplicate adds a new pane after the source", () => {
+  const { result } = renderHook(() => useLayout("s"));
+  const first = leaves(result.current.tree!)[0];
+  act(() => result.current.duplicate(first));
+  const ids = leaves(result.current.tree!);
+  expect(ids).toHaveLength(2);
+  expect(ids[0]).toBe(first);
+});

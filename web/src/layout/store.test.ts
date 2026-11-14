@@ -34,3 +34,14 @@ test("storage failures are swallowed", () => {
   expect(loadLayout("one")).toBeUndefined();
   vi.restoreAllMocks();
 });
+
+test("renamed titles round-trip; non-string titles are rejected", () => {
+  const tree = { t: "leaf", id: "a", title: "logs" } as const;
+  saveLayout("t", tree);
+  expect(loadLayout("t")).toEqual(tree);
+  localStorage.setItem(
+    "tdog.layout.t",
+    JSON.stringify({ t: "leaf", id: "a", title: 3 }),
+  );
+  expect(loadLayout("t")).toBeUndefined();
+});

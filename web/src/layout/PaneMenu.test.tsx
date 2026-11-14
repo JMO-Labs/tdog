@@ -5,7 +5,14 @@ import { PaneMenu } from "./PaneMenu";
 afterEach(cleanup);
 
 function setup() {
-  const p = { onSwap: vi.fn(), onMoveToScene: vi.fn() };
+  const p = {
+    onSwap: vi.fn(),
+    onMoveToScene: vi.fn(),
+    onRename: vi.fn(),
+    onDuplicate: vi.fn(),
+    onClear: vi.fn(),
+    onClose: vi.fn(),
+  };
   render(
     <div>
       <PaneMenu id="a" scenes={[{ id: "s2", name: "Two" }]} {...p} />
@@ -62,4 +69,31 @@ test("menu has a heading, focuses first item, arrows move and wrap", () => {
   expect(document.activeElement).toBe(items[0]);
   fireEvent.keyDown(menu, { key: "End" });
   expect(document.activeElement).toBe(items[items.length - 1]);
+});
+
+test.each([
+  ["Rename pane", "onRename", []],
+  ["Duplicate pane", "onDuplicate", ["a"]],
+  ["Clear scrollback", "onClear", ["a"]],
+  ["Close pane", "onClose", ["a"]],
+  ["Swap with next", "onSwap", ["a", 1]],
+] as const)("%s fires its handler and closes", (name, fn, args) => {
+  const { p, open } = setup();
+  open();
+  fireEvent.click(screen.getByRole("menuitem", { name }));
+  expect(p[fn]).toHaveBeenCalledWith(...args);
+  expect(screen.queryByRole("menu")).toBeNull();
+});
+
+test("Move to scene opens a submenu of scenes; picking one moves the pane", () => {
+  const { p, open } = setup();
+  open();
+  fireEvent.click(screen.getByRole("menuitem", { name: "Move to scene" }));
+  const sub = screen.getByRole("menu", { name: "Move to scene" });
+  fireEvent.keyDown(sub, { key: "Escape" });
+  expect(screen.queryByRole("menu", { name: "Move to scene" })).toBeNull();
+  expect(screen.getByRole("menu", { name: "Pane actions" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("menuitem", { name: "Move to scene" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Two" }));
+  expect(p.onMoveToScene).toHaveBeenCalledWith("a", "s2");
 });
