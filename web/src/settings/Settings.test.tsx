@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { json, mockFetch } from "../auth/testutil";
 import { ToastProvider } from "../overlays/toast";
 import { SettingsPanel } from "./SettingsPanel";
-import { getPref, setPref } from "./prefs";
+import { getMotifOpacity, getPref, setPref } from "./prefs";
 
 const session = (on: boolean) => json({ totp_enabled: on, remote: false });
 
@@ -173,4 +173,16 @@ test("Dress up Dogbert defaults on and persists", () => {
   expect(getPref("dress")).toBe(true);
   setPref("dress", false);
   expect(localStorage.getItem("tdog.dress")).toBe("0");
+});
+
+test("terminal motif slider persists opacity and applies immediately", async () => {
+  await mount({ "GET /api/session": session(false) });
+  const slider = screen.getByRole("slider", { name: /terminal motif/i });
+  expect((slider as HTMLInputElement).value).toBe("6");
+  fireEvent.change(slider, { target: { value: "20" } });
+  expect(localStorage.getItem("tdog.motifOpacity")).toBe("20");
+  expect(getMotifOpacity()).toBe(20);
+  expect((slider as HTMLInputElement).value).toBe("20");
+  fireEvent.change(slider, { target: { value: "0" } });
+  expect(getMotifOpacity()).toBe(0);
 });
