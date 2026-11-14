@@ -61,7 +61,9 @@
 
   <!-- wrong password: original CRT finger-wag homage -->
   <div id="nono" class="crt" hidden>
-    <img class="hand" src="assets/tdog-nono.webp" alt="tdog mascot wagging a finger" width="800" height="597">
+    <div class="mascot" id="nono-dog" role="img" aria-label="tdog mascot wagging a finger">
+      <img class="m-arm" src="assets/tdog-nono-arm.png" alt=""><img class="m-body" src="assets/tdog-nono-body.png" alt="">
+    </div>
     <p class="crt-big">Ah ah ah!</p>
     <p class="crt-small" id="nono-detail">Wrong password. 4 tries left before a 1-minute lockout.</p>
   </div>
@@ -70,7 +72,9 @@
 <!-- dial-up sign-on -->
 <div id="dialup" class="overlay dim" hidden>
   <div class="card dialup-card">
-    <img class="wave" id="wave" src="assets/tdog-wave.webp" alt="tdog mascot waving hello" width="800" height="597" hidden>
+    <div class="mascot wave" id="wave" role="img" aria-label="tdog mascot waving hello" hidden>
+      <img class="m-arm" src="assets/tdog-wave-arm.png" alt=""><img class="m-body" src="assets/tdog-wave-body.png" alt="">
+    </div>
     <h2 class="card-title">Signing on</h2>
     <ol class="steps">
       <li><span class="step-ico" data-icon="phone"></span>Dialing…</li>
