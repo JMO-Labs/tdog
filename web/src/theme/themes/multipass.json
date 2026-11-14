@@ -1,0 +1,44 @@
+{
+  "name": "Multipass",
+  "description": "Orange and taxi yellow on deep blue. Inspired by The Fifth Element.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#f3ecd8",
+    "bg": "#0a1840",
+    "cursor": "#ffc400",
+    "selection": "#27468f",
+    "ansi": [
+      "#8a9acb",
+      "#ff7a3d",
+      "#6fe0a0",
+      "#ffc400",
+      "#6aa5ff",
+      "#ff8fc0",
+      "#4fd8f0",
+      "#f3ecd8",
+      "#a9b6dd",
+      "#ffa070",
+      "#a0f0c0",
+      "#ffd84d",
+      "#9cc4ff",
+      "#ffb3d6",
+      "#8fe8f8",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#071130",
+    "surface": "#112459",
+    "surface-2": "#1a3373",
+    "fg": "#f3ecd8",
+    "muted": "#a3b0d6",
+    "line": "#030816",
+    "shadow": "#ff7a3d",
+    "link": "#ffc400",
+    "yellow": "#ffc400",
+    "term-bg": "#0a1840",
+    "term-fg": "#f3ecd8"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "name": "Pocket Monochrome",
+  "description": "Four shades of handheld-screen green, nothing else. Inspired by 4-shade handheld screens.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#9bbc0f",
+    "bg": "#0f380f",
+    "cursor": "#9bbc0f",
+    "selection": "#306230",
+    "ansi": [
+      "#8bac0f",
+      "#9bbc0f",
+      "#8bac0f",
+      "#9bbc0f",
+      "#8bac0f",
+      "#9bbc0f",
+      "#8bac0f",
+      "#9bbc0f",
+      "#8bac0f",
+      "#9bbc0f",
+      "#8bac0f",
+      "#9bbc0f",
+      "#8bac0f",
+      "#9bbc0f",
+      "#8bac0f",
+      "#9bbc0f"
+    ]
+  },
+  "chrome": {
+    "bg": "#0f380f",
+    "surface": "#0f380f",
+    "fg": "#9bbc0f",
+    "muted": "#8bac0f",
+    "line": "#306230",
+    "shadow": "#306230",
+    "link": "#9bbc0f"
+  },
+  "light": {
+    "terminal": {
+      "fg": "#0f380f",
+      "bg": "#9bbc0f",
+      "cursor": "#0f380f",
+      "selection": "#8bac0f",
+      "ansi": [
+        "#0f380f",
+        "#306230",
+        "#0f380f",
+        "#306230",
+        "#0f380f",
+        "#306230",
+        "#0f380f",
+        "#306230",
+        "#0f380f",
+        "#306230",
+        "#0f380f",
+        "#306230",
+        "#0f380f",
+        "#306230",
+        "#0f380f",
+        "#306230"
+      ]
+    },
+    "chrome": {
+      "bg": "#9bbc0f",
+      "surface": "#8bac0f",
+      "fg": "#0f380f",
+      "muted": "#306230",
+      "line": "#0f380f",
+      "shadow": "#306230",
+      "link": "#0f380f"
+    }
+  }
+}

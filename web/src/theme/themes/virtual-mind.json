@@ -1,0 +1,47 @@
+{
+  "name": "Virtual Mind",
+  "description": "Early-CGI rainbow gradients on black. Inspired by The Lawnmower Man.",
+  "appearance": "dark",
+  "pattern": "zigzag",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#f0eaff",
+    "bg": "#050508",
+    "cursor": "#00ffd0",
+    "selection": "#3a1f7a",
+    "ansi": [
+      "#8c86a8",
+      "#ff4f7a",
+      "#3dff8a",
+      "#ffe14d",
+      "#4d8dff",
+      "#d44dff",
+      "#00e5ff",
+      "#f0eaff",
+      "#aaa5c4",
+      "#ff86a3",
+      "#86ffb5",
+      "#fff08a",
+      "#86b3ff",
+      "#e68aff",
+      "#7df0ff",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#000000",
+    "surface": "#12101c",
+    "surface-2": "#1b1830",
+    "fg": "#f0eaff",
+    "muted": "#a09ab8",
+    "line": "#000000",
+    "shadow": "#d44dff",
+    "link": "#00e5ff",
+    "pink": "#ff4f7a",
+    "cyan": "#00e5ff",
+    "yellow": "#ffe14d",
+    "purple": "#d44dff",
+    "term-bg": "#050508",
+    "term-fg": "#f0eaff"
+  }
+}

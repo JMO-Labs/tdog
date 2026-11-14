@@ -1,5 +1,10 @@
 import memphis from "./themes/memphis-pop.json";
 import nightMarket from "./themes/night-market.json";
+import dialUpParanoia from "./themes/dial-up-paranoia.json";
+import blackBox from "./themes/black-box.json";
+import virtualMind from "./themes/virtual-mind.json";
+import multipass from "./themes/multipass.json";
+import bugHunt from "./themes/bug-hunt.json";
 import wetwired from "./themes/wetwired.json";
 import sewerSquad from "./themes/sewer-squad.json";
 import wakeUpNeo from "./themes/wake-up-neo.json";
@@ -15,6 +20,11 @@ import morphSquad from "./themes/morph-squad.json";
 import truthIsOutThere from "./themes/truth-is-out-there.json";
 import laserBinder from "./themes/laser-binder.json";
 import rainbowLeopard from "./themes/rainbow-leopard.json";
+import missionControl from "./themes/mission-control.json";
+import deepGravity from "./themes/deep-gravity.json";
+import ackAck from "./themes/ack-ack.json";
+import pocketMonochrome from "./themes/pocket-monochrome.json";
+import ripAndTear from "./themes/rip-and-tear.json";
 import colonialMarine from "./themes/colonial-marine.json";
 import liquidMetal from "./themes/liquid-metal.json";
 import ninetyFive from "./themes/ninety-five.json";
@@ -29,6 +39,11 @@ export const DEFAULT_THEME_ID = "memphis-pop";
 export const THEMES: Theme[] = Object.entries({
   "memphis-pop": memphis,
   "night-market": nightMarket,
+  "dial-up-paranoia": dialUpParanoia,
+  "black-box": blackBox,
+  "virtual-mind": virtualMind,
+  multipass: multipass,
+  "bug-hunt": bugHunt,
   wetwired: wetwired,
   "sewer-squad": sewerSquad,
   "wake-up-neo": wakeUpNeo,
@@ -44,6 +59,11 @@ export const THEMES: Theme[] = Object.entries({
   "truth-is-out-there": truthIsOutThere,
   "laser-binder": laserBinder,
   "rainbow-leopard": rainbowLeopard,
+  "mission-control": missionControl,
+  "deep-gravity": deepGravity,
+  "ack-ack": ackAck,
+  "pocket-monochrome": pocketMonochrome,
+  "rip-and-tear": ripAndTear,
   "colonial-marine": colonialMarine,
   "liquid-metal": liquidMetal,
   "ninety-five": ninetyFive,
