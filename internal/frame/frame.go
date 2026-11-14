@@ -85,3 +85,12 @@ func Pong(p []byte) (f []byte, ok bool) {
 	out, _ := json.Marshal(v)
 	return Encode(Control, out), true
 }
+
+// SessionControl builds the control frame announcing the session id.
+func SessionControl(id string) []byte {
+	p, _ := json.Marshal(struct {
+		Type string `json:"type"`
+		ID   string `json:"id"`
+	}{"session", id})
+	return Encode(Control, p)
+}
