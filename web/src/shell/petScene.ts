@@ -1,5 +1,13 @@
 import type { PetView } from "./petEngine";
-import { type Cell, LYING, type Rows, SPR, face, spr } from "./petSprites";
+import {
+  type Cell,
+  type FaceOpts,
+  type Rows,
+  SPR,
+  face,
+  lying,
+  spr,
+} from "./petSprites";
 
 export interface Scene {
   cells: Cell[];
@@ -10,6 +18,7 @@ export interface Scene {
   mouth: boolean;
 }
 
+const dressed = face;
 const sprite = (k: string): Rows => SPR[k] as Rows;
 const clampX = (x: number) => Math.max(0, Math.min(18, x));
 /** Ping-pong walk across 0..18, one step every 3 ticks; no randomness so frames stay pure. */
@@ -19,7 +28,14 @@ const wander = (t: number) => {
 };
 
 /** One frame for a live pet. `t` is the animation tick (0 when reduced motion). */
-export function petScene(v: PetView, tick: number, reduced: boolean): Scene {
+export function petScene(
+  v: PetView,
+  tick: number,
+  reduced: boolean,
+  costume?: Rows,
+): Scene {
+  const face = (e: string, o: FaceOpts, x: number, y: number) =>
+    dressed(e, { ...o, costume }, x, y);
   const t = reduced ? 0 : tick;
   const a = (t % 2) as 0 | 1;
   const at = reduced ? 0 : v.actT;
@@ -120,7 +136,7 @@ export function petScene(v: PetView, tick: number, reduced: boolean): Scene {
   }
   if (v.asleep) {
     cells.push(
-      ...spr(LYING, 10, 15),
+      ...lying(10, 15, costume),
       ...spr(sprite("z"), 25, 9 - ((t >> 1) % 4)),
     );
     return {

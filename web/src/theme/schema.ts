@@ -1,4 +1,5 @@
 /** Data-only theme format (spec §8/§9). No JS, no raw CSS: hex colors and allowlisted ids only. */
+import { validCostumeRows } from "../shell/petSprites";
 
 export const CHROME_TOKENS = [
   "bg",
@@ -31,10 +32,15 @@ export const EFFECTS = [
   "vignette",
 ] as const;
 export const BOOTS = ["default"] as const;
-export const COSTUMES = ["none"] as const;
 export const SHADOWS = ["hard", "soft", "bevel", "glow", "none"] as const;
 export const CURSOR_SHAPES = ["block", "bar", "underline"] as const;
 export const MOTIF_SHAPES = ["path", "circle", "rect", "polygon"] as const;
+
+/** Costume pixels (max 14x6, '#'/'.') and the noun used in "Dogbert put on a <name>." */
+export interface Costume {
+  name: string;
+  rows: string[];
+}
 
 export interface TerminalColors {
   fg: string;
@@ -85,9 +91,21 @@ export interface ChromeScope {
   };
   pattern: Pattern;
   boot: (typeof BOOTS)[number];
-  costume: (typeof COSTUMES)[number];
+  /** Dogbert costume: pixel rows over the head, or "none". */
+  costume: "none" | Costume;
   motif?: Motif;
 }
+function costume(v: unknown, at: string): string | null {
+  if (v === "none") return null;
+  if (!isObj(v) || unknownKeys(v, ["name", "rows"]).length)
+    return `${at} must be "none" or {name, rows}`;
+  if (typeof v.name !== "string" || !/^[a-z][a-z ]{0,23}$/.test(v.name))
+    return `${at}.name must be 1-24 lowercase letters`;
+  return validCostumeRows(v.rows)
+    ? null
+    : `${at}.rows must be 1-6 rows of 1-14 '#' or '.'`;
+}
+
 /** Light variant: colors only. */
 export interface ThemeVariant {
   terminal: { palette: TerminalColors };
@@ -245,7 +263,8 @@ function chrome(v: unknown, at: string): string | null {
   if (v.pattern !== "none" && !oneOf(PATTERNS, v.pattern))
     return `${at}.pattern is not allowed`;
   if (!oneOf(BOOTS, v.boot)) return `${at}.boot is not allowed`;
-  if (!oneOf(COSTUMES, v.costume)) return `${at}.costume is not allowed`;
+  const c = costume(v.costume, `${at}.costume`);
+  if (c) return c;
   return (
     tokens(v.tokens, `${at}.tokens`) ??
     (v.motif === undefined ? null : motif(v.motif, `${at}.motif`))
