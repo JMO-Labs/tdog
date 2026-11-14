@@ -1,0 +1,208 @@
+<title>tdog Chrome Mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Lilita+One&family=JetBrains+Mono:wght@400;600;800&display=swap">
+<link rel="stylesheet" href="mockup.css">
+
+<!-- ============ AUTH (boot / setup / totp) ============ -->
+<section id="auth" class="auth pat-bg" hidden>
+  <button class="icon-btn corner theme-toggle" data-tip="Theme" data-kbd="⇧⌘L" aria-label="Theme"><span data-icon="system"></span></button>
+
+  <div class="auth-stack">
+    <h1 class="wordmark big" aria-label="tdog"><span>t</span><span>d</span><span>o</span><span>g</span></h1>
+
+    <!-- login -->
+    <form id="v-login" class="card auth-card" data-view="boot" novalidate>
+      <h2 class="card-title">Welcome back</h2>
+      <p class="muted">Sign in to get your shells back where you left them.</p>
+      <label class="field" for="login-pw"><span>Password</span>
+        <input id="login-pw" class="input" type="password" autocomplete="current-password" placeholder="••••••••••">
+      </label>
+      <button class="btn primary wide" type="submit">Sign in</button>
+      <p class="hint">Mockup: any password triggers the wrong-password gag. Type <kbd>radical</kbd> to get in.</p>
+    </form>
+
+    <!-- setup -->
+    <form id="v-setup" class="card auth-card" data-view="setup" novalidate>
+      <h2 class="card-title">Set up tdog</h2>
+      <p class="muted">Paste the setup token from the server log, then pick a password.</p>
+      <label class="field" for="setup-token"><span>Setup token</span>
+        <input id="setup-token" class="input mono" placeholder="19abf796…" autocomplete="off">
+      </label>
+      <label class="field" for="setup-pw"><span>Password</span>
+        <input id="setup-pw" class="input" type="password" autocomplete="new-password">
+      </label>
+      <div class="tape" aria-hidden="true"><i></i></div>
+      <p class="tape-label muted" id="tape-label">Tape empty. 12 characters minimum.</p>
+      <label class="field" for="setup-pw2"><span>Confirm password</span>
+        <input id="setup-pw2" class="input" type="password" autocomplete="new-password">
+      </label>
+      <button class="btn primary wide" type="submit">Create account</button>
+    </form>
+
+    <!-- totp -->
+    <form id="v-totp" class="card auth-card" data-view="totp" novalidate>
+      <h2 class="card-title">One more thing</h2>
+      <p class="muted">Enter the 6-digit code from your authenticator app.</p>
+      <div class="otp" role="group" aria-label="6-digit code">
+        <input id="otp-1" class="input otp-box" inputmode="numeric" maxlength="1" aria-label="Digit 1">
+        <input id="otp-2" class="input otp-box" inputmode="numeric" maxlength="1" aria-label="Digit 2">
+        <input id="otp-3" class="input otp-box" inputmode="numeric" maxlength="1" aria-label="Digit 3">
+        <input id="otp-4" class="input otp-box" inputmode="numeric" maxlength="1" aria-label="Digit 4">
+        <input id="otp-5" class="input otp-box" inputmode="numeric" maxlength="1" aria-label="Digit 5">
+        <input id="otp-6" class="input otp-box" inputmode="numeric" maxlength="1" aria-label="Digit 6">
+      </div>
+      <button class="btn primary wide" type="submit">Verify</button>
+      <button class="btn ghost wide" type="button">Use a recovery code</button>
+    </form>
+  </div>
+
+  <!-- wrong password: original CRT finger-wag homage -->
+  <div id="nono" class="crt" hidden>
+    <svg class="hand" viewBox="0 0 40 60" aria-hidden="true">
+      <rect x="15" y="2" width="9" height="30" rx="4" />
+      <rect x="6" y="26" width="28" height="28" rx="7" />
+      <rect x="6" y="34" width="28" height="4" class="knuckle"/>
+    </svg>
+    <p class="crt-big">Ah ah ah!</p>
+    <p class="crt-small" id="nono-detail">Wrong password. 4 tries left before a 1-minute lockout.</p>
+  </div>
+</section>
+
+<!-- dial-up sign-on -->
+<div id="dialup" class="overlay dim" hidden>
+  <div class="card dialup-card">
+    <h2 class="card-title">Signing on</h2>
+    <ol class="steps">
+      <li><span class="step-ico" data-icon="phone"></span>Dialing…</li>
+      <li><span class="step-ico" data-icon="key"></span>Verifying password…</li>
+      <li><span class="step-ico" data-icon="check"></span>Connected!</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============ WORKSPACE ============ -->
+<section id="workspace" class="ws" hidden>
+  <header class="ws-head">
+    <span class="wordmark small" aria-label="tdog">tdog</span>
+    <nav class="tabs" role="tablist" aria-label="Scenes">
+      <span class="tab-pill" aria-hidden="true"></span>
+      <button class="tab" role="tab" aria-selected="true">dev box</button>
+      <button class="tab" role="tab" aria-selected="false">logs</button>
+      <button class="tab" role="tab" aria-selected="false">homelab</button>
+    </nav>
+    <button class="icon-btn sm" id="new-scene" data-tip="New scene" data-kbd="⌘T" aria-label="New scene"><span data-icon="plus"></span></button>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="open-studio" data-tip="Studio" data-kbd="⌘." aria-label="Studio"><span data-icon="brush"></span></button>
+    <button class="icon-btn theme-toggle" data-tip="Theme" data-kbd="⇧⌘L" aria-label="Theme"><span data-icon="system"></span></button>
+    <button class="icon-btn" id="open-settings" data-tip="Settings" data-kbd="⌘," aria-label="Settings"><span data-icon="gear"></span></button>
+    <button class="icon-btn danger" id="open-kill" data-tip="Kill all shells" data-kbd="⌘⇧⌫" aria-label="Kill all shells"><span data-icon="power"></span></button>
+  </header>
+
+  <main class="panes" id="panes"></main>
+
+  <footer class="status">
+    <span class="chip"><span data-icon="server"></span>ssh-host</span>
+    <span class="chip">zsh</span>
+    <span class="chip num">132×40</span>
+    <span class="chip num" id="latency"><span data-icon="bolt"></span><b>3 ms</b></span>
+    <div class="spacer"></div>
+    <button class="pet" id="pet" data-tip="Dogbert is asleep. Click to hide" aria-label="Pet"></button>
+    <button class="chip kbd-chip" id="open-cmdk" data-tip="Command palette" aria-label="Command palette"><kbd>⌘K</kbd></button>
+  </footer>
+</section>
+
+<!-- kill dialog -->
+<div id="kill" class="overlay dim" hidden>
+  <div class="card kill-card" role="dialog" aria-modal="true" aria-labelledby="kill-title">
+    <div class="kill-band pat-zebra" aria-hidden="true"></div>
+    <h2 class="card-title" id="kill-title">Nuke every shell?</h2>
+    <p class="muted">Ends 3 shells in 2 scenes. Unsaved work in them is gone.</p>
+    <button class="hold" id="hold">
+      <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring" id="ring"/></svg>
+      <span>Hold to nuke<br>3 shells</span>
+    </button>
+    <button class="btn ghost wide" data-close>Keep them</button>
+  </div>
+</div>
+<div id="bolt" class="bolt-flash" hidden><svg viewBox="0 0 100 160" aria-hidden="true"><path d="M60 0 L10 90 H45 L30 160 L90 60 H55 Z"/></svg></div>
+
+<!-- settings drawer -->
+<aside id="drawer" class="drawer" hidden aria-label="Settings">
+  <div class="drawer-head"><h2 class="card-title">Settings</h2>
+    <button class="icon-btn sm" data-close data-tip="Close" data-kbd="Esc" aria-label="Close"><span data-icon="x"></span></button></div>
+  <div class="drawer-body">
+    <h3>Account</h3>
+    <div class="row"><div><b>Password</b><p class="muted">Last changed today.</p></div><button class="btn sm">Change password</button></div>
+    <div class="row"><div><b>Two-factor codes</b><p class="muted">Highly recommended. Codes from any authenticator app.</p></div><button class="switch" role="switch" aria-checked="false" id="sw-totp"></button></div>
+    <h3>Personality</h3>
+    <div class="row"><div><b>Serious mode</b><p class="muted">Drops the slang from messages.</p></div><button class="switch" role="switch" aria-checked="false" id="sw-serious"></button></div>
+    <div class="row"><div><b>Status bar pet</b><p class="muted">Sleeps when shells idle, wakes on output.</p></div><button class="switch" role="switch" aria-checked="true" id="sw-pet"></button></div>
+    <div class="row"><div><b>Sound pack</b><p class="muted">Modem handshake, kill zap. Off by default.</p></div><button class="switch" role="switch" aria-checked="false"></button></div>
+    <h3>Sessions</h3>
+    <div class="row"><div><b>Firefox on Linux</b><p class="muted">This browser, signed in 08:47</p></div><span class="chip ok">Active</span></div>
+    <div class="row"><div><b>Safari on iPad</b><p class="muted">Signed in yesterday</p></div><button class="btn sm ghost">Sign out</button></div>
+    <button class="btn danger wide" id="revoke">Sign out everywhere</button>
+  </div>
+</aside>
+
+<!-- studio -->
+<div id="studio" class="studio" hidden role="dialog" aria-modal="true" aria-label="Studio">
+  <header class="studio-head pat-bg">
+    <span class="wordmark mid">Studio</span>
+    <button class="btn" data-close>Back to workspace</button>
+  </header>
+  <div class="studio-body">
+    <nav class="studio-nav">
+      <button class="nav-item" aria-current="true" data-pane="themes">Themes</button>
+      <button class="nav-item" data-pane="fonts">Display font</button>
+      <button class="nav-item" data-pane="soon">Backgrounds</button>
+      <button class="nav-item" data-pane="soon">Scene presets</button>
+      <button class="nav-item" data-pane="soon">Terminal presets</button>
+      <button class="nav-item" data-pane="soon">Giphy</button>
+    </nav>
+    <div class="studio-main">
+      <div data-pane-body="themes" class="grid-cards" id="theme-cards"></div>
+      <div data-pane-body="fonts" class="grid-cards" hidden>
+        <button class="font-card" data-font="lilita"><span class="specimen" style="font-family:'Lilita One',sans-serif">tdog</span><b>Lilita One</b><span class="muted">Rounded poster pop</span></button>
+        <button class="font-card" data-font="bungee"><span class="specimen" style="font-family:'Bungee',sans-serif">tdog</span><b>Bungee</b><span class="muted">Blocky signage</span></button>
+      </div>
+      <div data-pane-body="soon" class="empty" hidden>
+        <div class="sticker" data-sticker="cassette"></div>
+        <p class="empty-big">Coming in v0.4</p>
+        <p class="muted">This tape hasn't been recorded yet.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- command palette -->
+<div id="cmdk" class="overlay dim top" hidden>
+  <div class="card cmdk" role="dialog" aria-modal="true" aria-label="Command palette">
+    <input id="cmdk-q" class="input" placeholder="Type a command…" autocomplete="off">
+    <ul id="cmdk-list" role="listbox"></ul>
+  </div>
+</div>
+
+<div id="saver" class="saver" hidden></div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<div id="tip" class="tip" role="tooltip" hidden></div>
+<canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
+
+<!-- mockup-only controls -->
+<details class="mock" open>
+  <summary>Mockup controls</summary>
+  <div class="mock-grid">
+    <b>View</b>
+    <a href="#boot">Login</a><a href="#setup">Setup</a><a href="#totp">2FA code</a><a href="#workspace">Workspace</a>
+    <b>Display font</b>
+    <button data-font="lilita">Lilita One</button><button data-font="bungee">Bungee</button>
+    <b>Gags</b>
+    <button data-gag="drop">Drop connection</button><button data-gag="lag">Lag spike</button>
+    <button data-gag="bg">Background job done</button><button data-gag="fail">Shell crashed</button>
+    <button data-gag="saver">Screensaver</button><button data-gag="boot">Replay boot</button>
+  </div>
+</details>
+
+<script src="mockup.js"></script>
