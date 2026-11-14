@@ -35,3 +35,11 @@ test("setRatio clamps and targets one split", () => {
   expect(setRatio(t, "s1", 0.01)).toMatchObject({ ratio: 0.1 });
   expect(setRatio(t, "s1", 2)).toMatchObject({ ratio: 0.9 });
 });
+
+test("setRatio recurses into nested splits and leaves others untouched", () => {
+  const t1 = splitLeaf(leaf("a"), "a", "row", "b", "s1");
+  const t2 = splitLeaf(t1, "b", "col", "c", "s2");
+  const r = setRatio(t2, "s2", 0.3);
+  expect(r.t === "split" && r.ratio).toBe(0.5);
+  expect(r.t === "split" && r.b.t === "split" && r.b.ratio).toBe(0.3);
+});
