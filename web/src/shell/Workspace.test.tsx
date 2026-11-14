@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { json, mockFetch } from "../auth/testutil";
 
@@ -82,7 +88,9 @@ test("palette commands: theme, settings, sign out", async () => {
   open();
   fireEvent.click(screen.getByText("Open Settings"));
   expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
-  fireEvent.keyDown(document, { key: "Escape" });
+  fireEvent.keyDown(screen.getByRole("dialog", { name: "Settings" }), {
+    key: "Escape",
+  });
   open();
   await act(async () => {
     fireEvent.click(screen.getByText("Sign out"));
@@ -99,11 +107,13 @@ test("empty state offers a visible Reconnect action", () => {
   expect(reconnect).toHaveBeenCalledTimes(1);
 });
 
-test("Settings button opens the sheet; Escape closes it", () => {
+test("Settings button opens the sheet; Escape closes it", async () => {
   render(<Workspace onSignedOut={() => {}} />);
   expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-  expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
-  fireEvent.keyDown(document, { key: "Escape" });
-  expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+  const sheet = screen.getByRole("dialog", { name: "Settings" });
+  fireEvent.keyDown(sheet, { key: "Escape" });
+  await waitFor(() =>
+    expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull(),
+  );
 });
