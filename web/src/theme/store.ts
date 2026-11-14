@@ -1,7 +1,11 @@
 import type { TerminalTheme } from "../terminal/renderer";
 import { DEFAULT_THEME_ID, THEMES, findTheme, type Theme } from "./registry";
 import { motifSvg } from "./motif";
-import type { TerminalColors, ThemeVariant } from "./schema";
+import {
+  CHROME_TOKENS,
+  type TerminalColors,
+  type ThemeVariant,
+} from "./schema";
 
 export type Scheme = "system" | "light" | "dark";
 const KEY = "tdog.theme.id";
@@ -80,7 +84,16 @@ function apply() {
   set("--shadow-style", shape.shadow);
   if (pattern !== "confetti")
     set("--pattern", pattern === "none" ? "none" : `var(--pat-${pattern})`);
-  if (motif) set("--header-motif", `url("${motifSvg(motif, tokens)}")`);
+  if (motif) {
+    // Resolve token names from computed values so CSS defaults count too.
+    const cs = getComputedStyle(el);
+    const resolved: Record<string, string> = {};
+    for (const k of CHROME_TOKENS) {
+      const v = tokens[k] ?? cs.getPropertyValue(`--${k}`).trim();
+      if (v) resolved[k] = v;
+    }
+    set("--header-motif", `url("${motifSvg(motif, resolved)}")`);
+  }
   // A theme with a light variant follows the scheme; others pin their appearance.
   if (t.light) {
     if (scheme === "system") el.removeAttribute("data-theme");

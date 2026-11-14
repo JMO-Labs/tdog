@@ -252,6 +252,19 @@ describe("motifSvg", () => {
     expect(svg).toContain('<circle cx="5" cy="5" r="2" fill="#ff0000"');
     expect(svg.startsWith("<svg")).toBe(true);
   });
+  it("resolves a token-name fill to its hex value", () => {
+    const svg = decodeURIComponent(
+      motifSvg(
+        {
+          viewBox: [0, 0, 10, 10],
+          tile: [10, 10],
+          shapes: [{ type: "circle", cx: 5, cy: 5, r: 2, fill: "pink" }],
+        },
+        { pink: "#ff2d95" },
+      ).replace(/^data:image\/svg\+xml,/, ""),
+    );
+    expect(svg).toContain('fill="#ff2d95"');
+  });
   it("escapes attribute values", () => {
     const svg = decodeURIComponent(
       motifSvg({

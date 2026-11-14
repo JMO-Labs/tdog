@@ -38,7 +38,10 @@ export function motifSvg(
   tokens: Record<string, string> = {},
 ): string {
   const resolve = (s: string) =>
-    s.replace(/var\(--([a-z0-9-]+)\)/g, (_, k: string) => tokens[k] ?? "none");
+    s.replace(
+      /var\(--([a-z0-9-]+)\)/g,
+      (_, k: string) => tokens[k] ?? "#808080",
+    );
   const body = m.shapes.map(shapeEl).join("");
   const [w, h] = m.tile;
   const svg = resolve(

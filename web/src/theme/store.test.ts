@@ -95,3 +95,43 @@ describe("themeStore", () => {
     expect(themeStore.get().id).toBe("memphis-pop");
   });
 });
+
+describe("header motif", () => {
+  it("sets --header-motif from chrome.motif and removes it on switch", () => {
+    const base = THEMES.find((t) => t.id === "memphis-pop")!;
+    const withMotif = {
+      ...base,
+      id: "motif-test",
+      chrome: {
+        ...base.chrome,
+        motif: {
+          viewBox: [0, 0, 10, 10] as [number, number, number, number],
+          tile: [10, 10] as [number, number],
+          shapes: [
+            {
+              type: "circle" as const,
+              cx: 5,
+              cy: 5,
+              r: 2,
+              fill: "pink" as const,
+            },
+          ],
+        },
+      },
+    };
+    THEMES.push(withMotif);
+    try {
+      themeStore.select("motif-test");
+      const v =
+        document.documentElement.style.getPropertyValue("--header-motif");
+      expect(v).toMatch(/^url\("data:image\/svg\+xml,/);
+      expect(decodeURIComponent(v)).not.toContain('fill="none"');
+      themeStore.select("memphis-pop");
+      expect(
+        document.documentElement.style.getPropertyValue("--header-motif"),
+      ).toBe("");
+    } finally {
+      THEMES.pop();
+    }
+  });
+});
