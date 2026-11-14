@@ -164,7 +164,7 @@ $("#v-login").addEventListener("submit", (e) => {
   const crt = $("#nono");
   crt.hidden = false;
   anim(crt, [{ transform: "scale(.2)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 380 });
-  if (!RM) $(".hand").animate([0, -22, 22, -22, 22, -22, 0].map((d) => ({ transform: `rotate(${d}deg)` })), { duration: 1500, easing: "ease-in-out" });
+  if (!RM) $(".hand").animate([0, -4, 4, -4, 4, -4, 0].map((d) => ({ transform: `rotate(${d}deg) translateX(${d * 2}px)` })), { duration: 1500, easing: "ease-in-out" });
   setTimeout(() => anim(crt, [{ opacity: 1 }, { opacity: 0, transform: "scale(.9)" }], { duration: 250, fill: "forwards" }).finished.then(() => { crt.hidden = true; pw.select(); }), 2400);
 });
 $("#setup-pw").addEventListener("input", (e) => {
@@ -179,10 +179,13 @@ $("#v-totp").addEventListener("submit", (e) => { e.preventDefault(); signOn(); }
 async function signOn(msg = "Signed in. Your 3 shells are right where you left them.") {
   const o = $("#dialup"), steps = $$(".steps li");
   steps.forEach((s) => s.classList.remove("on"));
+  $("#wave").hidden = true;
   o.hidden = false;
   enter($(".dialup-card"));
   for (const s of steps) { await new Promise((r) => setTimeout(r, RM ? 150 : 650)); s.classList.add("on"); anim(s.firstElementChild, [{ transform: "scale(1.6) rotate(-20deg)" }, { transform: "none" }], { duration: 400 }); }
-  await new Promise((r) => setTimeout(r, 400));
+  $("#wave").hidden = false;
+  enter($("#wave"), { duration: 600 });
+  await new Promise((r) => setTimeout(r, RM ? 600 : 1400));
   close(o);
   location.hash = "workspace";
   confetti();
