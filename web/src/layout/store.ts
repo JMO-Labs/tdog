@@ -37,3 +37,12 @@ export function loadLayout(scene: string): Node | null | undefined {
     return undefined;
   }
 }
+
+/** Forget a scene's saved tree (scene closed). */
+export function clearLayout(scene: string): void {
+  try {
+    localStorage.removeItem(key(scene));
+  } catch {
+    /* ignore */
+  }
+}
