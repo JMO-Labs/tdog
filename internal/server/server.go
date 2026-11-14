@@ -48,7 +48,7 @@ func NewSecuredPresets(ui fs.FS, a *auth.Auth, store *config.Store) http.Handler
 			}
 		}()
 	}
-	mux.Handle("GET /ws/term", term.NewHandler(term.Config{SSH: sshCfg, Audit: a.Audit(), Registry: reg}))
+	mux.Handle("GET /ws/term", term.NewHandler(term.Config{SSH: sshCfg, Audit: a.Audit(), Registry: reg, Presets: store}))
 	mux.Handle("GET /api/sessions", reg.ListHandler())
 	reg.RegisterKill(mux)
 	if store != nil {

@@ -65,9 +65,14 @@ func (r *Registry) remove(id string) {
 
 // addID registers a running shell and starts pumping its output.
 func (r *Registry) addID(id, target, scene string, s *session) *Session {
+	return r.add(id, target, scene, s, nil)
+}
+
+// add is addID with an optional on_close hook run after the shell ends.
+func (r *Registry) add(id, target, scene string, s *session, onClose func()) *Session {
 	sess := &Session{
 		id: id, scene: scene, target: target, started: time.Now().UTC(),
-		s: s, reg: r, ring: newRing(r.scrollback),
+		s: s, reg: r, ring: newRing(r.scrollback), onClose: onClose,
 	}
 	r.mu.Lock()
 	r.sessions[sess.id] = sess

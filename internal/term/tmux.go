@@ -77,7 +77,12 @@ func wrapTmuxKill(s *session, run CmdRunner, id string) {
 
 // spawnTmux attaches to (creating if needed) the host tmux session for id.
 func spawnTmux(cfg SSHConfig, run CmdRunner, id string) (*session, error) {
-	s, err := spawnSSHCmd(cfg, tmuxAttachCmd(id))
+	return spawnTmuxCmd(cfg, run, id, tmuxAttachCmd(id))
+}
+
+// spawnTmuxCmd is spawnTmux with an explicit attach command (cwd/env setup).
+func spawnTmuxCmd(cfg SSHConfig, run CmdRunner, id, cmd string) (*session, error) {
+	s, err := spawnSSHCmd(cfg, cmd)
 	if err != nil {
 		return nil, err
 	}
