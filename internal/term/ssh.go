@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/JMO-Labs/tdog/internal/audit"
 	"github.com/JMO-Labs/tdog/internal/frame"
 	"github.com/coder/websocket"
 	"golang.org/x/crypto/ssh"
@@ -118,45 +117,37 @@ func exitCode(err error) int {
 	}
 }
 
-func serveSSH(c *websocket.Conn, cfg SSHConfig, l *audit.Logger) {
+func spawnSSH(cfg SSHConfig) (*session, error) {
 	client, err := dialSSH(cfg)
 	if err != nil {
-		sshFail(c, "ssh connect failed: "+err.Error())
-		return
+		return nil, errors.New("ssh connect failed: " + err.Error())
+	}
+	fail := func(msg string, err error) (*session, error) {
+		_ = client.Close()
+		return nil, errors.New(msg + err.Error())
 	}
 	sess, err := client.NewSession()
 	if err != nil {
-		_ = client.Close()
-		sshFail(c, "ssh session failed: "+err.Error())
-		return
+		return fail("ssh session failed: ", err)
 	}
 	stdin, _ := sess.StdinPipe()
 	stdout, _ := sess.StdoutPipe() // stderr is merged into the pty by the server
 	if err := sess.RequestPty("xterm-256color", 24, 80, ssh.TerminalModes{ssh.ECHO: 1}); err != nil {
-		_ = client.Close()
-		sshFail(c, "ssh pty request failed: "+err.Error())
-		return
+		return fail("ssh pty request failed: ", err)
 	}
 	if err := sess.Shell(); err != nil {
-		_ = client.Close()
-		sshFail(c, "ssh shell failed: "+err.Error())
-		return
+		return fail("ssh shell failed: ", err)
 	}
-	l.Log(audit.Entry{Event: "term_start", Target: "ssh-host"})
-	defer l.Log(audit.Entry{Event: "term_end", Target: "ssh-host"})
-	waitCh := make(chan int, 1)
-	go func() {
-		waitCh <- exitCode(sess.Wait())
-	}()
+	w := newWaiter()
+	go func() { w.finish(exitCode(sess.Wait())) }()
 	closeAll := func() { _ = client.Close() }
-	runSession(c, &session{
-		r: stdout, w: stdin,
+	return &session{
+		r: stdout, w: stdin, wait: w,
 		resize: func(cols, rows uint16) { _ = sess.WindowChange(int(rows), int(cols)) },
-		wait:   waitCh,
 		kill: func() { // closing the client hangs up the remote pty
 			closeAll()
-			<-waitCh
+			<-w.done
 		},
 		close: closeAll,
-	})
+	}, nil
 }

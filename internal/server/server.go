@@ -30,7 +30,9 @@ func NewWithUI(ui fs.FS) http.Handler {
 func NewSecured(ui fs.FS, a *auth.Auth) http.Handler {
 	mux := http.NewServeMux()
 	a.Register(mux)
-	mux.Handle("GET /ws/term", term.HandlerAudit("", a.Audit()))
+	reg := term.NewRegistry(a.Audit(), 0)
+	mux.Handle("GET /ws/term", term.NewHandler(term.Config{SSH: term.SSHConfigFromEnv(), Audit: a.Audit(), Registry: reg}))
+	mux.Handle("GET /api/sessions", reg.ListHandler())
 	mux.Handle("/", NewWithUI(ui))
 	return a.Middleware(mux)
 }

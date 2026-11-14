@@ -32,6 +32,9 @@ type Config struct {
 	Shell string        // container target shell; "" means $SHELL, then /bin/sh
 	SSH   SSHConfig     // ssh-host target
 	Audit *audit.Logger // nil = off
+
+	Registry   *Registry // shared session registry; nil = private one
+	Scrollback int       // per-session scrollback bytes when Registry is nil; 0 = 1 MiB
 }
 
 // Handler returns the /ws/term handler with SSH settings from the environment.
@@ -53,11 +56,28 @@ func NewHandler(cfg Config) http.Handler {
 	if shell == "" {
 		shell = "/bin/sh"
 	}
+	reg := cfg.Registry
+	if reg == nil {
+		reg = NewRegistry(cfg.Audit, cfg.Scrollback)
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		target := r.URL.Query().Get("target")
+		q := r.URL.Query()
+		target := q.Get("target")
 		if target != "" && target != "ssh-host" && target != "container" {
 			http.Error(w, "unknown target", http.StatusBadRequest)
 			return
+		}
+		scene := q.Get("scene")
+		if len(scene) > maxSceneLen {
+			http.Error(w, "scene too long", http.StatusBadRequest)
+			return
+		}
+		var existing *Session
+		if id := q.Get("id"); id != "" {
+			if existing = reg.get(id); existing == nil {
+				http.Error(w, "unknown session", http.StatusNotFound)
+				return
+			}
 		}
 		c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 			CompressionMode: websocket.CompressionDisabled,
@@ -66,11 +86,27 @@ func NewHandler(cfg Config) http.Handler {
 			return // Accept already replied (includes Origin check).
 		}
 		defer func() { _ = c.CloseNow() }()
-		if target == "ssh-host" {
-			serveSSH(c, cfg.SSH, cfg.Audit)
-			return
+		sess := existing
+		if sess == nil {
+			if target == "" {
+				target = "container"
+			}
+			spawn := func() (*session, error) { return spawnPTY(shell) }
+			if target == "ssh-host" {
+				spawn = func() (*session, error) { return spawnSSH(cfg.SSH) }
+			}
+			s, err := spawn()
+			if err != nil {
+				if target == "ssh-host" {
+					sshFail(c, err.Error())
+				} else {
+					_ = c.Close(websocket.StatusInternalError, err.Error())
+				}
+				return
+			}
+			sess = reg.add(target, scene, s)
 		}
-		serve(c, shell, cfg.Audit)
+		sess.serve(c)
 	})
 }
 
@@ -79,25 +115,34 @@ type session struct {
 	r      io.Reader               // shell output
 	w      io.Writer               // shell input
 	resize func(cols, rows uint16) // window size change
-	wait   <-chan int              // receives the exit code once
-	kill   func()                  // hang up the shell (socket went away)
+	wait   *waiter                 // exit state
+	kill   func()                  // hang up the shell; returns once it exited
 	close  func()                  // release resources
+	pid    int                     // 0 when unknown (ssh)
 }
 
-func serve(c *websocket.Conn, shell string, l *audit.Logger) {
+// waiter publishes a process exit: done closes after code is set.
+type waiter struct {
+	done chan struct{}
+	code int
+}
+
+func newWaiter() *waiter { return &waiter{done: make(chan struct{})} }
+
+func (w *waiter) finish(code int) {
+	w.code = code
+	close(w.done)
+}
+
+func spawnPTY(shell string) (*session, error) {
 	cmd := exec.Command(shell)
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Rows: 24, Cols: 80})
 	if err != nil {
 		log.Printf("term: start %s: %v", shell, err)
-		_ = c.Close(websocket.StatusInternalError, "pty start failed")
-		return
+		return nil, errors.New("pty start failed")
 	}
-	pid := cmd.Process.Pid
-	l.Log(audit.Entry{Event: "term_start", Target: "container", PID: pid})
-	defer l.Log(audit.Entry{Event: "term_end", Target: "container", PID: pid})
-
-	waitCh := make(chan int, 1)
+	w := newWaiter()
 	go func() {
 		err := cmd.Wait()
 		code := 0
@@ -108,78 +153,27 @@ func serve(c *websocket.Conn, shell string, l *audit.Logger) {
 				code = 128 + int(ee.Sys().(syscall.WaitStatus).Signal())
 			}
 		}
-		waitCh <- code
+		w.finish(code)
 	}()
-	runSession(c, &session{
-		r: ptmx, w: ptmx,
+	pid := cmd.Process.Pid
+	return &session{
+		r: ptmx, w: ptmx, pid: pid, wait: w,
 		resize: func(cols, rows uint16) { _ = pty.Setsize(ptmx, &pty.Winsize{Rows: rows, Cols: cols}) },
-		wait:   waitCh,
 		// pty.Start sets Setsid, so pgid == pid.
-		kill:  func() { hangup(cmd.Process.Pid, waitCh) },
+		kill:  func() { hangup(pid, w.done) },
 		close: func() { _ = ptmx.Close() },
-	})
-}
-
-// runSession pumps frames between the socket and s until either side ends.
-func runSession(c *websocket.Conn, s *session) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	defer s.close()
-
-	// Client → shell. On socket close, hang up the shell.
-	go func() {
-		defer cancel()
-		pumpInput(ctx, func(ctx context.Context) ([]byte, error) {
-			_, data, err := c.Read(ctx)
-			return data, err
-		}, s.w, s.resize, func(f []byte) error { return c.Write(ctx, websocket.MessageBinary, f) })
-	}()
-
-	// Shell → chunks.
-	chunks := make(chan []byte, 64)
-	go func() {
-		defer close(chunks)
-		buf := make([]byte, flushSize)
-		for {
-			n, err := s.r.Read(buf)
-			if n > 0 {
-				b := append([]byte(nil), buf[:n]...)
-				select {
-				case chunks <- b:
-				case <-ctx.Done():
-					return
-				}
-			}
-			if err != nil {
-				return
-			}
-		}
-	}()
-
-	write := func(f []byte) error { return c.Write(ctx, websocket.MessageBinary, f) }
-	exited := pumpOutput(ctx, write, chunks)
-
-	if !exited { // socket went away first
-		_ = c.CloseNow()
-		s.kill()
-		return
-	}
-	code := <-s.wait
-	wctx, wcancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer wcancel()
-	_ = c.Write(wctx, websocket.MessageBinary, frame.ExitControl(code))
-	_ = c.Close(websocket.StatusNormalClosure, "exit")
+	}, nil
 }
 
 // hangup sends SIGHUP to the process group and escalates to SIGKILL if it
 // has not exited within hupGrace (e.g. a shell or child ignoring SIGHUP).
-func hangup(pid int, waitCh <-chan int) {
+func hangup(pid int, done <-chan struct{}) {
 	_ = syscall.Kill(-pid, syscall.SIGHUP)
 	select {
-	case <-waitCh:
+	case <-done:
 	case <-time.After(hupGrace):
 		_ = syscall.Kill(-pid, syscall.SIGKILL)
-		<-waitCh
+		<-done
 	}
 }
 

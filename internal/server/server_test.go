@@ -23,7 +23,7 @@ func TestSecuredRequiresSession(t *testing.T) {
 		t.Fatal(err)
 	}
 	h := NewSecured(fstest.MapFS{"index.html": {Data: []byte("x")}}, a)
-	for _, p := range []string{"/api/anything", "/ws/term"} {
+	for _, p := range []string{"/api/anything", "/ws/term", "/api/sessions"} {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, p, nil))
 		if rec.Code != http.StatusUnauthorized {

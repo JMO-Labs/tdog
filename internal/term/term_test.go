@@ -17,10 +17,16 @@ import (
 	"github.com/coder/websocket"
 )
 
+// testReg is the registry behind the most recent dial; tests are not parallel.
+var testReg *Registry
+
 func dial(t *testing.T) (*websocket.Conn, context.Context) {
 	t.Helper()
-	srv := httptest.NewServer(Handler("/bin/sh"))
+	testReg = NewRegistry(nil, 0)
+	reg := testReg
+	srv := httptest.NewServer(NewHandler(Config{Shell: "/bin/sh", Registry: reg}))
 	t.Cleanup(srv.Close)
+	t.Cleanup(reg.KillAll)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	t.Cleanup(cancel)
 	url := "ws" + strings.TrimPrefix(srv.URL, "http")
@@ -113,18 +119,19 @@ func waitFile(t *testing.T, path string, d time.Duration) []byte {
 	return nil
 }
 
-func TestSocketCloseSendsSIGHUP(t *testing.T) {
+func TestKillSendsSIGHUP(t *testing.T) {
 	c, ctx := dial(t)
 	f := filepath.Join(t.TempDir(), "hup")
 	send(t, ctx, c, frame.Input, "trap 'echo hup > "+f+"; exit' HUP; echo re\"\"ady; while :; do sleep 0.1; done\n")
 	readUntil(t, ctx, c, "ready")
 	_ = c.CloseNow()
+	testReg.KillAll() // a dropped socket no longer ends the shell
 	if b := waitFile(t, f, 5*time.Second); !strings.Contains(string(b), "hup") {
 		t.Fatalf("got %q", b)
 	}
 }
 
-func TestSocketCloseKillsHUPIgnoringGroup(t *testing.T) {
+func TestKillEscalatesForHUPIgnoringGroup(t *testing.T) {
 	c, ctx := dial(t)
 	f := filepath.Join(t.TempDir(), "pid")
 	send(t, ctx, c, frame.Input, "trap '' HUP; echo $$ > "+f+"; echo re\"\"ady; while :; do sleep 0.1; done\n")
@@ -134,6 +141,7 @@ func TestSocketCloseKillsHUPIgnoringGroup(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = c.CloseNow()
+	go testReg.KillAll()
 	deadline := time.Now().Add(hupGrace + 5*time.Second)
 	for time.Now().Before(deadline) {
 		if err := syscall.Kill(pid, 0); errors.Is(err, syscall.ESRCH) {
@@ -217,7 +225,7 @@ func TestInputAfterExitDoesNotHang(t *testing.T) {
 }
 
 // Closing the socket while the shell floods output exercises the reader's ctx.Done exit.
-func TestCloseDuringOutputFlood(t *testing.T) {
+func TestKillDuringOutputFlood(t *testing.T) {
 	c, ctx := dial(t)
 	f := filepath.Join(t.TempDir(), "pid")
 	send(t, ctx, c, frame.Input, "echo $$ > "+f+"; yes\n")
@@ -231,6 +239,7 @@ func TestCloseDuringOutputFlood(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = c.CloseNow()
+	go testReg.KillAll()
 	deadline := time.Now().Add(hupGrace + 10*time.Second)
 	for time.Now().Before(deadline) {
 		if err := syscall.Kill(pid, 0); errors.Is(err, syscall.ESRCH) {

@@ -121,8 +121,10 @@ func (d *fakeSSHD) handle(nc net.Conn, cfg *ssh.ServerConfig) {
 
 func sshDial(t *testing.T, cfg SSHConfig) (*websocket.Conn, context.Context) {
 	t.Helper()
-	srv := httptest.NewServer(NewHandler(Config{Shell: "/bin/sh", SSH: cfg}))
+	testReg = NewRegistry(nil, 0)
+	srv := httptest.NewServer(NewHandler(Config{Shell: "/bin/sh", SSH: cfg, Registry: testReg}))
 	t.Cleanup(srv.Close)
+	t.Cleanup(testReg.KillAll)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	t.Cleanup(cancel)
 	c, _, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(srv.URL, "http")+"?target=ssh-host", nil)
@@ -168,12 +170,13 @@ func TestSSHEchoResizeExit(t *testing.T) {
 	}
 }
 
-func TestSSHSocketCloseClosesChannel(t *testing.T) {
+func TestSSHKillClosesChannel(t *testing.T) {
 	cfg, d, _ := sshSetup(t)
 	c, ctx := sshDial(t, cfg)
 	send(t, ctx, c, frame.Input, "hi\n")
 	readUntil(t, ctx, c, "got:hi")
 	_ = c.CloseNow()
+	testReg.KillAll() // a dropped socket no longer ends the session
 	select {
 	case <-d.closedCh:
 	case <-time.After(5 * time.Second):

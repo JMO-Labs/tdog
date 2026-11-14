@@ -26,14 +26,24 @@ func TestAuditSessionStartEnd(t *testing.T) {
 	t.Cleanup(func() { _ = c.CloseNow() })
 	send(t, ctx, c, frame.Input, "exit\n")
 	deadline := time.Now().Add(10 * time.Second)
-	for len(l.Recent(10)) < 2 && time.Now().Before(deadline) {
+	events := func() map[string]audit.Entry {
+		m := map[string]audit.Entry{}
+		for _, e := range l.Recent(20) {
+			m[e.Event] = e
+		}
+		return m
+	}
+	for len(events()) < 4 && time.Now().Before(deadline) {
 		time.Sleep(20 * time.Millisecond)
 	}
-	got := l.Recent(10) // newest first
-	if len(got) != 2 || got[0].Event != "term_end" || got[1].Event != "term_start" {
-		t.Fatalf("entries = %+v", got)
+	got := events()
+	for _, ev := range []string{"term_start", "attach", "detach", "term_end"} {
+		if _, ok := got[ev]; !ok {
+			t.Fatalf("missing %s in %+v", ev, got)
+		}
 	}
-	if got[1].Target != "container" || got[1].PID <= 0 || got[0].PID != got[1].PID {
+	start, end := got["term_start"], got["term_end"]
+	if start.Target != "container" || start.PID <= 0 || end.PID != start.PID || start.Session == "" || end.Session != start.Session {
 		t.Fatalf("entries = %+v", got)
 	}
 }
