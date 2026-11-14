@@ -51,7 +51,7 @@
   box-sizing: border-box;
   border: 2px solid var(--line);
   border-radius: 14px;
-  overflow: hidden;
+  /* no overflow:hidden here: popovers in the head must not be clipped */
   background: var(--term-bg);
   box-shadow: 6px 6px 0 var(--shadow);
 }
@@ -68,6 +68,7 @@
   padding: 6px 8px 6px 12px;
   background: var(--surface);
   border-bottom: 2px solid var(--line);
+  border-radius: 12px 12px 0 0;
   min-width: 0;
 }
 .pane[data-focused="true"] .pane-head {
@@ -116,6 +117,8 @@
   position: relative;
   box-sizing: border-box;
   padding: 8px;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
 }
 .snap-wrap {
   position: relative;
@@ -137,7 +140,8 @@
 .snap-pop {
   position: absolute;
   top: 100%;
-  left: 0;
+  left: auto;
+  right: 0;
   z-index: 20;
   padding-top: 4px;
 }

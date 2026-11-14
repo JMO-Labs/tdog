@@ -143,6 +143,7 @@ function Pane({ id }: { id: string }) {
         }}
       >
         <span className="title">Shell {order.indexOf(id) + 1}</span>
+        {/* Panes are always local PTYs for now (no remote targets in spec). */}
         <span className="chip">local</span>
         <span className="spacer" />
         <SnapPicker onSnap={p.onSnap} />
