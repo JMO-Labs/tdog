@@ -1,0 +1,59 @@
+{
+  "name": "Memphis Pop",
+  "description": "90s-MTV neon, hard shadows and confetti. The default.",
+  "appearance": "dark",
+  "pattern": "confetti",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#ede7ff",
+    "bg": "#0f0820",
+    "cursor": "#ff2d95",
+    "selection": "#4b2a8f",
+    "ansi": [
+      "#8a7bb8",
+      "#ff5c8a",
+      "#4ade80",
+      "#ffe14d",
+      "#7c9cff",
+      "#ff2d95",
+      "#22d3ee",
+      "#ede7ff",
+      "#a99bd6",
+      "#ff85a8",
+      "#86efac",
+      "#fff08a",
+      "#a5bbff",
+      "#ff7ac0",
+      "#67e8f9",
+      "#ffffff"
+    ]
+  },
+  "chrome": {},
+  "light": {
+    "terminal": {
+      "fg": "#ede7ff",
+      "bg": "#1a0f33",
+      "cursor": "#ff2d95",
+      "selection": "#4b2a8f",
+      "ansi": [
+        "#8a7bb8",
+        "#ff5c8a",
+        "#4ade80",
+        "#ffe14d",
+        "#7c9cff",
+        "#ff2d95",
+        "#22d3ee",
+        "#ede7ff",
+        "#a99bd6",
+        "#ff85a8",
+        "#86efac",
+        "#fff08a",
+        "#a5bbff",
+        "#ff7ac0",
+        "#67e8f9",
+        "#ffffff"
+      ]
+    },
+    "chrome": {}
+  }
+}

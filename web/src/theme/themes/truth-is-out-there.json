@@ -1,0 +1,40 @@
+{
+  "name": "Truth Is Out There",
+  "description": "Night-vision green with a flashlight-yellow cursor on black. Inspired by The X-Files.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#b8ffb0",
+    "bg": "#020702",
+    "cursor": "#ffe94d",
+    "selection": "#12401a",
+    "ansi": [
+      "#5fa860",
+      "#ff7a59",
+      "#5dff6a",
+      "#ffe94d",
+      "#58c88a",
+      "#8fe8a0",
+      "#4dffc3",
+      "#b8ffb0",
+      "#7fc880",
+      "#ff9d82",
+      "#8dff95",
+      "#fff08a",
+      "#7fe0aa",
+      "#b4f5bf",
+      "#8bffd8",
+      "#e6ffe2"
+    ]
+  },
+  "chrome": {
+    "bg": "#020702",
+    "surface": "#07130a",
+    "fg": "#b8ffb0",
+    "pink": "#6fd66f",
+    "cyan": "#4dffc3",
+    "yellow": "#ffe94d",
+    "link": "#5dff6a"
+  }
+}

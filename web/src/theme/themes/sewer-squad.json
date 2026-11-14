@@ -1,0 +1,47 @@
+{
+  "name": "Sewer Squad",
+  "description": "Sewer green with four bandana accents and pizza-box brown. Inspired by Teenage Mutant Ninja Turtles.",
+  "appearance": "dark",
+  "pattern": "zigzag",
+  "terminal": {
+    "fg": "#e4f0dc",
+    "bg": "#0e1a12",
+    "cursor": "#7bd33f",
+    "selection": "#2f5a2a",
+    "ansi": [
+      "#8fa88a",
+      "#ff4d4d",
+      "#7bd33f",
+      "#ff9a2e",
+      "#4d8dff",
+      "#b565e8",
+      "#5fd3b0",
+      "#e4f0dc",
+      "#a9c2a2",
+      "#ff8080",
+      "#a3e66e",
+      "#ffb866",
+      "#85b0ff",
+      "#cf94f2",
+      "#8ee6cb",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#0b140e",
+    "surface": "#1a2a1c",
+    "surface-2": "#2a3a22",
+    "fg": "#e4f0dc",
+    "muted": "#a9c2a2",
+    "line": "#050a06",
+    "shadow": "#8b5a2b",
+    "link": "#7bd33f",
+    "pink": "#ff4d4d",
+    "cyan": "#4d8dff",
+    "yellow": "#ff9a2e",
+    "purple": "#b565e8",
+    "term-bg": "#0e1a12",
+    "term-fg": "#e4f0dc",
+    "term-dim": "#8fa88a"
+  }
+}

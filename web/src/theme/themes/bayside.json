@@ -1,0 +1,73 @@
+{
+  "name": "Bayside",
+  "description": "Memphis confetti in teal, pink and yellow. Inspired by Saved by the Bell.",
+  "appearance": "dark",
+  "pattern": "confetti",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#e9fffb",
+    "bg": "#06292b",
+    "cursor": "#ffd93d",
+    "selection": "#0f5c5e",
+    "ansi": [
+      "#6fb5ae",
+      "#ff6b9d",
+      "#5eead4",
+      "#ffd93d",
+      "#7dd3fc",
+      "#f472b6",
+      "#2dd4bf",
+      "#e9fffb",
+      "#8fd0c9",
+      "#ff9ec0",
+      "#99f6e4",
+      "#ffe680",
+      "#a5e3fd",
+      "#f9a8d4",
+      "#5eead4",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#06292b",
+    "surface": "#0a3a3d",
+    "fg": "#e9fffb",
+    "pink": "#ff6b9d",
+    "cyan": "#2dd4bf",
+    "yellow": "#ffd93d"
+  },
+  "light": {
+    "terminal": {
+      "fg": "#10302f",
+      "bg": "#f2fffc",
+      "cursor": "#d6336c",
+      "selection": "#b8efe6",
+      "ansi": [
+        "#3f6f6a",
+        "#c2255c",
+        "#0b7a6b",
+        "#8a6500",
+        "#1c6aa8",
+        "#a61e7d",
+        "#0a7d86",
+        "#10302f",
+        "#2f5a56",
+        "#a31650",
+        "#0a6458",
+        "#725200",
+        "#14527f",
+        "#85156a",
+        "#076168",
+        "#000000"
+      ]
+    },
+    "chrome": {
+      "bg": "#f2fffc",
+      "surface": "#ffffff",
+      "fg": "#10302f",
+      "pink": "#d6336c",
+      "cyan": "#0a7d86",
+      "yellow": "#a87b00"
+    }
+  }
+}

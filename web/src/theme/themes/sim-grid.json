@@ -1,0 +1,44 @@
+{
+  "name": "Sim Grid",
+  "description": "Blueprint blues with zoning accents, inspired by SimCity 2000.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#dbe9ff",
+    "bg": "#0b2447",
+    "cursor": "#ffd23f",
+    "selection": "#1f4a8a",
+    "ansi": [
+      "#7f9cc7",
+      "#ff7a7a",
+      "#4cd37a",
+      "#ffd23f",
+      "#5aa2ff",
+      "#b58cff",
+      "#4fd6e8",
+      "#dbe9ff",
+      "#a0b8dc",
+      "#ff9c9c",
+      "#7fe8a0",
+      "#ffe27a",
+      "#8cc0ff",
+      "#cdb0ff",
+      "#86e6f2",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#071a35",
+    "surface": "#102f5c",
+    "surface-2": "#183d75",
+    "fg": "#dbe9ff",
+    "muted": "#9db6dc",
+    "line": "#03101f",
+    "shadow": "#4cd37a",
+    "link": "#5aa2ff",
+    "term-bg": "#0b2447",
+    "term-fg": "#dbe9ff",
+    "term-dim": "#7f9cc7"
+  }
+}

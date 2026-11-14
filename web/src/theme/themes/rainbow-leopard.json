@@ -1,0 +1,74 @@
+{
+  "name": "Rainbow Leopard",
+  "description": "Rainbow chrome gradients over leopard spots. Inspired by 90s sticker art.",
+  "appearance": "dark",
+  "pattern": "leopard",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#f6f0ff",
+    "bg": "#120a1c",
+    "cursor": "#ff5fd2",
+    "selection": "#43286b",
+    "ansi": [
+      "#a592c4",
+      "#ff5f6d",
+      "#5fffa0",
+      "#ffc75f",
+      "#6aa0ff",
+      "#ff5fd2",
+      "#5fe9ff",
+      "#f6f0ff",
+      "#bfaedb",
+      "#ff8f98",
+      "#93ffc0",
+      "#ffdc94",
+      "#9bbfff",
+      "#ff94e2",
+      "#94f1ff",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#120a1c",
+    "surface": "#1c1230",
+    "fg": "#f6f0ff",
+    "pink": "#ff5fd2",
+    "cyan": "#5fe9ff",
+    "yellow": "#ffc75f",
+    "purple": "#a67bff"
+  },
+  "light": {
+    "terminal": {
+      "fg": "#2a1740",
+      "bg": "#fff8fd",
+      "cursor": "#c2189a",
+      "selection": "#f0d6ff",
+      "ansi": [
+        "#6b4f8f",
+        "#c4283a",
+        "#0d7a43",
+        "#8a5a00",
+        "#2a58c9",
+        "#b0127f",
+        "#0a7a8c",
+        "#2a1740",
+        "#523873",
+        "#a31f2f",
+        "#0a6334",
+        "#6e4900",
+        "#1f44a3",
+        "#8d0d66",
+        "#07606f",
+        "#000000"
+      ]
+    },
+    "chrome": {
+      "bg": "#fff8fd",
+      "surface": "#ffffff",
+      "fg": "#2a1740",
+      "pink": "#c2189a",
+      "cyan": "#0a7a8c",
+      "yellow": "#8a5a00"
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { themeStore } from "./store";
 import { useCallback, useEffect, useState } from "react";
 
 export type ThemeMode = "system" | "light" | "dark";
@@ -21,16 +22,10 @@ function write(mode: ThemeMode) {
   }
 }
 
-export function applyTheme(mode: ThemeMode) {
-  const el = document.documentElement;
-  if (mode === "system") el.removeAttribute("data-theme");
-  else el.dataset.theme = mode;
-}
-
 export function useThemeMode() {
   const [mode, setMode] = useState<ThemeMode>(read);
 
-  useEffect(() => applyTheme(mode), [mode]);
+  useEffect(() => themeStore.setScheme(mode), [mode]);
 
   const cycle = useCallback(() => {
     setMode((m) => {

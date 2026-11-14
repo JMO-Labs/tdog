@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { TerminalSession, type SessionState } from "./terminal/session";
 import type { TerminalRenderer } from "./terminal/renderer";
+import { themeStore } from "./theme/store";
 import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
@@ -101,12 +102,17 @@ export function TerminalPane({
       });
       session.current = s;
       renderer.current = r;
+      r.setTheme(themeStore.terminal());
+      const offTheme = themeStore.subscribe(() =>
+        r.setTheme(themeStore.terminal()),
+      );
       s.connect();
       const ro = new ResizeObserver(() => {
         if (settledRef.current) r.resize();
       });
       ro.observe(el);
       cleanup = () => {
+        offTheme();
         ro.disconnect();
         s.dispose();
       };

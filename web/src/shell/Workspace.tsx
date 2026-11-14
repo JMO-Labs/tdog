@@ -6,6 +6,8 @@ import { Sheet } from "../overlays/Sheet";
 import { registerCommand } from "../overlays/commands";
 import { SettingsPanel } from "../settings/SettingsPanel";
 import { usePref } from "../settings/prefs";
+import { THEMES } from "../theme/registry";
+import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
 import { Icon } from "./icons";
 import { Mascot } from "./Mascot";
@@ -70,6 +72,15 @@ export function Workspace({
         shortcut: "⇧⌘L",
         run: cycle,
       }),
+      ...THEMES.map((t) =>
+        registerCommand({
+          id: `theme:${t.id}`,
+          title: `Theme: ${t.name}`,
+          run: () => themeStore.select(t.id),
+          preview: () => themeStore.preview(t.id),
+          revert: () => themeStore.preview(null),
+        }),
+      ),
       registerCommand({
         id: "settings",
         title: "Open Settings",

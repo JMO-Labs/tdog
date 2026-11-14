@@ -1,0 +1,43 @@
+{
+  "name": "Black Box",
+  "description": "Muted office green and amber, typewriter feel. Inspired by Sneakers.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "Courier Prime",
+  "terminal": {
+    "fg": "#c9d8bd",
+    "bg": "#121a14",
+    "cursor": "#ffb000",
+    "selection": "#2b4a33",
+    "ansi": [
+      "#7d9484",
+      "#e0745f",
+      "#8fc47a",
+      "#ffb000",
+      "#7fa8c9",
+      "#c590b8",
+      "#6cc4aa",
+      "#c9d8bd",
+      "#9ab3a0",
+      "#f09a85",
+      "#b0dd9c",
+      "#ffcb47",
+      "#a3c4de",
+      "#dcaed0",
+      "#95dcc6",
+      "#eef5e6"
+    ]
+  },
+  "chrome": {
+    "bg": "#0c120e",
+    "surface": "#1a251d",
+    "surface-2": "#22312a",
+    "fg": "#c9d8bd",
+    "muted": "#8fa596",
+    "line": "#050806",
+    "shadow": "#ffb000",
+    "link": "#ffb000",
+    "term-bg": "#121a14",
+    "term-fg": "#c9d8bd"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "Ack Ack",
+  "description": "Pulp green, saucer silver and ray-gun red. Inspired by Mars Attacks!",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#d4e8c8",
+    "bg": "#0c1a0e",
+    "cursor": "#ff3030",
+    "selection": "#2a4a2a",
+    "ansi": [
+      "#7a9a7a",
+      "#ff4040",
+      "#6adf5a",
+      "#e8d84a",
+      "#6aa0e0",
+      "#d070d0",
+      "#50d8c0",
+      "#d4e8c8",
+      "#9ab89a",
+      "#ff7070",
+      "#9af088",
+      "#f4ea80",
+      "#98c0f0",
+      "#e098e0",
+      "#80ece0",
+      "#f4f8f0"
+    ]
+  },
+  "chrome": {
+    "bg": "#071009",
+    "surface": "#14281a",
+    "fg": "#d4e8c8",
+    "muted": "#88a888",
+    "link": "#6adf5a"
+  }
+}
