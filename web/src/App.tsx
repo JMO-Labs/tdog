@@ -1,8 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Workspace } from "./shell/Workspace";
-import { getStatus, setUnauthorizedHandler } from "./auth/api";
+import { getStatus, logout, setUnauthorizedHandler } from "./auth/api";
 import { LoginScreen, SetupScreen } from "./auth/screens";
-import { ToastProvider } from "./overlays/toast";
+import { ToastProvider, useToast } from "./overlays/toast";
 import { usePref } from "./settings/prefs";
 import { isBenchRoute, isKitRoute } from "./routes";
 
@@ -32,12 +32,36 @@ export function App() {
         <KitPage />
       </Suspense>
     );
-  return <AuthApp />;
+  return <Root />;
+}
+
+function Root() {
+  const [serious] = usePref("serious");
+  return (
+    <ToastProvider serious={serious}>
+      <AuthApp />
+    </ToastProvider>
+  );
 }
 
 function AuthApp() {
   const [view, setView] = useState<View>("loading");
-  const [serious] = usePref("serious");
+  const toast = useToast();
+
+  // Explicit sign out (not a 401): end the session, rewind.
+  const signOut = useCallback(async () => {
+    if (!(await logout())) {
+      toast("fail", "Couldn't sign out. Reload and try again.");
+      return;
+    }
+    setView("login");
+    toast("info", "Session ended. See you next time.", "Be kind, rewind.");
+  }, [toast]);
+  useEffect(() => {
+    const h = () => void signOut();
+    addEventListener("tdog:signout", h);
+    return () => removeEventListener("tdog:signout", h);
+  }, [signOut]);
 
   const check = useCallback(async () => {
     try {
@@ -82,9 +106,5 @@ function AuthApp() {
         onNeedSetup={() => setView("setup")}
       />
     );
-  return (
-    <ToastProvider serious={serious}>
-      <Workspace onSignedOut={() => setView("login")} onClosed={onClosed} />
-    </ToastProvider>
-  );
+  return <Workspace onSignedOut={() => setView("login")} onClosed={onClosed} />;
 }

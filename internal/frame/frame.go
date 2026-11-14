@@ -70,3 +70,18 @@ func ErrorControl(msg string) []byte {
 	}{"error", msg})
 	return Encode(Control, p)
 }
+
+// Pong answers a ping control payload with a pong echoing its "t" field.
+// ok is false when p is not a ping.
+func Pong(p []byte) (f []byte, ok bool) {
+	var v struct {
+		Type string          `json:"type"`
+		T    json.RawMessage `json:"t,omitempty"`
+	}
+	if json.Unmarshal(p, &v) != nil || v.Type != "ping" {
+		return nil, false
+	}
+	v.Type = "pong"
+	out, _ := json.Marshal(v)
+	return Encode(Control, out), true
+}

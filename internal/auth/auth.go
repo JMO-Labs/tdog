@@ -92,12 +92,19 @@ func (a *Auth) handleStatus(w http.ResponseWriter, r *http.Request) {
 	setup := a.hash == ""
 	a.mu.Unlock()
 	authed := false
+	csrf := ""
 	if c, err := r.Cookie(cookieName); err == nil {
-		authed = a.sessions.touch(c.Value) != nil
+		if s := a.sessions.touch(c.Value); s != nil {
+			authed, csrf = true, s.csrf
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	_ = json.NewEncoder(w).Encode(map[string]bool{"setup": setup, "authenticated": authed})
+	out := map[string]any{"setup": setup, "authenticated": authed}
+	if authed {
+		out["csrf"] = csrf
+	}
+	_ = json.NewEncoder(w).Encode(out)
 }
 
 func msg(w http.ResponseWriter, code int, m string) { http.Error(w, m, code) }

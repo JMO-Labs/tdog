@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TerminalPane } from "../TerminalPane";
-import { apiFetch } from "../auth/api";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
 import { Sheet } from "../overlays/Sheet";
@@ -15,18 +14,15 @@ import { Tabs } from "./Tabs";
 import "./shell.css";
 
 const noop = () => {};
+/** Latency above this gets the dial-up icon. */
+const SLOW_MS = 150;
 
-export function Workspace({
-  onSignedOut,
-  onClosed,
-}: {
-  onSignedOut: () => void;
-  onClosed?: () => void;
-}) {
+export function Workspace({ onClosed }: { onClosed?: () => void }) {
   const { mode, cycle } = useThemeMode();
   const [size, setSize] = useState<{ cols: number; rows: number } | null>(null);
   const [open, setOpen] = useState(false);
   const [everOpen, setEverOpen] = useState(false);
+  const [latency, setLatency] = useState<number | null>(null);
   const [stamp, setStamp] = useState(0);
   const [petShown, setPetShown] = usePref("pet");
   const [settings, setSettings] = useState(false);
@@ -44,13 +40,10 @@ export function Workspace({
     if (o) setEverOpen(true);
   }, []);
 
-  const signOut = useCallback(async () => {
-    try {
-      await apiFetch("/api/logout", { method: "POST" });
-    } finally {
-      onSignedOut();
-    }
-  }, [onSignedOut]);
+  // App owns sign-out: it sends the CSRF token and only celebrates on success.
+  const signOut = useCallback(() => {
+    dispatchEvent(new Event("tdog:signout"));
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -80,7 +73,7 @@ export function Workspace({
       registerCommand({
         id: "signout",
         title: "Sign out",
-        run: () => void signOut(),
+        run: signOut,
       }),
     ];
     return () => offs.forEach((f) => f());
@@ -136,6 +129,7 @@ export function Workspace({
           onClosed={onClosed}
           onSize={onSize}
           onOutput={onOutput}
+          onLatency={setLatency}
           onOpenChange={onOpenChange}
           reconnectRef={reconnectRef}
         />
@@ -168,6 +162,20 @@ export function Workspace({
           </span>
         )}
         <div className="spacer" />
+        {latency !== null && (
+          <span
+            data-testid="latency"
+            className={`chip num${latency > SLOW_MS ? " slow" : ""}`}
+            title={
+              latency > SLOW_MS
+                ? "Dial-up speeds. Typing may feel sluggish."
+                : undefined
+            }
+          >
+            <Icon name={latency > SLOW_MS ? "modem" : "bolt"} />
+            {latency} ms
+          </span>
+        )}
         {petShown && <Pet awake={awake} onHide={() => setPetShown(false)} />}
         <button
           className="chip kbd-chip"

@@ -311,9 +311,15 @@ func TestStatus(t *testing.T) {
 		if w.Code != 200 {
 			t.Fatalf("status: %d", w.Code)
 		}
-		var m map[string]bool
-		if err := json.Unmarshal(w.Body.Bytes(), &m); err != nil {
+		var raw map[string]any
+		if err := json.Unmarshal(w.Body.Bytes(), &raw); err != nil {
 			t.Fatal(err)
+		}
+		m := map[string]bool{}
+		for k, v := range raw {
+			if b, ok := v.(bool); ok {
+				m[k] = b
+			}
 		}
 		return m
 	}
@@ -327,5 +333,23 @@ func TestStatus(t *testing.T) {
 	c, _ := login(t, h, "localhost")
 	if m := get(func(r *http.Request) { r.AddCookie(c) }); m["setup"] || !m["authenticated"] {
 		t.Fatalf("logged in: %v", m)
+	}
+}
+
+func TestStatusReturnsCSRFOnlyWhenAuthenticated(t *testing.T) {
+	a, h := newTest(t)
+	setup(t, a, h)
+	c, csrf := login(t, h, "localhost")
+	var m map[string]any
+	w := do(h, "GET", "/api/status", "localhost", nil, nil)
+	_ = json.Unmarshal(w.Body.Bytes(), &m)
+	if _, ok := m["csrf"]; ok {
+		t.Fatalf("csrf leaked to anonymous caller: %v", m)
+	}
+	w = do(h, "GET", "/api/status", "localhost", nil, func(r *http.Request) { r.AddCookie(c) })
+	m = nil
+	_ = json.Unmarshal(w.Body.Bytes(), &m)
+	if m["csrf"] != csrf || csrf == "" {
+		t.Fatalf("csrf = %v, want %q", m["csrf"], csrf)
 	}
 }
