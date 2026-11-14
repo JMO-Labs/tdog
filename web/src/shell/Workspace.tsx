@@ -28,6 +28,7 @@ import {
   saveScenes,
 } from "./scenes";
 import { Pet, usePetAwake } from "./pet";
+import { usePetEngine } from "./usePetEngine";
 import { Tabs } from "./Tabs";
 import "./shell.css";
 
@@ -53,6 +54,7 @@ export function Workspace({
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
   const awake = usePetAwake(stamp);
+  const engine = usePetEngine();
   const [sc, setSc] = useState(loadScenes);
   const [leafMap, setLeafMap] = useState<Record<string, string[]>>({});
   const [closing, setClosing] = useState<string | null>(null);
@@ -128,7 +130,13 @@ export function Workspace({
       })),
     [],
   );
-  const onOutput = useCallback(() => setStamp((n) => n + 1), []);
+  const onOutput = useCallback(
+    (data?: Uint8Array) => {
+      setStamp((n) => n + 1);
+      engine.feed(data);
+    },
+    [engine],
+  );
 
   // App owns sign-out: it sends the CSRF token and only celebrates on success.
   const signOut = useCallback(() => {
@@ -297,7 +305,13 @@ export function Workspace({
             {latency} ms
           </span>
         )}
-        {petShown && <Pet awake={awake} onHide={() => setPetShown(false)} />}
+        {petShown && (
+          <Pet
+            awake={awake}
+            engine={engine.pet}
+            onHide={() => setPetShown(false)}
+          />
+        )}
         <button
           className="chip kbd-chip"
           aria-label="Command palette"

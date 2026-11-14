@@ -1,5 +1,6 @@
 import "./pet.css";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
+import type { PetEngine } from "./petEngine";
 import { miniCells, petFrame } from "./petFrame";
 import { drawLcd, drawMini } from "./petLcd";
 
@@ -48,14 +49,17 @@ interface PetProps {
   happy?: number;
   /** Shows the pip on the mini egg. */
   attention?: boolean;
+  /** Live behaviour engine; overrides awake/full/happy/attention. */
+  engine?: PetEngine;
 }
 
 export function Pet({
   awake,
   onHide,
-  full = 3,
-  happy = 3,
-  attention = false,
+  full: fullProp = 3,
+  happy: happyProp = 3,
+  attention: attentionProp = false,
+  engine,
 }: PetProps) {
   const reduced = useReducedMotion();
   const [open, setOpen] = useState(false);
@@ -64,7 +68,11 @@ export function Pet({
   const pop = useRef<HTMLDivElement>(null);
   const mini = useRef<HTMLCanvasElement>(null);
   const lcd = useRef<HTMLCanvasElement>(null);
-  const frame = petFrame({ awake, tick, reduced });
+  const view = engine?.view();
+  const full = view?.hunger ?? fullProp;
+  const happy = view?.happy ?? happyProp;
+  const attention = view?.attention ?? attentionProp;
+  const frame = petFrame({ awake, tick, reduced, view });
 
   useEffect(() => {
     if (reduced) return;
@@ -74,7 +82,7 @@ export function Pet({
 
   useEffect(() => {
     const m = mini.current?.getContext("2d");
-    if (m) drawMini(m, miniCells(frame.mini));
+    if (m) drawMini(m, miniCells(frame.mini, frame.eyes, frame.mouth));
     const l = open ? lcd.current?.getContext("2d") : null;
     if (l) drawLcd(l, frame.cells);
   });
@@ -107,7 +115,7 @@ export function Pet({
       <button
         ref={egg}
         data-testid="pet"
-        className={`pet-egg ${awake ? "awake" : "sleep"}${reduced ? " reduced" : ""}`}
+        className={`pet-egg ${view ? (view.asleep ? "sleep" : "awake") : awake ? "awake" : "sleep"}${reduced ? " reduced" : ""}`}
         aria-label="Open Dogbert"
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -129,7 +137,7 @@ export function Pet({
                 <div className="lcd-wrap">
                   <canvas
                     ref={lcd}
-                    className="lcd"
+                    className={view?.night ? "lcd dim" : "lcd"}
                     width={128}
                     height={96}
                     role="img"
@@ -161,7 +169,16 @@ export function Pet({
               </div>
               <div className="egg-btns">
                 {BUTTONS.map(([k, name]) => (
-                  <button key={k} data-pet={k} aria-label={name} title={name}>
+                  <button
+                    key={k}
+                    data-pet={k}
+                    aria-label={name}
+                    title={name}
+                    onClick={() => {
+                      engine?.press(k);
+                      setTick((n) => n + 1);
+                    }}
+                  >
                     <span aria-hidden="true">{k}</span>
                   </button>
                 ))}

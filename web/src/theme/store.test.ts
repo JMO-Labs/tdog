@@ -11,9 +11,11 @@ beforeEach(() => {
 });
 
 describe("themeStore", () => {
-  it("defaults to memphis-pop and leaves chrome untouched", () => {
+  it("defaults to memphis-pop and leaves colour tokens untouched", () => {
     expect(themeStore.get().id).toBe("memphis-pop");
-    expect(document.documentElement.getAttribute("style") ?? "").toBe("");
+    const s = document.documentElement.style;
+    expect(s.getPropertyValue("--bg")).toBe("");
+    expect(s.getPropertyValue("--pattern")).toBe("");
   });
   it("persists selection and ignores unknown ids", () => {
     const other = THEMES[1] ?? THEMES[0];
@@ -23,6 +25,24 @@ describe("themeStore", () => {
     expect(themeStore.get().id).toBe(other.id);
     themeStore.reset();
     expect(themeStore.get().id).toBe(other.id);
+  });
+  it("resolves a terminal theme per pane, defaulting to the page theme", () => {
+    themeStore.select("memphis-pop");
+    const other = THEMES.find((t) => t.id === "night-market")!;
+    expect(themeStore.terminal("night-market").background).toBe(
+      other.terminal.palette.bg,
+    );
+    expect(themeStore.terminal(undefined)).toEqual(themeStore.terminal());
+    expect(themeStore.terminal("bogus")).toEqual(themeStore.terminal());
+    expect(themeStore.terminal("night-market").background).not.toBe(
+      themeStore.terminal().background,
+    );
+  });
+  it("applies chrome shape vars page-wide", () => {
+    themeStore.select("memphis-pop");
+    const s = document.documentElement.style;
+    expect(s.getPropertyValue("--radius-scale")).toBe("1");
+    expect(s.getPropertyValue("--border-width")).toBe("1");
   });
   it("applies chrome vars and pattern, notifies subscribers", () => {
     const fn = vi.fn();
@@ -43,7 +63,9 @@ describe("themeStore", () => {
     themeStore.select("memphis-pop");
     themeStore.setScheme("light");
     expect(document.documentElement.dataset.theme).toBe("light");
-    expect(themeStore.terminal().background).toBe(THEMES[0].light!.terminal.bg);
+    expect(themeStore.terminal().background).toBe(
+      THEMES[0].light!.terminal.palette.bg,
+    );
     themeStore.setScheme("system");
     expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
   });
@@ -56,10 +78,10 @@ describe("themeStore", () => {
     expect(document.documentElement.style.getPropertyValue("--bg")).toBe("");
   });
   it("maps to a renderer theme", () => {
-    const t = toTerminalTheme(THEMES[0].terminal);
-    expect(t.foreground).toBe(THEMES[0].terminal.fg);
-    expect(t.brightWhite).toBe(THEMES[0].terminal.ansi[15]);
-    expect(t.selectionBackground).toBe(THEMES[0].terminal.selection);
+    const t = toTerminalTheme(THEMES[0].terminal.palette);
+    expect(t.foreground).toBe(THEMES[0].terminal.palette.fg);
+    expect(t.brightWhite).toBe(THEMES[0].terminal.palette.ansi[15]);
+    expect(t.selectionBackground).toBe(THEMES[0].terminal.palette.selection);
   });
   it("falls back to the default when storage throws", () => {
     themeStore.select("night-market");
@@ -71,5 +93,45 @@ describe("themeStore", () => {
     themeStore.reset();
     spy.mockRestore();
     expect(themeStore.get().id).toBe("memphis-pop");
+  });
+});
+
+describe("header motif", () => {
+  it("sets --header-motif from chrome.motif and removes it on switch", () => {
+    const base = THEMES.find((t) => t.id === "memphis-pop")!;
+    const withMotif = {
+      ...base,
+      id: "motif-test",
+      chrome: {
+        ...base.chrome,
+        motif: {
+          viewBox: [0, 0, 10, 10] as [number, number, number, number],
+          tile: [10, 10] as [number, number],
+          shapes: [
+            {
+              type: "circle" as const,
+              cx: 5,
+              cy: 5,
+              r: 2,
+              fill: "pink" as const,
+            },
+          ],
+        },
+      },
+    };
+    THEMES.push(withMotif);
+    try {
+      themeStore.select("motif-test");
+      const v =
+        document.documentElement.style.getPropertyValue("--header-motif");
+      expect(v).toMatch(/^url\("data:image\/svg\+xml,/);
+      expect(decodeURIComponent(v)).not.toContain('fill="none"');
+      themeStore.select("memphis-pop");
+      expect(
+        document.documentElement.style.getPropertyValue("--header-motif"),
+      ).toBe("");
+    } finally {
+      THEMES.pop();
+    }
   });
 });

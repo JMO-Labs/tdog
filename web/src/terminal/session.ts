@@ -35,7 +35,8 @@ export type SessionState =
   | { status: "closed"; exitCode?: number };
 
 export interface SessionHooks {
-  onOutput?: () => void;
+  /** Raw output bytes of one frame. */
+  onOutput?: (data: Uint8Array) => void;
   onSize?: (cols: number, rows: number) => void;
   /** Round-trip time in ms from a ping/pong on the control channel. */
   onLatency?: (ms: number) => void;
@@ -118,7 +119,7 @@ export class TerminalSession {
       this.hooks.onLatency?.(Math.round(performance.now() - f.t));
     } else if (f.kind === "output") {
       const n = f.data.length;
-      this.hooks.onOutput?.();
+      this.hooks.onOutput?.(f.data);
       this.r.write(f.data, () => this.acked(n));
     }
   }
