@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiFetch } from "../auth/api";
+import { apiFetch, apiPost } from "../auth/api";
 import { Button } from "../components/ui/button";
 import { useToast } from "../overlays/toast";
 import { Switch } from "./Switch";
@@ -29,7 +29,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
 
   const revokeAll = async () => {
     try {
-      const r = await apiFetch("/api/sessions/revoke-all", { method: "POST" });
+      const r = await apiPost("/api/sessions/revoke-all");
       if (!r.ok) throw new Error();
     } catch {
       toast("fail", "Couldn't sign out other sessions. Try again.");

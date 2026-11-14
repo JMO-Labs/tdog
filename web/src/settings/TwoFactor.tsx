@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { apiFetch } from "../auth/api";
+import { apiPost } from "../auth/api";
 import { OtpBoxes } from "../auth/otp";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -10,15 +10,7 @@ type Step = "idle" | "enroll" | "recovery" | "disable";
 type Enroll = { secret: string; uri: string };
 
 const post = (path: string, body?: unknown) =>
-  apiFetch(path, {
-    method: "POST",
-    ...(body === undefined
-      ? {}
-      : {
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }),
-  });
+  apiPost(path, body, { keep401: true });
 
 function QrCode({ text }: { text: string }) {
   const qr = useMemo(() => {
