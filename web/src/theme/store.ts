@@ -115,8 +115,7 @@ export const themeStore = {
     ),
   /** Screen effects declared by a terminal theme (data only). */
   effects: (themeId?: string | null): Effect[] =>
-    variant((themeId ? findTheme(themeId) : undefined) ?? current()).terminal
-      .effects,
+    ((themeId ? findTheme(themeId) : undefined) ?? current()).terminal.effects,
   subscribe(l: () => void) {
     listeners.add(l);
     return () => void listeners.delete(l);
