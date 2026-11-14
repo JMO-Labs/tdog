@@ -9,6 +9,7 @@ export const FrameType = {
 export type Decoded =
   | { kind: "output"; data: Uint8Array }
   | { kind: "exit"; code: number }
+  | { kind: "pong"; t: number }
   | { kind: "unknown" };
 
 const enc = new TextEncoder();
@@ -45,6 +46,14 @@ export function encodeAck(bytes: number): Uint8Array<ArrayBuffer> {
   );
 }
 
+/** Latency probe; the server echoes `t` back in a pong. */
+export function encodePing(t: number): Uint8Array<ArrayBuffer> {
+  return frame(
+    FrameType.Control,
+    enc.encode(JSON.stringify({ type: "ping", t })),
+  );
+}
+
 export function decodeFrame(buf: ArrayBuffer): Decoded {
   const b = new Uint8Array(buf);
   if (b.length === 0) return { kind: "unknown" };
@@ -54,6 +63,9 @@ export function decodeFrame(buf: ArrayBuffer): Decoded {
       const m = JSON.parse(dec.decode(b.subarray(1)));
       if (m?.type === "exit" && typeof m.code === "number") {
         return { kind: "exit", code: m.code };
+      }
+      if (m?.type === "pong" && typeof m.t === "number") {
+        return { kind: "pong", t: m.t };
       }
     } catch {
       /* fall through */

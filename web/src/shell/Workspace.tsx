@@ -13,6 +13,8 @@ import { Tabs } from "./Tabs";
 import "./shell.css";
 
 const noop = () => {};
+/** Latency above this gets the dial-up icon. */
+const SLOW_MS = 150;
 
 export function Workspace({
   onSignedOut,
@@ -25,6 +27,7 @@ export function Workspace({
   const [size, setSize] = useState<{ cols: number; rows: number } | null>(null);
   const [open, setOpen] = useState(false);
   const [everOpen, setEverOpen] = useState(false);
+  const [latency, setLatency] = useState<number | null>(null);
   const [stamp, setStamp] = useState(0);
   const [petShown, setPetShown] = useState(true);
   const [settings, setSettings] = useState(false);
@@ -123,6 +126,7 @@ export function Workspace({
           onClosed={onClosed}
           onSize={onSize}
           onOutput={onOutput}
+          onLatency={setLatency}
           onOpenChange={onOpenChange}
           reconnectRef={reconnectRef}
         />
@@ -155,6 +159,20 @@ export function Workspace({
           </span>
         )}
         <div className="spacer" />
+        {latency !== null && (
+          <span
+            data-testid="latency"
+            className={`chip num${latency > SLOW_MS ? " slow" : ""}`}
+            title={
+              latency > SLOW_MS
+                ? "Dial-up speeds. Typing may feel sluggish."
+                : undefined
+            }
+          >
+            <Icon name={latency > SLOW_MS ? "modem" : "bolt"} />
+            {latency} ms
+          </span>
+        )}
         {petShown && <Pet awake={awake} onHide={() => setPetShown(false)} />}
         <button
           className="chip kbd-chip"

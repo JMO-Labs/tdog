@@ -249,3 +249,7 @@
     transition: none;
   }
 }
+.chip.slow {
+  background: var(--yellow);
+  color: var(--ink);
+}
