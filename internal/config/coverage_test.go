@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/BurntSushi/toml"
 )
 
 func wantPath(t *testing.T, kind, body, path string) {
@@ -174,5 +176,14 @@ func TestRouteInternalError(t *testing.T) {
 	}
 	if got := w.Body.String(); got != "{\"error\":\"internal error\"}\n" {
 		t.Fatalf("must not leak the cause: %q", got)
+	}
+}
+
+func TestInsideHook(t *testing.T) {
+	if !insideHook(toml.Key{"pre_exec", "mode"}) || !insideHook(toml.Key{"panes", "override", "on_close", "run"}) {
+		t.Fatal("hook sub-keys must be inside a hook")
+	}
+	if insideHook(toml.Key{"pre_exec"}) || insideHook(toml.Key{"font", "size"}) {
+		t.Fatal("non-hook keys must not be inside a hook")
 	}
 }
