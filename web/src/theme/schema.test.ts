@@ -59,6 +59,17 @@ describe("bundled themes", () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids[0]).toBe("memphis-pop");
   });
+  it("ships the 90s theme pack 3", () => {
+    const ids = THEMES.map((t) => t.id);
+    for (const id of [
+      "dial-up-paranoia",
+      "black-box",
+      "virtual-mind",
+      "multipass",
+      "bug-hunt",
+    ])
+      expect(ids).toContain(id);
+  });
   for (const t of THEMES) {
     describe(t.id, () => {
       it("is schema valid", () => {
