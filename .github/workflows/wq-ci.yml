@@ -20,9 +20,9 @@ jobs:
             code: ['cmd/**', 'internal/**', 'web/**', 'scripts/**', 'go.mod', 'go.sum', '.github/workflows/wq-ci.yml']
   wq:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
     uses: JMO-Labs/wq-ci/.github/workflows/wq-ci.yml@v1
     with:
+      run: ${{ needs.changes.outputs.code == 'true' }}  # not a job-level if: that hides the required `wq / test` check
       reruns: 1
       test-cmd: ./scripts/test.sh
       # go mod tidy: workers have no Go toolchain; autofix resolves new imports into go.mod/go.sum.
