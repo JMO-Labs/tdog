@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { useToast } from "../overlays/toast";
 import { Switch } from "./Switch";
 import { TwoFactor } from "./TwoFactor";
-import { usePref } from "./prefs";
+import { useMotifOpacity, usePref } from "./prefs";
 import "./settings.css";
 
 /** Body of the settings sheet. Uses only existing /api endpoints. */
@@ -13,6 +13,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   const [totp, setTotp] = useState(false);
   const [serious, setSerious] = usePref("serious");
   const [pet, setPet] = usePref("pet");
+  const [motif, setMotif] = useMotifOpacity();
   const [dress, setDress] = usePref("dress");
 
   useEffect(() => {
@@ -62,6 +63,21 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
           <p className="muted">Sleeps when shells idle, wakes on output.</p>
         </div>
         <Switch labelledBy="sw-pet" checked={pet} onChange={setPet} />
+      </div>
+      <h3>Appearance</h3>
+      <div className="row">
+        <div>
+          <b id="sl-motif">Terminal motif</b>
+          <p className="muted">Theme pattern behind text. 0 turns it off.</p>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={30}
+          aria-labelledby="sl-motif"
+          value={motif}
+          onChange={(e) => setMotif(Number(e.target.value))}
+        />
       </div>
       <div className="row">
         <div>

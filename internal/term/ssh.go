@@ -117,7 +117,10 @@ func exitCode(err error) int {
 	}
 }
 
-func spawnSSH(cfg SSHConfig) (*session, error) {
+func spawnSSH(cfg SSHConfig) (*session, error) { return spawnSSHCmd(cfg, "") }
+
+// spawnSSHCmd runs cmd in a pty on the host; "" starts the login shell.
+func spawnSSHCmd(cfg SSHConfig, cmd string) (*session, error) {
 	client, err := dialSSH(cfg)
 	if err != nil {
 		return nil, errors.New("ssh connect failed: " + err.Error())
@@ -135,7 +138,12 @@ func spawnSSH(cfg SSHConfig) (*session, error) {
 	if err := sess.RequestPty("xterm-256color", 24, 80, ssh.TerminalModes{ssh.ECHO: 1}); err != nil {
 		return fail("ssh pty request failed: ", err)
 	}
-	if err := sess.Shell(); err != nil {
+	if cmd == "" {
+		err = sess.Shell()
+	} else {
+		err = sess.Start(cmd)
+	}
+	if err != nil {
 		return fail("ssh shell failed: ", err)
 	}
 	w := newWaiter()
