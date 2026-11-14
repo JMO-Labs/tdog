@@ -60,9 +60,15 @@ func NewHandler(cfg Config) http.Handler {
 	if reg == nil {
 		reg = NewRegistry(cfg.Audit, cfg.Scrollback)
 	}
+	run := sshRunner(cfg.SSH)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		target := q.Get("target")
+		persistent := q.Get("persistent") == "1"
+		if persistent && target != "ssh-host" {
+			http.Error(w, "persistent requires the ssh-host target", http.StatusBadRequest)
+			return
+		}
 		if target != "" && target != "ssh-host" && target != "container" {
 			http.Error(w, "unknown target", http.StatusBadRequest)
 			return
@@ -91,9 +97,13 @@ func NewHandler(cfg Config) http.Handler {
 			if target == "" {
 				target = "container"
 			}
+			id := newID()
 			spawn := func() (*session, error) { return spawnPTY(shell) }
 			if target == "ssh-host" {
 				spawn = func() (*session, error) { return spawnSSH(cfg.SSH) }
+				if persistent {
+					spawn = func() (*session, error) { return spawnTmux(cfg.SSH, run, id) }
+				}
 			}
 			s, err := spawn()
 			if err != nil {
@@ -104,7 +114,7 @@ func NewHandler(cfg Config) http.Handler {
 				}
 				return
 			}
-			sess = reg.add(target, scene, s)
+			sess = reg.addID(id, target, scene, s)
 		}
 		sess.serve(c)
 	})

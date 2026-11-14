@@ -3,9 +3,12 @@ package server
 
 import (
 	"io/fs"
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/JMO-Labs/tdog/internal/auth"
+	"github.com/JMO-Labs/tdog/internal/config"
 	"github.com/JMO-Labs/tdog/internal/term"
 	"github.com/JMO-Labs/tdog/web"
 )
@@ -27,13 +30,30 @@ func NewWithUI(ui fs.FS) http.Handler {
 // NewSecured returns the embedded-UI handler behind a's authentication
 // middleware, with the login/logout/setup routes and the terminal WebSocket
 // (ADR-0003) registered.
-func NewSecured(ui fs.FS, a *auth.Auth) http.Handler {
+func NewSecured(ui fs.FS, a *auth.Auth) http.Handler { return NewSecuredPresets(ui, a, nil) }
+
+// NewSecuredPresets is NewSecured plus the preset and schema routes backed by
+// store (skipped when nil). They sit behind the same session + CSRF checks.
+func NewSecuredPresets(ui fs.FS, a *auth.Auth, store *config.Store) http.Handler {
 	mux := http.NewServeMux()
 	a.Register(mux)
 	reg := term.NewRegistry(a.Audit(), 0)
-	mux.Handle("GET /ws/term", term.NewHandler(term.Config{SSH: term.SSHConfigFromEnv(), Audit: a.Audit(), Registry: reg}))
+	sshCfg := term.SSHConfigFromEnv()
+	if _, err := os.Stat(sshCfg.KeyPath); err == nil { // reattach persistent tmux sessions
+		go func() {
+			if n, err := reg.RediscoverSSH(sshCfg); err != nil {
+				log.Printf("term: tmux rediscovery: %v", err)
+			} else if n > 0 {
+				log.Printf("term: reattached %d tmux session(s)", n)
+			}
+		}()
+	}
+	mux.Handle("GET /ws/term", term.NewHandler(term.Config{SSH: sshCfg, Audit: a.Audit(), Registry: reg}))
 	mux.Handle("GET /api/sessions", reg.ListHandler())
 	reg.RegisterKill(mux)
+	if store != nil {
+		store.Register(mux)
+	}
 	mux.Handle("/", NewWithUI(ui))
 	return a.Middleware(mux)
 }
