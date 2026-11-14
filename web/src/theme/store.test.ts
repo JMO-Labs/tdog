@@ -170,4 +170,39 @@ describe("motif fallbacks and terminal motif", () => {
       themeStore.select("memphis-pop");
     }
   });
+
+  it("terminal motif resolves tokens the theme does not set from CSS defaults", () => {
+    const base = THEMES.find((t) => t.id === "memphis-pop")!;
+    const motif = {
+      viewBox: [0, 0, 4, 4] as [number, number, number, number],
+      tile: [4, 4] as [number, number],
+      shapes: [
+        {
+          type: "rect" as const,
+          x: 0,
+          y: 0,
+          width: 2,
+          height: 2,
+          fill: "pink",
+        },
+      ],
+    };
+    THEMES.push({
+      ...base,
+      id: "motif-t3",
+      chrome: { ...base.chrome, tokens: {} },
+      terminal: { ...base.terminal, motif },
+    });
+    document.documentElement.style.setProperty("--pink", "#abcdef");
+    try {
+      themeStore.select("motif-t3");
+      const svg = decodeURIComponent(themeStore.terminalMotif()!);
+      expect(svg).toContain("#abcdef");
+      expect(svg).not.toContain("#808080");
+    } finally {
+      document.documentElement.style.removeProperty("--pink");
+      THEMES.pop();
+      themeStore.select("memphis-pop");
+    }
+  });
 });

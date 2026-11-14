@@ -35,6 +35,10 @@ function shapeEl(s: MotifShape): string {
  */
 const cache = new Map<string, string>();
 
+/** Test hooks for the memo cache. */
+export const motifCacheSize = () => cache.size;
+export const clearMotifCache = () => cache.clear();
+
 export function motifSvg(
   m: Motif,
   tokens: Record<string, string> = {},

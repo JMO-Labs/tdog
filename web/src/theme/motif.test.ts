@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { motifSvg } from "./motif";
+import { clearMotifCache, motifCacheSize, motifSvg } from "./motif";
 import type { Motif } from "./schema";
 
 const decode = (u: string) =>
@@ -44,7 +44,13 @@ describe("motifSvg", () => {
 
   it("memoises per motif and token set", () => {
     const m = motif([{ type: "rect", x: 0, y: 0, width: 1, height: 1 }]);
-    expect(motifSvg(m, { pink: "#111" })).toBe(motifSvg(m, { pink: "#111" }));
+    clearMotifCache();
+    motifSvg(m, { pink: "#111" });
+    expect(motifCacheSize()).toBe(1);
+    motifSvg(m, { pink: "#111" });
+    expect(motifCacheSize()).toBe(1);
+    motifSvg(m, { pink: "#222" });
+    expect(motifCacheSize()).toBe(2);
     expect(motifSvg(m, { pink: "#111" })).not.toBe(
       motifSvg({ ...m, tile: [30, 30] }, { pink: "#111" }),
     );
