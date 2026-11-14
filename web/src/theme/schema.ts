@@ -29,6 +29,8 @@ export const EFFECTS = [
   "grain",
   "flicker",
   "vignette",
+  "glyph-rain",
+  "tracking",
 ] as const;
 export const BOOTS = ["default"] as const;
 export const COSTUMES = ["none"] as const;

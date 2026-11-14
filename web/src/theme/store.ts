@@ -3,6 +3,7 @@ import { DEFAULT_THEME_ID, THEMES, findTheme, type Theme } from "./registry";
 import { motifSvg } from "./motif";
 import {
   CHROME_TOKENS,
+  type Effect,
   type TerminalColors,
   type ThemeVariant,
 } from "./schema";
@@ -112,6 +113,10 @@ export const themeStore = {
       variant((themeId ? findTheme(themeId) : undefined) ?? current()).terminal
         .palette,
     ),
+  /** Screen effects declared by a terminal theme (data only). */
+  effects: (themeId?: string | null): Effect[] =>
+    variant((themeId ? findTheme(themeId) : undefined) ?? current()).terminal
+      .effects,
   subscribe(l: () => void) {
     listeners.add(l);
     return () => void listeners.delete(l);

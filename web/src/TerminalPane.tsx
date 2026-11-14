@@ -6,6 +6,7 @@ import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
+import { EffectsOverlay } from "./effects/EffectsOverlay";
 import { findSessionId } from "./terminal/sessions";
 
 /** Retry cadence while a dropped socket is being re-established. */
@@ -84,6 +85,12 @@ export function TerminalPane({
   const hooks = useRef({ onSize, onOutput, onLatency });
   hooks.current = { onSize, onOutput, onLatency };
 
+  const [effects, setEffects] = useState(() => themeStore.effects(theme));
+  useEffect(() => {
+    const sync = () => setEffects(themeStore.effects(theme));
+    sync();
+    return themeStore.subscribe(sync);
+  }, [theme]);
   const dropped = state.status === "closed" && state.exitCode === undefined;
   useEffect(() => {
     renderer.current?.setTheme(themeStore.terminal(theme));
@@ -162,6 +169,7 @@ export function TerminalPane({
       style={{ position: "relative", height: "100%" }}
     >
       <div ref={host} style={{ height: "100%" }} />
+      <EffectsOverlay effects={effects} />
       <ConnectionGag phase={phase} onReconnect={connect} />
       {state.status === "closed" && state.exitCode !== undefined && (
         <div
