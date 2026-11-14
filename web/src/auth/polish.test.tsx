@@ -52,7 +52,9 @@ test("theme corner button is a labelled 40px sticker", async () => {
 test("auth type scale: body 14, labels 13, buttons 15", () => {
   const css = readFileSync("src/auth/auth.css", "utf8");
   expect(css).toMatch(/\.auth-card\s+\.muted\s*{[^}]*font-size:\s*14px/s);
-  expect(css).toMatch(/\.auth-card\s+\.btn:not\(\.sm\)\s*{[^}]*font-size:\s*15px/s);
+  expect(css).toMatch(
+    /\.auth-card\s+\.btn:not\(\.sm\)\s*{[^}]*font-size:\s*15px/s,
+  );
 });
 
 test("boot letters are individually composited, not smeared by a parent filter", () => {
