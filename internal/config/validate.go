@@ -30,7 +30,7 @@ func Decode(kind string, data []byte) (any, error) {
 	if err != nil {
 		var pe toml.ParseError
 		if errors.As(err, &pe) {
-			return nil, &ValidationError{Path: strings.Join(pe.Key, "."), Msg: pe.Message}
+			return nil, &ValidationError{Path: pe.LastKey, Msg: pe.Message}
 		}
 		return nil, &ValidationError{Msg: err.Error()}
 	}
