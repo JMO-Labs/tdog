@@ -3,6 +3,9 @@ import * as api from "./api";
 import { MIN_PASSWORD } from "./constants";
 import { OtpBoxes } from "./otp";
 import { AuthShell } from "./shell";
+import { DialUp, NoNo } from "./SignOn";
+import { celebrate } from "./celebrate";
+import { useToast } from "../overlays/toast";
 import { tape } from "./tape";
 import { Button } from "../components/ui/button";
 import { Field } from "../components/ui/field";
@@ -47,6 +50,9 @@ export function LoginScreen(props: {
   const [code, setCode] = useState("");
   const [needCode, setNeedCode] = useState(false);
   const [recovery, setRecovery] = useState(false);
+  const [dialing, setDialing] = useState(false);
+  const [nono, setNono] = useState(false);
+  const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
   const recoveryInput = useRef<HTMLInputElement>(null);
   useEffect(() => input.current?.focus(), []);
@@ -60,13 +66,14 @@ export function LoginScreen(props: {
     setErr("");
     try {
       const r = await api.login(pw, needCode ? code.trim() : undefined);
-      if (r.ok) return props.onDone();
+      if (r.ok) return setDialing(true);
       if (r.kind === "setup") return props.onNeedSetup();
       if (r.kind === "totp") {
         setNeedCode(true);
         return;
       }
       if (r.kind === "code") setCode("");
+      if (r.kind === "password") setNono(true);
       setErr(message(r));
     } catch {
       setErr(message({ ok: false, kind: "other" }));
@@ -75,6 +82,32 @@ export function LoginScreen(props: {
       if (!needCode) input.current?.focus();
     }
   }
+
+  const overlays = (
+    <>
+      {nono && (
+        <NoNo
+          detail="Wrong password. Give it another go."
+          onDone={() => {
+            setNono(false);
+            input.current?.select();
+          }}
+        />
+      )}
+      {dialing && (
+        <DialUp
+          onDone={() => {
+            celebrate();
+            toast(
+              "success",
+              "Signed in. Your shells are right where you left them.",
+            );
+            props.onDone();
+          }}
+        />
+      )}
+    </>
+  );
 
   if (needCode)
     return (
@@ -120,12 +153,17 @@ export function LoginScreen(props: {
             {recovery ? "Use an authenticator code" : "Use a recovery code"}
           </Button>
         </form>
+        {overlays}
       </AuthShell>
     );
 
   return (
     <AuthShell>
-      <form className="card auth-card" onSubmit={submit} noValidate>
+      <form
+        className={`card auth-card${nono ? " shake" : ""}`}
+        onSubmit={submit}
+        noValidate
+      >
         <h2 className="card-title">Welcome back</h2>
         <p className="muted">
           Sign in to get your shells back where you left them.
@@ -149,6 +187,7 @@ export function LoginScreen(props: {
           Sign in
         </Button>
       </form>
+      {overlays}
     </AuthShell>
   );
 }
@@ -159,6 +198,8 @@ export function SetupScreen(props: { onDone: () => void }) {
   const [confirm, setConfirm] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [dialing, setDialing] = useState(false);
+  const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => input.current?.focus(), []);
   const meter = tape(pw.length);
@@ -172,7 +213,7 @@ export function SetupScreen(props: { onDone: () => void }) {
     setErr("");
     try {
       const r = await api.setup(token, pw);
-      if (r.ok || r.kind === "done") return props.onDone();
+      if (r.ok || r.kind === "done") return setDialing(true);
       setErr(message(r));
     } catch {
       setErr(message({ ok: false, kind: "other" }));
@@ -230,6 +271,15 @@ export function SetupScreen(props: { onDone: () => void }) {
           Create account
         </Button>
       </form>
+      {dialing && (
+        <DialUp
+          onDone={() => {
+            celebrate();
+            toast("success", "Account created. You're in.");
+            props.onDone();
+          }}
+        />
+      )}
     </AuthShell>
   );
 }
