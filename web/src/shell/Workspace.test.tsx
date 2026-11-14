@@ -80,6 +80,7 @@ test("pet sleeps after 3s idle, wakes on output, click hides", () => {
   act(() => void vi.advanceTimersByTime(600));
   expect(pet().className).toContain("awake");
   fireEvent.click(pet());
+  fireEvent.click(screen.getByRole("button", { name: "Hide pet" }));
   expect(screen.queryByTestId("pet")).toBeNull();
 });
 
@@ -130,6 +131,7 @@ test("⌘, opens settings; hiding the pet persists", () => {
   expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
   fireEvent.keyDown(document, { key: "Escape" });
   fireEvent.click(screen.getByTestId("pet"));
+  fireEvent.click(screen.getByRole("button", { name: "Hide pet" }));
   expect(localStorage.getItem("tdog.pet")).toBe("0");
   expect(screen.queryByTestId("pet")).toBeNull();
 });
