@@ -105,13 +105,13 @@ func (s *Store) Put(kind, name string, data []byte) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(f.Name()) // no-op after a successful rename
+	defer func() { _ = os.Remove(f.Name()) }() // no-op after a successful rename
 	if _, err := f.Write(data); err != nil {
-		f.Close()
+		_ = f.Close()
 		return err
 	}
 	if err := f.Sync(); err != nil {
-		f.Close()
+		_ = f.Close()
 		return err
 	}
 	if err := f.Close(); err != nil {
