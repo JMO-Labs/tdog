@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -25,7 +26,14 @@ type rig struct {
 
 func newRig(t *testing.T) *rig {
 	t.Helper()
-	l := audit.New(filepath.Join(t.TempDir(), "audit.log"))
+	// Not t.TempDir: shells end asynchronously and may still append an audit
+	// entry during cleanup, which would fail TempDir's RemoveAll.
+	dir, err := os.MkdirTemp("", "tdog-term")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	l := audit.New(filepath.Join(dir, "audit.log"))
 	reg := NewRegistry(l, 0)
 	srv := httptest.NewServer(NewHandler(Config{Shell: "/bin/sh", Audit: l, Registry: reg}))
 	t.Cleanup(srv.Close)
@@ -158,6 +166,36 @@ func TestExitRemovesSession(t *testing.T) {
 		t.Fatalf("ctl %q", ctl)
 	}
 	waitFor(t, func() bool { return len(r.reg.List()) == 0 })
+}
+
+// An observer that sees the session gone or detached must also see its audit entry.
+func TestExitAuditedBeforeSessionRemoved(t *testing.T) {
+	r := newRig(t)
+	c, _ := r.start("")
+	send(t, r.ctx, c, frame.Input, "exit 0\n")
+	waitFor(t, func() bool { return len(r.reg.List()) == 0 })
+	if !hasEvent(r, "term_end") {
+		t.Fatal("term_end not logged by the time the session was gone")
+	}
+}
+
+func TestDetachAuditedBeforeAttachedClears(t *testing.T) {
+	r := newRig(t)
+	c, _ := r.start("")
+	_ = c.CloseNow()
+	waitFor(t, func() bool { return !r.reg.List()[0].Attached })
+	if !hasEvent(r, "detach") {
+		t.Fatal("detach not logged by the time the session showed detached")
+	}
+}
+
+func hasEvent(r *rig, ev string) bool {
+	for _, e := range r.log.Recent(50) {
+		if e.Event == ev {
+			return true
+		}
+	}
+	return false
 }
 
 func TestKillHangsUpShell(t *testing.T) {
