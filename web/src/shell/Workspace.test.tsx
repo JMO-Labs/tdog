@@ -98,3 +98,12 @@ test("empty state offers a visible Reconnect action", () => {
   fireEvent.click(screen.getByRole("button", { name: "Reconnect" }));
   expect(reconnect).toHaveBeenCalledTimes(1);
 });
+
+test("Settings button opens the sheet; Escape closes it", () => {
+  render(<Workspace onSignedOut={() => {}} />);
+  expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+  expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
+});
