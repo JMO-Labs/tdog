@@ -50,13 +50,13 @@ afterEach(() => {
   clearCommands();
 });
 
-test("header: wordmark, one tab, icon buttons with disabled ones", () => {
+test("header: wordmark, one tab, icon buttons, Studio disabled", () => {
   render(<Workspace />);
   expect(screen.getByRole("tab", { selected: true })).toBeTruthy();
   const studio = screen.getByRole("button", { name: "Studio" });
   expect(studio.getAttribute("aria-disabled")).toBe("true");
   const kill = screen.getByRole("button", { name: "Kill all shells" });
-  expect(kill.getAttribute("aria-disabled")).toBe("true");
+  expect(kill.getAttribute("aria-disabled")).toBeNull();
   expect(screen.getByRole("button", { name: "Theme" })).toBeTruthy();
   expect(screen.getByRole("button", { name: "Settings" })).toBeTruthy();
 });

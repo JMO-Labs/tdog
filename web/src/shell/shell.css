@@ -319,6 +319,67 @@
   justify-content: flex-end;
   margin-top: 16px;
 }
+.zebra {
+  height: 10px;
+  margin-bottom: 12px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--yellow),
+    var(--yellow) 10px,
+    var(--ink) 10px,
+    var(--ink) 20px
+  );
+}
+.nuke {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+  touch-action: none;
+}
+.nuke .ring {
+  width: 20px;
+  height: 20px;
+  transform: rotate(-90deg);
+}
+.nuke .ring circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+}
+.nuke[data-holding="true"] {
+  animation: nuke-shake 0.1s linear infinite;
+}
+.nuke[data-holding="true"] .ring circle {
+  animation: nuke-fill 1.5s linear forwards;
+}
+@keyframes nuke-fill {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes nuke-shake {
+  25% {
+    transform: translateX(-1px);
+  }
+  75% {
+    transform: translateX(1px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nuke[data-holding="true"] {
+    animation: none;
+  }
+}
+.tab-menu {
+  position: fixed;
+  z-index: 50;
+  padding: 4px;
+  background: var(--panel, #222);
+  border: 1px solid currentColor;
+}
 .tab-wrap[data-drop] {
   outline: 2px dashed var(--accent, #6cf);
   outline-offset: 1px;
