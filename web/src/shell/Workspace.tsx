@@ -17,7 +17,13 @@ const noop = () => {};
 /** Latency above this gets the dial-up icon. */
 const SLOW_MS = 150;
 
-export function Workspace({ onClosed }: { onClosed?: () => void }) {
+export function Workspace({
+  onClosed,
+  onSignedOut,
+}: {
+  onClosed?: () => void;
+  onSignedOut: () => void;
+}) {
   const { mode, cycle } = useThemeMode();
   const [size, setSize] = useState<{ cols: number; rows: number } | null>(null);
   const [open, setOpen] = useState(false);
