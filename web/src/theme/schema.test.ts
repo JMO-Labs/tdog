@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import { contrast, validateTheme } from "./schema";
 import { THEMES } from "./registry";
 
-const ok = () => JSON.parse(JSON.stringify(THEMES[0]));
+// Raw theme data: strip the registry-added `id`, which is not part of the format.
+const ok = () => {
+  const raw = JSON.parse(JSON.stringify(THEMES[0]));
+  delete raw.id;
+  return raw;
+};
 
 describe("validateTheme", () => {
   it("accepts a good theme", () => {
