@@ -57,3 +57,11 @@ test("1024px: inline buttons, no More", () => {
   for (const n of ["Studio", "Theme", "Settings", "Kill all shells"])
     expect(screen.getByRole("button", { name: n })).toBeTruthy();
 });
+
+test("390px: More menu 'Kill all shells' opens the kill dialog", () => {
+  setWidth(390);
+  render(<Workspace />);
+  fireEvent.click(screen.getByRole("button", { name: "More" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: /Kill all shells/ }));
+  expect(screen.getByRole("button", { name: /hold to nuke/i })).toBeTruthy();
+});
