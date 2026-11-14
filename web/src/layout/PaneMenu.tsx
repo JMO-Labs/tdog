@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { roving } from "./roving";
 
 export interface PaneMenuProps {
   id: string;
@@ -10,6 +11,11 @@ export interface PaneMenuProps {
 /** Keyboard-reachable alternative to dragging: swap with a neighbour or move to a scene. */
 export function PaneMenu({ id, scenes, onSwap, onMoveToScene }: PaneMenuProps) {
   const [open, setOpen] = useState(false);
+  const menu = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (open)
+      menu.current?.querySelector<HTMLElement>("[role=menuitem]")?.focus();
+  }, [open]);
   const run = (f: () => void) => () => {
     setOpen(false);
     f();
@@ -23,7 +29,7 @@ export function PaneMenu({ id, scenes, onSwap, onMoveToScene }: PaneMenuProps) {
       onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
     >
       <button
-        className="pane-btn"
+        className="pane-btn icon-btn sm"
         aria-label="Pane menu"
         title="Pane menu"
         aria-haspopup="menu"
@@ -33,7 +39,23 @@ export function PaneMenu({ id, scenes, onSwap, onMoveToScene }: PaneMenuProps) {
         ⋯
       </button>
       {open && (
-        <div className="pane-menu" role="menu" aria-label="Pane actions">
+        <div
+          ref={menu}
+          className="pane-menu pop-card"
+          role="menu"
+          aria-label="Pane actions"
+          onKeyDown={(e) =>
+            roving(
+              e,
+              "[role=menuitem]",
+              { ArrowDown: 1, ArrowUp: -1, Home: "home", End: "end" },
+              true,
+            )
+          }
+        >
+          <h3 className="pop-title" role="presentation">
+            Pane actions
+          </h3>
           <button role="menuitem" onClick={run(() => onSwap(id, -1))}>
             Swap with previous
           </button>

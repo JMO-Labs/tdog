@@ -233,6 +233,19 @@ test("boot wordmark plays once per session and any key skips", async () => {
   expect(document.querySelector("[data-booting]")).toBeNull();
 });
 
+test("boot is skipped when the Boot animation setting is off", async () => {
+  sessionStorage.clear();
+  localStorage.setItem("tdog.boot", "0");
+  vi.stubGlobal(
+    "fetch",
+    mockFetch({ "GET /api/status": status(false, false) }),
+  );
+  render(<App />);
+  await screen.findByLabelText("Password");
+  expect(document.querySelector("[data-booting]")).toBeNull();
+  localStorage.clear();
+});
+
 test("2FA: pasted code submits and recovery code can be used", async () => {
   let n = 0;
   const f = mockFetch({
