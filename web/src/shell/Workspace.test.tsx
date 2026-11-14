@@ -102,7 +102,7 @@ test("empty state offers a visible Reconnect action", () => {
 });
 
 test("latency chip shows ms, and a dial-up icon above 150 ms", () => {
-  render(<Workspace onSignedOut={() => {}} />);
+  render(<Workspace />);
   expect(screen.queryByTestId("latency")).toBeNull();
   act(() => cb.onLatency!(12));
   const chip = screen.getByTestId("latency");
