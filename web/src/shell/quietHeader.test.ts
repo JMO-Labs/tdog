@@ -1,5 +1,8 @@
 import { expect, test } from "vitest";
-import css from "./shell.css?raw";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const css = readFileSync(resolve(__dirname, "shell.css"), "utf8");
 
 const rule = (sel: string) => {
   const esc = sel.replace(/[.[\]"=()]/g, "\\$&");
