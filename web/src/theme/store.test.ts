@@ -24,6 +24,24 @@ describe("themeStore", () => {
     themeStore.reset();
     expect(themeStore.get().id).toBe(other.id);
   });
+  it("resolves a terminal theme per pane, defaulting to the page theme", () => {
+    themeStore.select("memphis-pop");
+    const other = THEMES.find((t) => t.id === "night-market")!;
+    expect(themeStore.terminal("night-market").background).toBe(
+      other.terminal.palette.bg,
+    );
+    expect(themeStore.terminal(undefined)).toEqual(themeStore.terminal());
+    expect(themeStore.terminal("bogus")).toEqual(themeStore.terminal());
+    expect(themeStore.terminal("night-market").background).not.toBe(
+      themeStore.terminal().background,
+    );
+  });
+  it("applies chrome shape vars page-wide", () => {
+    themeStore.select("memphis-pop");
+    const s = document.documentElement.style;
+    expect(s.getPropertyValue("--radius-scale")).toBe("1");
+    expect(s.getPropertyValue("--border-width")).toBe("1");
+  });
   it("applies chrome vars and pattern, notifies subscribers", () => {
     const fn = vi.fn();
     const off = themeStore.subscribe(fn);
@@ -43,7 +61,9 @@ describe("themeStore", () => {
     themeStore.select("memphis-pop");
     themeStore.setScheme("light");
     expect(document.documentElement.dataset.theme).toBe("light");
-    expect(themeStore.terminal().background).toBe(THEMES[0].light!.terminal.bg);
+    expect(themeStore.terminal().background).toBe(
+      THEMES[0].light!.terminal.palette.bg,
+    );
     themeStore.setScheme("system");
     expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
   });
@@ -56,10 +76,10 @@ describe("themeStore", () => {
     expect(document.documentElement.style.getPropertyValue("--bg")).toBe("");
   });
   it("maps to a renderer theme", () => {
-    const t = toTerminalTheme(THEMES[0].terminal);
-    expect(t.foreground).toBe(THEMES[0].terminal.fg);
-    expect(t.brightWhite).toBe(THEMES[0].terminal.ansi[15]);
-    expect(t.selectionBackground).toBe(THEMES[0].terminal.selection);
+    const t = toTerminalTheme(THEMES[0].terminal.palette);
+    expect(t.foreground).toBe(THEMES[0].terminal.palette.fg);
+    expect(t.brightWhite).toBe(THEMES[0].terminal.palette.ansi[15]);
+    expect(t.selectionBackground).toBe(THEMES[0].terminal.palette.selection);
   });
   it("falls back to the default when storage throws", () => {
     themeStore.select("night-market");

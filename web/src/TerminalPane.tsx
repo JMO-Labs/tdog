@@ -30,6 +30,7 @@ function wsUrl(scene?: string, id?: string): string {
 }
 
 export function TerminalPane({
+  theme,
   onClosed,
   settled = true,
   onSize,
@@ -39,6 +40,8 @@ export function TerminalPane({
   reconnectRef,
   sceneKey,
 }: {
+  /** Terminal theme id for this pane; defaults to the page theme. */
+  theme?: string;
   /** Stable pane key sent as the session `scene`; reload reattaches by it. */
   sceneKey?: string;
   onClosed?: () => void;
@@ -54,6 +57,8 @@ export function TerminalPane({
   reconnectRef?: { current: (() => void) | null };
 } = {}) {
   const settledRef = useRef(settled);
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
   const renderer = useRef<TerminalRenderer | null>(null);
   const host = useRef<HTMLDivElement>(null);
   const session = useRef<TerminalSession | null>(null);
@@ -80,6 +85,9 @@ export function TerminalPane({
   hooks.current = { onSize, onOutput, onLatency };
 
   const dropped = state.status === "closed" && state.exitCode === undefined;
+  useEffect(() => {
+    renderer.current?.setTheme(themeStore.terminal(theme));
+  }, [theme]);
   useEffect(() => {
     if (!dropped) return;
     const id = setTimeout(connect, RETRY_MS);
@@ -126,9 +134,9 @@ export function TerminalPane({
       );
       session.current = s;
       renderer.current = r;
-      r.setTheme(themeStore.terminal());
+      r.setTheme(themeStore.terminal(themeRef.current));
       const offTheme = themeStore.subscribe(() =>
-        r.setTheme(themeStore.terminal()),
+        r.setTheme(themeStore.terminal(themeRef.current)),
       );
       connect();
       const ro = new ResizeObserver(() => {
