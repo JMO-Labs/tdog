@@ -28,13 +28,14 @@
   right: 0;
   bottom: 0;
   height: 4px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--pink) 0 28px,
-    var(--cyan) 28px 56px,
-    var(--yellow) 56px 84px,
-    var(--purple) 84px 112px
-  );
+  background: var(--header-motif, none) repeat-x 0 0 / auto 100%,
+    repeating-linear-gradient(
+      90deg,
+      var(--pink) 0 28px,
+      var(--cyan) 28px 56px,
+      var(--yellow) 56px 84px,
+      var(--purple) 84px 112px
+    );
 }
 .wordmark {
   font-family: var(--display);

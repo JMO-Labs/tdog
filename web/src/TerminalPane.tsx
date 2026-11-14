@@ -6,6 +6,7 @@ import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
+import { useMotifOpacity } from "./settings/prefs";
 import { findSessionId } from "./terminal/sessions";
 
 /** Retry cadence while a dropped socket is being re-established. */
@@ -156,12 +157,27 @@ export function TerminalPane({
     };
   }, [connect]);
 
+  const [motifPct] = useMotifOpacity();
+  const motifUrl = motifPct > 0 ? themeStore.terminalMotif(theme) : null;
   return (
     <div
       data-testid="terminal-pane"
       style={{ position: "relative", height: "100%" }}
     >
       <div ref={host} style={{ height: "100%" }} />
+      {motifUrl && (
+        <div
+          data-testid="terminal-motif"
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            backgroundImage: motifUrl,
+            opacity: motifPct / 100,
+          }}
+        />
+      )}
       <ConnectionGag phase={phase} onReconnect={connect} />
       {state.status === "closed" && state.exitCode !== undefined && (
         <div

@@ -33,10 +33,21 @@ function shapeEl(s: MotifShape): string {
  * only allowlisted element names are emitted; theme strings are never markup.
  * Token names resolve to hex via the supplied map (data URLs cannot read CSS vars).
  */
+const cache = new Map<string, string>();
+
 export function motifSvg(
   m: Motif,
   tokens: Record<string, string> = {},
 ): string {
+  const key = JSON.stringify([m, tokens]);
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const url = build(m, tokens);
+  cache.set(key, url);
+  return url;
+}
+
+function build(m: Motif, tokens: Record<string, string>): string {
   const resolve = (s: string) =>
     s.replace(
       /var\(--([a-z0-9-]+)\)/g,

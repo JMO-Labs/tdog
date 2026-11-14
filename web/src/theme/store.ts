@@ -92,7 +92,10 @@ function apply() {
       const v = tokens[k] ?? cs.getPropertyValue(`--${k}`).trim();
       if (v) resolved[k] = v;
     }
-    set("--header-motif", `url("${motifSvg(motif, resolved)}")`);
+    const url = `url("${motifSvg(motif, resolved)}")`;
+    set("--header-motif", url);
+    // Auth backdrop and empty panes read --pattern: the motif replaces confetti there.
+    set("--pattern", url);
   }
   // A theme with a light variant follows the scheme; others pin their appearance.
   if (t.light) {
@@ -112,6 +115,14 @@ export const themeStore = {
       variant((themeId ? findTheme(themeId) : undefined) ?? current()).terminal
         .palette,
     ),
+  /** Terminal motif as a CSS url() for a pane's theme, or null when it has none. */
+  terminalMotif: (themeId?: string | null): string | null => {
+    const t = (themeId ? findTheme(themeId) : undefined) ?? current();
+    const m = t.terminal.motif;
+    if (!m) return null;
+    const tokens = variant(t).chrome.tokens as Record<string, string>;
+    return `url("${motifSvg(m, tokens)}")`;
+  },
   subscribe(l: () => void) {
     listeners.add(l);
     return () => void listeners.delete(l);
