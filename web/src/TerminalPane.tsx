@@ -89,7 +89,7 @@ export function TerminalPane({
     if (!reconnectRef) return;
     reconnectRef.current = connect;
     return () => {
-      reconnectRef.current = null;
+      if (reconnectRef.current === connect) reconnectRef.current = null;
     };
   }, [reconnectRef, connect]);
   useEffect(() => {
