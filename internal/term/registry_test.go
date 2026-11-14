@@ -49,7 +49,7 @@ func (r *rig) start(query string) (*websocket.Conn, string) {
 	if err != nil {
 		r.t.Fatal(err)
 	}
-	_, ctl := readUntil(r.t, r.ctx, c, "")
+	ctl := readSession(r.t, r.ctx, c)
 	var v struct {
 		Type string `json:"type"`
 		ID   string `json:"id"`

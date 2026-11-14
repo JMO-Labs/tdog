@@ -45,8 +45,21 @@ func send(t *testing.T, ctx context.Context, c *websocket.Conn, typ frame.Type, 
 	}
 }
 
-// readUntil collects output until it contains want; returns a control payload if seen first.
+// readUntil collects output until it contains want; returns a control payload
+// if seen first. The "session" announcement is skipped (see readSession).
 func readUntil(t *testing.T, ctx context.Context, c *websocket.Conn, want string) (string, []byte) {
+	t.Helper()
+	return readCtl(t, ctx, c, want, true)
+}
+
+// readSession returns the first control payload, including "session".
+func readSession(t *testing.T, ctx context.Context, c *websocket.Conn) []byte {
+	t.Helper()
+	_, ctl := readCtl(t, ctx, c, "", false)
+	return ctl
+}
+
+func readCtl(t *testing.T, ctx context.Context, c *websocket.Conn, want string, skipSession bool) (string, []byte) {
 	t.Helper()
 	var out strings.Builder
 	for {
@@ -65,6 +78,9 @@ func readUntil(t *testing.T, ctx context.Context, c *websocket.Conn, want string
 				return out.String(), nil
 			}
 		case frame.Control:
+			if skipSession && strings.Contains(string(p), `"type":"session"`) {
+				continue
+			}
 			return out.String(), p
 		}
 	}
