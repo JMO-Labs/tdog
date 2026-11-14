@@ -98,7 +98,10 @@ function AuthApp() {
         Loading…
       </div>
     );
-  if (view === "setup") return <SetupScreen onDone={() => setView("login")} />;
+  if (view === "setup")
+    return (
+      <SetupScreen onDone={(inside) => setView(inside ? "app" : "login")} />
+    );
   if (view === "login")
     return (
       <LoginScreen

@@ -192,7 +192,7 @@ export function LoginScreen(props: {
   );
 }
 
-export function SetupScreen(props: { onDone: () => void }) {
+export function SetupScreen(props: { onDone: (signedIn: boolean) => void }) {
   const [token, setToken] = useState("");
   const [pw, setPw] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -204,6 +204,14 @@ export function SetupScreen(props: { onDone: () => void }) {
   useEffect(() => input.current?.focus(), []);
   const meter = tape(pw.length);
 
+  // Setup only creates the account; sign in with the new password so the user lands in the app.
+  async function signIn() {
+    const r = await api.login(pw).catch(() => ({ ok: false }) as const);
+    if (r.ok) return setDialing(true);
+    toast("info", "Account created. Sign in with your new password.");
+    props.onDone(false);
+  }
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (pw !== confirm) return setErr("Passwords do not match.");
@@ -213,7 +221,7 @@ export function SetupScreen(props: { onDone: () => void }) {
     setErr("");
     try {
       const r = await api.setup(token, pw);
-      if (r.ok || r.kind === "done") return setDialing(true);
+      if (r.ok || r.kind === "done") return await signIn();
       setErr(message(r));
     } catch {
       setErr(message({ ok: false, kind: "other" }));
@@ -276,7 +284,7 @@ export function SetupScreen(props: { onDone: () => void }) {
           onDone={() => {
             celebrate();
             toast("success", "Account created. You're in.");
-            props.onDone();
+            props.onDone(true);
           }}
         />
       )}

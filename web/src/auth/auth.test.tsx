@@ -21,7 +21,7 @@ afterEach(() => vi.unstubAllGlobals());
 const status = (setup: boolean, authenticated: boolean) =>
   json({ setup, authenticated });
 
-test("first run shows setup, then login, then the terminal", async () => {
+test("first run: setup signs you straight in to the terminal", async () => {
   const f = mockFetch({
     "GET /api/status": status(true, false),
     "POST /api/setup": json({}),
@@ -33,15 +33,36 @@ test("first run shows setup, then login, then the terminal", async () => {
   type(screen.getByLabelText("Password"), "longenough1");
   type(screen.getByLabelText("Confirm password"), "longenough1");
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
-  await screen.findByRole("heading", { name: /welcome back/i });
-  type(screen.getByLabelText("Password"), "longenough1");
-  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
   expect(await screen.findByTestId("terminal-pane")).toBeTruthy();
+  expect(screen.queryByRole("heading", { name: /welcome back/i })).toBeNull();
+  const loginCall = f.mock.calls.find((c) => c[0] === "/api/login")!;
+  expect(JSON.parse(loginCall[1]!.body as string)).toEqual({
+    password: "longenough1",
+  });
   const setupCall = f.mock.calls.find((c) => c[0] === "/api/setup")!;
   expect(JSON.parse(setupCall[1]!.body as string)).toEqual({
     token: "tok",
     password: "longenough1",
   });
+});
+
+test("setup succeeds but sign-in fails: lands on login with a hint", async () => {
+  vi.stubGlobal(
+    "fetch",
+    mockFetch({
+      "GET /api/status": status(true, false),
+      "POST /api/setup": json({}),
+      "POST /api/login": new Response("no", { status: 500 }),
+    }),
+  );
+  render(<App />);
+  type(await screen.findByLabelText("Setup token"), "tok");
+  type(screen.getByLabelText("Password"), "longenough1");
+  type(screen.getByLabelText("Confirm password"), "longenough1");
+  fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+  expect(
+    await screen.findByRole("heading", { name: /welcome back/i }),
+  ).toBeTruthy();
 });
 
 test("authenticated session goes straight to the terminal", async () => {
