@@ -177,8 +177,6 @@ func checkTarget(target string, persistent bool) string {
 	return ""
 }
 
-func spawnPTY(shell string) (*session, error) { return spawnPTYIn(shell, "", nil) }
-
 // spawnPTYIn starts shell in dir ("" = inherit) with env added.
 func spawnPTYIn(shell, dir string, env map[string]string) (*session, error) {
 	cmd := exec.Command(shell)
