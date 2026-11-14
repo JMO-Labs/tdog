@@ -28,6 +28,8 @@ function setup(tree: Node) {
     onClose: vi.fn(),
     onRatio: vi.fn(),
     onSnap: vi.fn(() => []),
+    onSwap: vi.fn(),
+    onMoveToScene: vi.fn(),
     renderPane: (id: string, settled: boolean) => (
       <div data-testid={`pane-${id}`} data-settled={settled} />
     ),
