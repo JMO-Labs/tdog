@@ -4,6 +4,8 @@ import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
 import { Sheet } from "../overlays/Sheet";
 import { registerCommand } from "../overlays/commands";
+import { SettingsPanel } from "../settings/SettingsPanel";
+import { usePref } from "../settings/prefs";
 import { THEMES } from "../theme/registry";
 import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
@@ -17,14 +19,20 @@ const noop = () => {};
 /** Latency above this gets the dial-up icon. */
 const SLOW_MS = 150;
 
-export function Workspace({ onClosed }: { onClosed?: () => void }) {
+export function Workspace({
+  onClosed,
+  onSignedOut,
+}: {
+  onClosed?: () => void;
+  onSignedOut?: () => void;
+}) {
   const { mode, cycle } = useThemeMode();
   const [size, setSize] = useState<{ cols: number; rows: number } | null>(null);
   const [open, setOpen] = useState(false);
   const [everOpen, setEverOpen] = useState(false);
   const [latency, setLatency] = useState<number | null>(null);
   const [stamp, setStamp] = useState(0);
-  const [petShown, setPetShown] = useState(true);
+  const [petShown, setPetShown] = usePref("pet");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
   const reconnectRef = useRef<(() => void) | null>(null);
@@ -43,6 +51,17 @@ export function Workspace({ onClosed }: { onClosed?: () => void }) {
   // App owns sign-out: it sends the CSRF token and only celebrates on success.
   const signOut = useCallback(() => {
     dispatchEvent(new Event("tdog:signout"));
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault();
+        setSettings(true);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, []);
 
   useEffect(() => {
@@ -190,7 +209,7 @@ export function Workspace({ onClosed }: { onClosed?: () => void }) {
         title="Settings"
         onClose={() => setSettings(false)}
       >
-        <p className="muted">More settings are on the way.</p>
+        <SettingsPanel onSignedOut={onSignedOut ?? (() => {})} />
       </Sheet>
     </div>
   );

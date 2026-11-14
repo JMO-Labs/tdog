@@ -46,6 +46,28 @@ export async function apiFetch(
 
 let csrfToken = "";
 
+/**
+ * CSRF-aware POST for authenticated calls. A 401 signs the user out unless
+ * `keep401` is set (for endpoints that answer 401 for a bad password/code).
+ */
+export async function apiPost(
+  path: string,
+  body?: unknown,
+  opts: { keep401?: boolean } = {},
+): Promise<Response> {
+  const headers: Record<string, string> = {};
+  if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const r = await fetch(path, {
+    method: "POST",
+    credentials: "same-origin",
+    headers,
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  if (r.status === 401 && !opts.keep401) onUnauthorized?.();
+  return r;
+}
+
 async function post(path: string, body: unknown): Promise<Response> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

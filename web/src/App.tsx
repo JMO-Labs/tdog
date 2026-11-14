@@ -3,6 +3,7 @@ import { Workspace } from "./shell/Workspace";
 import { getStatus, logout, setUnauthorizedHandler } from "./auth/api";
 import { LoginScreen, SetupScreen } from "./auth/screens";
 import { ToastProvider, useToast } from "./overlays/toast";
+import { usePref } from "./settings/prefs";
 import { isBenchRoute, isKitRoute } from "./routes";
 
 // Dead-code eliminated from production builds (import.meta.env.DEV is false).
@@ -31,8 +32,13 @@ export function App() {
         <KitPage />
       </Suspense>
     );
+  return <Root />;
+}
+
+function Root() {
+  const [serious] = usePref("serious");
   return (
-    <ToastProvider>
+    <ToastProvider serious={serious}>
       <AuthApp />
     </ToastProvider>
   );
@@ -100,5 +106,5 @@ function AuthApp() {
         onNeedSetup={() => setView("setup")}
       />
     );
-  return <Workspace onClosed={onClosed} />;
+  return <Workspace onSignedOut={() => setView("login")} onClosed={onClosed} />;
 }
