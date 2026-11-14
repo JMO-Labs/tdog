@@ -13,7 +13,7 @@ import { leaves } from "../layout/tree";
 import { useLayout } from "../layout/useLayout";
 import { Icon } from "./icons";
 import { Mascot } from "./Mascot";
-import { PaneSlot } from "./PaneSlot";
+import { PaneSlot, type PaneOpen } from "./PaneSlot";
 import { Pet, usePetAwake } from "./pet";
 import { Tabs } from "./Tabs";
 import "./shell.css";
@@ -49,6 +49,16 @@ export function Workspace({
   );
   const onLatency = useCallback(
     (id: string, ms: number) => setLatencies((m) => ({ ...m, [id]: ms })),
+    [],
+  );
+  // Per-pane open state lives here: dockview remounts panes when splits collapse.
+  const [paneOpen, setPaneOpen] = useState<Record<string, PaneOpen>>({});
+  const onPaneOpen = useCallback(
+    (id: string, open: boolean) =>
+      setPaneOpen((m) => ({
+        ...m,
+        [id]: { open, everOpen: open || (m[id]?.everOpen ?? false) },
+      })),
     [],
   );
   const onOutput = useCallback(() => setStamp((n) => n + 1), []);
@@ -166,6 +176,8 @@ export function Workspace({
                 <PaneSlot
                   id={id}
                   settled={settled}
+                  state={paneOpen[id]}
+                  onOpenChange={onPaneOpen}
                   onClosed={onClosed}
                   onSize={onSize}
                   onOutput={onOutput}

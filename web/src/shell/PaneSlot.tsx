@@ -1,11 +1,16 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import { TerminalPane } from "../TerminalPane";
 import { Mascot } from "./Mascot";
 
-/** One pane's terminal plus its own open/closed state and reconnect handle. */
+/** Open state of one pane; owned by Workspace so it survives remounts. */
+export type PaneOpen = { open: boolean; everOpen: boolean };
+
+/** One pane's terminal plus its closed overlay and reconnect handle. */
 export function PaneSlot({
   id,
   settled,
+  state,
+  onOpenChange,
   onClosed,
   onSize,
   onOutput,
@@ -13,18 +18,19 @@ export function PaneSlot({
 }: {
   id: string;
   settled: boolean;
+  state?: PaneOpen;
+  onOpenChange: (id: string, open: boolean) => void;
   onClosed?: () => void;
   onSize: (id: string, cols: number, rows: number) => void;
   onOutput: () => void;
   onLatency: (id: string, ms: number) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [everOpen, setEverOpen] = useState(false);
+  const { open, everOpen } = state ?? { open: false, everOpen: false };
   const reconnectRef = useRef<(() => void) | null>(null);
-  const onOpenChange = useCallback((o: boolean) => {
-    setOpen(o);
-    if (o) setEverOpen(true);
-  }, []);
+  const onOpen = useCallback(
+    (o: boolean) => onOpenChange(id, o),
+    [id, onOpenChange],
+  );
   const onSz = useCallback(
     (c: number, r: number) => onSize(id, c, r),
     [id, onSize],
@@ -39,7 +45,7 @@ export function PaneSlot({
         onSize={onSz}
         onOutput={onOutput}
         onLatency={onLat}
-        onOpenChange={onOpenChange}
+        onOpenChange={onOpen}
         reconnectRef={reconnectRef}
       />
       {everOpen && !open && (
