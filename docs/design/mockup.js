@@ -273,20 +273,6 @@ $("#new-scene").onclick = () => {
   t.click();
 };
 
-// ---------- pet ----------
-const DOG = ["....XX....XX", "...XYYX..XYX", "...XYYYXXYYX", "..XYYYYYYYYX", ".XYYKYYYYKYX", "XYYYYYPPYYYX", "XYYYYYYYYYX.", ".XXYYYYYYX..", "..XYXXXXYX..", "..XX....XX.."];
-const COL = { X: "#160B2E", Y: "#FFE14D", K: "#160B2E", P: "#FF2D95" };
-function drawPet(awake) {
-  const r = DOG.flatMap((row, y) => [...row].map((c, x) => c === "." ? "" : `<rect x="${x * 3}" y="${y * 3}" width="3" height="3" fill="${!awake && c === "K" ? "#4E4568" : COL[c]}"/>`)).join("");
-  $("#pet").innerHTML = `<svg viewBox="-2 -8 44 40">${r}${awake ? "" : '<text class="zz" x="34" y="0">z</text><text class="zz" x="39" y="-5">z</text>'}</svg>`;
-  $("#pet").className = "pet " + (awake ? "awake" : "sleep");
-  $("#pet").dataset.tip = awake ? "Dogbert is watching your output. Click to hide" : "Dogbert is asleep. Click to hide";
-}
-let petAwake = null;
-setInterval(() => { const a = Date.now() - lastOut < 3000; if (a !== petAwake) drawPet((petAwake = a)); }, 500);
-function backflip() { if (!RM) $("#pet svg").animate([{ transform: "none" }, { transform: "translateY(-16px) rotate(-180deg)" }, { transform: "rotate(-360deg)" }], { duration: 700, easing: "ease-in-out" }); }
-$("#pet").onclick = () => { $("#sw-pet").setAttribute("aria-checked", "false"); $("#pet").hidden = true; tip.hidden = true; toast("warn", "Pet hidden. Bring it back in Settings."); };
-
 // ---------- dialogs ----------
 function open(el) { el.hidden = false; return el; }
 // Overlays animate their card out; drawer/studio animate themselves. Then hide and clear the held frame.
@@ -408,7 +394,7 @@ function screensaver() {
 }
 const GAGS = {
   drop: dropConnection, lag, saver: screensaver,
-  bg: () => { backflip(); toast("info", "npm test finished in scene logs (exit 0).", "You've got output!"); },
+  bg: () => { window.petSaw?.("done"); toast("info", "npm test finished in scene logs (exit 0).", "You've got output!"); },
   fail: () => toast("fail", "Shell exited with code 1 in pane htop."),
   boot: () => { location.hash = "boot"; setTimeout(() => bootSeq(true), 50); },
 };
@@ -418,7 +404,6 @@ $$("[data-gag]").forEach((b) => b.addEventListener("click", () => { if (b.datase
 paintIcons();
 applyTheme();
 seedPanes();
-drawPet(false);
 addEventListener("hashchange", route);
 addEventListener("resize", movePill);
 route();
