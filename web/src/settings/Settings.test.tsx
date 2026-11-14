@@ -1,4 +1,11 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { json, mockFetch } from "../auth/testutil";
 import { ToastProvider } from "../overlays/toast";
@@ -150,6 +157,23 @@ test("cancelling the confirm dialog does nothing", async () => {
     expect.anything(),
   );
   expect(out).not.toHaveBeenCalled();
+});
+
+test("Escape closes the confirm dialog without revoking", async () => {
+  const { out } = await mount({ "GET /api/session": session(false) });
+  fireEvent.click(screen.getByRole("button", { name: "Sign out everywhere" }));
+  fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(out).not.toHaveBeenCalled();
+});
+
+test("appearance: keyboard focus previews a theme, blur reverts", async () => {
+  await mount({ "GET /api/session": session(false) });
+  const card = screen.getByRole("button", { name: /Night market/i });
+  fireEvent.focus(card);
+  expect(themeStore.get().id).toBe("night-market");
+  fireEvent.blur(card);
+  expect(themeStore.get().id).toBe("memphis-pop");
 });
 
 test("sign out everywhere failure toasts and stays", async () => {
