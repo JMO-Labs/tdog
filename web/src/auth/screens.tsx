@@ -320,10 +320,11 @@ function TokenInput({
       <button
         type="button"
         className="btn sm"
+        aria-label="Show setup token"
         aria-pressed={shown}
         onClick={onToggle}
       >
-        {shown ? "Hide setup token" : "Show setup token"}
+        {shown ? "Hide" : "Show"}
       </button>
     </div>
   );

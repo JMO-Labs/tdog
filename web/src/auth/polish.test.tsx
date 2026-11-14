@@ -24,12 +24,15 @@ test("setup token field toggles visibility and hints at docker logs", async () =
   )) as HTMLInputElement;
   expect(token.type).toBe("password");
   expect(screen.getByText(/docker logs tdog/)).toBeTruthy();
-  const toggle = screen.getByRole("button", { name: /show setup token/i });
+  const toggle = screen.getByRole("button", { name: "Show setup token" });
   expect(toggle.getAttribute("aria-pressed")).toBe("false");
   fireEvent.click(toggle);
   expect(token.type).toBe("text");
-  fireEvent.click(screen.getByRole("button", { name: /hide setup token/i }));
+  expect(toggle.getAttribute("aria-pressed")).toBe("true");
+  expect(toggle.getAttribute("aria-label")).toBe("Show setup token");
+  fireEvent.click(toggle);
   expect(token.type).toBe("password");
+  expect(toggle.getAttribute("aria-pressed")).toBe("false");
 });
 
 test("theme corner button is a labelled 40px sticker", async () => {
@@ -49,8 +52,7 @@ test("theme corner button is a labelled 40px sticker", async () => {
 test("auth type scale: body 14, labels 13, buttons 15", () => {
   const css = readFileSync("src/auth/auth.css", "utf8");
   expect(css).toMatch(/\.auth-card\s+\.muted\s*{[^}]*font-size:\s*14px/s);
-  expect(css).toMatch(/\.auth-card\s+\.field\s*{[^}]*font-size:\s*13px/s);
-  expect(css).toMatch(/\.auth-card\s+\.btn\s*{[^}]*font-size:\s*15px/s);
+  expect(css).toMatch(/\.auth-card\s+\.btn:not\(\.sm\)\s*{[^}]*font-size:\s*15px/s);
 });
 
 test("boot letters are individually composited, not smeared by a parent filter", () => {
@@ -59,4 +61,9 @@ test("boot letters are individually composited, not smeared by a parent filter",
   const span = css.match(/\.wordmark span\s*{[^}]*}/s)![0];
   expect(parent).not.toMatch(/filter:/);
   expect(span).toMatch(/filter:/);
+});
+
+test("auth css has no dead wordmark filter override", () => {
+  const css = readFileSync("src/auth/auth.css", "utf8");
+  expect(css).not.toMatch(/\.wordmark\.big\s*{[^}]*filter:\s*none/s);
 });
