@@ -4,6 +4,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
@@ -87,12 +88,15 @@ test("early release does not call the API", async () => {
   expect(killScene).not.toHaveBeenCalled();
 });
 
-test("cancel closes the kill dialog without killing", () => {
+test("cancel closes the kill dialog without killing", async () => {
+  vi.useRealTimers();
   render(<Workspace />);
   openAll();
   fireEvent.click(screen.getByRole("button", { name: "Kill all shells" }));
   fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-  expect(screen.queryByRole("button", { name: /hold to nuke/i })).toBeNull();
+  await waitFor(() =>
+    expect(screen.queryByRole("button", { name: /hold to nuke/i })).toBeNull(),
+  );
   expect(killScene).not.toHaveBeenCalled();
 });
 
