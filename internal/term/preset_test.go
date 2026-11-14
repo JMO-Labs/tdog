@@ -222,7 +222,7 @@ func TestOnCloseRunsWhenKilled(t *testing.T) {
 	}
 }
 
-func TestOnCloseTimeoutIsAudited(t *testing.T) {
+func TestPresetOnCloseTimeoutIsAudited(t *testing.T) {
 	old := onCloseTimeout
 	onCloseTimeout = 200 * time.Millisecond
 	t.Cleanup(func() { onCloseTimeout = old })
