@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Mascot } from "./Mascot";
 import { initial, label, lit, next, STEPS, timing, type Phase } from "./signon";
 import { prefersReducedMotion } from "../motion/confetti";
@@ -11,10 +11,12 @@ export function NoNo({
   detail: string;
   onDone: () => void;
 }) {
+  const done = useRef(onDone);
+  done.current = onDone;
   useEffect(() => {
-    const t = setTimeout(onDone, timing.nono);
+    const t = setTimeout(() => done.current(), timing.nono);
     return () => clearTimeout(t);
-  }, [onDone]);
+  }, []);
   return (
     <div className="crt" role="alert">
       <Mascot pose="nono" />
@@ -27,8 +29,10 @@ export function NoNo({
 /** Dial-up overlay; calls onDone after Connected! has been shown. */
 export function DialUp({ onDone }: { onDone: () => void }) {
   const [phase, setPhase] = useState<Phase>(initial);
+  const done = useRef(onDone);
+  done.current = onDone;
   useEffect(() => {
-    if (phase === "done") return onDone();
+    if (phase === "done") return done.current();
     const ms =
       phase === "connected"
         ? timing.hold
@@ -37,7 +41,7 @@ export function DialUp({ onDone }: { onDone: () => void }) {
           : timing.step;
     const t = setTimeout(() => setPhase(next(phase)), ms);
     return () => clearTimeout(t);
-  }, [phase, onDone]);
+  }, [phase]);
   return (
     <div className="overlay dim" role="status" aria-label="Signing on">
       <div className="card dialup-card">

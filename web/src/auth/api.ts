@@ -41,11 +41,17 @@ export async function apiFetch(
   return r;
 }
 
+let csrfToken = "";
+
 async function post(path: string, body: unknown): Promise<Response> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
   return fetch(path, {
     method: "POST",
     credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body),
   });
 }
@@ -55,7 +61,11 @@ export async function login(
   code?: string,
 ): Promise<AuthResult> {
   const r = await post("/api/login", code ? { password, code } : { password });
-  if (r.ok) return { ok: true };
+  if (r.ok) {
+    const b = (await r.json().catch(() => null)) as { csrf?: string } | null;
+    csrfToken = b?.csrf ?? "";
+    return { ok: true };
+  }
   if (r.status === 401) {
     if (r.headers.get("X-TOTP-Required") === "1")
       return { ok: false, kind: "totp" };
@@ -81,6 +91,13 @@ export async function setup(
   return { ok: false, kind: "other" };
 }
 
-export async function logout(): Promise<void> {
-  await post("/api/logout", {}).catch(() => {});
+/** Ends the session; true only if the server confirmed it. */
+export async function logout(): Promise<boolean> {
+  try {
+    const r = await post("/api/logout", {});
+    if (r.ok) csrfToken = "";
+    return r.ok;
+  } catch {
+    return false;
+  }
 }

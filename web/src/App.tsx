@@ -44,7 +44,10 @@ function AuthApp() {
 
   // Explicit sign out (not a 401): end the session, rewind.
   const signOut = useCallback(async () => {
-    await logout();
+    if (!(await logout())) {
+      toast("fail", "Couldn't sign out. Reload and try again.");
+      return;
+    }
     setView("login");
     toast("info", "Session ended. See you next time.", "Be kind, rewind.");
   }, [toast]);
