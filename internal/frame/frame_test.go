@@ -95,3 +95,29 @@ func TestErrorControl(t *testing.T) {
 		t.Fatalf("%v %q %v", typ, p, err)
 	}
 }
+
+func TestPong(t *testing.T) {
+	tests := []struct {
+		name, in, want string
+		ok             bool
+	}{
+		{"ping echoes t", `{"type":"ping","t":12.5}`, `{"type":"pong","t":12.5}`, true},
+		{"ping without t", `{"type":"ping"}`, `{"type":"pong"}`, true},
+		{"ack ignored", `{"type":"ack","bytes":1}`, "", false},
+		{"garbage ignored", `nope`, "", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := Pong([]byte(tc.in))
+			if ok != tc.ok {
+				t.Fatalf("ok = %v, want %v", ok, tc.ok)
+			}
+			if ok {
+				typ, p, err := Decode(got)
+				if err != nil || typ != Control || string(p) != tc.want {
+					t.Fatalf("%v %q %v", typ, p, err)
+				}
+			}
+		})
+	}
+}

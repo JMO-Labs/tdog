@@ -2,6 +2,7 @@ import {
   decodeFrame,
   encodeAck,
   encodeInput,
+  encodePing,
   encodeResize,
 } from "../protocol/frames";
 import type { TerminalRenderer } from "./renderer";
@@ -15,6 +16,9 @@ import type { TerminalRenderer } from "./renderer";
 export const HIGH_WATERMARK = 512 * 1024;
 export const LOW_WATERMARK = 128 * 1024;
 export const ACK_BATCH_BYTES = 32 * 1024;
+
+/** Round-trip probe cadence for the status-bar latency chip. */
+export const PING_INTERVAL_MS = 5000;
 
 export interface SocketLike {
   binaryType: string;
@@ -33,12 +37,15 @@ export type SessionState =
 export interface SessionHooks {
   onOutput?: () => void;
   onSize?: (cols: number, rows: number) => void;
+  /** Round-trip time in ms from a ping/pong on the control channel. */
+  onLatency?: (ms: number) => void;
 }
 
 export class TerminalSession {
   private sock: SocketLike | null = null;
   private pending = 0;
   private exitCode: number | undefined;
+  private pinger: ReturnType<typeof setInterval> | undefined;
 
   constructor(
     private r: TerminalRenderer,
@@ -54,6 +61,7 @@ export class TerminalSession {
   }
 
   connect(): void {
+    this.stopPing();
     this.pending = 0;
     this.exitCode = undefined;
     this.onState({ status: "connecting" });
@@ -65,15 +73,21 @@ export class TerminalSession {
       s.send(encodeResize(cols, rows));
       this.hooks.onSize?.(cols, rows);
       this.onState({ status: "open" });
+      this.ping();
+      this.pinger = setInterval(() => this.ping(), PING_INTERVAL_MS);
     };
     s.onmessage = (e) => this.onMessage(e.data);
     s.onclose = () => {
-      if (this.sock === s) this.sock = null;
+      if (this.sock === s) {
+        this.sock = null;
+        this.stopPing();
+      }
       this.onState({ status: "closed", exitCode: this.exitCode });
     };
   }
 
   dispose(): void {
+    this.stopPing();
     const s = this.sock;
     this.sock = null;
     if (s) {
@@ -81,6 +95,15 @@ export class TerminalSession {
       s.close();
     }
     this.r.dispose();
+  }
+
+  private ping(): void {
+    this.send(encodePing(performance.now()));
+  }
+
+  private stopPing(): void {
+    clearInterval(this.pinger);
+    this.pinger = undefined;
   }
 
   private send(f: Uint8Array<ArrayBuffer>): void {
@@ -91,6 +114,8 @@ export class TerminalSession {
     const f = decodeFrame(buf);
     if (f.kind === "exit") {
       this.exitCode = f.code;
+    } else if (f.kind === "pong") {
+      this.hooks.onLatency?.(Math.round(performance.now() - f.t));
     } else if (f.kind === "output") {
       const n = f.data.length;
       this.hooks.onOutput?.();

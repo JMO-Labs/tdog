@@ -5,6 +5,7 @@ import { json, mockFetch } from "../auth/testutil";
 let cb: {
   onSize?: (c: number, r: number) => void;
   onOutput?: () => void;
+  onLatency?: (ms: number) => void;
   onOpenChange?: (open: boolean) => void;
   reconnectRef?: { current: (() => void) | null };
 } = {};
@@ -98,4 +99,19 @@ test("empty state offers a visible Reconnect action", () => {
   expect(screen.getByText("Nothing playing.")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Reconnect" }));
   expect(reconnect).toHaveBeenCalledTimes(1);
+});
+
+test("latency chip shows ms, and a dial-up icon above 150 ms", () => {
+  render(<Workspace onSignedOut={() => {}} />);
+  expect(screen.queryByTestId("latency")).toBeNull();
+  act(() => cb.onLatency!(12));
+  const chip = screen.getByTestId("latency");
+  expect(chip.textContent).toContain("12 ms");
+  expect(chip.classList.contains("slow")).toBe(false);
+  act(() => cb.onLatency!(412));
+  expect(screen.getByTestId("latency").classList.contains("slow")).toBe(true);
+  expect(screen.getByTestId("latency").textContent).toContain("412 ms");
+  expect(
+    screen.getByTestId("latency").querySelector("[data-icon=modem]"),
+  ).toBeTruthy();
 });
