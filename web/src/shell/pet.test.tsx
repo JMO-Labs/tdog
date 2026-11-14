@@ -5,13 +5,11 @@ import { Pet } from "./pet";
 beforeEach(() => {
   vi.stubGlobal(
     "matchMedia",
-    vi
-      .fn()
-      .mockReturnValue({
-        matches: false,
-        addEventListener() {},
-        removeEventListener() {},
-      }),
+    vi.fn().mockReturnValue({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    }),
   );
   HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
     clearRect() {},
@@ -99,13 +97,11 @@ test("Hide pet calls onHide", () => {
 test("reduced motion adds a class that stops the pip pulse", () => {
   vi.stubGlobal(
     "matchMedia",
-    vi
-      .fn()
-      .mockReturnValue({
-        matches: true,
-        addEventListener() {},
-        removeEventListener() {},
-      }),
+    vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener() {},
+      removeEventListener() {},
+    }),
   );
   setup();
   expect(screen.getByTestId("pet").className).toContain("reduced");
@@ -119,13 +115,11 @@ test("attention pip shows only when asked", () => {
 test("no interval under reduced motion; caption tracks awake state", () => {
   vi.stubGlobal(
     "matchMedia",
-    vi
-      .fn()
-      .mockReturnValue({
-        matches: true,
-        addEventListener() {},
-        removeEventListener() {},
-      }),
+    vi.fn().mockReturnValue({
+      matches: true,
+      addEventListener() {},
+      removeEventListener() {},
+    }),
   );
   setup(false);
   fireEvent.click(screen.getByTestId("pet"));
