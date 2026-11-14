@@ -145,3 +145,25 @@ test("session lookup failure leaves 2FA off without crashing", async () => {
   });
   expect(sw(/two-factor/i).getAttribute("aria-checked")).toBe("false");
 });
+
+test("enroll: unencodable URI hides the QR but keeps the manual key", async () => {
+  await mount({
+    "GET /api/session": session(false),
+    "POST /api/totp/enroll": json({ secret: "ABCD", uri: "x".repeat(5000) }),
+  });
+  await act(async () => void fireEvent.click(sw(/two-factor/i)));
+  expect(screen.getByText("ABCD")).toBeTruthy();
+  expect(screen.queryByRole("img", { name: /qr/i })).toBeNull();
+});
+
+test("confirm server error shows a generic retry message", async () => {
+  await mount({
+    "GET /api/session": session(false),
+    "POST /api/totp/enroll": json({ secret: "ABCD", uri: "otpauth://x" }),
+    "POST /api/totp/confirm": json({}, 500),
+  });
+  await act(async () => void fireEvent.click(sw(/two-factor/i)));
+  type("123456");
+  await act(async () => void fireEvent.click(screen.getByText("Confirm")));
+  expect(screen.getByRole("alert").textContent).toMatch(/went wrong\. try/i);
+});
