@@ -7,7 +7,8 @@ RUN npm run build
 
 FROM golang:1.26 AS go
 WORKDIR /src
-COPY go.mod ./
+COPY go.mod go.sum ./
+RUN go mod download
 COPY cmd cmd
 COPY internal internal
 COPY web/embed.go web/embed.go
