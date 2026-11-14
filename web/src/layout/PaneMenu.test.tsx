@@ -97,3 +97,13 @@ test("Move to scene opens a submenu of scenes; picking one moves the pane", () =
   fireEvent.click(screen.getByRole("menuitem", { name: "Two" }));
   expect(p.onMoveToScene).toHaveBeenCalledWith("a", "s2");
 });
+
+test("ArrowRight on Move to scene opens the submenu; other keys do not", () => {
+  const { open } = setup();
+  open();
+  const item = screen.getByRole("menuitem", { name: "Move to scene" });
+  fireEvent.keyDown(item, { key: "a" });
+  expect(screen.queryByRole("menu", { name: "Move to scene" })).toBeNull();
+  fireEvent.keyDown(item, { key: "ArrowRight" });
+  expect(screen.getByRole("menu", { name: "Move to scene" })).toBeTruthy();
+});
