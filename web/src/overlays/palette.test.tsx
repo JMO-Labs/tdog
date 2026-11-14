@@ -31,7 +31,7 @@ describe("CommandPalette", () => {
       "true",
     );
     fireEvent.keyDown(input, { key: "ArrowUp" });
-    fireEvent.change(input, { target: { value: "nt" } });
+    fireEvent.change(input, { target: { value: "term" } });
     expect(screen.getAllByRole("option")).toHaveLength(1);
     await act(async () => {
       fireEvent.keyDown(input, { key: "Enter" });
