@@ -167,3 +167,10 @@ test("confirm server error shows a generic retry message", async () => {
   await act(async () => void fireEvent.click(screen.getByText("Confirm")));
   expect(screen.getByRole("alert").textContent).toMatch(/went wrong\. try/i);
 });
+
+test("Dress up Dogbert defaults on and persists", () => {
+  localStorage.clear();
+  expect(getPref("dress")).toBe(true);
+  setPref("dress", false);
+  expect(localStorage.getItem("tdog.dress")).toBe("0");
+});

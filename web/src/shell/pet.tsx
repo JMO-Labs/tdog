@@ -1,11 +1,20 @@
 import "./pet.css";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { usePref } from "../settings/prefs";
+import { themeStore } from "../theme/store";
 import type { PetEngine } from "./petEngine";
 import { miniCells, petFrame } from "./petFrame";
 import { drawLcd, drawMini } from "./petLcd";
 
 export const PET_IDLE_MS = 3000;
 const TICK_MS = 250;
+const NOTICE_MS = 4000;
 const RM_QUERY = "(prefers-reduced-motion: reduce)";
 
 /** True while output arrived within the last PET_IDLE_MS. `stamp` is bumped on each output. */
@@ -72,7 +81,23 @@ export function Pet({
   const full = view?.hunger ?? fullProp;
   const happy = view?.happy ?? happyProp;
   const attention = view?.attention ?? attentionProp;
-  const frame = petFrame({ awake, tick, reduced, view });
+  const [dress] = usePref("dress");
+  const theme = useSyncExternalStore(themeStore.subscribe, themeStore.get);
+  const worn =
+    dress && theme.chrome.costume !== "none" ? theme.chrome.costume : null;
+  const costume = worn?.rows;
+  const [notice, setNotice] = useState("");
+  const seen = useRef(theme.id);
+  useEffect(() => {
+    if (seen.current === theme.id) return;
+    seen.current = theme.id;
+    if (!worn) return setNotice("");
+    setNotice(`Dogbert put on a ${worn.name}.`);
+    const t = setTimeout(() => setNotice(""), NOTICE_MS);
+    return () => clearTimeout(t);
+  }, [theme.id, worn]);
+  const frame = petFrame({ awake, tick, reduced, view, costume });
+  const caption = notice || frame.caption;
 
   useEffect(() => {
     if (reduced) return;
@@ -82,7 +107,7 @@ export function Pet({
 
   useEffect(() => {
     const m = mini.current?.getContext("2d");
-    if (m) drawMini(m, miniCells(frame.mini, frame.eyes, frame.mouth));
+    if (m) drawMini(m, miniCells(frame.mini, frame.eyes, frame.mouth, costume));
     const l = open ? lcd.current?.getContext("2d") : null;
     if (l) drawLcd(l, frame.cells);
   });
@@ -119,7 +144,7 @@ export function Pet({
         aria-label="Open Dogbert"
         aria-haspopup="dialog"
         aria-expanded={open}
-        title={frame.caption}
+        title={caption}
         onClick={() => (open ? close() : setOpen(true))}
       >
         <canvas ref={mini} width={28} height={26} aria-hidden="true" />
@@ -141,7 +166,7 @@ export function Pet({
                     width={128}
                     height={96}
                     role="img"
-                    aria-label={frame.caption}
+                    aria-label={caption}
                   />
                 </div>
                 <div className="egg-stats">
@@ -185,7 +210,7 @@ export function Pet({
               </div>
             </div>
             <p className="pet-cap" data-testid="pet-cap" aria-live="polite">
-              {frame.caption}
+              {caption}
             </p>
             <button
               className="btn sm ghost"
