@@ -96,3 +96,8 @@ test("message covers totp, done and fallback kinds", () => {
     /something went wrong/i,
   );
 });
+
+test("api.logout returns false when the request throws", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+  expect(await api.logout()).toBe(false);
+});
