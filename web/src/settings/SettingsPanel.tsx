@@ -15,6 +15,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   const [totp, setTotp] = useState(false);
   const [serious, setSerious] = usePref("serious");
   const [pet, setPet] = usePref("pet");
+  const [dress, setDress] = usePref("dress");
   const fx = useFx();
 
   useEffect(() => {
@@ -64,6 +65,13 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
           <p className="muted">Sleeps when shells idle, wakes on output.</p>
         </div>
         <Switch labelledBy="sw-pet" checked={pet} onChange={setPet} />
+      </div>
+      <div className="row">
+        <div>
+          <b id="sw-dress">Dress up Dogbert</b>
+          <p className="muted">Wears the costume of the active theme.</p>
+        </div>
+        <Switch labelledBy="sw-dress" checked={dress} onChange={setDress} />
       </div>
       <h3>Screen effects</h3>
       <div className="row">

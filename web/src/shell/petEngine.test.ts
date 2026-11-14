@@ -265,3 +265,18 @@ describe("persistence", () => {
     expect(mk(store).view()).toMatchObject({ hunger: 1, happy: 2 });
   });
 });
+
+describe("storage unavailable", () => {
+  test("engine works when localStorage access throws", () => {
+    vi.spyOn(globalThis, "localStorage", "get").mockImplementation(() => {
+      throw new DOMException("denied", "SecurityError");
+    });
+    try {
+      const e = new PetEngine();
+      expect(e.view()).toMatchObject({ hunger: expect.any(Number) });
+      expect(() => e.tick()).not.toThrow();
+    } finally {
+      vi.restoreAllMocks();
+    }
+  });
+});
