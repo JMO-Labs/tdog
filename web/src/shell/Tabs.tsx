@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { dragPane, draggedPane } from "../layout/dnd";
 import type { Scene } from "./scenes";
 
 type Props = {
@@ -9,6 +10,8 @@ type Props = {
   onRename: (id: string, name: string) => void;
   onClose: (id: string) => void;
   onReorder: (id: string, to: number) => void;
+  /** A pane header was dropped on this scene tab. */
+  onDropPane?: (paneId: string, scene: string) => void;
 };
 
 /** Scene tab strip: sliding pill, inline rename, drag reorder, close, add. */
@@ -18,6 +21,7 @@ export function Tabs(p: Props) {
   const drag = useRef<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [hot, setHot] = useState<string | null>(null);
   const names = p.scenes.map((s) => s.name).join("\n");
 
   useLayoutEffect(() => {
@@ -44,13 +48,25 @@ export function Tabs(p: Props) {
               wraps.current[s.id] = el;
             }}
             className="tab-wrap"
+            data-drop={hot === s.id || undefined}
             draggable={editing !== s.id}
             onDragStart={() => {
               drag.current = s.id;
             }}
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (draggedPane() && s.id !== p.active) setHot(s.id);
+            }}
+            onDragLeave={() => setHot(null)}
             onDrop={(e) => {
               e.preventDefault();
+              setHot(null);
+              const pane = draggedPane();
+              if (pane) {
+                dragPane(null);
+                p.onDropPane?.(pane, s.id);
+                return;
+              }
               if (drag.current && drag.current !== s.id)
                 p.onReorder(drag.current, i);
               drag.current = null;

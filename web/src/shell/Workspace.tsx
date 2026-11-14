@@ -10,6 +10,7 @@ import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
 import { Dialog } from "../overlays/Dialog";
 import { clearLayout } from "../layout/store";
+import { moveToScene } from "../layout/transfer";
 import { newId } from "../layout/tree";
 import { killScene } from "../terminal/sessions";
 import { Icon } from "./icons";
@@ -75,6 +76,14 @@ export function Workspace({
     },
     [leafMap],
   );
+  const moveScene = useCallback(
+    (id: string, from: string, to: string) => void moveToScene(id, from, to),
+    [],
+  );
+  const dropOnTab = (id: string, to: string) => {
+    const from = Object.keys(leafMap).find((k) => leafMap[k]?.includes(id));
+    if (from) moveScene(id, from, to);
+  };
   const requestClose = (id: string) => {
     const running = (leafMap[id] ?? []).some((p) => paneOpen[p]?.open);
     if (running) setClosing(id);
@@ -187,6 +196,7 @@ export function Workspace({
           onRename={(id, n) => setSc((s) => renameScene(s, id, n))}
           onClose={requestClose}
           onReorder={(id, to) => setSc((s) => reorderScene(s, id, to))}
+          onDropPane={dropOnTab}
         />
         <div className="spacer" />
         <IconButton
@@ -232,6 +242,8 @@ export function Workspace({
             paneOpen={paneOpen}
             onLeaves={onLeaves}
             onFocus={setFocused}
+            scenes={sc.scenes}
+            onMoveScene={moveScene}
             onOpenChange={onPaneOpen}
             onClosed={onClosed}
             onSize={onSize}

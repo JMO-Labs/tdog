@@ -319,3 +319,8 @@
   justify-content: flex-end;
   margin-top: 16px;
 }
+.tab-wrap[data-drop] {
+  outline: 2px dashed var(--accent, #6cf);
+  outline-offset: 1px;
+  border-radius: 8px;
+}
