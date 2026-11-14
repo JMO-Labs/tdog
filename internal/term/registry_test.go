@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -138,7 +139,7 @@ func TestListShowsSessions(t *testing.T) {
 		t.Fatalf("got %+v", got)
 	}
 	_ = c.CloseNow()
-	waitFor(t, func() bool { return !r.reg.List()[0].Attached })
+	waitFor(t, func() bool { l := r.reg.List(); return len(l) == 1 && !l[0].Attached })
 }
 
 func TestBadSceneRejected(t *testing.T) {
@@ -189,15 +190,23 @@ func TestAuditAttachDetach(t *testing.T) {
 
 func TestConcurrentAttachAndExit(t *testing.T) {
 	r := newRig(t)
-	c, id := r.start("")
+	_, id := r.start("")
+	var wg sync.WaitGroup
 	for i := 0; i < 8; i++ {
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			if c, err := r.dial("id=" + id); err == nil {
 				_ = c.CloseNow()
 			}
 		}()
 	}
-	send(t, r.ctx, c, frame.Input, "exit 0\n")
+	// Write to the PTY directly: input sent on a socket may be dropped once a
+	// concurrent attach has replaced it.
+	if _, err := r.reg.get(id).s.w.Write([]byte("exit 0\n")); err != nil {
+		t.Fatal(err)
+	}
+	wg.Wait() // dial registers t.Cleanup; it must not run after the test ends
 	waitFor(t, func() bool { return len(r.reg.List()) == 0 })
 }
 
