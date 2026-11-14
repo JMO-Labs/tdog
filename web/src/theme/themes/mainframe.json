@@ -1,0 +1,47 @@
+{
+  "name": "Mainframe",
+  "description": "Electric-blue vector lines on black with an orange secondary. Inspired by Tron-style vector art.",
+  "appearance": "dark",
+  "pattern": "none",
+  "terminal": {
+    "fg": "#d8f2ff",
+    "bg": "#000000",
+    "cursor": "#ff9a1f",
+    "selection": "#0a3a66",
+    "ansi": [
+      "#6a8fb0",
+      "#ff6a3d",
+      "#3de0a0",
+      "#ff9a1f",
+      "#1fa8ff",
+      "#8f7aff",
+      "#2fd8ff",
+      "#d8f2ff",
+      "#8aaed0",
+      "#ff9a7a",
+      "#7aeec4",
+      "#ffb84d",
+      "#5cc4ff",
+      "#b3a3ff",
+      "#7ae6ff",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#000308",
+    "surface": "#06101c",
+    "surface-2": "#0a1c33",
+    "fg": "#d8f2ff",
+    "muted": "#8aaed0",
+    "line": "#000000",
+    "shadow": "#1fa8ff",
+    "link": "#2fd8ff",
+    "pink": "#ff6a3d",
+    "cyan": "#2fd8ff",
+    "yellow": "#ff9a1f",
+    "purple": "#8f7aff",
+    "term-bg": "#000000",
+    "term-fg": "#d8f2ff",
+    "term-dim": "#6a8fb0"
+  }
+}
