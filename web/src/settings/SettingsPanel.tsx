@@ -14,6 +14,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   const [serious, setSerious] = usePref("serious");
   const [pet, setPet] = usePref("pet");
   const [motif, setMotif] = useMotifOpacity();
+  const [dress, setDress] = usePref("dress");
 
   useEffect(() => {
     let live = true;
@@ -77,6 +78,13 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
           value={motif}
           onChange={(e) => setMotif(Number(e.target.value))}
         />
+      </div>
+      <div className="row">
+        <div>
+          <b id="sw-dress">Dress up Dogbert</b>
+          <p className="muted">Wears the costume of the active theme.</p>
+        </div>
+        <Switch labelledBy="sw-dress" checked={dress} onChange={setDress} />
       </div>
       <h3>Sessions</h3>
       <Button
