@@ -1,0 +1,43 @@
+/* Dogbert pocket pet: mini egg in the status bar, full device in a popover.
+   LCD colours are fixed (it is a real screen); the shell takes the theme accent as its only hint. */
+:root { --lcd-bg: #b7c4a1; --lcd-ink: #26301f; --egg: var(--pink); --face: #f3eee4; }
+
+.pet-egg { position: relative; width: 40px; height: 44px; margin: -6px 0 -4px; padding: 0; flex: none; cursor: pointer;
+  display: grid; place-items: center; border: 2px solid var(--line); border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%;
+  background: radial-gradient(circle at 32% 22%, rgb(255 255 255 / .55) 0 4px, transparent 9px), var(--egg);
+  box-shadow: inset -4px -5px 0 rgb(22 11 46 / .18), 2px 2px 0 var(--shadow); transition: transform .2s var(--spring); }
+.pet-egg:hover { transform: rotate(-8deg) translateY(-2px); }
+.pet-egg canvas { width: 28px; height: 26px; background: var(--lcd-bg); border: 1.5px solid var(--line); border-radius: 4px; image-rendering: pixelated; }
+.pet-pip { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--yellow); border: 2px solid var(--line); animation: pip 1.2s ease-in-out infinite; }
+@keyframes pip { 50% { transform: scale(1.35); } }
+
+.pet-pop { position: fixed; z-index: 40; right: max(16px, env(safe-area-inset-right, 0px)); bottom: 58px; }
+.pet-card { display: grid; justify-items: center; gap: 10px; width: min(260px, calc(100vw - 32px)); padding: 26px 16px 14px;
+  background: var(--surface); border: 2px solid var(--line); border-radius: 18px; box-shadow: 6px 6px 0 var(--shadow); }
+
+.egg { position: relative; width: 210px; height: 252px; border: 2px solid var(--line); border-radius: 50% 50% 47% 47% / 56% 56% 44% 44%;
+  background: radial-gradient(circle at 30% 20%, rgb(255 255 255 / .5) 0 16px, transparent 38px),
+    radial-gradient(circle, rgb(22 11 46 / .16) 1.2px, transparent 1.8px) 0 0 / 13px 13px, var(--egg);
+  box-shadow: inset -10px -14px 0 rgb(22 11 46 / .16), 4px 4px 0 var(--shadow); }
+.egg-ring { position: absolute; top: -19px; left: calc(50% - 12px); width: 24px; height: 24px; border: 4px solid var(--muted); border-radius: 50%; z-index: -1; }
+.egg-face { position: absolute; top: 26px; left: 50%; transform: translateX(-50%); display: grid; justify-items: center; gap: 5px;
+  padding: 6px 10px 8px; background: var(--face); border: 2px solid var(--line); border-radius: 22px 22px 28px 28px; color: #4e4568; }
+.egg-brand { margin: 0; font: 400 11px var(--display); letter-spacing: .12em; }
+.lcd-wrap { padding: 4px; background: var(--lcd-bg); border: 2px solid var(--line); border-radius: 6px; box-shadow: inset 2px 2px 0 rgb(0 0 0 / .14); transition: background .6s; }
+.lcd-wrap:has(.lcd.dim) { background: #8e9a7d; }
+.lcd { display: block; width: 128px; height: 96px; image-rendering: pixelated; }
+.egg-stats { display: grid; grid-template-columns: repeat(4, auto); align-items: center; gap: 2px 8px; font: 600 10px var(--mono); }
+.pips { width: 37px; height: 7px; background: linear-gradient(90deg, var(--lcd-ink) calc(var(--n) * 10px), rgb(38 48 31 / .18) 0);
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 7px, transparent 7px 10px); mask: repeating-linear-gradient(90deg, #000 0 7px, transparent 7px 10px); }
+
+.egg-btns { position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; align-items: flex-start; gap: 16px; }
+.egg-btns button { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid var(--line); background: var(--yellow); color: var(--ink);
+  box-shadow: 0 3px 0 var(--ink); cursor: pointer; font: 400 12px var(--display); transition: transform .06s, box-shadow .06s; }
+.egg-btns button:nth-child(2) { margin-top: 7px; }
+.egg-btns button:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
+.pet-cap { margin: 0; min-height: 2.8em; max-width: 220px; text-align: center; font-size: 12px; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pet-pip { animation: none; }
+  .pet-egg, .pet-egg:hover { transition: none; transform: none; }
+}

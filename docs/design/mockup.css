@@ -131,13 +131,19 @@ kbd { font: 600 11px var(--mono); border: 1.5px solid var(--line); border-radius
 
 /* ---------- workspace ---------- */
 .ws { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto; }
-.ws-head { display: flex; align-items: center; gap: 12px; padding: 10px max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px));
-  background: var(--pattern) var(--bg); background-size: 180px; border-bottom: 2px solid var(--line); overflow-x: auto; }
-.tabs { display: flex; gap: 6px; position: relative; padding: 4px; border: 2px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: 4px 4px 0 var(--shadow); flex: none; }
-.tab { position: relative; z-index: 1; border: 0; background: none; padding: 6px 14px; border-radius: 10px; font-weight: 800; cursor: pointer; white-space: nowrap; }
-.tab[aria-selected="true"] { color: var(--ink); }
-.tab-pill { position: absolute; top: 4px; bottom: 4px; left: 4px; width: 0; border-radius: 10px; border: 2px solid var(--line);
-  background: repeating-linear-gradient(180deg, transparent 0 3px, rgb(22 11 46 / .12) 3px 5px), linear-gradient(180deg, var(--yellow), #ffb3d9); }
+.ws-head { position: relative; display: flex; align-items: center; gap: 12px; padding: 8px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
+  background: var(--surface); overflow-x: auto; }
+/* Quiet header: the theme only shows as a 4px accent strip, the wordmark shadow and the active tab. */
+.ws-head::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px;
+  background: repeating-linear-gradient(90deg, var(--pink) 0 28px, var(--cyan) 28px 56px, var(--yellow) 56px 84px, var(--purple) 84px 112px); }
+.ws-head .wordmark.small { font-size: 24px; color: var(--fg); background: none; -webkit-text-stroke: 0; filter: none; animation: none; text-shadow: 2px 2px 0 var(--pink); }
+.ws-head .icon-btn { border-color: transparent; background: none; box-shadow: none; color: var(--muted); }
+.ws-head .icon-btn:hover { transform: none; background: var(--surface-2); color: var(--fg); box-shadow: none; }
+.ws-head .icon-btn.danger:hover { background: var(--pink); color: var(--ink); }
+.tabs { display: flex; gap: 4px; position: relative; padding: 3px; border-radius: 12px; background: var(--surface-2); flex: none; }
+.tab { position: relative; z-index: 1; border: 0; background: none; padding: 5px 12px; border-radius: 9px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.tab[aria-selected="true"] { color: var(--ink); font-weight: 800; }
+.tab-pill { position: absolute; top: 3px; bottom: 3px; left: 3px; width: 0; border-radius: 9px; border: 1.5px solid var(--line); background: var(--yellow); }
 .panes { display: grid; gap: 14px; padding: 14px max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px));
   grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); grid-auto-rows: minmax(220px, 1fr); overflow: auto; }
 .pane { display: grid; grid-template-rows: auto 1fr; border: 2px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--term-bg); box-shadow: 6px 6px 0 var(--shadow); position: relative; min-width: 0; transform-origin: 100% 0; }
@@ -157,13 +163,6 @@ kbd { font: 600 11px var(--mono); border: 1.5px solid var(--line); border-radius
 .status .chip { flex: none; }
 .kbd-chip { cursor: pointer; padding: 2px 6px; background: none; border: 0; }
 #latency.slow { background: var(--yellow); color: var(--ink); }
-.pet { width: 44px; height: 30px; border: 0; background: none; padding: 0; cursor: pointer; flex: none; }
-.pet svg { width: 100%; height: 100%; image-rendering: pixelated; overflow: visible; }
-.pet.awake svg { animation: hop .5s ease-in-out infinite; }
-.pet.sleep svg { animation: breathe 2.4s ease-in-out infinite; }
-@keyframes hop { 50% { transform: translateY(-4px); } }
-@keyframes breathe { 50% { transform: scaleY(.92); } }
-.zz { font: 800 9px var(--mono); fill: var(--purple); }
 
 /* VHS / static overlays on a pane */
 .vhs { position: absolute; inset: 0; top: 40px; display: grid; place-items: center; color: #fff; font: 800 18px var(--mono); text-shadow: 2px 0 var(--pink), -2px 0 var(--cyan);
