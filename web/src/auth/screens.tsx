@@ -1,64 +1,16 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import * as api from "./api";
-
-const MIN_PASSWORD = 8;
-
-function Shell({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <main
-      style={{
-        maxWidth: 360,
-        margin: "10vh auto",
-        padding: 16,
-        color: "#eee",
-        font: "16px system-ui",
-      }}
-    >
-      <h1 style={{ fontSize: 22 }}>{title}</h1>
-      {children}
-    </main>
-  );
-}
-
-function Field(props: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  inputRef?: React.Ref<HTMLInputElement>;
-  autoComplete?: string;
-  type?: string;
-}) {
-  return (
-    <label style={{ display: "block", margin: "12px 0" }}>
-      {props.label}
-      <input
-        ref={props.inputRef}
-        type={props.type ?? "password"}
-        required
-        autoComplete={props.autoComplete}
-        value={props.value}
-        onChange={(e) => props.onChange(e.target.value)}
-        style={{
-          display: "block",
-          width: "100%",
-          padding: 6,
-          marginTop: 4,
-          boxSizing: "border-box",
-        }}
-      />
-    </label>
-  );
-}
+import { MIN_PASSWORD } from "./constants";
+import { OtpBoxes } from "./otp";
+import { AuthShell } from "./shell";
+import { tape } from "./tape";
+import { Button } from "../components/ui/button";
+import { Field } from "../components/ui/field";
+import { Input } from "../components/ui/input";
 
 function Err({ msg }: { msg: string }) {
   return (
-    <p role="alert" style={{ color: "#ff8080" }}>
+    <p role="alert" className="field-error">
       {msg}
     </p>
   );
@@ -94,12 +46,13 @@ export function LoginScreen(props: {
   const [busy, setBusy] = useState(false);
   const [code, setCode] = useState("");
   const [needCode, setNeedCode] = useState(false);
+  const [recovery, setRecovery] = useState(false);
   const input = useRef<HTMLInputElement>(null);
-  const codeInput = useRef<HTMLInputElement>(null);
+  const recoveryInput = useRef<HTMLInputElement>(null);
   useEffect(() => input.current?.focus(), []);
   useEffect(() => {
-    if (needCode) codeInput.current?.focus();
-  }, [needCode]);
+    if (recovery) recoveryInput.current?.focus();
+  }, [recovery]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -113,42 +66,90 @@ export function LoginScreen(props: {
         setNeedCode(true);
         return;
       }
+      if (r.kind === "code") setCode("");
       setErr(message(r));
     } catch {
       setErr(message({ ok: false, kind: "other" }));
     } finally {
       setBusy(false);
       if (!needCode) input.current?.focus();
-      else codeInput.current?.focus();
     }
   }
 
+  if (needCode)
+    return (
+      <AuthShell>
+        <form className="card auth-card" onSubmit={submit} noValidate>
+          <h2 className="card-title">One more thing</h2>
+          <p className="muted">
+            {recovery
+              ? "Enter one of your recovery codes."
+              : "Enter the 6-digit code from your authenticator app."}
+          </p>
+          {recovery ? (
+            <Field label="Recovery code">
+              <Input
+                ref={recoveryInput}
+                type="text"
+                autoComplete="off"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+            </Field>
+          ) : (
+            <OtpBoxes value={code} onChange={setCode} autoFocus />
+          )}
+          {err && <Err msg={err} />}
+          <Button
+            variant="primary"
+            className="wide"
+            type="submit"
+            disabled={busy}
+          >
+            Verify
+          </Button>
+          <Button
+            variant="ghost"
+            className="wide"
+            onClick={() => {
+              setRecovery((v) => !v);
+              setCode("");
+              setErr("");
+            }}
+          >
+            {recovery ? "Use an authenticator code" : "Use a recovery code"}
+          </Button>
+        </form>
+      </AuthShell>
+    );
+
   return (
-    <Shell title="Sign in to tdog">
-      <form onSubmit={submit}>
-        <Field
-          label="Password"
-          value={pw}
-          onChange={setPw}
-          inputRef={input}
-          autoComplete="current-password"
-        />
-        {needCode && (
-          <Field
-            label="Authentication code"
-            type="text"
-            value={code}
-            onChange={setCode}
-            inputRef={codeInput}
-            autoComplete="one-time-code"
+    <AuthShell>
+      <form className="card auth-card" onSubmit={submit} noValidate>
+        <h2 className="card-title">Welcome back</h2>
+        <p className="muted">
+          Sign in to get your shells back where you left them.
+        </p>
+        <Field label="Password">
+          <Input
+            ref={input}
+            type="password"
+            autoComplete="current-password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
           />
-        )}
+        </Field>
         {err && <Err msg={err} />}
-        <button type="submit" disabled={busy}>
+        <Button
+          variant="primary"
+          className="wide"
+          type="submit"
+          disabled={busy}
+        >
           Sign in
-        </button>
+        </Button>
       </form>
-    </Shell>
+    </AuthShell>
   );
 }
 
@@ -160,6 +161,7 @@ export function SetupScreen(props: { onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => input.current?.focus(), []);
+  const meter = tape(pw.length);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -180,34 +182,54 @@ export function SetupScreen(props: { onDone: () => void }) {
   }
 
   return (
-    <Shell title="Set up tdog">
-      <p>
-        Enter the setup token printed in the server log and choose a password.
-      </p>
-      <form onSubmit={submit}>
-        <Field
-          label="Setup token"
-          value={token}
-          onChange={setToken}
-          inputRef={input}
-        />
-        <Field
-          label="Password"
-          value={pw}
-          onChange={setPw}
-          autoComplete="new-password"
-        />
-        <Field
-          label="Confirm password"
-          value={confirm}
-          onChange={setConfirm}
-          autoComplete="new-password"
-        />
+    <AuthShell>
+      <form className="card auth-card" onSubmit={submit} noValidate>
+        <h2 className="card-title">Set up tdog</h2>
+        <p className="muted">
+          Paste the setup token from the server log, then pick a password.
+        </p>
+        <Field label="Setup token">
+          <Input
+            ref={input}
+            type="password"
+            className="mono"
+            autoComplete="off"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+          />
+        </Field>
+        <Field label="Password">
+          <Input
+            type="password"
+            autoComplete="new-password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+          />
+        </Field>
+        <div className="tape" aria-hidden="true">
+          <i style={{ width: `${meter.pct}%` }} />
+        </div>
+        <p className="tape-label muted" role="status">
+          {meter.label}
+        </p>
+        <Field label="Confirm password">
+          <Input
+            type="password"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+          />
+        </Field>
         {err && <Err msg={err} />}
-        <button type="submit" disabled={busy}>
+        <Button
+          variant="primary"
+          className="wide"
+          type="submit"
+          disabled={busy}
+        >
           Create account
-        </button>
+        </Button>
       </form>
-    </Shell>
+    </AuthShell>
   );
 }
