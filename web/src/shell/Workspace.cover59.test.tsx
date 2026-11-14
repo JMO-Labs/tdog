@@ -4,6 +4,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
@@ -59,7 +60,7 @@ test("clicking a tab selects that scene", () => {
   );
 });
 
-test("Escape on the close-scene dialog keeps the scene", () => {
+test("Escape on the close-scene dialog keeps the scene", async () => {
   render(<Workspace />);
   const first = screen.getAllByTestId("terminal-pane")[0].dataset.scene!;
   act(() => opens[first](true));
@@ -68,7 +69,7 @@ test("Escape on the close-scene dialog keeps the scene", () => {
   fireEvent.keyDown(screen.getByRole("dialog", { name: "Close scene?" }), {
     key: "Escape",
   });
-  expect(screen.queryByRole("dialog")).toBeNull();
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(killScene).not.toHaveBeenCalled();
   expect(tabs()).toHaveLength(2);
 });
