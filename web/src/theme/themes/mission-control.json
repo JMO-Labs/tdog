@@ -1,0 +1,71 @@
+{
+  "name": "Mission Control",
+  "description": "Console amber on instrument grey, with an off-white daylight variant. Inspired by Apollo 13.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#ffb000",
+    "bg": "#16181a",
+    "cursor": "#ffb000",
+    "selection": "#4a3a10",
+    "ansi": [
+      "#8a9096",
+      "#ff6b4a",
+      "#7fd48a",
+      "#ffb000",
+      "#7fa8d8",
+      "#d89ac0",
+      "#6fd0c8",
+      "#e6e2d6",
+      "#a9afb5",
+      "#ff9a80",
+      "#a6e8ae",
+      "#ffd060",
+      "#a8c8ee",
+      "#ecb8d6",
+      "#9ae6e0",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#0e1011",
+    "surface": "#1d2022",
+    "fg": "#ffb000",
+    "muted": "#9aa0a6",
+    "link": "#ffc533"
+  },
+  "light": {
+    "terminal": {
+      "fg": "#2a2a26",
+      "bg": "#ece8da",
+      "cursor": "#b36b00",
+      "selection": "#d8d0b0",
+      "ansi": [
+        "#4a4a44",
+        "#b02a10",
+        "#1f6a2a",
+        "#8a5a00",
+        "#1f4f8a",
+        "#8a2a6a",
+        "#116a66",
+        "#6a6a60",
+        "#5a5a52",
+        "#c8401f",
+        "#2a7a38",
+        "#9a6600",
+        "#2a5fa0",
+        "#a03a80",
+        "#1a7a76",
+        "#f4f1e6"
+      ]
+    },
+    "chrome": {
+      "bg": "#3a3a34",
+      "surface": "#ece8da",
+      "fg": "#2a2a26",
+      "muted": "#5a5a52",
+      "link": "#8a4a00"
+    }
+  }
+}
