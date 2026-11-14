@@ -2,10 +2,10 @@ package term
 
 import (
 	"encoding/json"
-	"os"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
