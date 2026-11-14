@@ -80,10 +80,10 @@ func (b *Background) validate(path string) *ValidationError {
 	if b.Kind != "" && !bgKinds[b.Kind] {
 		return verr(path+".kind", "must be one of none, color, image, shader")
 	}
-	if b.Opacity < 0 || b.Opacity > 1 {
+	if b.Opacity != nil && (*b.Opacity < 0 || *b.Opacity > 1) {
 		return verr(path+".opacity", "must be between 0 and 1")
 	}
-	if b.Blur < 0 || b.Blur > 100 {
+	if b.Blur != nil && (*b.Blur < 0 || *b.Blur > 100) {
 		return verr(path+".blur", "must be between 0 and 100")
 	}
 	return nil

@@ -14,6 +14,7 @@ const maxBody = 1 << 20
 // Register mounts the preset and schema routes. They must sit behind the
 // auth middleware, which supplies session and CSRF checks (ADR-0003).
 func (s *Store) Register(mux *http.ServeMux) {
+	s.registerResolve(mux)
 	mux.HandleFunc("GET /api/schema/{kind}", func(w http.ResponseWriter, r *http.Request) {
 		b, ok := schema.Get(r.PathValue("kind"))
 		if !ok {
