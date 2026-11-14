@@ -102,7 +102,7 @@ test("palette commands: theme, settings, sign out", async () => {
   fireEvent.click(screen.getByText("Cycle theme"));
   expect(document.documentElement.dataset.theme).toBe("light");
   open();
-  fireEvent.click(screen.getByText("Open Settings"));
+  fireEvent.click(screen.getByText("Open settings"));
   expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
   fireEvent.keyDown(screen.getByRole("dialog", { name: "Settings" }), {
     key: "Escape",
