@@ -1,0 +1,44 @@
+{
+  "name": "Colonial Marine",
+  "description": "Inspired by Aliens: amber phosphor on near-black with motion-tracker green accents.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#ffb000",
+    "bg": "#0a0904",
+    "cursor": "#ffb000",
+    "selection": "#4a3300",
+    "ansi": [
+      "#8a6a1a",
+      "#ff6a3d",
+      "#3dff7a",
+      "#ffb000",
+      "#d9a441",
+      "#e0a85c",
+      "#5fe6a0",
+      "#ffcf66",
+      "#b08a2e",
+      "#ff8f6b",
+      "#7dffa6",
+      "#ffd24d",
+      "#f0c36a",
+      "#f0c48a",
+      "#8dffc4",
+      "#fff0c2"
+    ]
+  },
+  "chrome": {
+    "bg": "#050402",
+    "surface": "#14110a",
+    "surface-2": "#1e1a0e",
+    "fg": "#ffb000",
+    "muted": "#b08a2e",
+    "line": "#000000",
+    "shadow": "#3dff7a",
+    "link": "#3dff7a",
+    "term-bg": "#0a0904",
+    "term-fg": "#ffb000",
+    "term-dim": "#a07c24"
+  }
+}

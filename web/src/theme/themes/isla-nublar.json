@@ -1,0 +1,48 @@
+{
+  "name": "Isla Nublar",
+  "description": "Inspired by Jurassic Park: park yellow and red, jungle green, workstation blues.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#e6efe4",
+    "bg": "#0e1f17",
+    "cursor": "#f2c200",
+    "selection": "#1f4a7a",
+    "ansi": [
+      "#7a9a86",
+      "#e8503c",
+      "#4fc27a",
+      "#f2c200",
+      "#5a9ae0",
+      "#c07ad0",
+      "#4fc8c0",
+      "#e6efe4",
+      "#96b4a0",
+      "#ff7a64",
+      "#7fe0a0",
+      "#ffdc4a",
+      "#8abaf0",
+      "#d9a0e6",
+      "#7fe0da",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#0a1610",
+    "surface": "#14291e",
+    "surface-2": "#1c3828",
+    "fg": "#e6efe4",
+    "muted": "#96b4a0",
+    "line": "#040a07",
+    "shadow": "#f2c200",
+    "link": "#5a9ae0",
+    "pink": "#e8503c",
+    "cyan": "#5a9ae0",
+    "yellow": "#f2c200",
+    "purple": "#2e5f9a",
+    "term-bg": "#0e1f17",
+    "term-fg": "#e6efe4",
+    "term-dim": "#96b4a0"
+  }
+}
