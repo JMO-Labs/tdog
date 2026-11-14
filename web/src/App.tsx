@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { TerminalPane } from "./TerminalPane";
+import { Workspace } from "./shell/Workspace";
 import { getStatus, setUnauthorizedHandler } from "./auth/api";
 import { LoginScreen, SetupScreen } from "./auth/screens";
 import { isBenchRoute, isKitRoute } from "./routes";
@@ -79,9 +79,5 @@ function AuthApp() {
         onNeedSetup={() => setView("setup")}
       />
     );
-  return (
-    <div style={{ height: "100vh", background: "#000" }}>
-      <TerminalPane onClosed={onClosed} />
-    </div>
-  );
+  return <Workspace onSignedOut={() => setView("login")} onClosed={onClosed} />;
 }

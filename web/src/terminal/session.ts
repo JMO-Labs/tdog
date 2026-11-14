@@ -30,6 +30,11 @@ export type SessionState =
   | { status: "open" }
   | { status: "closed"; exitCode?: number };
 
+export interface SessionHooks {
+  onOutput?: () => void;
+  onSize?: (cols: number, rows: number) => void;
+}
+
 export class TerminalSession {
   private sock: SocketLike | null = null;
   private pending = 0;
@@ -39,9 +44,13 @@ export class TerminalSession {
     private r: TerminalRenderer,
     private open: () => SocketLike,
     private onState: (s: SessionState) => void,
+    private hooks: SessionHooks = {},
   ) {
     r.onInput((d) => this.send(encodeInput(d)));
-    r.onResize((c, rows) => this.send(encodeResize(c, rows)));
+    r.onResize((c, rows) => {
+      this.send(encodeResize(c, rows));
+      this.hooks.onSize?.(c, rows);
+    });
   }
 
   connect(): void {
@@ -54,6 +63,7 @@ export class TerminalSession {
     s.onopen = () => {
       const { cols, rows } = this.r.size();
       s.send(encodeResize(cols, rows));
+      this.hooks.onSize?.(cols, rows);
       this.onState({ status: "open" });
     };
     s.onmessage = (e) => this.onMessage(e.data);
@@ -83,6 +93,7 @@ export class TerminalSession {
       this.exitCode = f.code;
     } else if (f.kind === "output") {
       const n = f.data.length;
+      this.hooks.onOutput?.();
       this.r.write(f.data, () => this.acked(n));
     }
   }

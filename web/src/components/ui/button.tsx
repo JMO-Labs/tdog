@@ -33,12 +33,15 @@ export function Button({
 
 type IconButtonProps = Omit<ButtonProps, "variant" | "aria-label"> & {
   label: string;
+  /** Tooltip text when it differs from the accessible label. */
+  tip?: string;
   shortcut?: string;
   variant?: "default" | "danger";
 };
 
 export function IconButton({
   label,
+  tip,
   shortcut,
   variant = "default",
   size = "md",
@@ -47,7 +50,7 @@ export function IconButton({
   ...props
 }: IconButtonProps) {
   return (
-    <Tooltip label={label} shortcut={shortcut}>
+    <Tooltip label={tip ?? label} shortcut={shortcut}>
       <button
         type={type}
         aria-label={label}
