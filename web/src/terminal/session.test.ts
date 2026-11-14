@@ -128,3 +128,18 @@ describe("TerminalSession", () => {
     expect(r.dispose).toHaveBeenCalled();
   });
 });
+
+describe("TerminalSession hooks", () => {
+  test("reports size on open/resize and output", () => {
+    const sock = new FakeSocket();
+    const r = mockRenderer();
+    const hooks = { onSize: vi.fn(), onOutput: vi.fn() };
+    new TerminalSession(r, () => sock, vi.fn(), hooks).connect();
+    sock.onopen?.();
+    expect(hooks.onSize).toHaveBeenCalledWith(80, 24);
+    r.resized?.(100, 30);
+    expect(hooks.onSize).toHaveBeenCalledWith(100, 30);
+    sock.onmessage?.({ data: out(65) });
+    expect(hooks.onOutput).toHaveBeenCalledTimes(1);
+  });
+});

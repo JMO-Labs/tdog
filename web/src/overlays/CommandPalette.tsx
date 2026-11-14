@@ -1,13 +1,32 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Modal } from "./Modal";
 import { fuzzyMatch, getCommands, subscribeCommands } from "./commands";
 
 export function CommandPalette({
   defaultOpen = false,
+  open: controlled,
+  onOpenChange,
 }: {
   defaultOpen?: boolean;
+  /** Controlled mode: pass both to let a parent open the palette. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [inner, setInner] = useState(defaultOpen);
+  const open = controlled ?? inner;
+  const setOpen = (v: boolean | ((o: boolean) => boolean)) => {
+    const next = typeof v === "function" ? v(openRef.current) : v;
+    setInner(next);
+    onOpenChange?.(next);
+  };
+  const openRef = useRef(open);
+  openRef.current = open;
   const [query, setQuery] = useState("");
   const [sel, setSel] = useState(0);
   const all = useSyncExternalStore(subscribeCommands, getCommands);

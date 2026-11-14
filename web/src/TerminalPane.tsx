@@ -20,8 +20,15 @@ function wsUrl(): string {
 export function TerminalPane({
   onClosed,
   settled = true,
+  onSize,
+  onOutput,
+  onOpenChange,
 }: {
   onClosed?: () => void;
+  onSize?: (cols: number, rows: number) => void;
+  onOutput?: () => void;
+  /** True while the socket is open. */
+  onOpenChange?: (open: boolean) => void;
   /** False while a layout animation runs; the terminal refits once true. */
   settled?: boolean;
 } = {}) {
@@ -30,6 +37,12 @@ export function TerminalPane({
   const host = useRef<HTMLDivElement>(null);
   const session = useRef<TerminalSession | null>(null);
   const [state, setState] = useState<SessionState>({ status: "connecting" });
+
+  const hooks = useRef({ onSize, onOutput });
+  hooks.current = { onSize, onOutput };
+  useEffect(() => {
+    onOpenChange?.(state.status === "open");
+  }, [state.status, onOpenChange]);
 
   useEffect(() => {
     if (state.status === "closed") onClosed?.();
@@ -46,7 +59,10 @@ export function TerminalPane({
     let cancelled = false;
     void createRenderer(el).then((r) => {
       if (cancelled) return r.dispose();
-      const s = new TerminalSession(r, () => new WebSocket(wsUrl()), setState);
+      const s = new TerminalSession(r, () => new WebSocket(wsUrl()), setState, {
+        onSize: (c, r2) => hooks.current.onSize?.(c, r2),
+        onOutput: () => hooks.current.onOutput?.(),
+      });
       session.current = s;
       renderer.current = r;
       s.connect();
