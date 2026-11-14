@@ -14,9 +14,7 @@ const tree: Node = {
 test("writes layout tree and pane presets", () => {
   const out = sceneToml("dev", tree, { p1: "app-dev" });
   expect(out).toContain('name = "dev"');
-  expect(out).toContain(
-    '[layout]\ntype = "split"\ndir = "row"\nratio = 0.4',
-  );
+  expect(out).toContain('[layout]\ntype = "split"\ndir = "row"\nratio = 0.4');
   expect(out).toContain('[layout.a]\ntype = "pane"\npane = "p1"');
   expect(out).toContain('[layout.b]\ntype = "pane"\npane = "p2"');
   expect(out).toContain('[[panes]]\nid = "p1"\npreset = "app-dev"');
