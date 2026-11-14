@@ -31,7 +31,17 @@ export function Tooltip({ label, shortcut, children }: Props) {
   useEffect(() => hide, []); // eslint-disable-line react-hooks/exhaustive-deps
   const p = children.props;
   const trigger = cloneElement(children, {
-    ref: (el: HTMLElement | null) => (ref.current = el),
+    ref: (el: HTMLElement | null) => {
+      ref.current = el;
+      const c = children as unknown as {
+        ref?: unknown;
+        props: { ref?: unknown };
+      };
+      const own = c.props.ref ?? c.ref; // React 19 prop, else legacy element ref
+      if (typeof own === "function") own(el);
+      else if (own && typeof own === "object")
+        (own as { current: HTMLElement | null }).current = el;
+    },
     "aria-label": p["aria-label"] ?? label,
     onMouseEnter: (e: never) => (p.onMouseEnter?.(e), show()),
     onMouseLeave: (e: never) => (p.onMouseLeave?.(e), hide()),

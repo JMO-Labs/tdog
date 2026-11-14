@@ -12,7 +12,7 @@ import "./overlays.css";
 
 export type ToastKind = "success" | "fail" | "warn" | "info";
 
-// From SLANG in docs/design/mockup.js. Info has no pool: it shows no headline.
+// From SLANG in docs/design/mockup.js. Info has no pool: it falls back to success.
 export const SLANG: Record<Exclude<ToastKind, "info">, string[]> = {
   success: [
     "Radical!",
@@ -38,8 +38,8 @@ export function pickHeadline(
   serious: boolean,
   rng: () => number = Math.random,
 ): string {
-  if (serious || kind === "info") return "";
-  const pool = SLANG[kind];
+  if (serious) return "";
+  const pool = SLANG[kind === "info" ? "success" : kind];
   return pool[Math.floor(rng() * pool.length)];
 }
 

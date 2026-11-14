@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { SLANG, ToastProvider, useToast } from "./toast";
+import { SLANG, pickHeadline, ToastProvider, useToast } from "./toast";
 
 function Fire({ kind }: { kind: "success" | "fail" | "warn" | "info" }) {
   const toast = useToast();
@@ -29,16 +29,23 @@ describe("toasts", () => {
     const el = screen.getByText("saved ok").closest(".toast")!;
     expect(el.querySelector("b")).toBeNull();
   });
-  it("uses a non-slang fallback pool for info", () => {
+  it("info toasts fall back to the success slang pool", () => {
     render(
       <ToastProvider>
         <Fire kind="info" />
       </ToastProvider>,
     );
     fireEvent.click(screen.getByText("go"));
-    expect(screen.getByText("saved ok").closest(".toast")!.className).toContain(
-      "info",
+    const el = screen.getByText("saved ok").closest(".toast")!;
+    expect(el.className).toContain("info");
+    expect(SLANG.success).toContain(el.querySelector("b")!.textContent);
+  });
+  it("pickHeadline uses injected rng; info uses success pool", () => {
+    expect(pickHeadline("fail", false, () => 0)).toBe(SLANG.fail[0]);
+    expect(pickHeadline("info", false, () => 0.999)).toBe(
+      SLANG.success[SLANG.success.length - 1],
     );
+    expect(pickHeadline("info", true, () => 0)).toBe("");
   });
   it("dismisses on click", async () => {
     render(
