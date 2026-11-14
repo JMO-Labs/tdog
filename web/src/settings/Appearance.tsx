@@ -47,11 +47,11 @@ export function Appearance() {
           >
             <span className="swatch" aria-hidden="true">
               {[
-                t.terminal.bg,
-                t.terminal.ansi[1],
-                t.terminal.ansi[2],
-                t.terminal.ansi[4],
-                t.terminal.fg,
+                t.terminal.palette.bg,
+                t.terminal.palette.ansi[1],
+                t.terminal.palette.ansi[2],
+                t.terminal.palette.ansi[4],
+                t.terminal.palette.fg,
               ].map((c, i) => (
                 <i key={i} style={{ background: c }} />
               ))}
