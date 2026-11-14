@@ -219,7 +219,7 @@ function pane(kind, title, target, body) {
     <button class="icon-btn sm" data-act="down" data-tip="Split down" data-kbd="⇧⌘D" aria-label="Split down">${svg("down")}</button>
     <button class="icon-btn sm" data-act="close" data-tip="Close pane" data-kbd="⌘W" aria-label="Close pane">${svg("x")}</button></div>`;
   if (kind === "empty") {
-    p.insertAdjacentHTML("beforeend", `<div class="empty"><div class="sticker">${CASSETTE}</div><p class="empty-big">Nothing playing.</p><p class="muted">Split this pane, or press <kbd>⌘K</kbd> to pick a preset.</p></div>`);
+    p.insertAdjacentHTML("beforeend", `<div class="empty"><div class="mascot pane-dog" role="img" aria-label="tdog mascot waving"><img class="m-arm" src="assets/tdog-wave-arm.png" alt=""><img class="m-body" src="assets/tdog-wave-body.png" alt=""></div><p class="empty-big">Nothing playing.</p><p class="muted">Split this pane, or press <kbd>⌘K</kbd> to pick a preset.</p></div>`);
   } else p.insertAdjacentHTML("beforeend", `<pre class="term">${body}</pre>`);
   return p;
 }

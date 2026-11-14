@@ -110,6 +110,10 @@ kbd { font: 600 11px var(--mono); border: 1.5px solid var(--line); border-radius
 .mascot.waving .m-arm { animation: wave .45s ease-in-out infinite alternate; }
 @keyframes wag { from { rotate: -13deg; } to { rotate: 13deg; } }
 @keyframes wave { from { rotate: -16deg; } to { rotate: 10deg; } }
+/* empty pane: idle dog, bobs and throws a wave every few seconds */
+.mascot.pane-dog { width: 104px; filter: drop-shadow(4px 4px 0 var(--ink)); animation: bob 3s ease-in-out infinite; }
+.mascot.pane-dog .m-arm { animation: idle-wave 4.5s ease-in-out infinite; }
+@keyframes idle-wave { 0%, 60%, 100% { rotate: 0deg; } 66%, 78% { rotate: -16deg; } 72%, 84% { rotate: 10deg; } }
 .mascot.wave { width: 160px; margin-top: -110px; filter: drop-shadow(5px 5px 0 var(--ink)); }
 .crt-big { font: 400 46px/1 var(--display); margin: 8px 0; color: var(--pink); -webkit-text-stroke: 1.5px var(--ink); text-shadow: 3px 3px 0 var(--yellow); }
 .crt-small { margin: 0; color: #ede7ff; font-size: 13px; }
