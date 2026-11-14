@@ -42,7 +42,7 @@ func TestRoundTripSpecExample(t *testing.T) {
 	}
 	ta, tb := a.(*Terminal), b.(*Terminal)
 	if ta.Command != "npm run dev" || ta.PreExec.Mode != "stop_on_fail" || len(ta.PreExec.Run) != 2 ||
-		ta.Font.Size != 14 || ta.Background.Opacity != 0.85 || ta.Env["NODE_ENV"] != "development" {
+		ta.Font.Size != 14 || ta.Background.Opacity == nil || *ta.Background.Opacity != 0.85 || ta.Env["NODE_ENV"] != "development" {
 		t.Fatalf("decoded: %+v", ta)
 	}
 	if tb.Command != ta.Command || tb.OnClose.Run[0] != "docker compose down" || tb.Font.Family != ta.Font.Family {

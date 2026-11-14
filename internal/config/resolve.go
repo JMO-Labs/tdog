@@ -20,7 +20,9 @@ type Field struct {
 type Resolved map[string]Field
 
 // Resolve merges global → scene → terminal → pane override; any layer may be
-// nil. Scalars and sub-fields override when non-zero, env maps merge per key,
+// nil. Strings and sizes override when non-empty; bools and numbers
+// (persistent, ligatures, opacity, blur) override whenever explicitly set, so
+// false/0 beats a lower layer. Sub-fields override individually, env maps merge per key,
 // hooks (lists) replace wholesale.
 func Resolve(g *Global, s *Scene, t, pane *Terminal) Resolved {
 	r := Resolved{}
@@ -50,8 +52,8 @@ func (r Resolved) layer(origin string, t *Terminal) {
 	str("cwd", t.Cwd)
 	str("command", t.Command)
 	str("theme", t.Theme)
-	if t.Persistent {
-		r.set("persistent", origin, true)
+	if t.Persistent != nil {
+		r.set("persistent", origin, *t.Persistent)
 	}
 	keys := make([]string, 0, len(t.Env))
 	for k := range t.Env {
@@ -71,18 +73,18 @@ func (r Resolved) layer(origin string, t *Terminal) {
 		if f.Size != 0 {
 			r.set("font.size", origin, f.Size)
 		}
-		if f.Ligatures {
-			r.set("font.ligatures", origin, true)
+		if f.Ligatures != nil {
+			r.set("font.ligatures", origin, *f.Ligatures)
 		}
 	}
 	if b := t.Background; b != nil {
 		str("background.kind", b.Kind)
 		str("background.ref", b.Ref)
-		if b.Opacity != 0 {
-			r.set("background.opacity", origin, b.Opacity)
+		if b.Opacity != nil {
+			r.set("background.opacity", origin, *b.Opacity)
 		}
-		if b.Blur != 0 {
-			r.set("background.blur", origin, b.Blur)
+		if b.Blur != nil {
+			r.set("background.blur", origin, *b.Blur)
 		}
 	}
 }
