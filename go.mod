@@ -3,6 +3,7 @@ module github.com/JMO-Labs/tdog
 go 1.26.2
 
 require (
+	github.com/BurntSushi/toml v1.5.0
 	github.com/coder/websocket v1.8.13
 	github.com/creack/pty v1.1.24
 	golang.org/x/crypto v0.59.0

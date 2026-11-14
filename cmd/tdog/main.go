@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/JMO-Labs/tdog/internal/auth"
+	"github.com/JMO-Labs/tdog/internal/config"
 	"github.com/JMO-Labs/tdog/internal/server"
 	"github.com/JMO-Labs/tdog/web"
 )
@@ -35,5 +36,5 @@ func run(getenv func(string) string, serve func(string, http.Handler) error) err
 		return err
 	}
 	log.Printf("tdog listening on %s", addr)
-	return serve(addr, server.NewSecured(web.FS(), a))
+	return serve(addr, server.NewSecuredPresets(web.FS(), a, config.NewStore(dir)))
 }
