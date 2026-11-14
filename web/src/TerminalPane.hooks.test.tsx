@@ -4,6 +4,7 @@ import { expect, test, vi } from "vitest";
 const h = vi.hoisted(() => ({
   sockets: [] as any[],
   resizeCb: null as null | ((c: number, r: number) => void),
+  setTheme: vi.fn(),
 }));
 
 vi.mock("./terminal/xtermRenderer", () => ({
@@ -17,7 +18,9 @@ vi.mock("./terminal/xtermRenderer", () => ({
     }
     write() {}
     resize() {}
-    setTheme() {}
+    setTheme(t: unknown) {
+      h.setTheme(t);
+    }
     dispose() {}
   },
 }));
@@ -44,6 +47,7 @@ vi.stubGlobal(
 );
 
 import { TerminalPane } from "./TerminalPane";
+import { themeStore } from "./theme/store";
 
 test("forwards session size and output events to the onSize/onOutput props", async () => {
   const onSize = vi.fn();
@@ -54,4 +58,13 @@ test("forwards session size and output events to the onSize/onOutput props", asy
   expect(onSize).toHaveBeenCalledWith(100, 30);
   h.sockets[0].onmessage!({ data: new Uint8Array([0x00, 0x68]).buffer });
   expect(onOutput).toHaveBeenCalledTimes(1);
+});
+
+test("re-applies the terminal theme when the theme store changes", async () => {
+  render(<TerminalPane />);
+  await waitFor(() => expect(h.sockets.length).toBeGreaterThan(0));
+  h.setTheme.mockClear();
+  themeStore.select("night-market");
+  expect(h.setTheme).toHaveBeenCalledWith(themeStore.terminal());
+  themeStore.reset();
 });

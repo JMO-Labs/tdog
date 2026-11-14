@@ -61,4 +61,15 @@ describe("themeStore", () => {
     expect(t.brightWhite).toBe(THEMES[0].terminal.ansi[15]);
     expect(t.selectionBackground).toBe(THEMES[0].terminal.selection);
   });
+  it("falls back to the default when storage throws", () => {
+    themeStore.select("night-market");
+    const spy = vi
+      .spyOn(Storage.prototype, "getItem")
+      .mockImplementation(() => {
+        throw new Error("denied");
+      });
+    themeStore.reset();
+    spy.mockRestore();
+    expect(themeStore.get().id).toBe("memphis-pop");
+  });
 });

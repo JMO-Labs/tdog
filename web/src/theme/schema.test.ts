@@ -72,6 +72,19 @@ describe("bundled themes", () => {
       expect(t!.description).toMatch(/inspired by/i);
     }
   });
+  it("bundles the 90s pack 5", () => {
+    const ids = THEMES.map((t) => t.id);
+    for (const id of [
+      "linking-book",
+      "llama-skin",
+      "sim-grid",
+      "cartridge-blast",
+      "slime-time",
+    ])
+      expect(ids).toContain(id);
+    expect(THEMES.find((t) => t.id === "linking-book")?.light).toBeDefined();
+    expect(THEMES.find((t) => t.id === "slime-time")?.pattern).toBe("confetti");
+  });
   for (const t of THEMES) {
     describe(t.id, () => {
       it("is schema valid", () => {
@@ -97,4 +110,9 @@ describe("bundled themes", () => {
       }
     });
   }
+  it("rejects a non-string font", () => {
+    const t = ok();
+    t.font = 5;
+    expect(validateTheme(t).ok).toBe(false);
+  });
 });
