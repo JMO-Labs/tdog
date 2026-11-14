@@ -170,6 +170,7 @@ export function Workspace({
       registerCommand({
         id: "theme",
         title: "Cycle theme",
+        group: "Themes",
         shortcut: "⇧⌘L",
         run: cycle,
       }),
@@ -177,6 +178,14 @@ export function Workspace({
         registerCommand({
           id: `theme:${t.id}`,
           title: `Theme: ${t.name}`,
+          group: "Themes",
+          swatch: [
+            t.terminal.palette.bg,
+            t.terminal.palette.ansi[1],
+            t.terminal.palette.ansi[2],
+            t.terminal.palette.ansi[4],
+            t.terminal.palette.fg,
+          ],
           run: () => themeStore.select(t.id),
           preview: () => themeStore.preview(t.id),
           revert: () => themeStore.preview(null),
@@ -184,19 +193,22 @@ export function Workspace({
       ),
       registerCommand({
         id: "settings",
-        title: "Open Settings",
+        title: "Open settings",
+        group: "Panes",
         shortcut: "⌘,",
         run: () => setSettings(true),
       }),
       registerCommand({
         id: "scene:new",
         title: "New scene",
+        group: "Scenes",
         shortcut: "⌘T",
         run: add,
       }),
       registerCommand({
         id: "signout",
         title: "Sign out",
+        group: "Account",
         run: signOut,
       }),
     ];

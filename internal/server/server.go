@@ -32,13 +32,16 @@ func NewWithUI(ui fs.FS) http.Handler {
 // (ADR-0003) registered.
 func NewSecured(ui fs.FS, a *auth.Auth) http.Handler { return NewSecuredPresets(ui, a, nil) }
 
+// sshConfig is a seam so tests can point rediscovery at a fake host.
+var sshConfig = term.SSHConfigFromEnv
+
 // NewSecuredPresets is NewSecured plus the preset and schema routes backed by
 // store (skipped when nil). They sit behind the same session + CSRF checks.
 func NewSecuredPresets(ui fs.FS, a *auth.Auth, store *config.Store) http.Handler {
 	mux := http.NewServeMux()
 	a.Register(mux)
 	reg := term.NewRegistry(a.Audit(), 0)
-	sshCfg := term.SSHConfigFromEnv()
+	sshCfg := sshConfig()
 	if _, err := os.Stat(sshCfg.KeyPath); err == nil { // reattach persistent tmux sessions
 		go func() {
 			if n, err := reg.RediscoverSSH(sshCfg); err != nil {
@@ -48,7 +51,7 @@ func NewSecuredPresets(ui fs.FS, a *auth.Auth, store *config.Store) http.Handler
 			}
 		}()
 	}
-	mux.Handle("GET /ws/term", term.NewHandler(term.Config{SSH: sshCfg, Audit: a.Audit(), Registry: reg}))
+	mux.Handle("GET /ws/term", term.NewHandler(term.Config{SSH: sshCfg, Audit: a.Audit(), Registry: reg, Presets: store}))
 	mux.Handle("GET /api/sessions", reg.ListHandler())
 	reg.RegisterKill(mux)
 	if store != nil {
