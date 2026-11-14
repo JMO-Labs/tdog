@@ -39,6 +39,10 @@ function twoPanes() {
   return keys;
 }
 
+// Handlers live on the wrapper div inside the pane section.
+const inner = (id: string) =>
+  document.querySelector(`[data-pane="${id}"] [data-testid="terminal-pane"]`)!;
+
 test("status bar follows the pane that gained focus or pointer", () => {
   const [a, b] = twoPanes();
   act(() => {
@@ -46,10 +50,10 @@ test("status bar follows the pane that gained focus or pointer", () => {
     props[b].onSize(100, 30);
   });
   expect(screen.getByText("80×24")).toBeTruthy();
-  const paneB = document.querySelector(`[data-pane="${b}"]`)!;
+  const paneB = inner(b);
   fireEvent.pointerDown(paneB);
   expect(screen.getByText("100×30")).toBeTruthy();
-  const paneA = document.querySelector(`[data-pane="${a}"]`)!;
+  const paneA = inner(a);
   fireEvent.focus(paneA);
   expect(screen.getByText("80×24")).toBeTruthy();
 });
