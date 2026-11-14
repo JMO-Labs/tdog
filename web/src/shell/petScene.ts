@@ -64,7 +64,12 @@ export function petScene(v: PetView, tick: number, reduced: boolean): Scene {
       const by = 12 + Math.abs(((at * 3) % 8) - 4);
       cells.push(...spr(sprite("ball"), bx, by));
       return out(
-        face("happy", { legs: a, mouth: true, tail: a ? 2 : 1 }, clampX(bx - 6), y - up(a)),
+        face(
+          "happy",
+          { legs: a, mouth: true, tail: a ? 2 : 1 },
+          clampX(bx - 6),
+          y - up(a),
+        ),
         "Dogbert is playing fetch.",
         "happy",
       );
@@ -159,7 +164,13 @@ export function petScene(v: PetView, tick: number, reduced: boolean): Scene {
     );
   const px = reduced ? x : wander(t);
   const blink = t % 40 === 0;
-  const eyes = blink ? "closed" : t % 24 < 6 ? (px < 18 ? "right" : "left") : "open";
+  const eyes = blink
+    ? "closed"
+    : t % 24 < 6
+      ? px < 18
+        ? "right"
+        : "left"
+      : "open";
   return out(
     face(eyes, { legs: a }, px, y),
     "Dogbert is wandering around.",

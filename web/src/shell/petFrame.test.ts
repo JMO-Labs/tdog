@@ -49,8 +49,17 @@ describe("petFrame with a live view", () => {
     hop: false,
     attention: false,
   } as const;
-  const cap = (o: Partial<typeof v> & { act?: never }, tick = 0, reduced = false) =>
-    petFrame({ awake: true, tick, reduced, view: { ...v, ...(o as object) } as never });
+  const cap = (
+    o: Partial<typeof v> & { act?: never },
+    tick = 0,
+    reduced = false,
+  ) =>
+    petFrame({
+      awake: true,
+      tick,
+      reduced,
+      view: { ...v, ...(o as object) } as never,
+    });
   test.each([
     [{ act: "eat" }, "Dogbert is eating."],
     [{ act: "full" }, "Dogbert is full. No thanks."],
@@ -72,8 +81,12 @@ describe("petFrame with a live view", () => {
     expect(cap(o as never).caption).toBe(caption);
   });
   test("poops and moon add cells; wandering moves; reduced pins", () => {
-    expect(cap({ poops: 2 }).cells.length).toBeGreaterThan(cap({}).cells.length);
-    expect(cap({ night: true }).cells.length).toBeGreaterThan(cap({}).cells.length);
+    expect(cap({ poops: 2 }).cells.length).toBeGreaterThan(
+      cap({}).cells.length,
+    );
+    expect(cap({ night: true }).cells.length).toBeGreaterThan(
+      cap({}).cells.length,
+    );
     expect(cap({}, 30).cells).not.toEqual(cap({}, 0).cells);
     expect(cap({}, 30, true).cells).toEqual(cap({}, 0, true).cells);
   });

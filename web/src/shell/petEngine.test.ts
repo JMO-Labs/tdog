@@ -47,7 +47,8 @@ describe("text matchers", () => {
     expect(classify("\x1b]0;title\x07")).toBeNull();
     expect(classify("undone")).toBeNull();
   });
-  test("error beats pass", () => expect(classify("done: error")).toBe("startle"));
+  test("error beats pass", () =>
+    expect(classify("done: error")).toBe("startle"));
 });
 
 describe("reactions", () => {

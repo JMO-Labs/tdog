@@ -123,7 +123,8 @@ export class PetEngine {
       const d = drift(saved, now);
       ({ hunger: this.hunger, happy: this.happy, poops: this.poops } = d);
       // first wake after the night: stretch with a sun
-      if (isNight(new Date(saved.at)) && !this.night) this.start("stretch", now);
+      if (isNight(new Date(saved.at)) && !this.night)
+        this.start("stretch", now);
     }
   }
 
