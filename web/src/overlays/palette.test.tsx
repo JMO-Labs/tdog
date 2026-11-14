@@ -52,6 +52,21 @@ describe("CommandPalette", () => {
     });
     expect(screen.queryByRole("dialog")).toBeNull();
   });
+  it("hover selects and click runs a command", async () => {
+    const a = vi.fn();
+    const b = vi.fn();
+    registerCommand({ id: "a", title: "Alpha", run: a });
+    registerCommand({ id: "b", title: "Beta", run: b });
+    render(<CommandPalette defaultOpen />);
+    const opts = screen.getAllByRole("option");
+    fireEvent.mouseMove(opts[1]);
+    expect(opts[1].getAttribute("aria-selected")).toBe("true");
+    await act(async () => {
+      fireEvent.click(opts[1]);
+    });
+    expect(b).toHaveBeenCalledOnce();
+    expect(a).not.toHaveBeenCalled();
+  });
   it("unregisters commands", () => {
     const off = registerCommand({ id: "a", title: "A", run: vi.fn() });
     off();

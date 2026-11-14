@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { TerminalPane } from "./TerminalPane";
+import { Workspace } from "./shell/Workspace";
 import { getStatus, logout, setUnauthorizedHandler } from "./auth/api";
 import { LoginScreen, SetupScreen } from "./auth/screens";
 import { ToastProvider, useToast } from "./overlays/toast";
@@ -101,8 +101,12 @@ function AuthApp() {
       />
     );
   return (
-    <div style={{ height: "100vh", background: "#000" }}>
-      <TerminalPane onClosed={onClosed} />
-    </div>
+    <Workspace
+      onSignedOut={() => {
+        setView("login");
+        toast("info", "Session ended. See you next time.", "Be kind, rewind.");
+      }}
+      onClosed={onClosed}
+    />
   );
 }
