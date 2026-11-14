@@ -65,6 +65,17 @@ function variant(t: Theme): ThemeVariant {
   return light && t.light ? t.light : t;
 }
 
+/** Theme tokens merged over computed CSS defaults, so unset tokens still resolve. */
+function resolveTokens(tokens: Record<string, string>): Record<string, string> {
+  const cs = getComputedStyle(document.documentElement);
+  const resolved: Record<string, string> = {};
+  for (const k of CHROME_TOKENS) {
+    const v = tokens[k] ?? cs.getPropertyValue(`--${k}`).trim();
+    if (v) resolved[k] = v;
+  }
+  return resolved;
+}
+
 const pretty = (n: number) => String(Math.round(n * 1000) / 1000);
 
 function apply() {
@@ -85,14 +96,10 @@ function apply() {
   if (pattern !== "confetti")
     set("--pattern", pattern === "none" ? "none" : `var(--pat-${pattern})`);
   if (motif) {
-    // Resolve token names from computed values so CSS defaults count too.
-    const cs = getComputedStyle(el);
-    const resolved: Record<string, string> = {};
-    for (const k of CHROME_TOKENS) {
-      const v = tokens[k] ?? cs.getPropertyValue(`--${k}`).trim();
-      if (v) resolved[k] = v;
-    }
-    set("--header-motif", `url("${motifSvg(motif, resolved)}")`);
+    const url = `url("${motifSvg(motif, resolveTokens(tokens))}")`;
+    set("--header-motif", url);
+    // Auth backdrop and empty panes read --pattern: the motif replaces confetti there.
+    set("--pattern", url);
   }
   // A theme with a light variant follows the scheme; others pin their appearance.
   if (t.light) {
@@ -112,6 +119,14 @@ export const themeStore = {
       variant((themeId ? findTheme(themeId) : undefined) ?? current()).terminal
         .palette,
     ),
+  /** Terminal motif as a CSS url() for a pane's theme, or null when it has none. */
+  terminalMotif: (themeId?: string | null): string | null => {
+    const t = (themeId ? findTheme(themeId) : undefined) ?? current();
+    const m = t.terminal.motif;
+    if (!m) return null;
+    const tokens = variant(t).chrome.tokens as Record<string, string>;
+    return `url("${motifSvg(m, resolveTokens(tokens))}")`;
+  },
   subscribe(l: () => void) {
     listeners.add(l);
     return () => void listeners.delete(l);

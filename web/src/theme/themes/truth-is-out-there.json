@@ -50,7 +50,7 @@
       "border": 1
     },
     "pattern": "none",
-    "boot": "default",
+    "boot": "rewind",
     "costume": "none"
   }
 }

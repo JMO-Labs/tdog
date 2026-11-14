@@ -241,3 +241,21 @@
 .pane-menu button:focus-visible {
   outline: 2px solid var(--accent, #6cf);
 }
+.pane-submenu {
+  display: grid;
+  margin-left: 10px;
+  padding-left: 4px;
+  border-left: 2px solid currentColor;
+}
+.pane-menu button[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+.pane-menu button.danger {
+  color: var(--danger, #c0392b);
+}
+.pane-title-input {
+  font: inherit;
+  min-width: 0;
+  width: 14ch;
+}

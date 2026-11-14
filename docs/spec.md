@@ -108,7 +108,16 @@ theme = "mtv-neon"
 font = { family = "JetBrainsMono Nerd Font", size = 14, ligatures = true }
 background = { kind = "shader", ref = "vhs-grain", opacity = 0.85, blur = 4 }
 ```
-Hooks: string shorthand or `{ mode = "all" | "stop_on_fail", run = [...] }`.
+Hooks: string shorthand (= mode all) or `{ mode = "all" | "stop_on_fail", run = [...] }`.
+
+Launch: `/ws/term?preset=<name>[&override=<TOML terminal fragment>]` resolves global → preset →
+pane override, starts the target in `cwd` with `env`, then types `pre_exec; command; post_exec` into
+the live shell as one line (`;` between steps for `all`, `&&` for `stop_on_fail`; a hook's mode
+joins its own steps and the step before it). Limit: Ctrl-C on the command also skips `post_exec`.
+Hook text must be single-line and is only ever typed or sent as data, never spliced into a server
+shell command. `on_close` runs server-side when the terminal closes, is killed or exits (same
+target, non-interactive, same cwd/env, 30 s timeout); output goes to the audit log (`on_close`
+event). Not run for terminals rediscovered after a tdog restart.
 
 Scene preset: layout tree, per-pane terminal preset refs + overrides, scene background,
 `autostart = true|false` (launch on server start).

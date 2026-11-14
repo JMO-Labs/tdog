@@ -49,7 +49,7 @@
       "border": 1
     },
     "pattern": "confetti",
-    "boot": "default",
+    "boot": "drop",
     "costume": "none"
   },
   "light": {

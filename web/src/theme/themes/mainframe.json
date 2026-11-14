@@ -58,7 +58,7 @@
       "border": 1
     },
     "pattern": "none",
-    "boot": "default",
+    "boot": "post",
     "costume": "none"
   }
 }

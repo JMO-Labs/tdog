@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { json, mockFetch } from "../auth/testutil";
 import { ToastProvider } from "../overlays/toast";
 import { SettingsPanel } from "./SettingsPanel";
-import { getPref, setPref } from "./prefs";
+import { getMotifOpacity, getPref, setPref } from "./prefs";
 
 const session = (on: boolean) => json({ totp_enabled: on, remote: false });
 
@@ -168,9 +168,29 @@ test("confirm server error shows a generic retry message", async () => {
   expect(screen.getByRole("alert").textContent).toMatch(/went wrong\. try/i);
 });
 
+test("boot animation toggle defaults on and persists", async () => {
+  await mount({ "GET /api/session": session(false) });
+  expect(sw(/boot animation/i).getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(sw(/boot animation/i));
+  expect(localStorage.getItem("tdog.boot")).toBe("0");
+  expect(getPref("boot")).toBe(false);
+});
+
 test("Dress up Dogbert defaults on and persists", () => {
   localStorage.clear();
   expect(getPref("dress")).toBe(true);
   setPref("dress", false);
   expect(localStorage.getItem("tdog.dress")).toBe("0");
+});
+
+test("terminal motif slider persists opacity and applies immediately", async () => {
+  await mount({ "GET /api/session": session(false) });
+  const slider = screen.getByRole("slider", { name: /terminal motif/i });
+  expect((slider as HTMLInputElement).value).toBe("6");
+  fireEvent.change(slider, { target: { value: "20" } });
+  expect(localStorage.getItem("tdog.motifOpacity")).toBe("20");
+  expect(getMotifOpacity()).toBe(20);
+  expect((slider as HTMLInputElement).value).toBe("20");
+  fireEvent.change(slider, { target: { value: "0" } });
+  expect(getMotifOpacity()).toBe(0);
 });

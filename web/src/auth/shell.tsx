@@ -1,5 +1,14 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { takeBoot } from "./boot";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { bootFor, takeBoot } from "./boot";
+import { Boot } from "./Boot";
+import { getPref } from "../settings/prefs";
+import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
 import { IconButton } from "../components/ui/button";
 import { prefersReducedMotion } from "../motion/confetti";
@@ -9,7 +18,13 @@ const ICON = { system: "◐", light: "☀", dark: "☾" } as const;
 
 /** Confetti backdrop, extruded wordmark (letters drop in once per session), theme toggle. */
 export function AuthShell({ children }: { children: ReactNode }) {
-  const [booting] = useState(() => takeBoot() && !prefersReducedMotion());
+  const [variant, setVariant] = useState(() =>
+    getPref("boot") && takeBoot()
+      ? bootFor(themeStore.get().id, prefersReducedMotion())
+      : null,
+  );
+  const booting = variant === "drop";
+  const endBoot = useCallback(() => setVariant(null), []);
   const mark = useRef<HTMLHeadingElement>(null);
   const card = useRef<HTMLDivElement>(null);
   const { mode, cycle } = useThemeMode();
@@ -54,6 +69,9 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
   return (
     <main className="auth" data-booting={booting || undefined}>
+      {variant && variant !== "drop" && (
+        <Boot variant={variant} onDone={endBoot} />
+      )}
       <IconButton label={`Theme: ${mode}`} className="corner" onClick={cycle}>
         {ICON[mode]}
       </IconButton>

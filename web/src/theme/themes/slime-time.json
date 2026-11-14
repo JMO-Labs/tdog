@@ -57,7 +57,7 @@
       "border": 1
     },
     "pattern": "confetti",
-    "boot": "default",
+    "boot": "wipe",
     "costume": "none"
   }
 }

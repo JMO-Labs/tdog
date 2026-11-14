@@ -11,6 +11,7 @@ const enc = new TextEncoder();
 export class XtermRenderer implements TerminalRenderer {
   private term = new Terminal({
     allowProposedApi: true,
+    allowTransparency: true,
     cursorBlink: true,
     scrollback: 10000,
   });

@@ -10,6 +10,16 @@ presets, animated backgrounds and a 90s-MTV-style shell.
 `/ws/term?target=ssh-host` opens a shell on the real host over SSH (`?target=container` runs a
 shell inside the container; default is `container`).
 
+### Persistent terminals (tmux)
+
+`/ws/term?target=ssh-host&persistent=1` runs the shell in `tmux new -A -s tdog-<id>` on the host, so
+it survives tdog restarts. Other targets reject `persistent` with a 400. On start tdog lists the
+host's `tdog-*` tmux sessions and re-registers them in `GET /api/sessions`; reattach with `?id=<id>`.
+Killing the terminal also kills its tmux session. Requires `tmux` on the host.
+
+> Caveat: tmux sits between the shell and the browser and may swallow or rewrite some escape
+> sequences, notably kitty graphics. Use a non-persistent terminal when you need them.
+
 Host setup:
 
 ```bash
