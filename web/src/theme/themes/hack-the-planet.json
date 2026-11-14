@@ -1,0 +1,48 @@
+{
+  "name": "Hack the Planet",
+  "description": "Inspired by Hackers: neon magenta, cyan and green on black.",
+  "appearance": "dark",
+  "pattern": "zigzag",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#39ff88",
+    "bg": "#05020a",
+    "cursor": "#ff2bd6",
+    "selection": "#4a1060",
+    "ansi": [
+      "#8a7aa8",
+      "#ff3b8f",
+      "#39ff88",
+      "#fff23a",
+      "#5a8bff",
+      "#ff2bd6",
+      "#19e6ff",
+      "#e8e0ff",
+      "#a898c8",
+      "#ff6ab0",
+      "#7dffb0",
+      "#fff77a",
+      "#8aabff",
+      "#ff6ae6",
+      "#6df0ff",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#05020a",
+    "surface": "#120a1e",
+    "surface-2": "#1c1030",
+    "fg": "#e8e0ff",
+    "muted": "#a898c8",
+    "line": "#000000",
+    "shadow": "#ff2bd6",
+    "link": "#19e6ff",
+    "pink": "#ff2bd6",
+    "cyan": "#19e6ff",
+    "yellow": "#fff23a",
+    "purple": "#9a5bff",
+    "term-bg": "#05020a",
+    "term-fg": "#39ff88",
+    "term-dim": "#7a9a88"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "name": "Ninety-Five",
+  "description": "Inspired by mid-90s desktop OSes: teal desktop, grey bevel chrome, navy title bars.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#e8e8e8",
+    "bg": "#101828",
+    "cursor": "#ffffff",
+    "selection": "#000080",
+    "ansi": [
+      "#808080",
+      "#ff6b6b",
+      "#4fd16b",
+      "#e6d34a",
+      "#6b8cff",
+      "#d06bd0",
+      "#3fc8c8",
+      "#d8d8d8",
+      "#9a9a9a",
+      "#ff9494",
+      "#7fe896",
+      "#f5e87a",
+      "#94acff",
+      "#e694e6",
+      "#7addde",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#006868",
+    "surface": "#c0c0c0",
+    "surface-2": "#dfdfdf",
+    "fg": "#000000",
+    "muted": "#404040",
+    "line": "#000000",
+    "shadow": "#404040",
+    "link": "#000080",
+    "term-bg": "#101828",
+    "term-fg": "#e8e8e8",
+    "term-dim": "#9a9a9a"
+  },
+  "light": {
+    "terminal": {
+      "fg": "#000000",
+      "bg": "#c0c0c0",
+      "cursor": "#000080",
+      "selection": "#9fb4d9",
+      "ansi": [
+        "#555555",
+        "#a80000",
+        "#006400",
+        "#6b5200",
+        "#000080",
+        "#800080",
+        "#006060",
+        "#202020",
+        "#404040",
+        "#b00000",
+        "#00600a",
+        "#5c4600",
+        "#0000a0",
+        "#900090",
+        "#005a5a",
+        "#000000"
+      ]
+    },
+    "chrome": {
+      "bg": "#008080",
+      "surface": "#c0c0c0",
+      "surface-2": "#dfdfdf",
+      "fg": "#000000",
+      "muted": "#404040",
+      "line": "#000000",
+      "shadow": "#404040",
+      "link": "#000080",
+      "term-bg": "#c0c0c0",
+      "term-fg": "#000000",
+      "term-dim": "#404040"
+    }
+  }
+}

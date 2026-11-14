@@ -1,0 +1,47 @@
+{
+  "name": "Section 9",
+  "description": "Teal and city-orange glow on deep navy. Inspired by Ghost in the Shell.",
+  "appearance": "dark",
+  "pattern": "none",
+  "terminal": {
+    "fg": "#d6f2ef",
+    "bg": "#07122a",
+    "cursor": "#ff8a3d",
+    "selection": "#164a63",
+    "ansi": [
+      "#7a9ab8",
+      "#ff6a4d",
+      "#2fd9b8",
+      "#ffb347",
+      "#4d9ee8",
+      "#c06ad8",
+      "#25c4d0",
+      "#d6f2ef",
+      "#9ab8d0",
+      "#ff917a",
+      "#6ae8d0",
+      "#ffc875",
+      "#7dbcf2",
+      "#d795e6",
+      "#6adbe3",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#050c1e",
+    "surface": "#0c1a38",
+    "surface-2": "#12264d",
+    "fg": "#d6f2ef",
+    "muted": "#8fb0c8",
+    "line": "#02060f",
+    "shadow": "#ff8a3d",
+    "link": "#2fd9b8",
+    "pink": "#ff6a4d",
+    "cyan": "#25c4d0",
+    "yellow": "#ffb347",
+    "purple": "#c06ad8",
+    "term-bg": "#07122a",
+    "term-fg": "#d6f2ef",
+    "term-dim": "#7a9ab8"
+  }
+}

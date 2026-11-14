@@ -1,0 +1,44 @@
+{
+  "name": "Liquid Metal",
+  "description": "Inspired by Terminator 2: chrome greys and red HUD accents on cold steel.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#d5dde5",
+    "bg": "#12171c",
+    "cursor": "#ff2a2a",
+    "selection": "#3a4856",
+    "ansi": [
+      "#7d8b99",
+      "#ff4a4a",
+      "#5fd28a",
+      "#e0b84a",
+      "#6fa3e0",
+      "#c58ae0",
+      "#58c8d8",
+      "#d5dde5",
+      "#9aa8b6",
+      "#ff7373",
+      "#8ae6ad",
+      "#f0d27a",
+      "#9bc2f0",
+      "#dcaef0",
+      "#8adbe8",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#0c1014",
+    "surface": "#1a2128",
+    "surface-2": "#252e37",
+    "fg": "#d5dde5",
+    "muted": "#8d9ba9",
+    "line": "#05070a",
+    "shadow": "#ff2a2a",
+    "link": "#ff5a5a",
+    "term-bg": "#12171c",
+    "term-fg": "#d5dde5",
+    "term-dim": "#8d9ba9"
+  }
+}

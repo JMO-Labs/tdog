@@ -59,6 +59,19 @@ describe("bundled themes", () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids[0]).toBe("memphis-pop");
   });
+  it("bundles the 90s pack 2 themes with an inspired-by line", () => {
+    for (const id of [
+      "wetwired",
+      "sewer-squad",
+      "wake-up-neo",
+      "section-9",
+      "mainframe",
+    ]) {
+      const t = THEMES.find((x) => x.id === id);
+      expect(t, id).toBeDefined();
+      expect(t!.description).toMatch(/inspired by/i);
+    }
+  });
   it("bundles the 90s pack 5", () => {
     const ids = THEMES.map((t) => t.id);
     for (const id of [
@@ -71,6 +84,21 @@ describe("bundled themes", () => {
       expect(ids).toContain(id);
     expect(THEMES.find((t) => t.id === "linking-book")?.light).toBeDefined();
     expect(THEMES.find((t) => t.id === "slime-time")?.pattern).toBe("confetti");
+  });
+  it("ships the 90s pack 1", () => {
+    const by = (id: string) => THEMES.find((t) => t.id === id)!;
+    for (const id of [
+      "colonial-marine",
+      "liquid-metal",
+      "ninety-five",
+      "hack-the-planet",
+      "isla-nublar",
+    ]) {
+      expect(by(id), id).toBeTruthy();
+      expect(by(id).description).toMatch(/inspired by/i);
+    }
+    expect(by("ninety-five").light).toBeTruthy();
+    expect(by("hack-the-planet").pattern).toBe("zigzag");
   });
   for (const t of THEMES) {
     describe(t.id, () => {
