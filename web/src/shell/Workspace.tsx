@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TerminalPane } from "../TerminalPane";
 import { apiFetch } from "../auth/api";
 import { IconButton } from "../components/ui/button";
@@ -29,6 +29,7 @@ export function Workspace({
   const [petShown, setPetShown] = useState(true);
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
+  const reconnectRef = useRef<(() => void) | null>(null);
   const awake = usePetAwake(stamp);
 
   const onSize = useCallback(
@@ -123,14 +124,21 @@ export function Workspace({
           onSize={onSize}
           onOutput={onOutput}
           onOpenChange={onOpenChange}
+          reconnectRef={reconnectRef}
         />
         {closed && (
           <div className="empty">
             <Mascot />
             <p className="empty-big">Nothing playing.</p>
             <p className="muted">
-              Use the reconnect button, or press <kbd>⌘K</kbd> for commands.
+              Reconnect, or press <kbd>⌘K</kbd> for commands.
             </p>
+            <button
+              className="btn reconnect"
+              onClick={() => reconnectRef.current?.()}
+            >
+              Reconnect
+            </button>
           </div>
         )}
       </main>

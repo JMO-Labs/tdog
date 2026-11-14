@@ -23,6 +23,7 @@ export function TerminalPane({
   onSize,
   onOutput,
   onOpenChange,
+  reconnectRef,
 }: {
   onClosed?: () => void;
   onSize?: (cols: number, rows: number) => void;
@@ -31,6 +32,8 @@ export function TerminalPane({
   onOpenChange?: (open: boolean) => void;
   /** False while a layout animation runs; the terminal refits once true. */
   settled?: boolean;
+  /** Filled with a function that reconnects the session. */
+  reconnectRef?: { current: (() => void) | null };
 } = {}) {
   const settledRef = useRef(settled);
   const renderer = useRef<TerminalRenderer | null>(null);
@@ -40,6 +43,13 @@ export function TerminalPane({
 
   const hooks = useRef({ onSize, onOutput });
   hooks.current = { onSize, onOutput };
+  useEffect(() => {
+    if (!reconnectRef) return;
+    reconnectRef.current = () => session.current?.connect();
+    return () => {
+      reconnectRef.current = null;
+    };
+  }, [reconnectRef]);
   useEffect(() => {
     onOpenChange?.(state.status === "open");
   }, [state.status, onOpenChange]);

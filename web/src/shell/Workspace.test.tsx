@@ -6,10 +6,13 @@ let cb: {
   onSize?: (c: number, r: number) => void;
   onOutput?: () => void;
   onOpenChange?: (open: boolean) => void;
+  reconnectRef?: { current: (() => void) | null };
 } = {};
+const reconnect = vi.fn();
 vi.mock("../TerminalPane", () => ({
   TerminalPane: (p: typeof cb) => {
     cb = p;
+    if (p.reconnectRef) p.reconnectRef.current = reconnect;
     return <div data-testid="terminal-pane" />;
   },
 }));
@@ -85,4 +88,13 @@ test("palette commands: theme, settings, sign out", async () => {
     fireEvent.click(screen.getByText("Sign out"));
   });
   expect(out).toHaveBeenCalled();
+});
+
+test("empty state offers a visible Reconnect action", () => {
+  render(<Workspace onSignedOut={() => {}} />);
+  act(() => cb.onOpenChange?.(true));
+  act(() => cb.onOpenChange?.(false));
+  expect(screen.getByText("Nothing playing.")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Reconnect" }));
+  expect(reconnect).toHaveBeenCalledTimes(1);
 });

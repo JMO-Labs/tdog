@@ -121,6 +121,10 @@
   background: var(--pattern) var(--surface-2);
   background-size: 180px;
 }
+.empty .reconnect {
+  pointer-events: auto;
+  justify-self: center;
+}
 .empty-big {
   font: 400 26px var(--display);
   margin: 0;
