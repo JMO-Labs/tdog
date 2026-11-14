@@ -1,0 +1,68 @@
+import { useCallback, useRef } from "react";
+import { TerminalPane } from "../TerminalPane";
+import { Mascot } from "./Mascot";
+
+/** Open state of one pane; owned by Workspace so it survives remounts. */
+export type PaneOpen = { open: boolean; everOpen: boolean };
+
+/** One pane's terminal plus its closed overlay and reconnect handle. */
+export function PaneSlot({
+  id,
+  settled,
+  state,
+  onOpenChange,
+  onClosed,
+  onSize,
+  onOutput,
+  onLatency,
+}: {
+  id: string;
+  settled: boolean;
+  state?: PaneOpen;
+  onOpenChange: (id: string, open: boolean) => void;
+  onClosed?: () => void;
+  onSize: (id: string, cols: number, rows: number) => void;
+  onOutput: () => void;
+  onLatency: (id: string, ms: number) => void;
+}) {
+  const { open, everOpen } = state ?? { open: false, everOpen: false };
+  const reconnectRef = useRef<(() => void) | null>(null);
+  const onOpen = useCallback(
+    (o: boolean) => onOpenChange(id, o),
+    [id, onOpenChange],
+  );
+  const onSz = useCallback(
+    (c: number, r: number) => onSize(id, c, r),
+    [id, onSize],
+  );
+  const onLat = useCallback((ms: number) => onLatency(id, ms), [id, onLatency]);
+  return (
+    <div style={{ position: "relative", height: "100%" }}>
+      <TerminalPane
+        sceneKey={id}
+        settled={settled}
+        onClosed={onClosed}
+        onSize={onSz}
+        onOutput={onOutput}
+        onLatency={onLat}
+        onOpenChange={onOpen}
+        reconnectRef={reconnectRef}
+      />
+      {everOpen && !open && (
+        <div className="empty">
+          <Mascot />
+          <p className="empty-big">Nothing playing.</p>
+          <p className="muted">
+            Reconnect, or press <kbd>⌘K</kbd> for commands.
+          </p>
+          <button
+            className="btn reconnect"
+            onClick={() => reconnectRef.current?.()}
+          >
+            Reconnect
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

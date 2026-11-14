@@ -1,0 +1,63 @@
+.split-root,
+.split,
+.pane {
+  min-width: 0;
+  min-height: 0;
+}
+.split-root {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  /* dockview sashes and view separators */
+  --dv-sash-color: transparent;
+  --dv-active-sash-color: var(--accent, #6cf);
+  --dv-separator-border: var(--border, #0006);
+}
+.split-root > .pane,
+.split-root > .split {
+  flex: 1;
+}
+.split {
+  width: 100%;
+  height: 100%;
+}
+.pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 24px;
+  padding: 0 4px;
+  background: var(--surface-2);
+}
+.pane-btn {
+  all: unset;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.pane-btn:hover,
+.pane-btn:focus-visible {
+  opacity: 1;
+  outline: 1px solid currentColor;
+}
+.pane-btn.danger:hover {
+  color: var(--danger, #f55);
+}
+.pane-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.pane-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
