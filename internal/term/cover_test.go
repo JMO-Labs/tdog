@@ -59,6 +59,14 @@ func TestAttachToExitedSessionReturnsNil(t *testing.T) {
 // server conn before serve. It returns the client conn.
 func serveVia(t *testing.T, s *Session, pre func(*websocket.Conn)) (*websocket.Conn, context.Context) {
 	t.Helper()
+	c, ctx, _ := serveViaDone(t, s, pre)
+	return c, ctx
+}
+
+// serveViaDone is serveVia plus a channel closed once the server handler
+// (and so s.serve) has returned.
+func serveViaDone(t *testing.T, s *Session, pre func(*websocket.Conn)) (*websocket.Conn, context.Context, <-chan struct{}) {
+	t.Helper()
 	done := make(chan struct{})
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer close(done)
@@ -80,7 +88,7 @@ func serveVia(t *testing.T, s *Session, pre func(*websocket.Conn)) (*websocket.C
 	}
 	t.Cleanup(func() { _ = c.CloseNow() })
 	t.Cleanup(func() { <-done })
-	return c, ctx
+	return c, ctx, done
 }
 
 func TestServeExitedSessionClosesSocket(t *testing.T) {
@@ -93,8 +101,12 @@ func TestServeExitedSessionClosesSocket(t *testing.T) {
 
 func TestServeReturnsWhenSessionControlWriteFails(t *testing.T) {
 	s := fakeSession(false)
-	serveVia(t, s, func(c *websocket.Conn) { _ = c.CloseNow() })
-	// serve returned (handler done is awaited in cleanup) and detached.
+	_, _, done := serveViaDone(t, s, func(c *websocket.Conn) { _ = c.CloseNow() })
+	select { // serve must return and detach before att is inspected
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("serve did not return")
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.att != nil {
