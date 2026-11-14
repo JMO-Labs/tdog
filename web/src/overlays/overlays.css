@@ -24,6 +24,16 @@
   margin: 0 0 10px;
   font: 400 26px/1.1 var(--display);
 }
+.overlay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.overlay-head .overlay-title {
+  margin: 0;
+}
 .dialog.sheet {
   position: fixed;
   top: 0;

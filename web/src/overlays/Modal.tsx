@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ENTER, EXIT, pickVariant } from "../motion/variants";
+import { IconButton } from "../components/ui/button";
+import { Icon } from "../shell/icons";
 import "./overlays.css";
 
 export type ModalProps = {
@@ -13,6 +15,8 @@ export type ModalProps = {
   hideTitle?: boolean;
 };
 
+type Extra = { className: string; sheet?: boolean; closable?: boolean };
+
 /** Shared base for Dialog and Sheet: portal, backdrop, Esc, motion-kit enter/exit. */
 export function Modal({
   open,
@@ -22,7 +26,8 @@ export function Modal({
   hideTitle,
   className,
   sheet,
-}: ModalProps & { className: string; sheet?: boolean }) {
+  closable,
+}: ModalProps & Extra) {
   const reduced = !!useReducedMotion();
   const [pair] = useState(() => ({
     enter: pickVariant(ENTER, false),
@@ -31,6 +36,12 @@ export function Modal({
   const enter = reduced ? pickVariant(ENTER, true) : pair.enter;
   const exit = reduced ? pickVariant(EXIT, true) : pair.exit;
   const ref = useRef<HTMLDivElement>(null);
+  // Return focus to whatever opened the modal once it closes.
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement as HTMLElement | null;
+    return () => opener?.focus?.();
+  }, [open]);
   useEffect(() => {
     if (open && !ref.current?.contains(document.activeElement))
       ref.current?.focus();
@@ -82,7 +93,16 @@ export function Modal({
               }
             }}
           >
-            {!hideTitle && <h2 className="overlay-title">{title}</h2>}
+            {closable ? (
+              <div className="overlay-head">
+                <h2 className="overlay-title">{title}</h2>
+                <IconButton label="Close" shortcut="Esc" onClick={onClose}>
+                  <Icon name="close" />
+                </IconButton>
+              </div>
+            ) : (
+              !hideTitle && <h2 className="overlay-title">{title}</h2>
+            )}
             {children}
           </motion.div>
         </motion.div>
