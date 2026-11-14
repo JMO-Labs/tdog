@@ -29,7 +29,7 @@ const (
 
 // Config selects and parameterises the shell targets.
 type Config struct {
-	Shell string        // container target shell; "" means $SHELL, then /bin/sh
+	Shell string        // container target shell; "" means $SHELL, bash, then /bin/sh
 	SSH   SSHConfig     // ssh-host target
 	Audit *audit.Logger // nil = off
 
@@ -49,13 +49,7 @@ func HandlerAudit(shell string, l *audit.Logger) http.Handler {
 // NewHandler serves /ws/term; ?target=ssh-host|container picks the target
 // (default container). Callers must wrap it with authentication.
 func NewHandler(cfg Config) http.Handler {
-	shell := cfg.Shell
-	if shell == "" {
-		shell = os.Getenv("SHELL")
-	}
-	if shell == "" {
-		shell = "/bin/sh"
-	}
+	shell := pickShell(cfg.Shell, os.Getenv("SHELL"), lookPath)
 	reg := cfg.Registry
 	if reg == nil {
 		reg = NewRegistry(cfg.Audit, cfg.Scrollback)
@@ -136,7 +130,7 @@ func (w *waiter) finish(code int) {
 
 func spawnPTY(shell string) (*session, error) {
 	cmd := exec.Command(shell)
-	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
+	cmd.Env = shellEnv(shell, os.Environ())
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Rows: 24, Cols: 80})
 	if err != nil {
 		log.Printf("term: start %s: %v", shell, err)

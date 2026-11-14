@@ -28,6 +28,14 @@ vi.mock("@xterm/xterm", () => ({
     onData(cb: any) {
       this.handlers.data = cb;
     }
+    onTitleChange(cb: any) {
+      this.handlers.title = cb;
+    }
+    parser = {
+      registerOscHandler: (id: number, cb: any) => {
+        this.handlers["osc" + id] = cb;
+      },
+    };
     onBinary(cb: any) {
       this.handlers.binary = cb;
     }
@@ -116,4 +124,16 @@ test("resize callback fires with cols and rows; no-op before registration", () =
   r.onResize(cb);
   m.term.handlers.resize({ cols: 90, rows: 20 });
   expect(cb).toHaveBeenCalledWith(90, 20);
+});
+
+test("title and OSC 7 cwd are reported", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  const titles: string[] = [];
+  const cwds: (string | undefined)[] = [];
+  r.onTitle((t) => titles.push(t));
+  r.onCwd((c) => cwds.push(c));
+  m.term.handlers.title("vim");
+  expect(m.term.handlers.osc7("file://h/tmp/a%20b")).toBe(true);
+  expect(titles).toEqual(["vim"]);
+  expect(cwds).toEqual(["/tmp/a b"]);
 });

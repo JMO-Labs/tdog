@@ -6,6 +6,7 @@ import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
+import { titleStore } from "./terminal/titles";
 import { findSessionId } from "./terminal/sessions";
 
 /** Retry cadence while a dropped socket is being re-established. */
@@ -126,6 +127,12 @@ export function TerminalPane({
       );
       session.current = s;
       renderer.current = r;
+      r.onTitle?.((title) => {
+        if (keyRef.current) titleStore.set(keyRef.current, { title });
+      });
+      r.onCwd?.((cwd) => {
+        if (keyRef.current) titleStore.set(keyRef.current, { cwd });
+      });
       r.setTheme(themeStore.terminal());
       const offTheme = themeStore.subscribe(() =>
         r.setTheme(themeStore.terminal()),

@@ -30,6 +30,10 @@ export interface TerminalRenderer {
   size(): { cols: number; rows: number };
   onInput(cb: (data: Uint8Array) => void): void;
   onResize(cb: (cols: number, rows: number) => void): void;
+  /** Shell title changes (OSC 0/2). Optional: renderers may not support it. */
+  onTitle?(cb: (title: string) => void): void;
+  /** Shell cwd reports (OSC 7), already decoded to a path. */
+  onCwd?(cb: (cwd: string) => void): void;
   setTheme(theme: TerminalTheme): void;
   dispose(): void;
 }

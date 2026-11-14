@@ -15,6 +15,7 @@ import {
   type SplitviewReadyEvent,
 } from "dockview-react";
 import "dockview-react/dist/styles/dockview.css";
+import { usePaneTitle } from "../terminal/titles";
 import { Icon } from "../shell/icons";
 import { PANE_MIME, dragPane, draggedPane, dropZone, type Zone } from "./dnd";
 import { mountSplit, orientation } from "./dock";
@@ -74,6 +75,7 @@ function NodeView({ n }: { n: Node }) {
 function Pane({ id }: { id: string }) {
   const { p, settled } = useContext(SharedCtx)!;
   const [zone, setZone] = useState<Zone | null>(null);
+  const title = usePaneTitle(id, "Container");
   const over = (e: DragEvent<HTMLElement>) => {
     const d = draggedPane();
     if (!d || !p.onMove) {
@@ -130,6 +132,9 @@ function Pane({ id }: { id: string }) {
         }}
       >
         <SnapPicker onSnap={p.onSnap} />
+        <span className="pane-title" data-testid="pane-title">
+          {title}
+        </span>
         <span className="spacer" />
         {p.onSwap && p.onMoveToScene && (
           <PaneMenu

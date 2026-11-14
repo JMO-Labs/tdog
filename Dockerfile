@@ -16,7 +16,7 @@ COPY --from=web /src/web/dist web/dist
 RUN CGO_ENABLED=0 go build -o /tdog ./cmd/tdog
 
 FROM debian:trixie-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates zsh && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates bash zsh && rm -rf /var/lib/apt/lists/*
 COPY --from=go /tdog /usr/local/bin/tdog
 EXPOSE 7681
 USER 1000

@@ -15,6 +15,7 @@ vi.mock("./dock", async (orig) => {
   };
 });
 
+import { titleStore } from "../terminal/titles";
 import { SETTLE_MS, SplitView } from "./SplitView";
 
 afterEach(() => vi.useRealTimers());
@@ -73,4 +74,13 @@ test("a sash relayout reports the ratio; panes settle after it stops", () => {
   expect(screen.getByTestId("pane-b").dataset.settled).toBe("false");
   act(() => vi.advanceTimersByTime(1));
   expect(screen.getByTestId("pane-b").dataset.settled).toBe("true");
+});
+
+test("pane header shows the shell title, falling back to Container", () => {
+  titleStore.set("a", { title: "vim" });
+  setup(two);
+  expect(screen.getAllByTestId("pane-title").map((e) => e.textContent)).toEqual(
+    ["vim", "Container"],
+  );
+  titleStore.clear();
 });
