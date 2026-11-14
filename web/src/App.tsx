@@ -2,13 +2,17 @@ import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { TerminalPane } from "./TerminalPane";
 import { getStatus, setUnauthorizedHandler } from "./auth/api";
 import { LoginScreen, SetupScreen } from "./auth/screens";
-import { isBenchRoute } from "./routes";
+import { isBenchRoute, isKitRoute } from "./routes";
 
 // Dead-code eliminated from production builds (import.meta.env.DEV is false).
 const BenchPage = import.meta.env.DEV
   ? lazy(() =>
       import("./bench/BenchPage").then((m) => ({ default: m.BenchPage })),
     )
+  : null;
+
+const KitPage = import.meta.env.DEV
+  ? lazy(() => import("./kit/KitPage").then((m) => ({ default: m.KitPage })))
   : null;
 
 type View = "loading" | "setup" | "login" | "app";
@@ -18,6 +22,12 @@ export function App() {
     return (
       <Suspense fallback={null}>
         <BenchPage />
+      </Suspense>
+    );
+  if (KitPage && isKitRoute(import.meta.env.DEV, location.pathname))
+    return (
+      <Suspense fallback={null}>
+        <KitPage />
       </Suspense>
     );
   return <AuthApp />;

@@ -3,6 +3,7 @@
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/600.css";
 @import "@fontsource/jetbrains-mono/800.css";
+@import "./components/ui/ui.css";
 
 /* Design tokens: copied from docs/design/mockup.css. Light on :root, dark via prefers-color-scheme / [data-theme=dark]. */
 :root {
@@ -46,7 +47,19 @@
     color-scheme: dark;
   }
 }
-:root[data-theme="dark"] {
+[data-theme="light"] {
+  --bg: #e4e2ea;
+  --surface: #fbfaff;
+  --surface-2: #efecf7;
+  --fg: #160b2e;
+  --muted: #4e4568;
+  --line: #160b2e;
+  --shadow: #160b2e;
+  --link: #0b7285;
+  --term-bg: #1a0f33;
+  color-scheme: light;
+}
+[data-theme="dark"] {
   --bg: #160b2e;
   --surface: #24164a;
   --surface-2: #2f1d5e;
