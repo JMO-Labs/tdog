@@ -1,0 +1,44 @@
+{
+  "name": "Llama Skin",
+  "description": "Gunmetal with green LCD readouts, inspired by classic media-player skins.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#b6f5c0",
+    "bg": "#14181b",
+    "cursor": "#39ff7a",
+    "selection": "#27402f",
+    "ansi": [
+      "#7f9a88",
+      "#ff6b6b",
+      "#39ff7a",
+      "#f0d060",
+      "#6fa8ff",
+      "#c792ea",
+      "#4fe0d0",
+      "#c9d6cd",
+      "#9ab4a2",
+      "#ff8f8f",
+      "#7dffa8",
+      "#f7e28a",
+      "#95c0ff",
+      "#dcb0f5",
+      "#85f0e4",
+      "#f0fff4"
+    ]
+  },
+  "chrome": {
+    "bg": "#0e1113",
+    "surface": "#1d2327",
+    "surface-2": "#2a3237",
+    "fg": "#c9d6cd",
+    "muted": "#8fa397",
+    "line": "#050607",
+    "shadow": "#39ff7a",
+    "link": "#39ff7a",
+    "term-bg": "#14181b",
+    "term-fg": "#b6f5c0",
+    "term-dim": "#7f9a88"
+  }
+}
