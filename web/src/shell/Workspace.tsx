@@ -31,6 +31,7 @@ import { Tabs } from "./Tabs";
 import { OverflowMenu } from "./OverflowMenu";
 import { useMaxWidth } from "./useBreakpoint";
 import "./shell.css";
+import "./narrow.css";
 
 type Size = { cols: number; rows: number };
 const noop = () => {};
@@ -224,6 +225,13 @@ export function Workspace({
         {narrow ? (
           <OverflowMenu
             items={[
+              {
+                label: "Studio",
+                icon: "brush",
+                hint: "Coming in v0.4",
+                disabled: true,
+                onSelect: noop,
+              },
               { label: "Theme", icon: mode, onSelect: cycle },
               {
                 label: "Kill all shells",

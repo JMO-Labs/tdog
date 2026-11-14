@@ -7,6 +7,8 @@ export type OverflowItem = {
   icon: IconName;
   onSelect: () => void;
   danger?: boolean;
+  disabled?: boolean;
+  hint?: string;
 };
 
 /** `⋯` button with a small popup menu; closes on Escape or outside press. */
@@ -43,13 +45,16 @@ export function OverflowMenu({ items }: { items: OverflowItem[] }) {
               key={i.label}
               role="menuitem"
               className={i.danger ? "danger" : undefined}
+              aria-disabled={i.disabled || undefined}
               onClick={() => {
+                if (i.disabled) return;
                 setOpen(false);
                 i.onSelect();
               }}
             >
               <Icon name={i.icon} />
               {i.label}
+              {i.hint && <small className="ovf-hint">{i.hint}</small>}
             </button>
           ))}
         </div>
