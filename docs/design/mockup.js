@@ -6,9 +6,30 @@ const store = { get: (k) => { try { return localStorage.getItem(k); } catch { re
 
 // Every animation goes through here: reduced motion swaps the keyframes for a plain fade.
 function anim(el, frames, opts = {}) {
-  if (RM) return el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: opts.fill });
-  return el.animate(frames, { duration: 500, easing: "cubic-bezier(.34,1.56,.64,1)", ...opts });
+  if (RM) { const o = opts.out ? [1, 0] : [0, 1]; return el.animate([{ opacity: o[0] }, { opacity: o[1] }], { duration: 200, fill: opts.fill }); }
+  const { out, ...o } = opts;
+  return el.animate(frames, { duration: 500, easing: "cubic-bezier(.34,1.56,.64,1)", ...o });
 }
+// Entry/exit pools: every pop-in and pop-out picks one at random, so the chrome never repeats itself.
+const ENTER = [
+  [{ transform: "translateY(-90px) rotate(-8deg)", opacity: 0 }, { transform: "translateY(8px) rotate(2deg)", opacity: 1, offset: .7 }, { transform: "none" }], // drop + bounce
+  [{ transform: "scale(0) rotate(-200deg)", opacity: 0 }, { transform: "scale(1.08) rotate(6deg)", opacity: 1, offset: .75 }, { transform: "none" }], // spin pop
+  [{ transform: "translateX(-140px) skewX(30deg)", opacity: 0 }, { transform: "translateX(12px) skewX(-10deg)", opacity: 1, offset: .7 }, { transform: "none" }], // skate in
+  [{ transform: "perspective(700px) rotateX(90deg)", opacity: 0 }, { transform: "perspective(700px) rotateX(-14deg)", opacity: 1, offset: .7 }, { transform: "none" }], // flip down
+  [{ transform: "scale(1.8,.15)", opacity: 0 }, { transform: "scale(.85,1.2)", opacity: 1, offset: .45 }, { transform: "scale(1.05,.95)", offset: .75 }, { transform: "none" }], // squash + stretch
+  [{ transform: "scale(1.7) rotate(-12deg)", opacity: 0 }, { transform: "scale(.94)", opacity: 1, offset: .6 }, { transform: "none" }], // sticker slap
+];
+const EXIT = [
+  [{ transform: "none", opacity: 1 }, { transform: "rotate(18deg) translate(60px,-40px) scale(.7)", opacity: 0 }], // peel
+  [{ transform: "none", opacity: 1 }, { transform: "scale(0) rotate(220deg)", opacity: 0 }], // spin down the drain
+  [{ transform: "none" }, { transform: "translateY(-14px) rotate(-4deg)", offset: .2 }, { transform: "translateY(110vh) rotate(28deg)", opacity: .7 }], // gravity
+  [{ transform: "none", opacity: 1 }, { transform: "scale(1.18)", opacity: 1, offset: .3 }, { transform: "scale(0)", opacity: 0 }], // pop
+  [{ transform: "none", opacity: 1 }, { transform: "translateX(120vw) skewX(-30deg)", opacity: .5 }], // skate off
+  [{ transform: "none", opacity: 1 }, { transform: "perspective(700px) rotateY(90deg)", opacity: 0 }], // flip away
+];
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const enter = (el, o = {}) => anim(el, pick(ENTER), { duration: 560, ...o });
+const exit = (el, o = {}) => anim(el, pick(EXIT), { duration: 440, easing: "cubic-bezier(.5,0,.75,0)", fill: "forwards", out: true, ...o });
 
 // ---------- icons (stroke, 24 grid) ----------
 const P = {
@@ -41,11 +62,6 @@ function applyTheme() {
   $$(".theme-toggle").forEach((b) => { b.innerHTML = svg(mode); b.dataset.tip = `Theme: ${mode[0].toUpperCase() + mode.slice(1)}`; });
 }
 function cycleTheme() { mode = MODES[(MODES.indexOf(mode) + 1) % 3]; store.set("tdog.theme", mode); applyTheme(); }
-function setFont(f) {
-  document.documentElement.dataset.display = f;
-  store.set("tdog.font", f);
-  $$("[data-font]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.font === f));
-}
 
 // ---------- tooltips: 400ms delay, instant while moving between neighbours ----------
 const tip = $("#tip");
@@ -84,8 +100,9 @@ function toast(kind, detail, head) {
   const tilt = (Math.random() * 6 - 3).toFixed(1);
   el.style.rotate = tilt + "deg";
   $("#toasts").append(el);
-  anim(el, [{ transform: "scale(1.6) rotate(-12deg)", opacity: 0 }, { transform: "scale(.94)", opacity: 1, offset: .6 }, { transform: "none" }], { duration: 420 });
-  const peel = () => anim(el, [{ transform: "none", opacity: 1 }, { transform: "rotate(14deg) translate(40px,-20px) scale(.8)", opacity: 0 }], { duration: 320, easing: "ease-in", fill: "forwards" }).finished.then(() => el.remove());
+  enter(el);
+  let gone = false;
+  const peel = () => { if (!gone) { gone = true; exit(el).finished.then(() => el.remove()); } };
   el.onclick = peel;
   setTimeout(peel, 4200);
 }
@@ -163,10 +180,10 @@ async function signOn(msg = "Signed in. Your 3 shells are right where you left t
   const o = $("#dialup"), steps = $$(".steps li");
   steps.forEach((s) => s.classList.remove("on"));
   o.hidden = false;
-  anim($(".dialup-card"), [{ transform: "scale(.7) rotate(-4deg)", opacity: 0 }, { transform: "none", opacity: 1 }]);
+  enter($(".dialup-card"));
   for (const s of steps) { await new Promise((r) => setTimeout(r, RM ? 150 : 650)); s.classList.add("on"); anim(s.firstElementChild, [{ transform: "scale(1.6) rotate(-20deg)" }, { transform: "none" }], { duration: 400 }); }
   await new Promise((r) => setTimeout(r, 400));
-  o.hidden = true;
+  close(o);
   location.hash = "workspace";
   confetti();
   toast("success", msg);
@@ -211,11 +228,11 @@ $("#panes").addEventListener("click", (e) => {
   const p = b.closest(".pane");
   if (b.dataset.act === "close") {
     tip.hidden = true;
-    anim(p, [{ transform: "none", opacity: 1 }, { transform: "rotate(18deg) translate(60px,-40px) scale(.7)", opacity: 0, clipPath: "polygon(0 0,100% 0,100% 100%,0 100%)" }], { duration: 420, easing: "cubic-bezier(.5,0,.75,0)", fill: "forwards" }).finished.then(() => { p.remove(); toast("success", "Pane closed. Shell ended cleanly.", "Peace out!"); });
+    exit(p).finished.then(() => { p.remove(); toast("success", "Pane closed. Shell ended cleanly.", "Peace out!"); });
   } else {
     const n = pane("empty", "new pane", "container");
     p.after(n);
-    anim(n, [{ transform: "scale(.3) rotate(-8deg)", opacity: 0 }, { transform: "scale(1.06) rotate(2deg)", opacity: 1, offset: .7 }, { transform: "none" }], { duration: 560 });
+    enter(n);
   }
 });
 // fake streaming output keeps the pet awake
@@ -267,7 +284,13 @@ $("#pet").onclick = () => { $("#sw-pet").setAttribute("aria-checked", "false"); 
 
 // ---------- dialogs ----------
 function open(el) { el.hidden = false; return el; }
-function close(el) { el.hidden = true; }
+// Overlays animate their card out; drawer/studio animate themselves. Then hide and clear the held frame.
+function close(el) {
+  if (!el || el.hidden || el.dataset.closing) return;
+  const t = el.classList.contains("overlay") ? el.firstElementChild : el;
+  el.dataset.closing = "1";
+  exit(t).finished.then(() => { el.hidden = true; delete el.dataset.closing; t.getAnimations().forEach((a) => a.cancel()); });
+}
 document.addEventListener("click", (e) => { const c = e.target.closest("[data-close]"); if (c) close(c.closest(".overlay, .drawer, .studio")); });
 $$(".overlay").forEach((o) => o.addEventListener("click", (e) => { if (e.target === o) close(o); }));
 function openDrawer() { anim(open($("#drawer")), [{ transform: "translateX(110%) rotate(4deg)" }, { transform: "none" }], { duration: 520 }); }
@@ -297,15 +320,17 @@ $("#theme-cards").addEventListener("click", (e) => {
 });
 $$(".nav-item").forEach((n) => n.addEventListener("click", () => {
   $$(".nav-item").forEach((x) => x.setAttribute("aria-current", x === n));
-  $$("[data-pane-body]").forEach((b) => (b.hidden = b.dataset.paneBody !== n.dataset.pane));
+  $$("[data-pane-body]").forEach((b) => {
+    const show = b.dataset.paneBody === n.dataset.pane;
+    if (show && b.hidden) { b.hidden = false; enter(b, { duration: 480 }); } else if (!show) b.hidden = true;
+  });
 }));
-$$("[data-font]").forEach((b) => b.addEventListener("click", () => setFont(b.dataset.font)));
 $$("[data-sticker]").forEach((s) => (s.innerHTML = CASSETTE));
 
 // kill-all hold
 let holdT, holdStart;
 const ring = $("#ring");
-$("#open-kill").onclick = () => anim(open($("#kill")).firstElementChild, [{ transform: "scale(.5) rotate(8deg)", opacity: 0 }, { transform: "none", opacity: 1 }]);
+$("#open-kill").onclick = () => enter(open($("#kill")).firstElementChild);
 function holdTick() {
   const p = Math.min(1, (Date.now() - holdStart) / 1600);
   ring.style.strokeDashoffset = 327 * (1 - p);
@@ -334,7 +359,7 @@ function renderCmds() {
   sel = Math.min(sel, Math.max(0, list.length - 1));
   $("#cmdk-list").innerHTML = list.length ? list.map((c, i) => `<li role="option" aria-selected="${i === sel}" data-i="${CMDS.indexOf(c)}">${c[0]}${c[1] ? `<kbd>${c[1]}</kbd>` : ""}</li>`).join("") : `<li>As if! No command matches.</li>`;
 }
-function openCmdk() { open($("#cmdk")); $("#cmdk-q").value = ""; sel = 0; renderCmds(); anim($(".cmdk"), [{ transform: "translateY(-30px) scale(.9)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 380 }); $("#cmdk-q").focus(); }
+function openCmdk() { open($("#cmdk")); $("#cmdk-q").value = ""; sel = 0; renderCmds(); enter($(".cmdk")); $("#cmdk-q").focus(); }
 function runCmd(i) { close($("#cmdk")); CMDS[i][2](); }
 $("#open-cmdk").onclick = openCmdk;
 $("#cmdk-q").addEventListener("input", () => { sel = 0; renderCmds(); });
@@ -387,7 +412,6 @@ $$("[data-gag]").forEach((b) => b.addEventListener("click", () => { if (b.datase
 // ---------- start ----------
 paintIcons();
 applyTheme();
-setFont(store.get("tdog.font") || "lilita");
 seedPanes();
 drawPet(false);
 addEventListener("hashchange", route);

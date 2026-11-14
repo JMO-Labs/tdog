@@ -23,7 +23,6 @@
   --bg: #160b2e; --surface: #24164a; --surface-2: #2f1d5e; --fg: #f5f0ff; --muted: #b8add9;
   --line: #05020d; --shadow: #8b3dff; --link: #22d3ee; --term-bg: #0f0820; color-scheme: dark;
 }
-:root[data-display="bungee"] { --display: "Bungee", Impact, system-ui, sans-serif; }
 
 html, body { height: 100%; }
 body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--mono); overflow: hidden; }
