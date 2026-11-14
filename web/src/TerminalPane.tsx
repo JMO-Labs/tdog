@@ -17,7 +17,16 @@ function wsUrl(): string {
   return `${proto}://${location.host}/ws/term`;
 }
 
-export function TerminalPane({ onClosed }: { onClosed?: () => void } = {}) {
+export function TerminalPane({
+  onClosed,
+  settled = true,
+}: {
+  onClosed?: () => void;
+  /** False while a layout animation runs; the terminal refits once true. */
+  settled?: boolean;
+} = {}) {
+  const settledRef = useRef(settled);
+  const renderer = useRef<TerminalRenderer | null>(null);
   const host = useRef<HTMLDivElement>(null);
   const session = useRef<TerminalSession | null>(null);
   const [state, setState] = useState<SessionState>({ status: "connecting" });
@@ -27,6 +36,11 @@ export function TerminalPane({ onClosed }: { onClosed?: () => void } = {}) {
   }, [state.status, onClosed]);
 
   useEffect(() => {
+    settledRef.current = settled;
+    if (settled) renderer.current?.resize();
+  }, [settled]);
+
+  useEffect(() => {
     const el = host.current!;
     let cleanup = () => {};
     let cancelled = false;
@@ -34,8 +48,11 @@ export function TerminalPane({ onClosed }: { onClosed?: () => void } = {}) {
       if (cancelled) return r.dispose();
       const s = new TerminalSession(r, () => new WebSocket(wsUrl()), setState);
       session.current = s;
+      renderer.current = r;
       s.connect();
-      const ro = new ResizeObserver(() => r.resize());
+      const ro = new ResizeObserver(() => {
+        if (settledRef.current) r.resize();
+      });
       ro.observe(el);
       cleanup = () => {
         ro.disconnect();
