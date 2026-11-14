@@ -4,6 +4,7 @@
 @import "@fontsource/jetbrains-mono/600.css";
 @import "@fontsource/jetbrains-mono/800.css";
 @import "./components/ui/ui.css";
+@import "./auth/auth.css";
 
 /* Design tokens: copied from docs/design/mockup.css. Light on :root, dark via prefers-color-scheme / [data-theme=dark]. */
 :root {

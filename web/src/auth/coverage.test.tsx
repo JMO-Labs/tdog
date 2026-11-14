@@ -24,7 +24,9 @@ test("status fetch failure falls back to login", async () => {
     mockFetch({ "GET /api/status": new Response("x", { status: 500 }) }),
   );
   render(<App />);
-  expect(await screen.findByRole("heading", { name: /sign in/i })).toBeTruthy();
+  expect(
+    await screen.findByRole("heading", { name: /welcome back/i }),
+  ).toBeTruthy();
 });
 
 test("api.login maps an unexpected status to other", async () => {

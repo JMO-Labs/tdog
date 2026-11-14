@@ -67,7 +67,7 @@ function AuthApp() {
 
   if (view === "loading")
     return (
-      <div role="status" style={{ color: "#eee", padding: 16 }}>
+      <div role="status" style={{ color: "var(--fg)", padding: 16 }}>
         Loading…
       </div>
     );

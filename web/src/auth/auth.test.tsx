@@ -33,7 +33,7 @@ test("first run shows setup, then login, then the terminal", async () => {
   type(screen.getByLabelText("Password"), "longenough1");
   type(screen.getByLabelText("Confirm password"), "longenough1");
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
-  await screen.findByRole("heading", { name: /sign in/i });
+  await screen.findByRole("heading", { name: /welcome back/i });
   type(screen.getByLabelText("Password"), "longenough1");
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
   expect(await screen.findByTestId("terminal-pane")).toBeTruthy();
@@ -168,9 +168,9 @@ test("2FA: password, then code, then the terminal", async () => {
   render(<App />);
   type(await screen.findByLabelText("Password"), "longenough1");
   submit();
-  const code = await screen.findByLabelText("Authentication code");
-  await waitFor(() => expect(document.activeElement).toBe(code));
-  type(code, "123456");
+  const first = await screen.findByLabelText("Digit 1");
+  await waitFor(() => expect(document.activeElement).toBe(first));
+  fireEvent.paste(first, { clipboardData: { getData: () => "123456" } });
   submit();
   expect(await screen.findByTestId("terminal-pane")).toBeTruthy();
   expect(bodies(f)).toEqual([
@@ -192,13 +192,13 @@ test("2FA: a bad code shows an error and keeps the code field", async () => {
   render(<App />);
   type(await screen.findByLabelText("Password"), "longenough1");
   submit();
-  const code = await screen.findByLabelText("Authentication code");
-  type(code, "000000");
+  const first = await screen.findByLabelText("Digit 1");
+  fireEvent.paste(first, { clipboardData: { getData: () => "000000" } });
   submit();
   expect((await screen.findByRole("alert")).textContent).toMatch(
     /invalid authentication code/i,
   );
-  expect(screen.getByLabelText("Authentication code")).toBeTruthy();
+  expect(screen.getByLabelText("Digit 1")).toBeTruthy();
 });
 
 test("any 401 from an authenticated API call returns to login", async () => {
@@ -214,4 +214,39 @@ test("any 401 from an authenticated API call returns to login", async () => {
   await screen.findByTestId("terminal-pane");
   await apiFetch("/api/data");
   expect(await screen.findByRole("button", { name: /sign in/i })).toBeTruthy();
+});
+
+test("boot wordmark plays once per session and any key skips", async () => {
+  sessionStorage.clear();
+  vi.stubGlobal(
+    "fetch",
+    mockFetch({ "GET /api/status": status(false, false) }),
+  );
+  const { unmount } = render(<App />);
+  await screen.findByLabelText("Password");
+  expect(screen.getByRole("heading", { name: "tdog" })).toBeTruthy();
+  expect(sessionStorage.getItem("tdog.booted")).toBe("1");
+  fireEvent.keyDown(window, { key: "a" });
+  unmount();
+  render(<App />);
+  await screen.findByLabelText("Password");
+  expect(document.querySelector("[data-booting]")).toBeNull();
+});
+
+test("2FA: pasted code submits and recovery code can be used", async () => {
+  let n = 0;
+  const f = mockFetch({
+    "GET /api/status": status(false, false),
+    "POST /api/login": () => (n++ === 0 ? totpReq() : json({ csrf: "x" })),
+  });
+  vi.stubGlobal("fetch", f);
+  render(<App />);
+  type(await screen.findByLabelText("Password"), "longenough1");
+  submit();
+  await screen.findByLabelText("Digit 1");
+  fireEvent.click(screen.getByRole("button", { name: /recovery code/i }));
+  type(screen.getByLabelText("Recovery code"), "abcd-efgh");
+  submit();
+  expect(await screen.findByTestId("terminal-pane")).toBeTruthy();
+  expect(bodies(f)[1]).toEqual({ password: "longenough1", code: "abcd-efgh" });
 });

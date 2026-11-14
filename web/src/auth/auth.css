@@ -1,0 +1,133 @@
+/* Auth screens: ported from docs/design/mockup.css (.auth, .wordmark, .tape, .otp). */
+.auth {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 32px 16px;
+  background: var(--pattern) var(--bg);
+  background-size: 180px;
+  animation: drift 60s linear infinite;
+}
+@keyframes drift {
+  to {
+    background-position: 360px 180px;
+  }
+}
+.auth-stack {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 4px;
+}
+.card {
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-hard-lg);
+  padding: 28px;
+}
+.card-title {
+  font: 400 30px/1.05 var(--display);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+.auth-card {
+  display: grid;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+.auth-card .muted {
+  margin: 0;
+}
+.auth-card .btn.wide {
+  width: 100%;
+}
+.corner {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 5;
+}
+.wordmark {
+  font-family: var(--display);
+  line-height: 0.9;
+  margin: 0;
+  color: transparent;
+  letter-spacing: 0.01em;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 3px,
+      rgb(22 11 46 / 0.28) 3px 5px
+    ),
+    linear-gradient(180deg, var(--pink) 10%, var(--yellow) 90%);
+  background-size:
+    100% 200%,
+    100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-stroke: 0.045em var(--ink);
+  paint-order: stroke fill;
+  filter: drop-shadow(0.03em 0.03em 0 var(--ink))
+    drop-shadow(0.05em 0.05em 0 var(--purple))
+    drop-shadow(0.02em 0.02em 0 var(--ink));
+  animation: scan 6s linear infinite;
+}
+.wordmark span {
+  display: inline-block;
+  background: inherit;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.wordmark.big {
+  font-size: clamp(72px, 18vw, 150px);
+  transform: rotate(-4deg);
+  text-align: center;
+}
+@keyframes scan {
+  to {
+    background-position:
+      0 100%,
+      0 0;
+  }
+}
+.tape {
+  height: 16px;
+  border: 2px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin-top: -6px;
+}
+.tape i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--purple) 0 8px,
+    var(--pink) 8px 16px
+  );
+  transition: width 0.4s var(--spring);
+}
+.tape-label {
+  font-size: 12px;
+  margin-top: -10px;
+}
+.otp {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+.otp-box {
+  text-align: center;
+  font: 800 22px var(--mono);
+  padding: 10px 0;
+}
+@media (max-width: 480px) {
+  .card {
+    padding: 22px;
+  }
+}
