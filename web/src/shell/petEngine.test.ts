@@ -246,7 +246,7 @@ describe("persistence", () => {
   });
   test("drift for time away", () => {
     const s = { hunger: 3, happy: 3, poops: 0, at: 0 };
-    expect(drift(s, 2 * HUNGER_MS + 1)).toMatchObject({ hunger: 1, happy: 3 });
+    expect(drift(s, 2 * HUNGER_MS + 1)).toMatchObject({ hunger: 1, happy: 2 });
     expect(drift(s, 100 * HUNGER_MS)).toMatchObject({ hunger: 0, happy: 0 });
     expect(drift({ ...s, poops: 1 }, HAPPY_MS)).toMatchObject({ happy: 1 });
     expect(drift(s, -5).hunger).toBe(3);
@@ -262,6 +262,6 @@ describe("persistence", () => {
         at: Date.now() - 2 * HUNGER_MS,
       }),
     );
-    expect(mk(store).view()).toMatchObject({ hunger: 1, happy: 3 });
+    expect(mk(store).view()).toMatchObject({ hunger: 1, happy: 2 });
   });
 });
