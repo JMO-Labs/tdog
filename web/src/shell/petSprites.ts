@@ -104,6 +104,40 @@ export interface FaceOpts {
   /** 0 none, 1 up, 2 down */
   tail?: 0 | 1 | 2;
   nose?: boolean;
+  /** Theme costume rows, anchored to the top of the head. */
+  costume?: Rows;
+}
+
+export const COSTUME_MAX_W = 14;
+export const COSTUME_MAX_H = 6;
+
+/** Costume pixels: 1..6 rows, each 1..14 of '#' and '.'. */
+export function validCostumeRows(rows: unknown): rows is string[] {
+  return (
+    Array.isArray(rows) &&
+    rows.length >= 1 &&
+    rows.length <= COSTUME_MAX_H &&
+    rows.every(
+      (r) =>
+        typeof r === "string" &&
+        r.length >= 1 &&
+        r.length <= COSTUME_MAX_W &&
+        /^[#.]+$/.test(r),
+    )
+  );
+}
+
+/** Costume lit cells for a pet whose sprite origin is (ox, oy): centred over the 14-wide head, top row on the head's top row. */
+export function costumeCells(rows: Rows, ox: number, oy: number): Cell[] {
+  const w = Math.max(...rows.map((r) => r.length));
+  return spr(rows, ox + ((COSTUME_MAX_W - w) >> 1), oy);
+}
+
+/** Lying pose, optionally dressed. */
+export function lying(ox: number, oy: number, costume?: Rows): Cell[] {
+  const c = spr(LYING, ox, oy);
+  if (costume) c.push(...costumeCells(costume, ox, oy));
+  return c;
 }
 
 /** Lit cells of a sprite placed at (ox, oy). */
@@ -120,7 +154,7 @@ export function spr(rows: Rows, ox: number, oy: number): Cell[] {
 /** Dogbert's front view: body, legs, nose, eyes, optional mouth and tail. */
 export function face(
   eyes: string,
-  { legs = 0, mouth = false, tail = 0, nose = true }: FaceOpts = {},
+  { legs = 0, mouth = false, tail = 0, nose = true, costume }: FaceOpts = {},
   ox = 0,
   oy = 0,
 ): Cell[] {
@@ -130,5 +164,6 @@ export function face(
   for (const [x, y] of EYES[eyes] ?? []) c.push([ox + x, oy + y]);
   if (mouth) c.push([ox + 6, oy + 7], [ox + 7, oy + 7]);
   if (tail) c.push([ox + 11, oy + 10], [ox + 12, oy + (tail === 1 ? 9 : 11)]);
+  if (costume) c.push(...costumeCells(costume, ox, oy));
   return c;
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/JMO-Labs/tdog/internal/auth"
+	"github.com/JMO-Labs/tdog/internal/config"
 	"github.com/JMO-Labs/tdog/internal/term"
 	"github.com/JMO-Labs/tdog/web"
 )
@@ -27,7 +28,11 @@ func NewWithUI(ui fs.FS) http.Handler {
 // NewSecured returns the embedded-UI handler behind a's authentication
 // middleware, with the login/logout/setup routes and the terminal WebSocket
 // (ADR-0003) registered.
-func NewSecured(ui fs.FS, a *auth.Auth) http.Handler {
+func NewSecured(ui fs.FS, a *auth.Auth) http.Handler { return NewSecuredPresets(ui, a, nil) }
+
+// NewSecuredPresets is NewSecured plus the preset and schema routes backed by
+// store (skipped when nil). They sit behind the same session + CSRF checks.
+func NewSecuredPresets(ui fs.FS, a *auth.Auth, store *config.Store) http.Handler {
 	mux := http.NewServeMux()
 	a.Register(mux)
 	reg := term.NewRegistry(a.Audit(), 0)
@@ -35,6 +40,9 @@ func NewSecured(ui fs.FS, a *auth.Auth) http.Handler {
 	mux.Handle("GET /api/sessions", reg.ListHandler())
 	mux.Handle("GET /api/shell", term.ShellInfoHandler(term.PickShell("")))
 	reg.RegisterKill(mux)
+	if store != nil {
+		store.Register(mux)
+	}
 	mux.Handle("/", NewWithUI(ui))
 	return a.Middleware(mux)
 }

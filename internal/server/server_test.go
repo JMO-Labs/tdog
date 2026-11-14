@@ -7,6 +7,7 @@ import (
 	"testing/fstest"
 
 	"github.com/JMO-Labs/tdog/internal/auth"
+	"github.com/JMO-Labs/tdog/internal/config"
 )
 
 func TestHealthz(t *testing.T) {
@@ -57,6 +58,23 @@ func TestKillRoutesAuthenticated(t *testing.T) {
 		h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, p, nil))
 		if rec.Code != http.StatusUnauthorized {
 			t.Fatalf("%s: %d", p, rec.Code)
+		}
+	}
+}
+
+func TestPresetRoutesAuthenticated(t *testing.T) {
+	a, err := auth.New(t.TempDir(), func(string, ...any) {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := NewSecuredPresets(fstest.MapFS{"index.html": {Data: []byte("x")}}, a, config.NewStore(t.TempDir()))
+	for _, m := range []string{"GET", "PUT", "DELETE"} {
+		for _, p := range []string{"/api/presets/terminal", "/api/presets/terminal/x", "/api/schema/terminal"} {
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, httptest.NewRequest(m, p, nil))
+			if rec.Code != http.StatusUnauthorized {
+				t.Fatalf("%s %s: %d", m, p, rec.Code)
+			}
 		}
 	}
 }

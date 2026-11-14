@@ -11,6 +11,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd cmd
 COPY internal internal
+COPY docs/schema docs/schema
 COPY web/embed.go web/embed.go
 COPY --from=web /src/web/dist web/dist
 RUN CGO_ENABLED=0 go build -o /tdog ./cmd/tdog
