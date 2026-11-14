@@ -115,3 +115,16 @@ test("latency chip shows ms, and a dial-up icon above 150 ms", () => {
     screen.getByTestId("latency").querySelector("[data-icon=modem]"),
   ).toBeTruthy();
 });
+
+test("palette lists a Theme command per bundled theme and switches", async () => {
+  render(<Workspace />);
+  fireEvent.click(screen.getByRole("button", { name: "Command palette" }));
+  const input = screen.getByRole("combobox");
+  fireEvent.change(input, { target: { value: "Theme: Night" } });
+  const opt = screen.getByRole("option", { name: /Theme: Night Market/ });
+  expect(opt).toBeTruthy();
+  fireEvent.click(opt);
+  expect(localStorage.getItem("tdog.theme.id")).toBe("night-market");
+  const { themeStore } = await import("../theme/store");
+  themeStore.select("memphis-pop");
+});
