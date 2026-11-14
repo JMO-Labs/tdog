@@ -325,18 +325,18 @@ describe("theme schema error branches", () => {
     shapes: [],
   };
   it("rejects malformed motif geometry", () => {
-    expect(bad((t) => (t.chrome.motif = { ...motif, viewBox: [0, 0, 20] }))).toBe(
-      false,
-    );
+    expect(
+      bad((t) => (t.chrome.motif = { ...motif, viewBox: [0, 0, 20] })),
+    ).toBe(false);
     expect(
       bad((t) => (t.chrome.motif = { ...motif, viewBox: [0, 0, 0, 20] })),
     ).toBe(false);
     expect(bad((t) => (t.chrome.motif = { ...motif, tile: [0, 20] }))).toBe(
       false,
     );
-    expect(
-      bad((t) => (t.chrome.motif = { ...motif, shapes: "nope" })),
-    ).toBe(false);
+    expect(bad((t) => (t.chrome.motif = { ...motif, shapes: "nope" }))).toBe(
+      false,
+    );
     expect(
       bad(
         (t) =>
