@@ -183,7 +183,7 @@ func TestDetachAuditedBeforeAttachedClears(t *testing.T) {
 	r := newRig(t)
 	c, _ := r.start("")
 	_ = c.CloseNow()
-	waitFor(t, func() bool { return !r.reg.List()[0].Attached })
+	waitFor(t, func() bool { l := r.reg.List(); return len(l) == 1 && !l[0].Attached })
 	if !hasEvent(r, "detach") {
 		t.Fatal("detach not logged by the time the session showed detached")
 	}
