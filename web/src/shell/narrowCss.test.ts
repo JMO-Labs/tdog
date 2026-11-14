@@ -20,3 +20,8 @@ test("sheets go full width on phones", () => {
 test("tabs can shrink and scroll on phones", () => {
   expect(shell).toMatch(/\.ws-head \.tabs\s*\{[^}]*flex: 0 1 auto/);
 });
+
+test("status bar never hides overflow on phones", () => {
+  const xs = shell.slice(shell.indexOf("@media (max-width: 479px)"));
+  expect(xs).not.toMatch(/overflow-x:\s*hidden/);
+});

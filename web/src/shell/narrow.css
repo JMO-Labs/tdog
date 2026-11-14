@@ -109,9 +109,6 @@
   .status .hide-xs {
     display: none;
   }
-  .status {
-    overflow-x: hidden;
-  }
   .status .spacer {
     min-width: 0;
   }
