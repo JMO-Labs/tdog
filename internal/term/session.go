@@ -122,13 +122,17 @@ func (s *Session) serve(c *websocket.Conn) {
 	s.auditEvent("attach")
 	defer s.auditEvent("detach")
 	defer s.detach(a)
-	ctx := a.ctx
-	write := func(f []byte) error { return c.Write(ctx, websocket.MessageBinary, f) }
+	// Socket I/O must not use a.ctx: cancelling a context mid-Read/Write makes
+	// coder/websocket tear the connection down, so the close reason (e.g.
+	// "replaced") would never reach the client. a.ctx only stops the output loop.
+	ioctx, stop := context.WithCancel(context.Background())
+	defer stop()
+	write := func(f []byte) error { return c.Write(ioctx, websocket.MessageBinary, f) }
 
 	go func() {
 		defer a.cancel()
-		pumpInput(ctx, func(ctx context.Context) ([]byte, error) {
-			_, data, err := c.Read(ctx)
+		pumpInput(ioctx, func(ctx context.Context) ([]byte, error) {
+			_, data, err := c.Read(ioctx)
 			return data, err
 		}, s.s.w, s.s.resize, write)
 	}()
@@ -144,7 +148,7 @@ func (s *Session) serve(c *websocket.Conn) {
 		replay = replay[n:]
 	}
 
-	if pumpOutput(ctx, write, a.ch) { // shell exited
+	if pumpOutput(a.ctx, write, a.ch) { // shell exited
 		wctx, wcancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer wcancel()
 		_ = c.Write(wctx, websocket.MessageBinary, frame.ExitControl(s.s.wait.code))
