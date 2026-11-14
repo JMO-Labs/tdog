@@ -29,6 +29,8 @@ function setup(tree: Node) {
     onClose: vi.fn(),
     onRatio: vi.fn(),
     onSnap: vi.fn(() => []),
+    onSwap: vi.fn(),
+    onMoveToScene: vi.fn(),
     renderPane: (id: string, settled: boolean) => (
       <div data-testid={`pane-${id}`} data-settled={settled} />
     ),
@@ -78,11 +80,35 @@ test("a sash relayout reports the ratio; panes settle after it stops", () => {
   expect(screen.getByTestId("pane-b").dataset.settled).toBe("true");
 });
 
-test("pane header shows the shell title, falling back to Container", () => {
+test("pane header shows the shell title, falling back to Shell N", () => {
   titleStore.set("a", { title: "vim" });
   setup(two);
   expect(screen.getAllByTestId("pane-title").map((e) => e.textContent)).toEqual(
-    ["vim", "Container"],
+    ["vim", "Shell 2"],
   );
   titleStore.clear();
+});
+
+test("header shows title and target chip, no dockview tab strip", () => {
+  const { r } = setup(two);
+  const heads = r.container.querySelectorAll(".pane-head");
+  expect(heads).toHaveLength(2);
+  expect(heads[0].querySelector(".title")?.textContent).toBe("Shell 1");
+  expect(heads[1].querySelector(".title")?.textContent).toBe("Shell 2");
+  expect(heads[0].querySelector(".chip")?.textContent).toBe("local");
+  expect(
+    r.container.querySelector(".dv-tabs-and-actions-container"),
+  ).toBeNull();
+  expect(screen.getAllByRole("button", { name: "Pane menu" })).toHaveLength(2);
+});
+
+test("focus ring follows the last focused or pressed pane", () => {
+  const { r } = setup(two);
+  const pane = (id: string) => r.container.querySelector(`[data-pane=${id}]`)!;
+  expect(pane("a").getAttribute("data-focused")).toBe("false");
+  fireEvent.focus(screen.getAllByRole("button", { name: "Split down" })[0]);
+  expect(pane("a").getAttribute("data-focused")).toBe("true");
+  fireEvent.pointerDown(screen.getByTestId("pane-b"));
+  expect(pane("a").getAttribute("data-focused")).toBe("false");
+  expect(pane("b").getAttribute("data-focused")).toBe("true");
 });

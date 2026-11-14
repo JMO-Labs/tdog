@@ -30,7 +30,10 @@ import {
 import { Pet, usePetAwake } from "./pet";
 import { usePetEngine } from "./usePetEngine";
 import { Tabs } from "./Tabs";
+import { OverflowMenu } from "./OverflowMenu";
+import { useMaxWidth } from "./useBreakpoint";
 import "./shell.css";
+import "./narrow.css";
 
 type Size = { cols: number; rows: number };
 const noop = () => {};
@@ -209,6 +212,8 @@ export function Workspace({
   const size = shown ? sizes[shown] : undefined;
   const latency = shown !== undefined ? (latencies[shown] ?? null) : null;
 
+  const narrow = useMaxWidth(639);
+
   return (
     <div className="ws">
       <header className="ws-head">
@@ -227,22 +232,45 @@ export function Workspace({
           onDropPane={dropOnTab}
         />
         <div className="spacer" />
-        <IconButton
-          label="Studio"
-          tip="Coming in v0.4"
-          aria-disabled="true"
-          onClick={noop}
-        >
-          <Icon name="brush" />
-        </IconButton>
-        <IconButton
-          label="Theme"
-          tip={themeLabel}
-          shortcut="⇧⌘L"
-          onClick={cycle}
-        >
-          <Icon name={mode} />
-        </IconButton>
+        {narrow ? (
+          <OverflowMenu
+            items={[
+              {
+                label: "Studio",
+                icon: "brush",
+                hint: "Coming in v0.4",
+                disabled: true,
+                onSelect: noop,
+              },
+              { label: "Theme", icon: mode, onSelect: cycle },
+              {
+                label: "Kill all shells",
+                icon: "power",
+                danger: true,
+                onSelect: () => setKill("all"),
+              },
+            ]}
+          />
+        ) : (
+          <>
+            <IconButton
+              label="Studio"
+              tip="Coming in v0.4"
+              aria-disabled="true"
+              onClick={noop}
+            >
+              <Icon name="brush" />
+            </IconButton>
+            <IconButton
+              label="Theme"
+              tip={themeLabel}
+              shortcut="⇧⌘L"
+              onClick={cycle}
+            >
+              <Icon name={mode} />
+            </IconButton>
+          </>
+        )}
         <IconButton
           label="Settings"
           shortcut="⌘,"
@@ -250,13 +278,15 @@ export function Workspace({
         >
           <Icon name="gear" />
         </IconButton>
-        <IconButton
-          label="Kill all shells"
-          variant="danger"
-          onClick={() => setKill("all")}
-        >
-          <Icon name="power" />
-        </IconButton>
+        {!narrow && (
+          <IconButton
+            label="Kill all shells"
+            variant="danger"
+            onClick={() => setKill("all")}
+          >
+            <Icon name="power" />
+          </IconButton>
+        )}
       </header>
 
       <main className="panes">
@@ -286,7 +316,7 @@ export function Workspace({
         </span>
         <span className="chip">{shellName}</span>
         {size && (
-          <span className="chip num">
+          <span className="chip num hide-xs">
             {size.cols}×{size.rows}
           </span>
         )}
@@ -294,7 +324,7 @@ export function Workspace({
         {latency !== null && (
           <span
             data-testid="latency"
-            className={`chip num${latency > SLOW_MS ? " slow" : ""}`}
+            className={`chip num hide-xs${latency > SLOW_MS ? " slow" : ""}`}
             title={
               latency > SLOW_MS
                 ? "Dial-up speeds. Typing may feel sluggish."

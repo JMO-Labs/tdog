@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pop } from "../motion/Pop";
 import { Icon } from "../shell/icons";
+import { roving } from "./roving";
 import { TEMPLATES, type TemplateId } from "./templates";
 
 const AREAS: Record<TemplateId, string[]> = {
@@ -44,7 +45,7 @@ export function SnapPicker({ onSnap }: SnapPickerProps) {
       onKeyDown={(e) => e.key === "Escape" && close()}
     >
       <button
-        className="pane-btn"
+        className="pane-btn icon-btn sm"
         aria-label="Layouts"
         title="Snap layouts"
         aria-haspopup="true"
@@ -55,7 +56,22 @@ export function SnapPicker({ onSnap }: SnapPickerProps) {
       </button>
       <div className="snap-pop" hidden={!open}>
         <Pop show={open}>
-          <div className="snap-panel" role="group" aria-label="Snap layouts">
+          <div
+            className="snap-panel pop-card"
+            role="group"
+            aria-label="Snap layouts"
+            onKeyDown={(e) =>
+              roving(
+                e,
+                "button.snap",
+                { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 3, ArrowUp: -3 },
+                false,
+              )
+            }
+          >
+            <h3 className="pop-title">
+              {ask ? "Apply layout?" : "Pick a layout"}
+            </h3>
             {ask ? (
               <div className="snap-ask" role="alertdialog">
                 <p>
