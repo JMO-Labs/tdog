@@ -132,7 +132,8 @@ test("pane menu: swap with next and move to scene work from the keyboard", () =>
   fireEvent.click(
     within(section(a)).getByRole("button", { name: "Pane menu" }),
   );
-  fireEvent.click(screen.getByRole("menuitem", { name: /Move to scene 2/ }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Move to scene" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "scene 2" }));
   const first = document.querySelector(".scene-view")!;
   expect(
     [...first.querySelectorAll("[data-testid=terminal-pane]")].map(
