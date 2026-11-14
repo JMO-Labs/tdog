@@ -41,7 +41,7 @@ const dt = () => ({
 });
 const fire = (
   el: Element,
-  type: "dragStart" | "dragOver" | "drop" | "dragEnd",
+  type: "dragStart" | "dragOver" | "dragLeave" | "drop" | "dragEnd",
   data: ReturnType<typeof dt>,
   pos: { clientX?: number; clientY?: number } = {},
 ) => {
@@ -139,4 +139,27 @@ test("pane menu: swap with next and move to scene work from the keyboard", () =>
       (e) => (e as HTMLElement).dataset.scene,
     ),
   ).toEqual([b]);
+});
+
+test("leaving a pane clears its drop highlight", () => {
+  const { a, b } = twoPanes();
+  const d = dt();
+  fire(head(a), "dragStart", d);
+  fire(section(b), "dragOver", d, { clientX: 5, clientY: 50 });
+  expect(screen.getByTestId("drop-zone")).toBeTruthy();
+  fire(section(b), "dragLeave", d);
+  expect(screen.queryByTestId("drop-zone")).toBeNull();
+});
+
+test("leaving a scene tab clears its drop target highlight", () => {
+  const { a } = twoPanes();
+  fireEvent.click(screen.getByRole("button", { name: "New scene" }));
+  fireEvent.click(screen.getAllByRole("tab")[0]);
+  const d = dt();
+  fire(head(a), "dragStart", d);
+  const wrap = screen.getAllByRole("tab")[1].closest(".tab-wrap")!;
+  fire(wrap, "dragOver", d);
+  expect(wrap.getAttribute("data-drop")).not.toBeNull();
+  fire(wrap, "dragLeave", d);
+  expect(wrap.getAttribute("data-drop")).toBeNull();
 });
