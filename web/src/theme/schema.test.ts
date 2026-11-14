@@ -84,4 +84,9 @@ describe("bundled themes", () => {
       }
     });
   }
+  it("rejects a non-string font", () => {
+    const t = ok();
+    t.font = 5;
+    expect(validateTheme(t).ok).toBe(false);
+  });
 });
