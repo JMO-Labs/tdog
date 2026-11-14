@@ -48,12 +48,8 @@ describe("petFrame with a live view", () => {
     reading: false,
     hop: false,
     attention: false,
-  } as const;
-  const cap = (
-    o: Partial<typeof v> & { act?: never },
-    tick = 0,
-    reduced = false,
-  ) =>
+  };
+  const cap = (o: Record<string, unknown>, tick = 0, reduced = false) =>
     petFrame({
       awake: true,
       tick,
