@@ -10,7 +10,7 @@ import {
 
 afterEach(() => vi.unstubAllGlobals());
 const stub = (r: Response) => {
-  const f = vi.fn(async () => r.clone());
+  const f = vi.fn(async (..._a: unknown[]) => r.clone());
   vi.stubGlobal("fetch", f);
   return f;
 };
