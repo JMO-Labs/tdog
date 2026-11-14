@@ -5,7 +5,7 @@ import {
   render,
   screen,
 } from "@testing-library/react";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi, type Mock } from "vitest";
 
 type P = {
   sceneKey: string;
@@ -13,7 +13,7 @@ type P = {
   reconnectRef: { current: (() => void) | null };
 };
 const props: Record<string, P> = {};
-const reconnects: Record<string, ReturnType<typeof vi.fn>> = {};
+const reconnects: Record<string, Mock<() => void>> = {};
 vi.mock("../terminal/sessions", () => ({
   killScene: vi.fn(),
   findSessionId: vi.fn(),
@@ -21,7 +21,7 @@ vi.mock("../terminal/sessions", () => ({
 vi.mock("../TerminalPane", () => ({
   TerminalPane: (p: P) => {
     props[p.sceneKey] = p;
-    reconnects[p.sceneKey] ??= vi.fn();
+    reconnects[p.sceneKey] ??= vi.fn<() => void>();
     p.reconnectRef.current = reconnects[p.sceneKey];
     return <div data-testid="terminal-pane" />;
   },
