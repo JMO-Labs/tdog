@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { Button, IconButton } from "./button";
 
@@ -44,4 +44,20 @@ test("icon button needs a label and supports sm", () => {
   const b = screen.getByRole("button", { name: "Close" });
   expect(b.className).toContain("icon-btn");
   expect(b.className).toContain("sm");
+});
+
+test("icon button shows a styled tooltip after 400 ms, no native title", () => {
+  vi.useFakeTimers();
+  render(
+    <IconButton label="Close" shortcut="Esc">
+      x
+    </IconButton>,
+  );
+  const b = screen.getByRole("button", { name: "Close" });
+  expect(b.getAttribute("title")).toBeNull();
+  fireEvent.mouseEnter(b);
+  expect(screen.queryByRole("tooltip")).toBeNull();
+  act(() => void vi.advanceTimersByTime(400));
+  expect(screen.getByRole("tooltip").textContent).toContain("Close");
+  vi.useRealTimers();
 });

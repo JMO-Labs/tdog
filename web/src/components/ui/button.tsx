@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes } from "react";
+import { Tooltip } from "../../overlays/Tooltip";
 import { cn } from "../../lib/utils";
 
 type Variant = "default" | "primary" | "danger" | "ghost";
@@ -32,11 +33,13 @@ export function Button({
 
 type IconButtonProps = Omit<ButtonProps, "variant" | "aria-label"> & {
   label: string;
+  shortcut?: string;
   variant?: "default" | "danger";
 };
 
 export function IconButton({
   label,
+  shortcut,
   variant = "default",
   size = "md",
   className,
@@ -44,17 +47,18 @@ export function IconButton({
   ...props
 }: IconButtonProps) {
   return (
-    <button
-      type={type}
-      aria-label={label}
-      title={label}
-      className={cn(
-        "icon-btn",
-        variant === "danger" && "danger",
-        size === "sm" && "sm",
-        className,
-      )}
-      {...props}
-    />
+    <Tooltip label={label} shortcut={shortcut}>
+      <button
+        type={type}
+        aria-label={label}
+        className={cn(
+          "icon-btn",
+          variant === "danger" && "danger",
+          size === "sm" && "sm",
+          className,
+        )}
+        {...props}
+      />
+    </Tooltip>
   );
 }
