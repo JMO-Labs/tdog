@@ -79,10 +79,12 @@ function chrome(v: unknown, at: string): string | null {
   return null;
 }
 
-function variant(v: unknown, at: string): string | null {
+function variant(v: unknown, at: string, root = false): string | null {
   if (!isObj(v)) return `${at} must be an object`;
-  const extra = unknownKeys(v, ["terminal", "chrome"]);
-  if (extra.length) return `${at}: unknown key ${extra[0]}`;
+  if (!root) {
+    const extra = unknownKeys(v, ["terminal", "chrome"]);
+    if (extra.length) return `${at}: unknown key ${extra[0]}`;
+  }
   return (
     terminal(v.terminal, `${at}.terminal`) ?? chrome(v.chrome, `${at}.chrome`)
   );
@@ -111,7 +113,7 @@ export function validateTheme(v: unknown): Result {
   if (v.font !== undefined && typeof v.font !== "string")
     return fail("font must be a string");
   const err =
-    variant(v, "theme") ??
+    variant(v, "theme", true) ??
     (v.light === undefined ? null : variant(v.light, "light"));
   return err ? fail(err) : { ok: true, theme: v as unknown as ThemeData };
 }
