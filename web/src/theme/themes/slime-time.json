@@ -1,0 +1,47 @@
+{
+  "name": "Slime Time",
+  "description": "Splat orange and slime green with confetti, inspired by 90s kids TV.",
+  "appearance": "dark",
+  "pattern": "confetti",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#f2ffe0",
+    "bg": "#1a1226",
+    "cursor": "#ff7a1a",
+    "selection": "#4a2f6a",
+    "ansi": [
+      "#9a8cb0",
+      "#ff6b4a",
+      "#9cf02a",
+      "#ffb21a",
+      "#6aa8ff",
+      "#e070ff",
+      "#3de0c0",
+      "#f2ffe0",
+      "#b8aacb",
+      "#ff8f70",
+      "#b8ff5a",
+      "#ffcb55",
+      "#95c4ff",
+      "#ee9aff",
+      "#7aeed4",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#120b1c",
+    "surface": "#241838",
+    "surface-2": "#33224f",
+    "fg": "#f2ffe0",
+    "muted": "#b8aacb",
+    "line": "#07040c",
+    "shadow": "#ff7a1a",
+    "link": "#9cf02a",
+    "pink": "#ff7a1a",
+    "cyan": "#9cf02a",
+    "yellow": "#ffb21a",
+    "term-bg": "#1a1226",
+    "term-fg": "#f2ffe0",
+    "term-dim": "#9a8cb0"
+  }
+}
