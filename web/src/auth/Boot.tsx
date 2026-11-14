@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { BOOT_MS, type BootId } from "./boot";
 import "./boot.css";
 
@@ -89,14 +89,21 @@ export function Boot({
   variant: Exclude<BootId, "drop"> | "fade";
   onDone: () => void;
 }) {
+  const fired = useRef(false);
   useEffect(() => {
-    const t = setTimeout(onDone, variant === "fade" ? 300 : BOOT_MS);
-    addEventListener("keydown", onDone, { once: true });
-    addEventListener("pointerdown", onDone, { once: true });
+    fired.current = false;
+    const finish = () => {
+      if (fired.current) return;
+      fired.current = true;
+      onDone();
+    };
+    const t = setTimeout(finish, variant === "fade" ? 300 : BOOT_MS);
+    addEventListener("keydown", finish);
+    addEventListener("pointerdown", finish);
     return () => {
       clearTimeout(t);
-      removeEventListener("keydown", onDone);
-      removeEventListener("pointerdown", onDone);
+      removeEventListener("keydown", finish);
+      removeEventListener("pointerdown", finish);
     };
   }, [variant, onDone]);
 
