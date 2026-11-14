@@ -253,3 +253,69 @@
   background: var(--yellow);
   color: var(--ink);
 }
+.tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.tabs {
+  overflow-x: auto;
+}
+.tab-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+}
+.tab-x {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0 8px 0 0;
+  margin-left: -8px;
+  opacity: 0.5;
+}
+.tab-x:hover {
+  opacity: 1;
+}
+.tab-edit {
+  font: inherit;
+  font-weight: 800;
+  width: 9em;
+  padding: 6px 10px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: inherit;
+}
+.tab-add {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 3px 3px 0 var(--shadow);
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1;
+  color: inherit;
+  cursor: pointer;
+}
+.scene-view {
+  position: absolute;
+  inset: 0;
+}
+.scene-view[data-active="false"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}

@@ -8,19 +8,27 @@ import { usePref } from "../settings/prefs";
 import { THEMES } from "../theme/registry";
 import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
-import { SplitView } from "../layout/SplitView";
-import { leaves } from "../layout/tree";
-import { useLayout } from "../layout/useLayout";
+import { Dialog } from "../overlays/Dialog";
+import { clearLayout } from "../layout/store";
+import { newId } from "../layout/tree";
+import { killScene } from "../terminal/sessions";
 import { Icon } from "./icons";
-import { Mascot } from "./Mascot";
-import { PaneSlot, type PaneOpen } from "./PaneSlot";
+import { type PaneOpen } from "./PaneSlot";
+import { SceneView } from "./SceneView";
+import {
+  addScene,
+  closeScene,
+  loadScenes,
+  renameScene,
+  reorderScene,
+  saveScenes,
+} from "./scenes";
 import { Pet, usePetAwake } from "./pet";
 import { Tabs } from "./Tabs";
 import "./shell.css";
 
 type Size = { cols: number; rows: number };
 const noop = () => {};
-const SCENE = "scene 1";
 /** Latency above this gets the dial-up icon. */
 const SLOW_MS = 150;
 
@@ -40,7 +48,38 @@ export function Workspace({
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
   const awake = usePetAwake(stamp);
-  const layout = useLayout(SCENE);
+  const [sc, setSc] = useState(loadScenes);
+  const [leafMap, setLeafMap] = useState<Record<string, string[]>>({});
+  const [closing, setClosing] = useState<string | null>(null);
+  useEffect(() => saveScenes(sc), [sc]);
+  const onLeaves = useCallback(
+    (scene: string, ids: string[]) =>
+      setLeafMap((m) => ({ ...m, [scene]: ids })),
+    [],
+  );
+  const select = useCallback(
+    (id: string) => setSc((s) => ({ ...s, active: id })),
+    [],
+  );
+  const add = useCallback(() => setSc((s) => addScene(s, newId("sc"))), []);
+  const finishClose = useCallback(
+    (id: string) => {
+      (leafMap[id] ?? []).forEach((p) => void killScene(p));
+      clearLayout(id);
+      setLeafMap((m) => {
+        const rest = { ...m };
+        delete rest[id];
+        return rest;
+      });
+      setSc((s) => closeScene(s, id));
+    },
+    [leafMap],
+  );
+  const requestClose = (id: string) => {
+    const running = (leafMap[id] ?? []).some((p) => paneOpen[p]?.open);
+    if (running) setClosing(id);
+    else finishClose(id);
+  };
 
   const onSize = useCallback(
     (id: string, cols: number, rows: number) =>
@@ -70,14 +109,24 @@ export function Workspace({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key === ",") {
         e.preventDefault();
         setSettings(true);
+      } else if (e.key === "t" && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        add();
+      } else if (/^[1-9]$/.test(e.key) && !e.shiftKey && !e.altKey) {
+        const target = sc.scenes[Number(e.key) - 1];
+        if (target) {
+          e.preventDefault();
+          select(target.id);
+        }
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  }, [add, select, sc.scenes]);
 
   useEffect(() => {
     const offs = [
@@ -103,17 +152,23 @@ export function Workspace({
         run: () => setSettings(true),
       }),
       registerCommand({
+        id: "scene:new",
+        title: "New scene",
+        shortcut: "⌘T",
+        run: add,
+      }),
+      registerCommand({
         id: "signout",
         title: "Sign out",
         run: signOut,
       }),
     ];
     return () => offs.forEach((f) => f());
-  }, [cycle, signOut]);
+  }, [cycle, signOut, add]);
 
   const themeLabel = `Theme: ${mode[0].toUpperCase()}${mode.slice(1)}`;
   // Status bar follows the focused pane, else the first one.
-  const ids = layout.tree ? leaves(layout.tree) : [];
+  const ids = leafMap[sc.active] ?? [];
   const shown = focused && ids.includes(focused) ? focused : ids[0];
   const size = shown ? sizes[shown] : undefined;
   const latency = shown !== undefined ? (latencies[shown] ?? null) : null;
@@ -124,7 +179,15 @@ export function Workspace({
         <span className="wordmark small" aria-label="tdog">
           tdog
         </span>
-        <Tabs scenes={["scene 1"]} active={0} />
+        <Tabs
+          scenes={sc.scenes}
+          active={sc.active}
+          onSelect={select}
+          onAdd={add}
+          onRename={(id, n) => setSc((s) => renameScene(s, id, n))}
+          onClose={requestClose}
+          onReorder={(id, to) => setSc((s) => reorderScene(s, id, to))}
+        />
         <div className="spacer" />
         <IconButton
           label="Studio"
@@ -161,42 +224,21 @@ export function Workspace({
       </header>
 
       <main className="panes">
-        {layout.tree ? (
-          <SplitView
-            tree={layout.tree}
-            onSplit={layout.split}
-            onClose={layout.close}
-            onRatio={layout.ratio}
-            onSnap={layout.snap}
-            renderPane={(id, settled) => (
-              <div
-                style={{ height: "100%" }}
-                onFocusCapture={() => setFocused(id)}
-                onPointerDownCapture={() => setFocused(id)}
-              >
-                <PaneSlot
-                  id={id}
-                  settled={settled}
-                  state={paneOpen[id]}
-                  onOpenChange={onPaneOpen}
-                  onClosed={onClosed}
-                  onSize={onSize}
-                  onOutput={onOutput}
-                  onLatency={onLatency}
-                />
-              </div>
-            )}
+        {sc.scenes.map((x) => (
+          <SceneView
+            key={x.id}
+            scene={x.id}
+            active={x.id === sc.active}
+            paneOpen={paneOpen}
+            onLeaves={onLeaves}
+            onFocus={setFocused}
+            onOpenChange={onPaneOpen}
+            onClosed={onClosed}
+            onSize={onSize}
+            onOutput={onOutput}
+            onLatency={onLatency}
           />
-        ) : (
-          <div className="empty" data-testid="empty-panes">
-            <Mascot />
-            <p className="empty-big">No panes.</p>
-            <p className="muted">Every shell is closed.</p>
-            <button className="btn reconnect" onClick={layout.reset}>
-              New pane
-            </button>
-          </div>
-        )}
+        ))}
       </main>
 
       <footer className="status">
@@ -235,6 +277,27 @@ export function Workspace({
         </button>
       </footer>
 
+      <Dialog
+        open={closing !== null}
+        title="Close scene?"
+        onClose={() => setClosing(null)}
+      >
+        <p>This scene has running shells. Closing it hangs them up.</p>
+        <div className="dialog-actions">
+          <button className="btn" onClick={() => setClosing(null)}>
+            Keep
+          </button>
+          <button
+            className="btn danger"
+            onClick={() => {
+              if (closing) finishClose(closing);
+              setClosing(null);
+            }}
+          >
+            Close scene
+          </button>
+        </div>
+      </Dialog>
       <CommandPalette open={palette} onOpenChange={setPalette} />
       <Sheet
         open={settings}
