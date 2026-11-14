@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { TerminalSession, type SessionState } from "./terminal/session";
 import type { TerminalRenderer } from "./terminal/renderer";
 import { themeStore } from "./theme/store";
+import { fontFamily, loadFont } from "./theme/fonts";
 import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
@@ -85,9 +86,24 @@ export function TerminalPane({
   hooks.current = { onSize, onOutput, onLatency };
 
   const dropped = state.status === "closed" && state.exitCode === undefined;
+  const fontRef = useRef<string | null>(null);
+  /** Cursor now; font once its face has loaded (then the renderer refits). */
+  const applyScope = useCallback((r: TerminalRenderer) => {
+    const { cursor, font } = themeStore.scope(themeRef.current);
+    r.setCursor(cursor);
+    if (fontRef.current === font) return;
+    fontRef.current = font;
+    void loadFont(font).then(() => {
+      if (renderer.current === r && fontRef.current === font)
+        r.setFont(fontFamily(font));
+    });
+  }, []);
   useEffect(() => {
-    renderer.current?.setTheme(themeStore.terminal(theme));
-  }, [theme]);
+    const r = renderer.current;
+    if (!r) return;
+    r.setTheme(themeStore.terminal(theme));
+    applyScope(r);
+  }, [theme, applyScope]);
   useEffect(() => {
     if (!dropped) return;
     const id = setTimeout(connect, RETRY_MS);
@@ -135,9 +151,11 @@ export function TerminalPane({
       session.current = s;
       renderer.current = r;
       r.setTheme(themeStore.terminal(themeRef.current));
-      const offTheme = themeStore.subscribe(() =>
-        r.setTheme(themeStore.terminal(themeRef.current)),
-      );
+      applyScope(r);
+      const offTheme = themeStore.subscribe(() => {
+        r.setTheme(themeStore.terminal(themeRef.current));
+        applyScope(r);
+      });
       connect();
       const ro = new ResizeObserver(() => {
         if (settledRef.current) r.resize();
@@ -154,7 +172,7 @@ export function TerminalPane({
       cancelled = true;
       cleanup();
     };
-  }, [connect]);
+  }, [connect, applyScope]);
 
   return (
     <div

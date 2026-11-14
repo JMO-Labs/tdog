@@ -22,7 +22,15 @@ export type ChromeToken = (typeof CHROME_TOKENS)[number];
 export const PATTERNS = ["confetti", "zebra", "leopard", "zigzag"] as const;
 export type Pattern = (typeof PATTERNS)[number] | "none";
 
-export const FONTS = ["jetbrains-mono", "courier-prime"] as const;
+export const FONTS = [
+  "jetbrains-mono",
+  "courier-prime",
+  "vt323",
+  "press-start-2p",
+  "share-tech-mono",
+  "ibm-plex-mono",
+  "space-mono",
+] as const;
 export const EFFECTS = [
   "scanlines",
   "glow",

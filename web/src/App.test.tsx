@@ -18,6 +18,8 @@ vi.mock("./terminal/xtermRenderer", () => ({
     write() {}
     resize() {}
     setTheme() {}
+    setCursor() {}
+    setFont() {}
     dispose() {}
   },
 }));
@@ -79,6 +81,8 @@ test("?renderer=restty mounts the restty renderer", async () => {
       write() {}
       resize() {}
       setTheme() {}
+      setCursor() {}
+      setFont() {}
       dispose() {}
     },
   }));

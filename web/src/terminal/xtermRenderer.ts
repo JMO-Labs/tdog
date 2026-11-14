@@ -3,7 +3,7 @@ import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
-import type { TerminalRenderer, TerminalTheme } from "./renderer";
+import type { CursorStyle, TerminalRenderer, TerminalTheme } from "./renderer";
 
 const enc = new TextEncoder();
 
@@ -51,6 +51,14 @@ export class XtermRenderer implements TerminalRenderer {
   }
   setTheme(theme: TerminalTheme): void {
     this.term.options.theme = theme;
+  }
+  setCursor(c: CursorStyle): void {
+    this.term.options.cursorStyle = c.shape;
+    this.term.options.cursorBlink = c.blink;
+  }
+  setFont(family: string): void {
+    this.term.options.fontFamily = family;
+    this.fit.fit();
   }
   dispose(): void {
     this.term.dispose();

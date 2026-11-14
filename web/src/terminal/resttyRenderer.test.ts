@@ -96,4 +96,15 @@ describe("ResttyRenderer", () => {
     r.dispose();
     expect(h.term.dispose).toHaveBeenCalled();
   });
+
+  it("forwards cursor and font options", () => {
+    r.setCursor({ shape: "underline", blink: false });
+    expect(h.term.setOption).toHaveBeenCalledWith("cursorStyle", "underline");
+    expect(h.term.setOption).toHaveBeenCalledWith("cursorBlink", false);
+    r.setFont("VT323, monospace");
+    expect(h.term.setOption).toHaveBeenCalledWith(
+      "fontFamily",
+      "VT323, monospace",
+    );
+  });
 });

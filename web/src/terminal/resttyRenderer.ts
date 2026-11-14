@@ -1,5 +1,5 @@
 import { Terminal } from "restty/xterm";
-import type { TerminalRenderer, TerminalTheme } from "./renderer";
+import type { CursorStyle, TerminalRenderer, TerminalTheme } from "./renderer";
 
 /**
  * restty (libghostty-vt + WebGPU) behind the TerminalRenderer adapter.
@@ -43,6 +43,14 @@ export class ResttyRenderer implements TerminalRenderer {
   }
   setTheme(theme: TerminalTheme): void {
     this.term.setOption("theme", theme);
+  }
+  setCursor(c: CursorStyle): void {
+    this.term.setOption("cursorStyle", c.shape);
+    this.term.setOption("cursorBlink", c.blink);
+  }
+  /** restty observes its container and refits itself after the font changes. */
+  setFont(family: string): void {
+    this.term.setOption("fontFamily", family);
   }
   dispose(): void {
     this.term.dispose();

@@ -22,6 +22,11 @@ export interface TerminalTheme {
   brightWhite?: string;
 }
 
+export interface CursorStyle {
+  shape: "block" | "bar" | "underline";
+  blink: boolean;
+}
+
 export interface TerminalRenderer {
   /** Write bytes; `cb` fires once the renderer has processed them (flow control). */
   write(data: Uint8Array, cb?: () => void): void;
@@ -31,5 +36,8 @@ export interface TerminalRenderer {
   onInput(cb: (data: Uint8Array) => void): void;
   onResize(cb: (cols: number, rows: number) => void): void;
   setTheme(theme: TerminalTheme): void;
+  setCursor(c: CursorStyle): void;
+  /** Set the font-family and refit (cell size changes). */
+  setFont(family: string): void;
   dispose(): void;
 }
