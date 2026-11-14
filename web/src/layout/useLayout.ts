@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { killScene } from "../terminal/sessions";
 import { applyTemplate, type TemplateId } from "./templates";
+import { movePane, neighbour, swapPanes, type Zone } from "./dnd";
 import { loadLayout, saveLayout } from "./store";
+import { onLayoutChange } from "./transfer";
 import {
   closeLeaf,
   newId,
@@ -21,6 +23,11 @@ export function useLayout(scene: string) {
   });
 
   useEffect(() => saveLayout(scene, tree), [scene, tree]);
+  // A pane moved in/out of this scene from elsewhere rewrote storage.
+  useEffect(
+    () => onLayoutChange(scene, () => setTree(loadLayout(scene) ?? null)),
+    [scene],
+  );
 
   const split = useCallback(
     (id: string, dir: Dir) =>
@@ -49,7 +56,20 @@ export function useLayout(scene: string) {
     },
     [tree],
   );
+  const move = useCallback(
+    (id: string, target: string, zone: Zone) =>
+      setTree((t) => (t ? movePane(t, id, target, zone) : t)),
+    [],
+  );
+  const swap = useCallback(
+    (id: string, delta: 1 | -1) =>
+      setTree((t) => {
+        const other = t && neighbour(t, id, delta);
+        return t && other ? swapPanes(t, id, other) : t;
+      }),
+    [],
+  );
   const reset = useCallback(() => setTree(fresh()), []);
 
-  return { tree, split, close, ratio, snap, reset };
+  return { tree, split, close, ratio, snap, move, swap, reset };
 }

@@ -380,3 +380,8 @@
   background: var(--panel, #222);
   border: 1px solid currentColor;
 }
+.tab-wrap[data-drop] {
+  outline: 2px dashed var(--accent, #6cf);
+  outline-offset: 1px;
+  border-radius: 8px;
+}

@@ -116,3 +116,61 @@
   width: 232px;
   font-size: 12px;
 }
+.pane-head[draggable="true"] {
+  cursor: grab;
+}
+/* Sticker-style drop highlight: chunky border, offset shadow, tilted label. */
+.drop-zone {
+  position: absolute;
+  z-index: 15;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--accent, #6cf) 28%, transparent);
+  border: 3px solid var(--accent, #6cf);
+  border-radius: 8px;
+  box-shadow: 3px 3px 0 var(--border, #0006);
+}
+.drop-zone[data-zone="left"] {
+  inset: 0 50% 0 0;
+}
+.drop-zone[data-zone="right"] {
+  inset: 0 0 0 50%;
+}
+.drop-zone[data-zone="top"] {
+  inset: 0 0 50% 0;
+}
+.drop-zone[data-zone="bottom"] {
+  inset: 50% 0 0 0;
+}
+.drop-zone[data-zone="swap"] {
+  inset: 12%;
+  display: grid;
+  place-items: center;
+  transform: rotate(-1.5deg);
+}
+.drop-zone[data-zone="swap"]::after {
+  content: "swap";
+  font-weight: 700;
+}
+.pane-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 170px;
+  padding: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border, #0006);
+  border-radius: 6px;
+}
+.pane-menu button {
+  all: unset;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pane-menu button:hover,
+.pane-menu button:focus-visible {
+  outline: 1px solid currentColor;
+}

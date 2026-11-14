@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type DragEvent,
   type ReactNode,
 } from "react";
 import {
@@ -15,8 +16,10 @@ import {
 } from "dockview-react";
 import "dockview-react/dist/styles/dockview.css";
 import { Icon } from "../shell/icons";
+import { PANE_MIME, dragPane, draggedPane, dropZone, type Zone } from "./dnd";
 import { mountSplit, orientation } from "./dock";
 import type { Dir, Node } from "./tree";
+import { PaneMenu } from "./PaneMenu";
 import { SnapPicker } from "./SnapPicker";
 import type { TemplateId } from "./templates";
 import "./layout.css";
@@ -27,6 +30,11 @@ export interface SplitViewProps {
   onClose: (id: string) => void;
   onSnap: (t: TemplateId, confirmed?: boolean) => string[];
   onRatio: (splitId: string, ratio: number) => void;
+  /** Other scenes a pane can move to (keyboard alternative to dragging). */
+  scenes?: { id: string; name: string }[];
+  onMove?: (id: string, target: string, zone: Zone) => void;
+  onSwap?: (id: string, delta: 1 | -1) => void;
+  onMoveToScene?: (id: string, scene: string) => void;
   /** `settled` is false while a sash drag / resize is still moving. */
   renderPane: (id: string, settled: boolean) => ReactNode;
 }
@@ -65,11 +73,72 @@ function NodeView({ n }: { n: Node }) {
 
 function Pane({ id }: { id: string }) {
   const { p, settled } = useContext(SharedCtx)!;
+  const [zone, setZone] = useState<Zone | null>(null);
+  const over = (e: DragEvent<HTMLElement>) => {
+    const d = draggedPane();
+    if (!d || !p.onMove) {
+      setZone(null);
+      return;
+    }
+    e.preventDefault();
+    setZone(
+      d === id
+        ? null
+        : dropZone(
+            e.clientX,
+            e.clientY,
+            e.currentTarget.getBoundingClientRect(),
+          ),
+    );
+  };
   return (
-    <section className="pane" data-pane={id}>
-      <header className="pane-head">
+    <section
+      className="pane"
+      data-pane={id}
+      onDragOver={over}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Element | null))
+          setZone(null);
+      }}
+      onDrop={(e) => {
+        const d = draggedPane();
+        const z =
+          d && d !== id
+            ? dropZone(
+                e.clientX,
+                e.clientY,
+                e.currentTarget.getBoundingClientRect(),
+              )
+            : null;
+        setZone(null);
+        if (!d || !z || !p.onMove) return;
+        e.preventDefault();
+        p.onMove(d, id, z);
+      }}
+    >
+      <header
+        className="pane-head"
+        draggable={!!p.onMove}
+        onDragStart={(e) => {
+          e.dataTransfer.setData(PANE_MIME, id);
+          e.dataTransfer.effectAllowed = "move";
+          dragPane(id);
+        }}
+        onDragEnd={() => {
+          dragPane(null);
+          setZone(null);
+        }}
+      >
         <SnapPicker onSnap={p.onSnap} />
         <span className="spacer" />
+        {p.onSwap && p.onMoveToScene && (
+          <PaneMenu
+            id={id}
+            scenes={p.scenes ?? []}
+            onSwap={p.onSwap}
+            onMoveToScene={p.onMoveToScene}
+          />
+        )}
         <button
           className="pane-btn"
           aria-label="Split right"
@@ -95,7 +164,17 @@ function Pane({ id }: { id: string }) {
           <Icon name="close" />
         </button>
       </header>
-      <div className="pane-body">{p.renderPane(id, settled)}</div>
+      <div className="pane-body">
+        {p.renderPane(id, settled)}
+        {zone && (
+          <div
+            className="drop-zone"
+            data-zone={zone}
+            data-testid="drop-zone"
+            aria-hidden="true"
+          />
+        )}
+      </div>
     </section>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, type ComponentProps } from "react";
 import { SplitView } from "../layout/SplitView";
 import { leaves } from "../layout/tree";
 import { useLayout } from "../layout/useLayout";
+import type { Scene } from "./scenes";
 import { Mascot } from "./Mascot";
 import { PaneSlot } from "./PaneSlot";
 
@@ -17,6 +18,8 @@ export function SceneView({
   paneOpen,
   onLeaves,
   onFocus,
+  scenes,
+  onMoveScene,
   ...slot
 }: SlotProps & {
   scene: string;
@@ -24,6 +27,8 @@ export function SceneView({
   paneOpen: Record<string, ComponentProps<typeof PaneSlot>["state"]>;
   onLeaves: (scene: string, ids: string[]) => void;
   onFocus: (id: string) => void;
+  scenes: Scene[];
+  onMoveScene: (id: string, from: string, to: string) => void;
 }) {
   const layout = useLayout(scene);
   const ids = layout.tree ? leaves(layout.tree).join(",") : "";
@@ -40,6 +45,10 @@ export function SceneView({
           onClose={layout.close}
           onRatio={layout.ratio}
           onSnap={layout.snap}
+          onMove={layout.move}
+          onSwap={layout.swap}
+          scenes={scenes.filter((x) => x.id !== scene)}
+          onMoveToScene={(id, to) => onMoveScene(id, scene, to)}
           renderPane={(id, settled) => (
             <div
               style={{ height: "100%" }}
