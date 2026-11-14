@@ -31,5 +31,7 @@ export interface TerminalRenderer {
   onInput(cb: (data: Uint8Array) => void): void;
   onResize(cb: (cols: number, rows: number) => void): void;
   setTheme(theme: TerminalTheme): void;
+  /** Optional: per-terminal font from a preset. Unset values keep the default. */
+  setFont?(family?: string, size?: number): void;
   dispose(): void;
 }

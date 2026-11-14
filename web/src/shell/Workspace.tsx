@@ -18,7 +18,9 @@ import { killScene } from "../terminal/sessions";
 import { Icon } from "./icons";
 import { type PaneOpen } from "./PaneSlot";
 import { SceneView } from "./SceneView";
+import { usePresetFlows } from "../presets/usePresetFlows";
 import {
+  addNamedScene,
   addScene,
   closeScene,
   loadScenes,
@@ -72,6 +74,10 @@ export function Workspace({
     [],
   );
   const add = useCallback(() => setSc((s) => addScene(s, newId("sc"))), []);
+  const presetDialogs = usePresetFlows({
+    scene: sc.active,
+    openTab: (id, name) => setSc((s) => addNamedScene(s, id, name)),
+  });
   const finishClose = useCallback(
     (id: string) => {
       (leafMap[id] ?? []).forEach((p) => void killScene(p));
@@ -393,6 +399,7 @@ export function Workspace({
         onClose={() => setKill(null)}
         onConfirm={() => void runKill()}
       />
+      {presetDialogs}
       <CommandPalette open={palette} onOpenChange={setPalette} />
       <Sheet
         open={settings}

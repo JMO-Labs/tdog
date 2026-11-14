@@ -24,6 +24,9 @@ type SceneRun struct {
 	Name     string        `json:"name"`
 	Existing bool          `json:"existing"` // true when it was already running
 	Panes    []PaneSession `json:"panes"`
+
+	// Layout is the preset's layout tree (nil when the preset has none).
+	Layout *config.Layout `json:"layout,omitempty"`
 }
 
 // Scenes launches scene presets: every pane's terminal preset in one go,
@@ -94,7 +97,7 @@ func (s *Scenes) Start(name string) (SceneRun, error) {
 		}
 		plan = append(plan, launch{paneSlot(p, i), sp, line})
 	}
-	run := SceneRun{Scene: "sc-" + newID()[:12], Name: name}
+	run := SceneRun{Scene: "sc-" + newID()[:12], Name: name, Layout: sc.Layout}
 	for _, pl := range plan {
 		sess, err := s.l.start(run.Scene, pl.sp, pl.line)
 		if err != nil {

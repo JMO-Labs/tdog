@@ -25,3 +25,14 @@ export async function killScene(scene: string): Promise<boolean> {
     return false;
   }
 }
+
+/** True while the server still has session `id`. */
+export async function sessionExists(id: string): Promise<boolean> {
+  try {
+    const r = await apiFetch("/api/sessions");
+    if (!r.ok) return false;
+    return ((await r.json()) as { id: string }[]).some((s) => s.id === id);
+  } catch {
+    return false;
+  }
+}
