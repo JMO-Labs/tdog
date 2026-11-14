@@ -32,3 +32,34 @@ test("Escape closes", () => {
   fireEvent.keyDown(h, { key: "Escape" });
   expect(h.getAttribute("aria-expanded")).toBe("false");
 });
+
+test("click toggles the picker", () => {
+  render(<SnapPicker onSnap={() => []} />);
+  const h = screen.getByLabelText("Layouts");
+  fireEvent.click(h);
+  expect(h.getAttribute("aria-expanded")).toBe("true");
+  fireEvent.click(h);
+  expect(h.getAttribute("aria-expanded")).toBe("false");
+});
+
+test("blur to outside closes; blur within keeps open", () => {
+  render(<SnapPicker onSnap={() => []} />);
+  const h = screen.getByLabelText("Layouts");
+  const wrap = h.parentElement as HTMLElement;
+  fireEvent.focus(h);
+  fireEvent.blur(wrap, { relatedTarget: h });
+  expect(h.getAttribute("aria-expanded")).toBe("true");
+  fireEvent.blur(wrap, { relatedTarget: document.body });
+  expect(h.getAttribute("aria-expanded")).toBe("false");
+});
+
+test("cancel on the confirmation returns to templates without applying", () => {
+  const onSnap = vi.fn((_t: string, _c?: boolean) => ["x"]);
+  render(<SnapPicker onSnap={onSnap} />);
+  fireEvent.mouseEnter(screen.getByLabelText("Layouts"));
+  fireEvent.click(screen.getByLabelText("Single"));
+  expect(screen.getByText(/Close 1 pane and kill its shell/)).toBeTruthy();
+  fireEvent.click(screen.getByText("Cancel"));
+  expect(screen.getByLabelText("2 × 2")).toBeTruthy();
+  expect(onSnap).toHaveBeenCalledTimes(1);
+});
