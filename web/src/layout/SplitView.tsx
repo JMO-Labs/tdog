@@ -17,6 +17,7 @@ import {
 import "dockview-react/dist/styles/dockview.css";
 import { Icon } from "../shell/icons";
 import { PANE_MIME, dragPane, draggedPane, dropZone, type Zone } from "./dnd";
+import { leaves } from "./tree";
 import { mountSplit, orientation } from "./dock";
 import type { Dir, Node } from "./tree";
 import { PaneMenu } from "./PaneMenu";
@@ -42,7 +43,14 @@ export interface SplitViewProps {
 /** Quiet time after the last relayout before terminals refit. */
 export const SETTLE_MS = 150;
 
-type Shared = { p: SplitViewProps; settled: boolean; busy: () => void };
+type Shared = {
+  p: SplitViewProps;
+  settled: boolean;
+  busy: () => void;
+  order: string[];
+  focus: string | null;
+  setFocus: (id: string) => void;
+};
 const SharedCtx = createContext<Shared | null>(null);
 /** Children of the enclosing split, read by dockview panels "a" and "b". */
 const KidsCtx = createContext<{ a: Node; b: Node } | null>(null);
@@ -57,7 +65,9 @@ export function SplitView(props: SplitViewProps) {
     timer.current = setTimeout(() => setSettled(true), SETTLE_MS);
   }, []);
   useEffect(() => () => clearTimeout(timer.current), []);
-  const shared = { p: props, settled, busy };
+  const [focus, setFocus] = useState<string | null>(null);
+  const order = useMemo(() => leaves(props.tree), [props.tree]);
+  const shared = { p: props, settled, busy, order, focus, setFocus };
   return (
     <SharedCtx.Provider value={shared}>
       <div className="split-root">
@@ -72,7 +82,7 @@ function NodeView({ n }: { n: Node }) {
 }
 
 function Pane({ id }: { id: string }) {
-  const { p, settled } = useContext(SharedCtx)!;
+  const { p, settled, order, focus, setFocus } = useContext(SharedCtx)!;
   const [zone, setZone] = useState<Zone | null>(null);
   const over = (e: DragEvent<HTMLElement>) => {
     const d = draggedPane();
@@ -95,6 +105,9 @@ function Pane({ id }: { id: string }) {
     <section
       className="pane"
       data-pane={id}
+      data-focused={focus === id}
+      onFocusCapture={() => setFocus(id)}
+      onPointerDownCapture={() => setFocus(id)}
       onDragOver={over}
       onDragLeave={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Element | null))
@@ -129,8 +142,10 @@ function Pane({ id }: { id: string }) {
           setZone(null);
         }}
       >
-        <SnapPicker onSnap={p.onSnap} />
+        <span className="title">Shell {order.indexOf(id) + 1}</span>
+        <span className="chip">local</span>
         <span className="spacer" />
+        <SnapPicker onSnap={p.onSnap} />
         {p.onSwap && p.onMoveToScene && (
           <PaneMenu
             id={id}
@@ -140,7 +155,7 @@ function Pane({ id }: { id: string }) {
           />
         )}
         <button
-          className="pane-btn"
+          className="pane-btn icon-btn sm"
           aria-label="Split right"
           title="Split right"
           onClick={() => p.onSplit(id, "row")}
@@ -148,7 +163,7 @@ function Pane({ id }: { id: string }) {
           <Icon name="splitRight" />
         </button>
         <button
-          className="pane-btn"
+          className="pane-btn icon-btn sm"
           aria-label="Split down"
           title="Split down"
           onClick={() => p.onSplit(id, "col")}
@@ -156,7 +171,7 @@ function Pane({ id }: { id: string }) {
           <Icon name="splitDown" />
         </button>
         <button
-          className="pane-btn danger"
+          className="pane-btn icon-btn sm danger"
           aria-label="Close pane"
           title="Close pane (kills the shell)"
           onClick={() => p.onClose(id)}

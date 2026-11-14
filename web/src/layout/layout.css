@@ -8,10 +8,12 @@
   position: absolute;
   inset: 0;
   display: flex;
-  /* dockview sashes and view separators */
+  padding: 6px; /* + 6px pane margin = 12px outer gap */
+  box-sizing: border-box;
+  /* dockview sashes: invisible until hover/drag, then an accent handle */
   --dv-sash-color: transparent;
   --dv-active-sash-color: var(--accent, #6cf);
-  --dv-separator-border: var(--border, #0006);
+  --dv-separator-border: transparent;
 }
 .split-root > .pane,
 .split-root > .split {
@@ -21,49 +23,116 @@
   width: 100%;
   height: 100%;
 }
+.split-root .dv-sash {
+  border-radius: 99px;
+  transition: background 0.15s;
+}
+.split-root .dv-sash:hover,
+.split-root .dv-sash.dv-active {
+  background: var(--accent, #6cf);
+}
+.split-root
+  .dv-split-view-container.dv-horizontal
+  > .dv-sash-container
+  > .dv-sash {
+  cursor: col-resize;
+}
+.split-root
+  .dv-split-view-container.dv-vertical
+  > .dv-sash-container
+  > .dv-sash {
+  cursor: row-resize;
+}
 .pane {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: calc(100% - 12px);
+  margin: 6px; /* two neighbours = 12px gap */
+  box-sizing: border-box;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--term-bg);
+  box-shadow: 6px 6px 0 var(--shadow);
+}
+.pane[data-focused="true"] {
+  border-color: var(--accent, #6cf);
+  box-shadow:
+    0 0 0 3px var(--accent, #6cf),
+    6px 6px 0 3px var(--shadow);
 }
 .pane-head {
   display: flex;
   align-items: center;
-  gap: 2px;
-  height: 24px;
-  padding: 0 4px;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  background: var(--surface);
+  border-bottom: 2px solid var(--line);
+  min-width: 0;
+}
+.pane[data-focused="true"] .pane-head {
   background: var(--surface-2);
 }
-.pane-btn {
-  all: unset;
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  opacity: 0.7;
+.pane-head .title {
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
 }
-.pane-btn:hover,
-.pane-btn:focus-visible {
-  opacity: 1;
-  outline: 1px solid currentColor;
+.pane[data-focused="true"] .pane-head .title {
+  font-weight: 800;
+  color: var(--fg);
 }
-.pane-btn.danger:hover {
-  color: var(--danger, #f55);
+.pane-head .chip {
+  flex: none;
+  padding: 0 8px;
+  font-size: 11px;
 }
-.pane-btn svg {
+.pane-head .spacer {
+  flex: 1;
+}
+.pane-head .pane-btn {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  box-shadow: 2px 2px 0 var(--shadow);
+  font-size: 14px;
+  line-height: 1;
+}
+.pane-head .pane-btn svg {
   width: 14px;
   height: 14px;
+}
+.pane-head .pane-btn:focus-visible {
+  outline: 2px solid var(--accent, #6cf);
+  outline-offset: 2px;
 }
 .pane-body {
   flex: 1;
   min-height: 0;
   position: relative;
+  box-sizing: border-box;
+  padding: 8px;
 }
 .snap-wrap {
   position: relative;
   display: inline-flex;
+}
+.pop-card {
+  background: var(--surface);
+  color: var(--fg);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+.pop-title {
+  grid-column: 1 / -1;
+  margin: 0 4px 2px;
+  font-size: 12px;
+  font-weight: 800;
 }
 .snap-pop {
   position: absolute;
@@ -80,9 +149,6 @@
   grid-template-columns: repeat(3, 76px);
   gap: 6px;
   padding: 8px;
-  background: var(--surface-2);
-  border: 1px solid var(--border, #0006);
-  border-radius: 8px;
 }
 .snap {
   all: unset;
@@ -96,7 +162,7 @@
 }
 .snap:hover,
 .snap:focus-visible {
-  outline: 1px solid var(--accent, #6cf);
+  outline: 2px solid var(--accent, #6cf);
 }
 .snap .mini {
   display: grid;
@@ -159,18 +225,15 @@
   display: grid;
   min-width: 170px;
   padding: 4px;
-  background: var(--surface-2);
-  border: 1px solid var(--border, #0006);
-  border-radius: 6px;
 }
 .pane-menu button {
   all: unset;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
 }
 .pane-menu button:hover,
 .pane-menu button:focus-visible {
-  outline: 1px solid currentColor;
+  outline: 2px solid var(--accent, #6cf);
 }

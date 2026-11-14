@@ -45,3 +45,21 @@ test("focus leaving the menu closes it; focus within keeps it open", () => {
   fireEvent.blur(item, { relatedTarget: screen.getByText("outside") });
   expect(screen.queryByRole("menu")).toBeNull();
 });
+
+test("menu has a heading, focuses first item, arrows move and wrap", () => {
+  const { open } = setup();
+  open();
+  expect(screen.getByText("Pane actions")).toBeTruthy();
+  const items = screen.getAllByRole("menuitem");
+  expect(document.activeElement).toBe(items[0]);
+  const menu = screen.getByRole("menu");
+  fireEvent.keyDown(menu, { key: "ArrowDown" });
+  expect(document.activeElement).toBe(items[1]);
+  fireEvent.keyDown(menu, { key: "ArrowUp" });
+  fireEvent.keyDown(menu, { key: "ArrowUp" });
+  expect(document.activeElement).toBe(items[items.length - 1]);
+  fireEvent.keyDown(menu, { key: "Home" });
+  expect(document.activeElement).toBe(items[0]);
+  fireEvent.keyDown(menu, { key: "End" });
+  expect(document.activeElement).toBe(items[items.length - 1]);
+});

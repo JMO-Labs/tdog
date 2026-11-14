@@ -74,3 +74,27 @@ test("a sash relayout reports the ratio; panes settle after it stops", () => {
   act(() => vi.advanceTimersByTime(1));
   expect(screen.getByTestId("pane-b").dataset.settled).toBe("true");
 });
+
+test("header shows title and target chip, no dockview tab strip", () => {
+  const { r } = setup(two);
+  const heads = r.container.querySelectorAll(".pane-head");
+  expect(heads).toHaveLength(2);
+  expect(heads[0].querySelector(".title")?.textContent).toBe("Shell 1");
+  expect(heads[1].querySelector(".title")?.textContent).toBe("Shell 2");
+  expect(heads[0].querySelector(".chip")?.textContent).toBe("local");
+  expect(
+    r.container.querySelector(".dv-tabs-and-actions-container"),
+  ).toBeNull();
+  expect(screen.getAllByRole("button", { name: "Pane menu" })).toHaveLength(2);
+});
+
+test("focus ring follows the last focused or pressed pane", () => {
+  const { r } = setup(two);
+  const pane = (id: string) => r.container.querySelector(`[data-pane=${id}]`)!;
+  expect(pane("a").getAttribute("data-focused")).toBe("false");
+  fireEvent.focus(screen.getAllByRole("button", { name: "Split down" })[0]);
+  expect(pane("a").getAttribute("data-focused")).toBe("true");
+  fireEvent.pointerDown(screen.getByTestId("pane-b"));
+  expect(pane("a").getAttribute("data-focused")).toBe("false");
+  expect(pane("b").getAttribute("data-focused")).toBe("true");
+});
