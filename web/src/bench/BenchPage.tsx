@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { TerminalRenderer } from "../terminal/renderer";
 import { pickRenderer, type RendererKind } from "../terminal/select";
 import { detectBackend, type Backend } from "./backend";
+import { EffectsOverlay } from "../effects/EffectsOverlay";
+import { benchEffects } from "./benchFx";
 import { buildFixture } from "./fixture";
 import { startFrameSampler } from "./frames";
 import { replay } from "./replay";
@@ -24,6 +26,7 @@ const f1 = (n: number) => n.toFixed(1);
 /** Dev-only renderer harness (ADR-0001 spike). */
 export function BenchPage() {
   const kind = pickRenderer(location.search);
+  const fx = benchEffects(location.search);
   const host = useRef<HTMLDivElement>(null);
   const term = useRef<TerminalRenderer | null>(null);
   const [backend, setBackend] = useState<Backend | "…">("…");
@@ -93,7 +96,18 @@ export function BenchPage() {
         · <span data-testid="fps">{f1(fps)} FPS</span>
         <div data-testid="result">{result}</div>
       </header>
-      <div ref={host} className="bench-term" />
+      <div className="bench-stage">
+        <div ref={host} className="bench-term" />
+        {fx.length > 0 && (
+          <div className="bench-panes">
+            {[0, 1, 2, 3].map((n) => (
+              <div key={n} className="bench-pane">
+                <EffectsOverlay force effects={fx} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

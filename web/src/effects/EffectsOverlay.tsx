@@ -8,11 +8,20 @@ import "./effects.css";
  * Per-pane visual overlays. Purely visual: pointer-events none, nothing
  * touches terminal bytes, selection or copy.
  */
-export function EffectsOverlay({ effects }: { effects: readonly Effect[] }) {
+export function EffectsOverlay({
+  effects,
+  force = false,
+}: {
+  effects: readonly Effect[];
+  /** Bench only: draw `effects` as given, ignoring user settings. */
+  force?: boolean;
+}) {
   const settings = useFx();
   const reduced = useReducedMotionPref();
   const visible = usePageVisible();
-  const active = resolveEffects(effects, settings, reduced, visible);
+  const active = force
+    ? [...effects]
+    : resolveEffects(effects, settings, reduced, visible);
   if (!active.length) return null;
   return (
     <div className="fx-root" data-testid="fx-root" aria-hidden="true">

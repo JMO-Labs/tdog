@@ -14,7 +14,9 @@ export function GlyphRain({ intensity }: { intensity: number }) {
     let raf = 0;
     let last = 0;
     let drops: number[] = [];
+    let color = "";
     const fit = () => {
+      color = getComputedStyle(cv).color;
       cv.width = Math.max(1, cv.clientWidth);
       cv.height = Math.max(1, cv.clientHeight);
       drops = Array.from({ length: Math.ceil(cv.width / CELL) }, () =>
@@ -30,9 +32,7 @@ export function GlyphRain({ intensity }: { intensity: number }) {
       last = t;
       ctx.clearRect(0, 0, cv.width, cv.height);
       ctx.font = `${CELL - 2}px monospace`;
-      ctx.fillStyle = "currentColor";
-      const css = getComputedStyle(cv).color;
-      ctx.fillStyle = css;
+      ctx.fillStyle = color;
       drops.forEach((y, i) => {
         if (y < 0 && Math.random() < 0.01) drops[i] = 0;
         if (drops[i]! < 0) return;
@@ -51,7 +51,7 @@ export function GlyphRain({ intensity }: { intensity: number }) {
     <canvas
       ref={ref}
       className="fx fx-glyph-rain"
-      style={{ opacity: 0.35 * intensity }}
+      style={{ opacity: 0.15 * intensity }}
     />
   );
 }

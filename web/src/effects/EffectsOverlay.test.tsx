@@ -32,3 +32,17 @@ test("draws enabled effects as inert layers", () => {
     "true",
   );
 });
+
+test("force bypasses settings and renders every listed effect", () => {
+  setFx({ ...DEFAULT_FX, master: false });
+  const { container } = render(
+    <EffectsOverlay
+      force
+      effects={[
+        { id: "flicker", intensity: 1 },
+        { id: "tracking", intensity: 1 },
+      ]}
+    />,
+  );
+  expect(container.querySelectorAll("[data-fx]").length).toBe(2);
+});
