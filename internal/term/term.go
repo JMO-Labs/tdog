@@ -51,18 +51,8 @@ func HandlerAudit(shell string, l *audit.Logger) http.Handler {
 // NewHandler serves /ws/term; ?target=ssh-host|container picks the target
 // (default container). Callers must wrap it with authentication.
 func NewHandler(cfg Config) http.Handler {
-	shell := cfg.Shell
-	if shell == "" {
-		shell = os.Getenv("SHELL")
-	}
-	if shell == "" {
-		shell = "/bin/sh"
-	}
-	reg := cfg.Registry
-	if reg == nil {
-		reg = NewRegistry(cfg.Audit, cfg.Scrollback)
-	}
-	run := sshRunner(cfg.SSH)
+	l := newLauncher(cfg)
+	reg := l.reg
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		target := q.Get("target")
@@ -102,7 +92,6 @@ func NewHandler(cfg Config) http.Handler {
 				http.Error(w, err.Error(), code)
 				return
 			}
-			target = spec.Target
 		}
 		c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 			CompressionMode: websocket.CompressionDisabled,
@@ -113,33 +102,65 @@ func NewHandler(cfg Config) http.Handler {
 		defer func() { _ = c.CloseNow() }()
 		sess := existing
 		if sess == nil {
-			if target == "" {
-				target = "container"
-			}
-			id := newID()
-			spawn := func() (*session, error) { return spawnPTYIn(shell, expandHome(spec.Cwd), spec.Env) }
-			if target == "ssh-host" {
-				spawn = func() (*session, error) { return spawnSSHCmd(cfg.SSH, spec.shellCmd()) }
-				if spec.Persistent {
-					spawn = func() (*session, error) { return spawnTmuxCmd(cfg.SSH, run, id, spec.tmuxCmd(id)) }
-				}
-			}
-			s, err := spawn()
-			if err != nil {
-				if target == "ssh-host" {
+			var err error
+			if sess, err = l.start(scene, spec, line); err != nil {
+				if spec.Target == "ssh-host" {
 					sshFail(c, err.Error())
 				} else {
 					_ = c.Close(websocket.StatusInternalError, err.Error())
 				}
 				return
 			}
-			if line != "" { // typed like a keyboard would; the pty buffers it until the shell reads
-				_, _ = s.w.Write([]byte(line + "\r"))
-			}
-			sess = reg.add(id, target, scene, s, reg.onCloseFn(spec, shell, cfg.SSH, id, target))
 		}
 		sess.serve(c)
 	})
+}
+
+// launcher starts shells for the handler and for scene starts.
+type launcher struct {
+	shell string
+	ssh   SSHConfig
+	run   CmdRunner
+	reg   *Registry
+}
+
+func newLauncher(cfg Config) *launcher {
+	shell := cfg.Shell
+	if shell == "" {
+		shell = os.Getenv("SHELL")
+	}
+	if shell == "" {
+		shell = "/bin/sh"
+	}
+	reg := cfg.Registry
+	if reg == nil {
+		reg = NewRegistry(cfg.Audit, cfg.Scrollback)
+	}
+	return &launcher{shell: shell, ssh: cfg.SSH, run: sshRunner(cfg.SSH), reg: reg}
+}
+
+// start spawns sp's shell, types line into it and registers it under scene.
+func (l *launcher) start(scene string, sp Spec, line string) (*Session, error) {
+	target := sp.Target
+	if target == "" {
+		target = "container"
+	}
+	id := newID()
+	spawn := func() (*session, error) { return spawnPTYIn(l.shell, expandHome(sp.Cwd), sp.Env) }
+	if target == "ssh-host" {
+		spawn = func() (*session, error) { return spawnSSHCmd(l.ssh, sp.shellCmd()) }
+		if sp.Persistent {
+			spawn = func() (*session, error) { return spawnTmuxCmd(l.ssh, l.run, id, sp.tmuxCmd(id)) }
+		}
+	}
+	s, err := spawn()
+	if err != nil {
+		return nil, err
+	}
+	if line != "" { // typed like a keyboard would; the pty buffers it until the shell reads
+		_, _ = s.w.Write([]byte(line + "\r"))
+	}
+	return l.reg.add(id, target, scene, s, l.reg.onCloseFn(sp, l.shell, l.ssh, id, target)), nil
 }
 
 // session is a running shell, whatever its target.
