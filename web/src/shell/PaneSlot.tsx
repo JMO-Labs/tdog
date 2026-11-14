@@ -15,8 +15,11 @@ export function PaneSlot({
   onSize,
   onOutput,
   onLatency,
+  theme,
 }: {
   id: string;
+  /** Terminal theme id; defaults to the page theme. */
+  theme?: string;
   settled: boolean;
   state?: PaneOpen;
   onOpenChange: (id: string, open: boolean) => void;
@@ -40,6 +43,7 @@ export function PaneSlot({
     <div style={{ position: "relative", height: "100%" }}>
       <TerminalPane
         sceneKey={id}
+        theme={theme}
         settled={settled}
         onClosed={onClosed}
         onSize={onSz}

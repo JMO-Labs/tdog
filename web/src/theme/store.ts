@@ -1,6 +1,11 @@
 import type { TerminalTheme } from "../terminal/renderer";
 import { DEFAULT_THEME_ID, THEMES, findTheme, type Theme } from "./registry";
-import type { TerminalColors, ThemeVariant } from "./schema";
+import { motifSvg } from "./motif";
+import {
+  CHROME_TOKENS,
+  type TerminalColors,
+  type ThemeVariant,
+} from "./schema";
 
 export type Scheme = "system" | "light" | "dark";
 const KEY = "tdog.theme.id";
@@ -60,6 +65,8 @@ function variant(t: Theme): ThemeVariant {
   return light && t.light ? t.light : t;
 }
 
+const pretty = (n: number) => String(Math.round(n * 1000) / 1000);
+
 function apply() {
   const t = current();
   const el = document.documentElement;
@@ -69,9 +76,24 @@ function apply() {
     el.style.setProperty(p, v);
     applied.push(p);
   };
-  for (const [k, v] of Object.entries(variant(t).chrome)) set(`--${k}`, v);
-  if (t.pattern !== "confetti")
-    set("--pattern", t.pattern === "none" ? "none" : `var(--pat-${t.pattern})`);
+  const tokens = variant(t).chrome.tokens;
+  for (const [k, v] of Object.entries(tokens)) set(`--${k}`, v);
+  const { shape, pattern, motif } = t.chrome;
+  set("--radius-scale", pretty(shape.radius));
+  set("--border-width", pretty(shape.border));
+  set("--shadow-style", shape.shadow);
+  if (pattern !== "confetti")
+    set("--pattern", pattern === "none" ? "none" : `var(--pat-${pattern})`);
+  if (motif) {
+    // Resolve token names from computed values so CSS defaults count too.
+    const cs = getComputedStyle(el);
+    const resolved: Record<string, string> = {};
+    for (const k of CHROME_TOKENS) {
+      const v = tokens[k] ?? cs.getPropertyValue(`--${k}`).trim();
+      if (v) resolved[k] = v;
+    }
+    set("--header-motif", `url("${motifSvg(motif, resolved)}")`);
+  }
   // A theme with a light variant follows the scheme; others pin their appearance.
   if (t.light) {
     if (scheme === "system") el.removeAttribute("data-theme");
@@ -85,7 +107,11 @@ function apply() {
 export const themeStore = {
   get: current,
   /** Renderer colors for the active theme and scheme. */
-  terminal: (): TerminalTheme => toTerminalTheme(variant(current()).terminal),
+  terminal: (themeId?: string | null): TerminalTheme =>
+    toTerminalTheme(
+      variant((themeId ? findTheme(themeId) : undefined) ?? current()).terminal
+        .palette,
+    ),
   subscribe(l: () => void) {
     listeners.add(l);
     return () => void listeners.delete(l);
