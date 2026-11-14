@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Tooltip } from "./Tooltip";
@@ -30,5 +31,25 @@ describe("Tooltip", () => {
     fireEvent.focus(screen.getByText("x"));
     act(() => void vi.advanceTimersByTime(400));
     expect(screen.getByRole("tooltip")).toBeTruthy();
+  });
+  it("hides on blur", () => {
+    render(
+      <Tooltip label="Hi">
+        <button>x</button>
+      </Tooltip>,
+    );
+    fireEvent.focus(screen.getByText("x"));
+    act(() => void vi.advanceTimersByTime(400));
+    fireEvent.blur(screen.getByText("x"));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+  it("forwards an object ref on the child", () => {
+    const r = createRef<HTMLButtonElement>();
+    render(
+      <Tooltip label="Hi">
+        <button ref={r}>x</button>
+      </Tooltip>,
+    );
+    expect(r.current).toBe(screen.getByText("x"));
   });
 });

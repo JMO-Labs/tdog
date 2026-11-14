@@ -18,6 +18,16 @@ describe("Dialog / Sheet", () => {
     fireEvent.click(document.querySelector(".overlay-backdrop")!);
     expect(onClose).toHaveBeenCalledTimes(2);
   });
+  it("does not close when clicking inside the dialog", () => {
+    const onClose = vi.fn();
+    render(
+      <Dialog open title="Sure?" onClose={onClose}>
+        body
+      </Dialog>,
+    );
+    fireEvent.click(screen.getByRole("dialog"));
+    expect(onClose).not.toHaveBeenCalled();
+  });
   it("renders nothing when closed", () => {
     render(
       <Dialog open={false} title="t" onClose={vi.fn()}>
