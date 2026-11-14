@@ -1,11 +1,16 @@
 import { useState, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  type Transition,
+} from "motion/react";
 import { ENTER, EXIT, pickVariant, type Variant } from "./variants";
 
-const anim = (v: Variant) => ({
+const anim = (v: Variant): Transition => ({
   duration: v.duration,
   times: v.times,
-  ease: v.ease ?? "easeOut",
+  ease: (v.ease ?? "easeOut") as Transition["ease"],
 });
 
 /** Wraps chrome (never terminal text) in a random entry/exit animation. */
