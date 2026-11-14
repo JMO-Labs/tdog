@@ -35,7 +35,7 @@ export function Tabs(p: Props) {
     const el = pill.current;
     if (!t || !el) return;
     el.style.width = `${t.offsetWidth}px`;
-    el.style.transform = `translateX(${t.offsetLeft - 4}px)`;
+    el.style.transform = `translateX(${t.offsetLeft - 3}px)`;
   }, [p.active, names, editing]);
 
   const commit = (id: string) => {
