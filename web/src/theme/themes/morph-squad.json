@@ -1,0 +1,42 @@
+{
+  "name": "Morph Squad",
+  "description": "Five bold team accents on a dark command deck. Inspired by Power Rangers.",
+  "appearance": "dark",
+  "pattern": "none",
+  "font": "JetBrains Mono",
+  "terminal": {
+    "fg": "#eceff4",
+    "bg": "#0d0f16",
+    "cursor": "#ff3b3b",
+    "selection": "#2a3350",
+    "ansi": [
+      "#8b93a7",
+      "#ff4d4d",
+      "#ffd23f",
+      "#ffd23f",
+      "#4d8dff",
+      "#ff7ac8",
+      "#5aa2ff",
+      "#eceff4",
+      "#a9b0c2",
+      "#ff7b7b",
+      "#ffe27a",
+      "#ffe27a",
+      "#7fb0ff",
+      "#ffa3da",
+      "#8cc0ff",
+      "#ffffff"
+    ]
+  },
+  "chrome": {
+    "bg": "#0d0f16",
+    "surface": "#161a26",
+    "fg": "#eceff4",
+    "pink": "#ff7ac8",
+    "cyan": "#4d8dff",
+    "yellow": "#ffd23f",
+    "purple": "#ff4d4d",
+    "link": "#4d8dff",
+    "ink": "#05060a"
+  }
+}
