@@ -133,6 +133,7 @@ export function CommandPalette({
                     key={c.id}
                     id={`cmdk-${c.id}`}
                     role="option"
+                    aria-label={c.title}
                     aria-selected={i === sel}
                     onMouseMove={() => setSel(i)}
                     onClick={() => run(i)}
