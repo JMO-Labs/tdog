@@ -72,6 +72,21 @@ describe("bundled themes", () => {
     expect(THEMES.find((t) => t.id === "linking-book")?.light).toBeDefined();
     expect(THEMES.find((t) => t.id === "slime-time")?.pattern).toBe("confetti");
   });
+  it("ships the 90s pack 1", () => {
+    const by = (id: string) => THEMES.find((t) => t.id === id)!;
+    for (const id of [
+      "colonial-marine",
+      "liquid-metal",
+      "ninety-five",
+      "hack-the-planet",
+      "isla-nublar",
+    ]) {
+      expect(by(id), id).toBeTruthy();
+      expect(by(id).description).toMatch(/inspired by/i);
+    }
+    expect(by("ninety-five").light).toBeTruthy();
+    expect(by("hack-the-planet").pattern).toBe("zigzag");
+  });
   for (const t of THEMES) {
     describe(t.id, () => {
       it("is schema valid", () => {
