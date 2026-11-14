@@ -63,3 +63,18 @@ test("cancel on the confirmation returns to templates without applying", () => {
   expect(screen.getByLabelText("2 × 2")).toBeTruthy();
   expect(onSnap).toHaveBeenCalledTimes(1);
 });
+
+test("picker has a heading and arrow keys move between layouts", () => {
+  render(<SnapPicker onSnap={vi.fn(() => [])} />);
+  fireEvent.focus(screen.getByLabelText("Layouts"));
+  expect(screen.getByText("Pick a layout")).toBeTruthy();
+  const group = screen.getByRole("group", { name: "Snap layouts" });
+  const opts = group.querySelectorAll<HTMLElement>("button.snap");
+  opts[0].focus();
+  fireEvent.keyDown(group, { key: "ArrowRight" });
+  expect(document.activeElement).toBe(opts[1]);
+  fireEvent.keyDown(group, { key: "ArrowLeft" });
+  expect(document.activeElement).toBe(opts[0]);
+  fireEvent.keyDown(group, { key: "ArrowDown" });
+  expect(document.activeElement).toBe(opts[3]);
+});
