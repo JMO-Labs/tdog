@@ -61,3 +61,13 @@ test("applies cursor at once and the font (refit) only after it loads", async ()
     expect(h.setFont).toHaveBeenCalledWith(`fam:${h.loads[0]}`),
   );
 });
+
+test("a hidden pane loads no font until it becomes visible", async () => {
+  h.loads.length = 0;
+  h.setCursor.mockClear();
+  const { rerender } = render(<TerminalPane visible={false} />);
+  await waitFor(() => expect(h.setCursor).toHaveBeenCalled());
+  expect(h.loads).toEqual([]);
+  rerender(<TerminalPane visible />);
+  await waitFor(() => expect(h.loads.length).toBe(1));
+});

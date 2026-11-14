@@ -34,6 +34,7 @@ export function TerminalPane({
   theme,
   onClosed,
   settled = true,
+  visible = true,
   onSize,
   onOutput,
   onLatency,
@@ -52,12 +53,16 @@ export function TerminalPane({
   onLatency?: (ms: number) => void;
   /** True while the socket is open. */
   onOpenChange?: (open: boolean) => void;
+  /** False for panes in a hidden scene; their font loads once visible. */
+  visible?: boolean;
   /** False while a layout animation runs; the terminal refits once true. */
   settled?: boolean;
   /** Filled with a function that reconnects the session. */
   reconnectRef?: { current: (() => void) | null };
 } = {}) {
   const settledRef = useRef(settled);
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const renderer = useRef<TerminalRenderer | null>(null);
@@ -91,7 +96,7 @@ export function TerminalPane({
   const applyScope = useCallback((r: TerminalRenderer) => {
     const { cursor, font } = themeStore.scope(themeRef.current);
     r.setCursor(cursor);
-    if (fontRef.current === font) return;
+    if (!visibleRef.current || fontRef.current === font) return;
     fontRef.current = font;
     void loadFont(font).then(() => {
       if (renderer.current === r && fontRef.current === font)
@@ -103,7 +108,7 @@ export function TerminalPane({
     if (!r) return;
     r.setTheme(themeStore.terminal(theme));
     applyScope(r);
-  }, [theme, applyScope]);
+  }, [theme, visible, applyScope]);
   useEffect(() => {
     if (!dropped) return;
     const id = setTimeout(connect, RETRY_MS);

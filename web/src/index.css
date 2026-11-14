@@ -36,8 +36,11 @@
   /* Chrome shape defaults (the sticker look); themes override via shapeVars(). */
   --radius-scale: 1;
   --border-width: 1;
+  --shadow-xs: 2px 2px 0 var(--shadow);
+  --shadow-sm: 3px 3px 0 var(--shadow);
   --shadow-md: 4px 4px 0 var(--shadow);
-  --shadow-lg: 8px 8px 0 var(--shadow);
+  --shadow-lg: 6px 6px 0 var(--shadow);
+  --shadow-xl: 8px 8px 0 var(--shadow);
   --shadow-press: 0 0 0 var(--shadow);
 }
 @media (prefers-color-scheme: dark) {
@@ -102,7 +105,7 @@
   --radius-button: calc(10px * var(--radius-scale));
   --radius-input: calc(8px * var(--radius-scale));
   --shadow-hard: var(--shadow-md);
-  --shadow-hard-lg: var(--shadow-lg);
+  --shadow-hard-lg: var(--shadow-xl);
   --ease-spring: var(--spring);
 }
 

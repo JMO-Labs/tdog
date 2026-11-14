@@ -9,6 +9,7 @@ export type PaneOpen = { open: boolean; everOpen: boolean };
 export function PaneSlot({
   id,
   settled,
+  visible,
   state,
   onOpenChange,
   onClosed,
@@ -21,6 +22,8 @@ export function PaneSlot({
   /** Terminal theme id; defaults to the page theme. */
   theme?: string;
   settled: boolean;
+  /** False when the pane's scene is hidden. */
+  visible?: boolean;
   state?: PaneOpen;
   onOpenChange: (id: string, open: boolean) => void;
   onClosed?: () => void;
@@ -45,6 +48,7 @@ export function PaneSlot({
         sceneKey={id}
         theme={theme}
         settled={settled}
+        visible={visible}
         onClosed={onClosed}
         onSize={onSz}
         onOutput={onOutput}

@@ -16,7 +16,7 @@
   border-radius: calc(16px * var(--radius-scale));
   background: var(--surface);
   color: var(--fg);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
   padding: 18px;
   outline: none;
 }

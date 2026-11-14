@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { expect, test } from "vitest";
 import { shapeVars } from "./shape";
 
@@ -21,4 +23,13 @@ test("each style yields a distinct shadow, none disables it", () => {
   expect(md("none")).toBe("none");
   expect(md("glow")).toContain("var(--shadow)");
   expect(md("bevel")).toContain("inset");
+});
+
+test("hard tiers equal the index.css defaults", () => {
+  const css = readFileSync(resolve(__dirname, "../index.css"), "utf8");
+  const v = shapeVars({ radius: 1, shadow: "hard", border: 1 });
+  for (const t of ["xs", "sm", "md", "lg", "xl"]) {
+    const m = css.match(new RegExp(`--shadow-${t}: ([^;]+);`));
+    expect(m?.[1], t).toBe(v[`--shadow-${t}`]);
+  }
 });

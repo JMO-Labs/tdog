@@ -42,12 +42,12 @@
   border-style: dashed;
 }
 .btn.ghost:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 .btn.sm {
   padding: 6px 12px;
   font-size: 12px;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 .btn:disabled,
 .icon-btn:disabled,
@@ -70,7 +70,7 @@
   width: 32px;
   height: 32px;
   border-radius: calc(9px * var(--radius-scale));
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 .icon-btn.danger {
   background: var(--pink);
@@ -141,7 +141,7 @@
   cursor: pointer;
   flex: none;
   padding: 0;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 .switch::after {
   content: "";
@@ -198,14 +198,14 @@
   border: calc(2px * var(--border-width)) solid var(--line);
   border-radius: calc(99px * var(--radius-scale));
   background: var(--surface-2);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-xs);
 }
 .slider::-moz-range-track {
   height: 10px;
   border: calc(2px * var(--border-width)) solid var(--line);
   border-radius: calc(99px * var(--radius-scale));
   background: var(--surface-2);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-xs);
 }
 .slider::-webkit-slider-thumb {
   appearance: none;
@@ -215,7 +215,7 @@
   border: calc(2px * var(--border-width)) solid var(--line);
   border-radius: 30%;
   background: var(--yellow);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-xs);
   transition: transform 0.18s var(--spring);
 }
 .slider::-moz-range-thumb {
@@ -224,7 +224,7 @@
   border: calc(2px * var(--border-width)) solid var(--line);
   border-radius: 30%;
   background: var(--yellow);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-xs);
 }
 .slider:hover::-webkit-slider-thumb {
   transform: rotate(12deg) scale(1.1);
@@ -240,7 +240,7 @@
   border: calc(2px * var(--border-width)) solid var(--line);
   border-radius: calc(14px * var(--radius-scale));
   background: var(--surface-2);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 .seg button {
   border: calc(2px * var(--border-width)) solid transparent;

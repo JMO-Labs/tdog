@@ -295,7 +295,7 @@
   border: calc(2px * var(--border-width)) solid var(--line);
   border-radius: calc(10px * var(--radius-scale));
   background: var(--surface);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   font-weight: 800;
   font-size: 18px;
   line-height: 1;
