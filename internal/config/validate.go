@@ -18,8 +18,6 @@ var (
 		KindScene:    func() any { return new(Scene) },
 	}
 )
-	_           = errNoKind
-)
 
 // Decode parses and strictly validates data as the given kind.
 func Decode(kind string, data []byte) (any, error) {
