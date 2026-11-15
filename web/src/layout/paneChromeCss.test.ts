@@ -21,4 +21,14 @@ describe("pane chrome css", () => {
     expect(rule(".snap-pop")).toMatch(/right:\s*0/);
     expect(rule(".snap-pop")).toMatch(/left:\s*auto/);
   });
+  it(".pane border and shadow stay inside its own cell", () => {
+    const all = rule(".pane") + rule('.pane[data-focused="true"]');
+    // no outward (non-inset) shadow or spread ring may paint onto neighbours
+    for (const layer of all.match(/box-shadow:[^;]*;/g) ?? [])
+      for (const part of layer.replace("box-shadow:", "").split(/,(?![^(]*\))/))
+        expect(part.trim()).toMatch(/^inset\b/);
+  });
+  it(".pane is isolated so effect layers cannot escape", () => {
+    expect(rule(".pane")).toMatch(/isolation\s*:\s*isolate/);
+  });
 });
