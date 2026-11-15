@@ -1,0 +1,9 @@
+{
+  "id": "careful-commands",
+  "name": "Careful commands",
+  "version": "1.0.0",
+  "author": "tdog",
+  "description": "Flags potentially dangerous commands and asks for confirmation before running them.",
+  "entry": "index.js",
+  "permissions": ["input:gate"]
+}

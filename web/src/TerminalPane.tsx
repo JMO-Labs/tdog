@@ -51,6 +51,9 @@ import {
 import { getBroadcastGroup } from "./broadcast/store";
 import { useBroadcast } from "./broadcast/useBroadcast";
 import { filterTerminalReports } from "./broadcast/terminalFilter";
+import { createInputGate } from "./plugins/inputGate";
+import { plugins } from "./plugins/runtime";
+import { GateConfirm } from "./plugins/GateConfirm";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -289,6 +292,12 @@ export function TerminalPane({
     if (settled) renderer.current?.resize();
   }, [settled]);
 
+  /** A gate plugin held a command in this pane and wants the user to decide. */
+  const [held, setHeld] = useState<{
+    plugin: string;
+    reason: string;
+    done: (run: boolean) => void;
+  } | null>(null);
   const [images] = usePref("images");
   const imagesRef = useRef(images);
   imagesRef.current = images;
@@ -313,6 +322,36 @@ export function TerminalPane({
             noteRef.current();
           },
           onLatency: (ms) => hooks.current.onLatency?.(ms),
+          interceptInput: (() => {
+            // Enter waits for gate plugins (ADR-0005); everything else passes.
+            const enc = new TextEncoder();
+            const dec = new TextDecoder();
+            let feed: ((s: string) => void) | null = null;
+            return (data, pass) => {
+              feed ??= createInputGate(
+                {
+                  hasGate: plugins.hasGate,
+                  gate: plugins.gate,
+                  observe: plugins.observe,
+                  currentLine: () => r.cursorLine?.() ?? "",
+                  confirm: (plugin, reason) =>
+                    new Promise<boolean>((done) =>
+                      setHeld({
+                        plugin,
+                        reason,
+                        done: (run) => {
+                          setHeld(null);
+                          done(run);
+                          r.focus?.();
+                        },
+                      }),
+                    ),
+                },
+                (text) => pass(enc.encode(text)),
+              );
+              feed(dec.decode(data));
+            };
+          })(),
           onBroadcast: (data) => {
             const scene = sceneRef.current;
             const pane = keyRef.current;
@@ -469,6 +508,13 @@ export function TerminalPane({
           killed={killed}
           exitCode={state.status === "closed" ? state.exitCode : undefined}
           onStart={killed ? startNew : connect}
+        />
+      )}
+      {held && (
+        <GateConfirm
+          plugin={held.plugin}
+          reason={held.reason}
+          onDone={held.done}
         />
       )}
       <PaneOverlayHost

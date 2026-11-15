@@ -43,6 +43,7 @@ import {
   getBroadcastGroup,
   getBroadcastStore,
 } from "../broadcast/store";
+import { startPlugins } from "../plugins/runtime";
 import "./shell.css";
 import "./narrow.css";
 import "./menu.css";
@@ -90,6 +91,15 @@ export function Workspace({
   const toast = useToast();
   const c = useCopy();
   const [broadcastCount, setBroadcastCount] = useState(0);
+  // Enabled plugins run for as long as the signed-in workspace is open.
+  useEffect(
+    () =>
+      startPlugins((plugin, reason) =>
+        toast("fail", `Plugin ${plugin} was stopped: it ${reason}.`),
+      ),
+    [toast],
+  );
+
   useEffect(() => saveScenes(sc), [sc]);
   useEffect(() => {
     return getBroadcastStore().subscribe(() => {

@@ -2,7 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PaneOverlayContext } from "../../terminal/renderer";
 import type { TerminalRenderer } from "../../terminal/renderer";
 import { getPaneOverlay } from "./registry";
-import { clearFocusedPaneOverlay, setFocusedPaneOverlay } from "./focusedPane";
+import {
+  clearFocusedPaneOverlay,
+  setFocusedPaneOverlay,
+  setFocusedScreen,
+} from "./focusedPane";
 import "./overlay.css";
 
 export interface PaneOverlayHostProps {
@@ -128,13 +132,18 @@ export const PaneOverlayHost = ({
   useEffect(() => {
     const pane = hostDiv.current?.parentElement;
     if (!pane) return;
-    const onFocus = () => setFocusedPaneOverlay(open);
+    const onFocus = () => {
+      setFocusedPaneOverlay(open);
+      setFocusedScreen(
+        () => renderer?.screenLines?.().map((l) => l.text) ?? [],
+      );
+    };
     pane.addEventListener("focusin", onFocus);
     return () => {
       pane.removeEventListener("focusin", onFocus);
       clearFocusedPaneOverlay(open);
     };
-  }, [open]);
+  }, [open, renderer]);
 
   const overlay = overlayId ? getPaneOverlay(overlayId) : null;
   const renderedContent = overlay && ctx ? overlay.render(ctx) : null;
