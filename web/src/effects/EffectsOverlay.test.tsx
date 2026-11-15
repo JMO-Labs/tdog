@@ -63,3 +63,9 @@ test("layers split: glyph-rain is behind, the rest in front", () => {
   expect(front.container.querySelector(".fx-glyph-rain")).toBeNull();
   expect(front.container.querySelectorAll("[data-fx]").length).toBe(1);
 });
+
+test("performance mode turns every effect off", () => {
+  localStorage.setItem("tdog.perf", "1");
+  render(<EffectsOverlay effects={[{ id: "scanlines", intensity: 1 }]} />);
+  expect(screen.queryByTestId("fx-root")).toBeNull();
+});

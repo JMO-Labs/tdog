@@ -22,6 +22,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   const [dress, setDress] = usePref("dress");
   const fx = useFx();
   const [boot, setBoot] = usePref("boot");
+  const [perf, setPerf] = usePref("perf");
 
   useEffect(() => {
     let live = true;
@@ -101,6 +102,16 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
           <p className="muted">Short intro, once per session. Any key skips.</p>
         </div>
         <Switch labelledBy="sw-boot" checked={boot} onChange={setBoot} />
+      </div>
+      <h3>Performance</h3>
+      <div className="row">
+        <div>
+          <b id="sw-perf">Performance mode</b>
+          <p className="muted">
+            Turns off backgrounds, blur and screen effects at once.
+          </p>
+        </div>
+        <Switch labelledBy="sw-perf" checked={perf} onChange={setPerf} />
       </div>
       <h3>Screen effects</h3>
       <div className="row">

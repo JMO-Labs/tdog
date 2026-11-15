@@ -61,6 +61,9 @@ func newID() string {
 	return hex.EncodeToString(b)
 }
 
+// rename is a seam for tests.
+var rename = os.Rename
+
 // ingest copies r into the store after size and content sniffing.
 func (s *Store) ingest(r io.Reader) (Asset, error) {
 	var a Asset
@@ -106,7 +109,7 @@ func (s *Store) ingest(r io.Reader) (Asset, error) {
 	if err := os.WriteFile(filepath.Join(s.dir, a.ID+".json"), meta, 0o600); err != nil {
 		return Asset{}, err
 	}
-	if err := os.Rename(tmp.Name(), filepath.Join(s.dir, a.ID+".bin")); err != nil {
+	if err := rename(tmp.Name(), filepath.Join(s.dir, a.ID+".bin")); err != nil {
 		_ = os.Remove(filepath.Join(s.dir, a.ID+".json"))
 		return Asset{}, err
 	}

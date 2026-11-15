@@ -117,5 +117,42 @@
         }
       ]
     }
+  },
+  "light": {
+    "terminal": {
+      "palette": {
+        "fg": "#0c1a0e",
+        "bg": "#e4f0dc",
+        "cursor": "#c01818",
+        "selection": "#b4d4a8",
+        "ansi": [
+          "#4a644a",
+          "#b01818",
+          "#1e7a1e",
+          "#7a6400",
+          "#1f5a9a",
+          "#8a2a8a",
+          "#0e6e60",
+          "#1c2c1c",
+          "#3a5a3a",
+          "#c02020",
+          "#17700f",
+          "#6a5400",
+          "#1a4f8f",
+          "#7a2a7a",
+          "#0a6458",
+          "#0c1a0e"
+        ]
+      }
+    },
+    "chrome": {
+      "tokens": {
+        "bg": "#cfe0c4",
+        "surface": "#e4f0dc",
+        "fg": "#0c1a0e",
+        "muted": "#3f5a3f",
+        "link": "#1e7a1e"
+      }
+    }
   }
 }
