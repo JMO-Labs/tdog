@@ -44,6 +44,12 @@ type jrnl struct {
 
 	streamMu   sync.Mutex // serializes stream's Since+write with forget's wipe+reply
 	afterSince func()     // test seam: runs in stream between Since and write
+
+	// Restore from host (restore.go); guarded by mu except snap (set once).
+	snap    func() (string, error) // tmux scrollback; nil = not restorable
+	tail    []string               // last anchorLines complete non-empty output lines
+	partial string                 // output after the last newline
+	anchors map[uint64][]string    // disconnected gap rec -> tail at park
 }
 
 func newJrnl() *jrnl {
@@ -53,6 +59,9 @@ func newJrnl() *jrnl {
 // add stores events; callers hold j.mu.
 func (j *jrnl) add(evs []journal.Event) {
 	for _, e := range evs {
+		if e.Kind == journal.KindOut {
+			j.track(e.Text)
+		}
 		e.Seq += j.base
 		j.max = e.Seq
 		if e.Rec != 0 {
@@ -113,6 +122,7 @@ func (j *jrnl) control(p []byte, reply func([]byte) error) {
 	var v struct {
 		Type string `json:"type"`
 		Seq  uint64 `json:"seq"`
+		Rec  uint64 `json:"rec"`
 		On   *bool  `json:"on"`
 	}
 	if json.Unmarshal(p, &v) != nil {
@@ -130,6 +140,10 @@ func (j *jrnl) control(p []byte, reply func([]byte) error) {
 		// arrives, so none sent before the wipe can re-add rows afterwards.
 		if reply != nil {
 			_ = reply(frame.Encode(frame.Control, []byte(`{"type":"jrnl-forgotten"}`)))
+		}
+	case "jrnl-restore":
+		if v.Rec != 0 {
+			go j.restore(v.Rec) // capture is a network round trip; never block input
 		}
 	case "jrnl-record":
 		if v.On == nil {

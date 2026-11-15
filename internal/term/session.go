@@ -24,6 +24,13 @@ type Session struct {
 	exited bool
 	killed bool // ended by a kill request; clients get a "killed" control
 
+	// Parking (park.go): s may be swapped while parked; read it via tr().
+	parked bool          // transport closed on purpose; tmux keeps the shell
+	hungUp bool          // a kill was requested: a parked pump must end
+	cond   *sync.Cond    // on mu; wakes a parked pump
+	parkMu sync.Mutex    // serializes park against unpark+attach
+	ended  chan struct{} // closed when pump ends
+
 	pane string // browser pane key for journal sync; "" = never syncs; set once
 
 	onClose func() // preset on_close hook; nil when none
@@ -68,19 +75,32 @@ func (s *Session) info() Info {
 	return Info{ID: s.id, Scene: s.scene, Target: s.target, PID: s.s.pid, Started: s.started, Attached: s.att != nil}
 }
 
-// pump copies shell output into the ring and the attachment until the shell ends.
+// pump copies shell output into the ring and the attachment until the shell
+// ends. A parked transport's end is not the shell's: pump waits in next for
+// the replacement transport and carries on reading from it.
 func (s *Session) pump() {
 	buf := make([]byte, flushSize)
-	for {
-		n, err := s.s.r.Read(buf)
-		if n > 0 {
-			s.feed(append([]byte(nil), buf[:n]...))
+	t := s.tr()
+	for t != nil {
+		for {
+			n, err := t.r.Read(buf)
+			if n > 0 {
+				s.feed(append([]byte(nil), buf[:n]...))
+			}
+			if err != nil {
+				break
+			}
 		}
-		if err != nil {
-			break
+		<-t.wait.done
+		if nt := s.next(t); nt != nil {
+			t = nt
+			continue
 		}
+		break
 	}
-	<-s.s.wait.done
+	if s.ended != nil {
+		close(s.ended)
+	}
 	s.j.stop()
 	s.mu.Lock()
 	s.exited = true
@@ -89,9 +109,10 @@ func (s *Session) pump() {
 		s.att = nil
 	}
 	s.mu.Unlock()
-	s.s.close()
+	t = s.tr()
+	t.close()
 	// Log before removal: once the session is gone from the registry, its end is on record.
-	s.reg.audit.Log(audit.Entry{Event: "term_end", Target: s.target, PID: s.s.pid, Session: s.id})
+	s.reg.audit.Log(audit.Entry{Event: "term_end", Target: s.target, PID: t.pid, Session: s.id})
 	s.reg.remove(s.id)
 	if s.onClose != nil {
 		go s.onClose()
@@ -147,13 +168,17 @@ func (s *Session) detach(a *attachment) {
 }
 
 func (s *Session) auditEvent(ev string) {
-	s.reg.audit.Log(audit.Entry{Event: ev, Target: s.target, PID: s.s.pid, Session: s.id})
+	s.reg.audit.Log(audit.Entry{Event: ev, Target: s.target, PID: s.tr().pid, Session: s.id})
 }
 
 // serve pumps frames between c and the session until the socket drops, is
 // replaced, or the shell exits. The shell keeps running after a drop.
 func (s *Session) serve(c *websocket.Conn) {
-	a, replay := s.attach()
+	a, replay, err := s.attachUnparked()
+	if err != nil {
+		sshFail(c, "reconnect to host failed: "+err.Error())
+		return
+	}
 	if a == nil {
 		_ = c.Close(websocket.StatusNormalClosure, "session ended")
 		return
@@ -174,7 +199,7 @@ func (s *Session) serve(c *websocket.Conn) {
 		pumpInput(ioctx, func(ctx context.Context) ([]byte, error) {
 			_, data, err := c.Read(ioctx)
 			return data, err
-		}, s.s.w, s.s.resize, write, func(p []byte) { s.j.control(p, write) })
+		}, trWriter{s}, func(cols, rows uint16) { s.tr().resize(cols, rows) }, write, func(p []byte) { s.j.control(p, write) })
 	}()
 
 	if write(frame.SessionControl(s.id)) != nil {
@@ -198,7 +223,7 @@ func (s *Session) serve(c *websocket.Conn) {
 		if killed {
 			_ = c.Write(wctx, websocket.MessageBinary, frame.KilledControl())
 		}
-		_ = c.Write(wctx, websocket.MessageBinary, frame.ExitControl(s.s.wait.code))
+		_ = c.Write(wctx, websocket.MessageBinary, frame.ExitControl(s.tr().wait.code))
 		_ = c.Close(websocket.StatusNormalClosure, "exit")
 		return
 	}

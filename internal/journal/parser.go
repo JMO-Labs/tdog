@@ -93,6 +93,14 @@ func (p *Parser) Gap(why string) []Event {
 	return p.take()
 }
 
+// Out returns a standalone out event with a fresh seq and no record (Rec 0;
+// the caller sets it). Parser state is untouched.
+func (p *Parser) Out(text string) []Event {
+	p.at = p.now()
+	p.emit(Event{Kind: KindOut, Text: text})
+	return p.take()
+}
+
 // Feed consumes PTY bytes and returns the events they completed. The partial
 // last line of output is held back until a newline or Flush.
 func (p *Parser) Feed(b []byte) []Event {

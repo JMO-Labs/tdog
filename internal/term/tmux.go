@@ -4,13 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 
 	"golang.org/x/crypto/ssh"
 )
 
-const tmuxPrefix = "tdog-"
+const (
+	tmuxPrefix   = "tdog-"
+	historyLimit = 50000 // tmux scrollback lines, so a restore can reach a park
+)
 
 // CmdRunner runs a command on the ssh host and returns its stdout.
 type CmdRunner func(cmd string) (string, error)
@@ -81,13 +87,53 @@ func spawnTmux(cfg SSHConfig, run CmdRunner, id string) (*session, error) {
 }
 
 // spawnTmuxCmd is spawnTmux with an explicit attach command (cwd/env setup).
+// The session can park: closing ssh leaves the tmux shell running, and
+// unpark re-runs cmd, whose "new -A" re-attaches to it.
 func spawnTmuxCmd(cfg SSHConfig, run CmdRunner, id, cmd string) (*session, error) {
 	s, err := spawnSSHCmd(cfg, cmd)
 	if err != nil {
 		return nil, err
 	}
 	wrapTmuxKill(s, run, id)
+	s.park = func() error { s.close(); return nil }
+	s.unpark = func() (*session, error) { return spawnTmuxCmd(cfg, run, id, cmd) }
+	s.snap = func() (string, error) { return capture(run, id) }
+	raiseHistoryOnce(net.JoinHostPort(cfg.Host, cfg.Port), run)
 	return s, nil
+}
+
+// capture returns session id's tmux scrollback as plain text, wrapped lines joined.
+func capture(run CmdRunner, id string) (string, error) {
+	return run("tmux capture-pane -p -J -S -" + strconv.Itoa(historyLimit) + " -t " + tmuxPrefix + id)
+}
+
+// raiseHistory lifts the host's global tmux history-limit to historyLimit
+// (never lowers it). It applies to panes created afterwards.
+func raiseHistory(run CmdRunner) error {
+	out, err := run("tmux show -gv history-limit")
+	if err != nil {
+		return err
+	}
+	if n, err := strconv.Atoi(strings.TrimSpace(out)); err == nil && n >= historyLimit {
+		return nil
+	}
+	_, err = run("tmux set -g history-limit " + strconv.Itoa(historyLimit))
+	return err
+}
+
+var raisedHosts sync.Map // host:port -> true once raiseHistory was tried
+
+// raiseHistoryOnce runs raiseHistory in the background, once per host per
+// process; failures are logged and never fail a spawn.
+func raiseHistoryOnce(host string, run CmdRunner) {
+	if _, done := raisedHosts.LoadOrStore(host, true); done {
+		return
+	}
+	go func() {
+		if err := raiseHistory(run); err != nil {
+			log.Printf("term: tmux history-limit on %s: %v", host, err)
+		}
+	}()
 }
 
 // Rediscover registers an attached session for every host tdog-* tmux session

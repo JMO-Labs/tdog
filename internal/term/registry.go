@@ -36,6 +36,8 @@ type Registry struct {
 	scrollback int
 	audit      *audit.Logger
 	jstore     *journal.Store // optional server journal sync; nil = off
+
+	parkTicker func() (<-chan time.Time, func()) // test seam; nil = every parkTick
 }
 
 func (r *Registry) store() *journal.Store {
@@ -89,7 +91,10 @@ func (r *Registry) add(id, target, scene string, s *session, onClose func()) *Se
 	sess := &Session{
 		id: id, scene: scene, target: target, started: time.Now().UTC(),
 		s: s, reg: r, ring: newRing(r.scrollback), onClose: onClose, j: newJrnl(),
+		ended: make(chan struct{}),
 	}
+	sess.cond = sync.NewCond(&sess.mu)
+	sess.j.snap = s.snap
 	r.mu.Lock()
 	sess.j.store, sess.j.sid, sess.j.pane = r.jstore, id, sess.paneID
 	r.sessions[sess.id] = sess
@@ -97,6 +102,9 @@ func (r *Registry) add(id, target, scene string, s *session, onClose func()) *Se
 	r.audit.Log(audit.Entry{Event: "term_start", Target: target, PID: s.pid, Session: sess.id})
 	sess.j.start()
 	go sess.pump()
+	if s.park != nil {
+		go sess.idleLoop(r.ticker())
+	}
 	return sess
 }
 
@@ -127,7 +135,8 @@ func (r *Registry) Kill(id string) bool {
 	if s == nil {
 		return false
 	}
-	s.s.kill()
+	s.hangUp()
+	s.tr().kill()
 	return true
 }
 
@@ -137,8 +146,9 @@ func (s *Session) kill() {
 	s.mu.Lock()
 	s.killed = true
 	s.mu.Unlock()
+	s.hangUp()
 	s.dropSynced()
-	go s.s.kill()
+	go s.tr().kill()
 }
 
 // KillAll hangs up every session (shutdown).
