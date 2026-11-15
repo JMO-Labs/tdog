@@ -1,0 +1,6 @@
+/* xterm.css paints the viewport opaque black. When a pane clears the terminal
+   background (motif, scene image, glyph rain) that black covered it, so light
+   variants showed dark-on-black text. The renderer paints the real background. */
+.xterm .xterm-viewport {
+  background-color: transparent;
+}
