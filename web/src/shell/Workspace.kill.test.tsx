@@ -25,6 +25,13 @@ vi.mock("../TerminalPane", () => ({
 }));
 const toast = vi.fn();
 vi.mock("../overlays/toast", () => ({ useToast: () => toast }));
+const killedPanes: Set<string> = new Set();
+vi.mock("../terminal/killed", () => ({
+  isKilled: (p: string) => killedPanes.has(p),
+  markKilled: vi.fn((p: string) => killedPanes.add(p)),
+  clearKilled: vi.fn((p: string) => killedPanes.delete(p)),
+  subscribeKilled: vi.fn(() => () => {}),
+}));
 
 import { Workspace } from "./Workspace";
 import { clearCommands } from "../overlays/commands";
@@ -33,6 +40,7 @@ beforeEach(() => {
   localStorage.clear();
   killScene.mockClear();
   toast.mockClear();
+  killedPanes.clear();
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
 });
 afterEach(() => {
@@ -109,4 +117,56 @@ test("scene tab menu closes on mouse leave and on blur", () => {
   fireEvent.contextMenu(tab());
   fireEvent.blur(screen.getByRole("menuitem", { name: "Kill scene" }));
   expect(screen.queryByRole("menu")).toBeNull();
+});
+
+test("kill last pane in scene removes scene tab", async () => {
+  killScene.mockImplementation(async (paneId: string) => {
+    killedPanes.add(paneId);
+    return 1;
+  });
+  render(<Workspace />);
+  openAll();
+  // Kill all shells to close the only scene and open a new one
+  fireEvent.click(screen.getByRole("button", { name: "Kill all shells" }));
+  await nuke();
+  // Now create a second scene
+  fireEvent.click(screen.getByRole("button", { name: "New scene" }));
+  openAll();
+  // We should have 2 scenes now
+  expect(screen.getByRole("tab", { name: "scene 1" })).toBeTruthy();
+  expect(screen.getByRole("tab", { name: "scene 2" })).toBeTruthy();
+  // Kill the second scene
+  fireEvent.click(screen.getByRole("button", { name: "Kill all shells" }));
+  await nuke();
+  // scene 2 should be gone
+  expect(screen.queryByRole("tab", { name: "scene 2" })).toBeNull();
+  expect(screen.getByRole("tab", { name: "scene 1" })).toBeTruthy();
+});
+
+test("kill all shells closes all scenes and leaves one fresh scene", async () => {
+  killScene.mockImplementation(async (paneId: string) => {
+    killedPanes.add(paneId);
+    return 1;
+  });
+  render(<Workspace />);
+  openAll();
+  // Create multiple scenes
+  fireEvent.click(screen.getByRole("button", { name: "New scene" }));
+  fireEvent.click(screen.getByRole("button", { name: "New scene" }));
+  openAll();
+  // We should have 3 scenes now
+  expect(screen.getByRole("tab", { name: "scene 1" })).toBeTruthy();
+  expect(screen.getByRole("tab", { name: "scene 2" })).toBeTruthy();
+  expect(screen.getByRole("tab", { name: "scene 3" })).toBeTruthy();
+  // Kill all shells
+  fireEvent.click(screen.getByRole("button", { name: "Kill all shells" }));
+  await nuke();
+  // Only scene 2 and 3 should be gone (scene 1 is the last scene, so it's kept)
+  expect(screen.queryByRole("tab", { name: "scene 2" })).toBeNull();
+  expect(screen.queryByRole("tab", { name: "scene 3" })).toBeNull();
+  // scene 1 should remain as the fresh scene
+  expect(screen.getByRole("tab", { name: "scene 1" })).toBeTruthy();
+  // There should be only one scene
+  const tabs = screen.getAllByRole("tab");
+  expect(tabs.length).toBe(1);
 });

@@ -11,13 +11,12 @@ import { MODES, useThemeMode } from "../theme/useThemeMode";
 import { Dialog } from "../overlays/Dialog";
 import { useToast } from "../overlays/toast";
 import { KillDialog } from "./KillDialog";
-import { clearLayout } from "../layout/store";
 import { addLeaf, moveToScene } from "../layout/transfer";
 import { preparePane } from "../presets/launch";
 import { newId } from "../layout/tree";
 import { useShellName } from "../terminal/shellName";
 import { killScene } from "../terminal/sessions";
-import { clearScene } from "../broadcast/store";
+import { useSceneKill } from "./useSceneKill";
 import { Studio } from "../studio/Studio";
 import { sectionFromHash } from "../studio/sections";
 import { Icon } from "./icons";
@@ -29,7 +28,6 @@ import { useDirtyScenes } from "../presets/useDirtyScenes";
 import {
   addNamedScene,
   addScene,
-  closeScene,
   loadScenes,
   renameScene,
   reorderScene,
@@ -37,6 +35,7 @@ import {
 } from "./scenes";
 import { Pet, usePetAwake } from "./pet";
 import { usePetEngine } from "./usePetEngine";
+import { useKeyboardShortcuts } from "./useKeyboardShortcuts";
 import { Tabs } from "./Tabs";
 import { MainMenu, type MenuGroup } from "./MainMenu";
 import {
@@ -114,19 +113,21 @@ export function Workspace({
     openTab: openSceneTab,
   });
   const dirty = useDirtyScenes(sc.scenes.map((x) => x.id));
+  const { removeSceneCleanup, runKill: runKillImpl } = useSceneKill(
+    leafMap,
+    paneOpen,
+    setSc,
+    setLeafMap,
+    toast,
+    c,
+  );
+
   const finishClose = useCallback(
     (id: string) => {
       (leafMap[id] ?? []).forEach((p) => void killScene(p));
-      clearLayout(id);
-      clearScene(id);
-      setLeafMap((m) => {
-        const rest = { ...m };
-        delete rest[id];
-        return rest;
-      });
-      setSc((s) => closeScene(s, id, newId("sc")));
+      removeSceneCleanup(id);
     },
-    [leafMap],
+    [leafMap, removeSceneCleanup],
   );
   const moveScene = useCallback(
     (id: string, from: string, to: string) => void moveToScene(id, from, to),
@@ -154,12 +155,11 @@ export function Workspace({
   const closingCount = closing
     ? (leafMap[closing] ?? []).filter((p) => paneOpen[p]?.open).length
     : 0;
+
   const runKill = async () => {
     const targets = killTargets(kill);
     setKill(null);
-    const done = await Promise.all(targets.map((p) => killScene(p)));
-    const n = done.reduce((a, b) => a + b, 0);
-    toast("success", c(n === 1 ? "kill.done1" : "kill.done", { n }));
+    void runKillImpl(targets);
   };
 
   const onSize = useCallback(
@@ -184,38 +184,16 @@ export function Workspace({
     dispatchEvent(new Event("tdog:signout"));
   }, []);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) return;
-      if (e.key === "s" && !e.shiftKey && !e.altKey) {
-        e.preventDefault();
-        void flows.save();
-      } else if (e.key === ",") {
-        e.preventDefault();
-        setSettings(true);
-      } else if (e.shiftKey && e.key.toLowerCase() === "m") {
-        e.preventDefault();
-        setMenu((o) => !o);
-      } else if (e.shiftKey && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setKill("all");
-      } else if (e.key === "." && !e.shiftKey && !e.altKey) {
-        e.preventDefault();
-        setStudio(true);
-      } else if (e.key === "t" && !e.shiftKey && !e.altKey) {
-        e.preventDefault();
-        add();
-      } else if (/^[1-9]$/.test(e.key) && !e.shiftKey && !e.altKey) {
-        const target = sc.scenes[Number(e.key) - 1];
-        if (target) {
-          e.preventDefault();
-          select(target.id);
-        }
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [add, select, sc.scenes, flows]);
+  useKeyboardShortcuts(
+    add,
+    select,
+    sc.scenes.map((x) => x.id),
+    flows,
+    setSettings,
+    setStudio,
+    setMenu,
+    setKill,
+  );
 
   useEffect(() => {
     const offs = [
