@@ -101,6 +101,122 @@
     border-bottom: calc(2px * var(--border-width)) solid var(--line);
   }
 }
+.scene-designer {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 20px;
+}
+.scene-list,
+.scene-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.scene-bar,
+.scene-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+}
+.scene-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+.scene-toml {
+  min-height: 320px;
+  font-family: var(--mono, monospace);
+  resize: vertical;
+}
+.scene-canvas {
+  display: flex;
+  min-height: 300px;
+  padding: 12px;
+  border: calc(2px * var(--border-width)) solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.scene-canvas > * {
+  flex: 1;
+}
+.scene-split {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+.scene-cell {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+.scene-cell > * {
+  flex: 1;
+}
+.scene-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  min-width: 0;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+}
+.scene-look {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  background: var(--ink, #160b2e);
+  border-radius: 6px;
+}
+.scene-look i {
+  display: block;
+  height: 4px;
+  width: 60%;
+  background: var(--pink);
+  border-radius: 2px;
+}
+.scene-look i:nth-child(2) {
+  width: 85%;
+  opacity: 0.6;
+}
+.scene-look i:nth-child(3) {
+  width: 40%;
+  opacity: 0.4;
+}
+.scene-look-name {
+  font-size: 12px;
+  font-weight: 700;
+}
+.scene-sliders {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+.scene-swatches {
+  display: flex;
+  gap: 8px;
+}
+.scene-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.scene-swatch[aria-checked="true"] {
+  outline: 3px solid var(--pink);
+  outline-offset: 2px;
+}
+@media (max-width: 639px) {
+  .scene-designer {
+    grid-template-columns: 1fr;
+  }
+}
 .themes {
   display: grid;
   gap: 12px;

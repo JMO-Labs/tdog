@@ -22,6 +22,7 @@ import { sectionFromHash } from "../studio/sections";
 import { Icon } from "./icons";
 import { type PaneOpen } from "./PaneSlot";
 import { SceneView } from "./SceneView";
+import { openScenePreset } from "../presets/openScene";
 import { usePresetFlows } from "../presets/usePresetFlows";
 import { useDirtyScenes } from "../presets/useDirtyScenes";
 import {
@@ -94,9 +95,11 @@ export function Workspace({
     [],
   );
   const add = useCallback(() => setSc((s) => addScene(s, newId("sc"))), []);
+  const openSceneTab = (id: string, name: string) =>
+    setSc((s) => addNamedScene(s, id, name));
   const flows = usePresetFlows({
     scene: sc.active,
-    openTab: (id, name) => setSc((s) => addNamedScene(s, id, name)),
+    openTab: openSceneTab,
   });
   const dirty = useDirtyScenes(sc.scenes.map((x) => x.id));
   const finishClose = useCallback(
@@ -457,6 +460,10 @@ export function Workspace({
       <Studio
         open={studio}
         onClose={() => setStudio(false)}
+        onOpenScene={async (name) => {
+          await openScenePreset(name, openSceneTab, toast, c);
+          setStudio(false);
+        }}
         onTry={(name) => {
           setStudio(false);
           void preparePane(name, toast).then((id) => {

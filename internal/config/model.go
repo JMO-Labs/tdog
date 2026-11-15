@@ -64,12 +64,14 @@ type Pane struct {
 
 // Scene is a scene preset. Layout is the renderer-agnostic layout tree.
 type Scene struct {
-	Name       string      `toml:"name,omitempty"`
-	Autostart  bool        `toml:"autostart,omitempty"`
-	Theme      string      `toml:"theme,omitempty"`
-	Background *Background `toml:"background,omitempty"`
-	Layout     *Layout     `toml:"layout,omitempty"`
-	Panes      []Pane      `toml:"panes,omitempty"`
+	Name        string      `toml:"name,omitempty"`
+	Autostart   bool        `toml:"autostart,omitempty"`
+	Theme       string      `toml:"theme,omitempty"`
+	Gap         *int        `toml:"gap,omitempty"`
+	PaneOpacity *float64    `toml:"pane_opacity,omitempty"`
+	Background  *Background `toml:"background,omitempty"`
+	Layout      *Layout     `toml:"layout,omitempty"`
+	Panes       []Pane      `toml:"panes,omitempty"`
 }
 
 // Global is config.toml: the root of the inheritance chain.

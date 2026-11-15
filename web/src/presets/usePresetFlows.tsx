@@ -1,23 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { saveLayout, loadLayout } from "../layout/store";
+import { loadLayout } from "../layout/store";
 import { addLeaf } from "../layout/transfer";
-import { newId, leaves, titles } from "../layout/tree";
+import { leaves, titles } from "../layout/tree";
 import { registerCommand } from "../overlays/commands";
 import { useCopy } from "../copy/copy";
 import { useToast } from "../overlays/toast";
-import { listPresets, putScenePreset, startScene } from "./api";
+import { listPresets, putScenePreset } from "./api";
 import { errorMessage, preparePane } from "./launch";
+import { openScenePreset } from "./openScene";
 import { liveInfo } from "./liveInfo";
-import { runToTree } from "./layout";
 import { NameDialog, PresetPicker } from "./PresetPicker";
-import {
-  bindSession,
-  panePresets,
-  scenePreset,
-  setPaneTheme,
-  setScenePreset,
-} from "./panes";
-import { applySaved, getSave, putSave, snapshot } from "./sceneSave";
+import { panePresets, scenePreset, setScenePreset } from "./panes";
+import { putSave, snapshot } from "./sceneSave";
 import { sceneToml, type Override } from "./toml";
 
 type Pick = { kind: "terminal" | "scene"; names: string[] } | null;
@@ -134,29 +128,7 @@ export function usePresetFlows({
       const id = await preparePane(name, toast);
       if (id) addLeaf(scene, id);
     } else if (kind === "scene") {
-      try {
-        const run = await startScene(name);
-        const { sessions, ...started } = runToTree(run);
-        let tree = started.tree;
-        const tab = newId("sc");
-        const saved = getSave(name);
-        if (saved) {
-          const r = applySaved(saved, tree);
-          tree = r.tree;
-          for (const [pane, t] of Object.entries(r.themes))
-            setPaneTheme(pane, t);
-        }
-        for (const [pane, s] of Object.entries(sessions)) bindSession(pane, s);
-        saveLayout(tab, tree);
-        setScenePreset(tab, name);
-        openTab(tab, name);
-        toast(
-          "success",
-          c(run.existing ? "preset.attached" : "preset.started", { name }),
-        );
-      } catch (e) {
-        toast("fail", errorMessage(e));
-      }
+      await openScenePreset(name, openTab, toast, c);
     }
   };
 

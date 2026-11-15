@@ -71,6 +71,8 @@ func TestValidationErrorsHaveFieldPath(t *testing.T) {
 		"bad hook mode":  {KindTerminal, `post_exec = { mode = "x", run = ["a"] }`, "post_exec.mode"},
 		"hook unknown":   {KindTerminal, `on_close = { mode = "all", runs = ["a"] }`, "on_close.runs"},
 		"scene unknown":  {KindScene, "zzz = true", "zzz"},
+		"scene gap":      {KindScene, "gap = 99", "gap"},
+		"scene opacity":  {KindScene, "pane_opacity = 1.5", "pane_opacity"},
 		"scene pane":     {KindScene, "[[panes]]\npreset = \"../x\"", "panes[0].preset"},
 		"global target":  {KindGlobal, `default_target = "mars"`, "default_target"},
 		"syntax":         {KindTerminal, "= = =", ""},

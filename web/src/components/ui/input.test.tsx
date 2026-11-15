@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { Field } from "./field";
 import { Input } from "./input";
+import { Textarea } from "./textarea";
 
 test("input is typeable", () => {
   const fn = vi.fn();
@@ -34,4 +35,15 @@ test("field error replaces hint, marks invalid, announces", () => {
   expect(screen.queryByText("e.g. box")).toBeNull();
   expect(screen.getByRole("alert").textContent).toBe("Required");
   expect(input.getAttribute("aria-invalid")).toBe("true");
+});
+
+test("textarea is typeable and styled as an input", () => {
+  const fn = vi.fn();
+  render(<Textarea aria-label="body" className="x" onChange={fn} />);
+  const el = screen.getByLabelText("body");
+  fireEvent.change(el, { target: { value: "a" } });
+  expect(fn).toHaveBeenCalled();
+  expect(el.tagName).toBe("TEXTAREA");
+  expect(el.className).toContain("input");
+  expect(el.className).toContain("x");
 });
