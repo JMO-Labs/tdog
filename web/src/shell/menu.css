@@ -1,0 +1,87 @@
+/* Header main menu: popover with grouped items and nested submenus. */
+.mm {
+  position: relative;
+}
+.mm-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  min-width: 220px;
+  max-width: calc(100vw - 16px);
+  display: grid;
+  padding: 6px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+.mm-sub {
+  position: relative;
+  display: grid;
+}
+.mm-nested {
+  top: 0;
+  right: calc(100% + 4px);
+  min-width: 160px;
+}
+.mm-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.mm-menu button:hover,
+.mm-menu button:focus-visible {
+  background: var(--surface-2);
+  outline: none;
+}
+.mm-menu button[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: default;
+}
+.mm-menu svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.mm-gap {
+  width: 16px;
+  flex: none;
+}
+.mm-hint,
+.mm-kbd {
+  margin-left: auto;
+  padding-left: 16px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+}
+.mm-menu button > svg:last-child:not(:first-child) {
+  margin-left: auto;
+}
+.mm-sep {
+  height: 2px;
+  margin: 4px 6px;
+  background: var(--line);
+  opacity: 0.25;
+}
+/* Narrow: submenus drop below their item instead of flying off-screen. */
+@media (max-width: 639px) {
+  .mm-nested {
+    position: static;
+    box-shadow: none;
+    border: 0;
+    padding: 0 0 0 16px;
+  }
+}
