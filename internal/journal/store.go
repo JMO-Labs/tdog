@@ -221,6 +221,14 @@ func (s *Store) KillPane(pane, sid string) error {
 	return s.drop(pane, sid)
 }
 
+// KillSid refuses session sid's appends for good, on any pane (a kill before
+// the session had a pane).
+func (s *Store) KillSid(sid string) {
+	s.mu.Lock()
+	s.killed[sid] = true
+	s.mu.Unlock()
+}
+
 // Reopen lets appends to pane resume after a forget; killed sessions stay out.
 func (s *Store) Reopen(pane string) {
 	s.mu.Lock()

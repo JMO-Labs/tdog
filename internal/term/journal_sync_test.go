@@ -203,3 +203,17 @@ func TestBlockedAppendDoesNotBlockFeed(t *testing.T) {
 	close(release)
 	<-acked
 }
+
+func TestKillWithoutPaneStillBlocksLaterSync(t *testing.T) {
+	j, st := syncJrnl(t, "")
+	pane := ""
+	j.pane = func() string { return pane }
+	j.kill() // no pane yet: the store must still remember the kill
+	pane = "p1"
+	cmdRun(j, "one")
+	setSent(j)
+	j.control([]byte(`{"type":"jrnl-ack","seq":999999}`), nil)
+	if rows := st.Read(time.Unix(0, 0)); len(rows) != 0 {
+		t.Fatalf("killed session synced after pane set: %+v", rows)
+	}
+}

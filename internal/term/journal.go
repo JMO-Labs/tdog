@@ -157,6 +157,8 @@ func (j *jrnl) kill() {
 		if err := j.store.KillPane(p, j.sid); err != nil {
 			log.Printf("journal: delete %s: %v", p, err)
 		}
+	} else if j.store != nil {
+		j.store.KillSid(j.sid) // a pane set later must never sync
 	}
 }
 

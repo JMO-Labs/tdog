@@ -245,3 +245,12 @@ func TestKilledSessionStaysOutAfterReopen(t *testing.T) {
 		t.Fatal("new session blocked")
 	}
 }
+
+func TestKillSidBlocksAnyPane(t *testing.T) {
+	s, _ := newOn(t)
+	s.KillSid("dead")
+	_ = s.Append("p", "dead", evs(1))
+	if len(s.Read(time.Unix(0, 0))) != 0 {
+		t.Fatal("killed session synced")
+	}
+}
