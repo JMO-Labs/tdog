@@ -70,7 +70,7 @@ export function SceneCanvas({ draft, presets, looks, onSlot }: Props) {
         key={n.id}
         className="scene-split"
         style={{
-          flexDirection: n.dir,
+          flexDirection: n.dir === "col" ? "column" : "row",
           gap: draft.gap,
         }}
       >
