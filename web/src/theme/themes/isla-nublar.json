@@ -28,11 +28,58 @@
       ]
     },
     "cursor": {
-      "shape": "block",
+      "shape": "underline",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "ibm-plex-mono",
+    "effects": [
+      {
+        "id": "vignette",
+        "intensity": 0.5
+      }
+    ],
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M8 60 Q20 30 52 8",
+          "stroke": "link"
+        },
+        {
+          "type": "path",
+          "d": "M18 46 L10 40 M24 38 L16 30 M32 30 L26 22 M40 22 L36 14",
+          "stroke": "link"
+        },
+        {
+          "type": "path",
+          "d": "M18 46 L28 48 M24 38 L34 40 M32 30 L42 32 M40 22 L50 22",
+          "stroke": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 52,
+          "cy": 46,
+          "r": 3,
+          "fill": "#ffb000"
+        },
+        {
+          "type": "circle",
+          "cx": 12,
+          "cy": 14,
+          "r": 2,
+          "fill": "#ffb000"
+        },
+        {
+          "type": "circle",
+          "cx": 40,
+          "cy": 58,
+          "r": 2,
+          "fill": "#ffb000"
+        }
+      ]
+    }
   },
   "chrome": {
     "tokens": {
@@ -53,15 +100,57 @@
       "term-dim": "#96b4a0"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
+      "radius": 0.75,
+      "shadow": "soft",
       "border": 1
     },
     "pattern": "none",
-    "boot": "drop",
+    "boot": "post",
     "costume": {
       "name": "safari hat",
       "rows": ["....####....", "...######...", ".##########."]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M8 60 Q20 30 52 8",
+          "stroke": "link"
+        },
+        {
+          "type": "path",
+          "d": "M18 46 L10 40 M24 38 L16 30 M32 30 L26 22 M40 22 L36 14",
+          "stroke": "link"
+        },
+        {
+          "type": "path",
+          "d": "M18 46 L28 48 M24 38 L34 40 M32 30 L42 32 M40 22 L50 22",
+          "stroke": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 52,
+          "cy": 46,
+          "r": 3,
+          "fill": "#ffb000"
+        },
+        {
+          "type": "circle",
+          "cx": 12,
+          "cy": 14,
+          "r": 2,
+          "fill": "#ffb000"
+        },
+        {
+          "type": "circle",
+          "cx": 40,
+          "cy": 58,
+          "r": 2,
+          "fill": "#ffb000"
+        }
+      ]
     }
   }
 }

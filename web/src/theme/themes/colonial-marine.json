@@ -31,8 +31,75 @@
       "shape": "block",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "vt323",
+    "effects": [
+      {
+        "id": "scanlines",
+        "intensity": 0.5
+      },
+      {
+        "id": "glow",
+        "intensity": 0.4
+      }
+    ],
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "circle",
+          "cx": 0,
+          "cy": 64,
+          "r": 20,
+          "stroke": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 0,
+          "cy": 64,
+          "r": 36,
+          "stroke": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 0,
+          "cy": 64,
+          "r": 52,
+          "stroke": "link"
+        },
+        {
+          "type": "path",
+          "d": "M0 64 L44 20",
+          "stroke": "link"
+        },
+        {
+          "type": "path",
+          "d": "M0 64 L58 40",
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 30,
+          "cy": 34,
+          "r": 2,
+          "fill": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 46,
+          "cy": 50,
+          "r": 1.5,
+          "fill": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 14,
+          "cy": 20,
+          "r": 1,
+          "fill": "link"
+        }
+      ]
+    }
   },
   "chrome": {
     "tokens": {
@@ -49,12 +116,79 @@
       "term-dim": "#a07c24"
     },
     "shape": {
-      "radius": 1,
+      "radius": 0,
       "shadow": "hard",
       "border": 1
     },
     "pattern": "none",
     "boot": "tracker",
-    "costume": "none"
+    "costume": {
+      "name": "combat helmet",
+      "rows": [
+        "...######...",
+        "..########..",
+        ".##########.",
+        "##...##...##",
+        "..........#."
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "circle",
+          "cx": 0,
+          "cy": 64,
+          "r": 20,
+          "stroke": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 0,
+          "cy": 64,
+          "r": 36,
+          "stroke": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 0,
+          "cy": 64,
+          "r": 52,
+          "stroke": "link"
+        },
+        {
+          "type": "path",
+          "d": "M0 64 L44 20",
+          "stroke": "link"
+        },
+        {
+          "type": "path",
+          "d": "M0 64 L58 40",
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 30,
+          "cy": 34,
+          "r": 2,
+          "fill": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 46,
+          "cy": 50,
+          "r": 1.5,
+          "fill": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 14,
+          "cy": 20,
+          "r": 1,
+          "fill": "link"
+        }
+      ]
+    }
   }
 }
