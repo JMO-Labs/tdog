@@ -141,3 +141,8 @@ body {
     transition-duration: 0.2s !important;
   }
 }
+
+/* Serious mode: no mascots or confetti anywhere; Plain supplies the rest. */
+html[data-serious] .mascot {
+  display: none !important;
+}
