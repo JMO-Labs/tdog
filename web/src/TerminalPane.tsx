@@ -50,6 +50,7 @@ import {
 } from "./broadcast/sessionRegistry";
 import { getBroadcastGroup } from "./broadcast/store";
 import { useBroadcast } from "./broadcast/useBroadcast";
+import { filterTerminalReports } from "./broadcast/terminalFilter";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -316,13 +317,17 @@ export function TerminalPane({
             const scene = sceneRef.current;
             const pane = keyRef.current;
             if (!scene || !pane) return;
+            // Filter out terminal reports (cursor position, device attributes, etc.)
+            // Only broadcast actual user input
+            const filtered = filterTerminalReports(data);
+            if (filtered.length === 0) return; // Don't broadcast terminal reports
             const group = getBroadcastGroup(scene);
             const panes = getScenePanes(scene);
             // Fan out to all panes in the broadcast group except this one
             group.forEach((targetPaneId) => {
               if (targetPaneId === pane) return; // Don't echo back
               const targetPane = panes[targetPaneId];
-              if (targetPane) targetPane.send(data);
+              if (targetPane) targetPane.send(filtered);
             });
           },
         },
