@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { prefersReducedMotion } from "../motion/confetti";
+import { prefersReducedMotion } from "../motion/reducedMotion";
 import { useCopy } from "../copy/copy";
 import type { Phase } from "./connection";
 import "./gag.css";

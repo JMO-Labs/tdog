@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon, type IconName } from "../../shell/icons";
 import "./menu.css";
 import { SubMenu } from "./SubMenu";
@@ -111,7 +112,8 @@ export function ActionMenu(props: ActionMenuProps) {
   const run = (item: MenuItem, refocus = true) => {
     if (item.disabled) return;
     if (item.submenu) {
-      setOpenSub(openSub === item.label ? null : item.label);
+      // Hover already opened it; a click must not close it again.
+      setOpenSub(item.label);
       return;
     }
     if (item.keepOpen) return item.onSelect?.();
@@ -282,6 +284,12 @@ export function ActionMenu(props: ActionMenuProps) {
         className={`menu-item ${item.danger ? "danger" : ""}`}
         title={item.tooltip}
         onClick={() => run(item)}
+        // Hover opens a submenu (and closes another), like native menus.
+        onPointerEnter={() => {
+          if (filter || item.disabled) return;
+          const want = item.submenu ? item.label : null;
+          if (want !== openSub) setOpenSub(want);
+        }}
       >
         <span className="menu-label">{item.label}</span>
         {item.hint && <span className="menu-hint">{item.hint}</span>}
@@ -302,7 +310,9 @@ export function ActionMenu(props: ActionMenuProps) {
     );
   };
 
-  return (
+  // Portaled to <body>: inside a pane, the next pane's stacking context
+  // would paint over the menu and swallow its clicks.
+  return createPortal(
     <div
       ref={ref}
       className="action-menu pop-card"
@@ -460,6 +470,7 @@ export function ActionMenu(props: ActionMenuProps) {
           <span>⌘K all commands</span>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }

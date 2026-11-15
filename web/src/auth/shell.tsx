@@ -11,7 +11,7 @@ import { getPref } from "../settings/prefs";
 import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
 import { IconButton } from "../components/ui/button";
-import { prefersReducedMotion } from "../motion/confetti";
+import { prefersReducedMotion } from "../motion/reducedMotion";
 
 const LETTERS = ["t", "d", "o", "g"];
 const ICON = { system: "◐", light: "☀", dark: "☾" } as const;
