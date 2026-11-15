@@ -20,7 +20,7 @@ import { Icon } from "../shell/icons";
 import { PANE_MIME, dragPane, draggedPane, dropZone, type Zone } from "./dnd";
 import { leaves, paneTitle, titles } from "./tree";
 import { clearScrollback } from "../terminal/paneActions";
-import { registerCommand } from "../overlays/commands";
+import { registerCommand, type Command } from "../overlays/commands";
 import { mountSplit, orientation } from "./dock";
 import type { Dir, Node } from "./tree";
 import { PaneOpsContext } from "./paneOps";
@@ -103,7 +103,9 @@ function Pane({ id }: { id: string }) {
   const clear = useCallback(() => void clearScrollback(id), [id]);
   const live = useRef(p);
   live.current = p;
-  const isFocused = focus === id && p.active !== false;
+  // Last focused pane, else the first: ⌘K targets it even before any click.
+  const current = focus && order.includes(focus) ? focus : order[0];
+  const isFocused = current === id && p.active !== false;
 
   // Every pane in the group shows the chip, focused or not.
   const { isBroadcasting } = useBroadcast(p.sceneId, id);
@@ -111,19 +113,37 @@ function Pane({ id }: { id: string }) {
   // ⌘K actions target the focused pane of the visible scene.
   useEffect(() => {
     if (!isFocused) return;
-    const cmd = (key: string, title: string, run: () => void) =>
-      registerCommand({ id: `pane:${key}`, title: `Pane: ${title}`, run });
+    const cmd = (
+      key: string,
+      title: string,
+      run: () => void,
+      extra: Partial<Command> = {},
+    ) =>
+      registerCommand({
+        id: `pane:${key}`,
+        title,
+        group: "This pane",
+        run,
+        ...extra,
+      });
     const offs = [
-      cmd("rename", "Rename", () => setRenaming(true)),
-      cmd("duplicate", "Duplicate", () => live.current.onDuplicate?.(id)),
-      cmd("clear", "Clear scrollback", clear),
+      cmd("rename", "Rename pane", () => setRenaming(true)),
+      cmd("duplicate", "Duplicate pane", () => live.current.onDuplicate?.(id)),
+      cmd("clear", "Clear scrollback", clear, { icon: "eraser" }),
       cmd("swap-prev", "Swap with previous", () =>
         live.current.onSwap?.(id, -1),
       ),
       cmd("swap-next", "Swap with next", () => live.current.onSwap?.(id, 1)),
-      cmd("close", "Close", () => live.current.onClose(id)),
-      cmd("split-right", "Split right", () => live.current.onSplit(id, "row")),
-      cmd("split-down", "Split down", () => live.current.onSplit(id, "col")),
+      cmd("close", "Close pane", () => live.current.onClose(id), {
+        icon: "close",
+        danger: true,
+      }),
+      cmd("split-right", "Split right", () => live.current.onSplit(id, "row"), {
+        icon: "splitRight",
+      }),
+      cmd("split-down", "Split down", () => live.current.onSplit(id, "col"), {
+        icon: "splitDown",
+      }),
       ...TEMPLATES.map((t) =>
         cmd(`layout:${t.id}`, `Layout ${t.label}`, () => {
           const n = live.current.onSnap(t.id).length;
@@ -137,7 +157,8 @@ function Pane({ id }: { id: string }) {
       ...(live.current.scenes ?? []).map((s) =>
         registerCommand({
           id: `pane:move:${s.id}`,
-          title: `Pane: Move to scene ${s.name}`,
+          title: `Move to scene ${s.name}`,
+          group: "This pane",
           run: () => live.current.onMoveToScene?.(id, s.id),
         }),
       ),
@@ -277,6 +298,7 @@ function Pane({ id }: { id: string }) {
             split: (d) => p.onSplit(id, d),
             rename: p.onRename && (() => setRenaming(true)),
             close: () => p.onClose(id),
+            focused: isFocused,
           }}
         >
           {p.renderPane(id, settled)}
