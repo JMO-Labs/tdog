@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
-import { beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { json, mockFetch } from "../auth/testutil";
 import { Studio } from "./Studio";
 
 function Host() {
@@ -16,7 +17,17 @@ const nav = () => within(screen.getByRole("navigation", { name: "Studio" }));
 
 beforeEach(() => {
   location.hash = "";
+  vi.stubGlobal(
+    "fetch",
+    mockFetch({
+      "GET /api/presets/terminal": json(["a"]),
+      "GET /api/presets/terminal/a": new Response('name = "A"\n'),
+      "GET /api/schema/terminal": json({}),
+      "POST /api/presets/resolve": json({}),
+    }),
+  );
 });
+afterEach(() => vi.unstubAllGlobals());
 
 test("opens, closes with Back and Esc, focus returns to opener", async () => {
   render(<Host />);
@@ -108,4 +119,20 @@ test("keyboard: arrows move through the nav, Enter picks from search", async () 
   fireEvent.change(box, { target: { value: "backg" } });
   fireEvent.keyDown(box, { key: "Enter" });
   expect(location.hash).toBe("#studio/backgrounds");
+});
+
+test("terminal section hosts the designer and guards unsaved edits", async () => {
+  const ask = vi.fn(() => false);
+  vi.stubGlobal("confirm", ask);
+  render(<Host />);
+  fireEvent.click(screen.getByText("opener"));
+  fireEvent.change(await screen.findByLabelText("Name"), {
+    target: { value: "B" },
+  });
+  fireEvent.click(nav().getByRole("button", { name: "Fonts" }));
+  expect(ask).toHaveBeenCalledTimes(1);
+  expect(location.hash).toBe("#studio/terminal");
+  ask.mockReturnValue(true);
+  fireEvent.click(nav().getByRole("button", { name: "Fonts" }));
+  expect(location.hash).toBe("#studio/fonts");
 });
