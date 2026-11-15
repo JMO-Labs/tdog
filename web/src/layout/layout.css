@@ -78,6 +78,10 @@
     inset 0 0 0 3px var(--accent, #6cf),
     inset -4px -4px 0 var(--shadow);
 }
+.pane[data-broadcasting="true"] {
+  outline: 2px solid var(--accent, #6cf);
+  outline-offset: -4px;
+}
 .pane-head {
   display: flex;
   align-items: center;

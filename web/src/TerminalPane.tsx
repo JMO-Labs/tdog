@@ -26,23 +26,17 @@ import { titleStore } from "./terminal/titles";
 import { useMotifOpacity, usePref } from "./settings/prefs";
 import { clearScrollback, registerClear } from "./terminal/paneActions";
 import { resolvePreset, type Resolved } from "./presets/api";
-import { EndedPanel } from "./terminal/EndedPanel";
+import { panePreset, resolveSession } from "./presets/panes";
+import { useBroadcast } from "./broadcast/useBroadcast";
 import {
-  clearKilled,
-  isKilled,
-  markKilled,
-  subscribeKilled,
-} from "./terminal/killed";
-import { THEMES } from "./theme/registry";
-import { TerminalMenu } from "./terminal/TerminalMenu";
-import { usePaneOps } from "./layout/paneOps";
-import { killScene } from "./terminal/sessions";
+  getBroadcastGroup,
+  clearPane as clearPaneFromBroadcast,
+} from "./broadcast/store";
 import {
-  paneTheme,
-  panePreset,
-  resolveSession,
-  setPaneTheme,
-} from "./presets/panes";
+  registerSession,
+  unregisterSession,
+  getSceneSessions,
+} from "./broadcast/sessionRegistry";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -98,6 +92,8 @@ export function TerminalPane({
   onOpenChange,
   reconnectRef,
   sceneKey,
+  sceneId,
+  broadcastSessions,
 }: {
   /** Terminal theme id for this pane; defaults to the page theme. */
   theme?: string;
@@ -116,10 +112,16 @@ export function TerminalPane({
   settled?: boolean;
   /** Filled with a function that reconnects the session. */
   reconnectRef?: { current: (() => void) | null };
+  /** Scene ID for broadcast feature. */
+  sceneId?: string;
+  /** Map of scene ID to pane ID to session for broadcast. */
+  broadcastSessions?: Record<string, Record<string, TerminalSession>>;
 } = {}) {
   const settledRef = useRef(settled);
   const visibleRef = useRef(visible);
   visibleRef.current = visible;
+  // Use broadcast hook; session will be added later via ref
+  const { isBroadcasting } = useBroadcast(sceneId || "", sceneKey || "");
   // A terminal preset's theme and font apply to this pane only.
   const preset = sceneKey ? panePreset(sceneKey) : undefined;
   const [resolved, setResolved] = useState<Resolved>({});
@@ -289,10 +291,27 @@ export function TerminalPane({
             noteRef.current();
           },
           onLatency: (ms) => hooks.current.onLatency?.(ms),
+          onInput: (data) => {
+            // Broadcast input to sibling panes if broadcasting is enabled
+            if (isBroadcasting && sceneId && keyRef.current) {
+              const group = getBroadcastGroup(sceneId);
+              const sceneSessions = getSceneSessions(sceneId);
+              const siblingIds = Array.from(group).filter(
+                (id) => id !== keyRef.current,
+              );
+              for (const siblingId of siblingIds) {
+                sceneSessions[siblingId]?.sendInput(data);
+              }
+            }
+          },
         },
       );
       session.current = s;
       renderer.current = r;
+      // Register session for broadcast feature
+      if (sceneId && keyRef.current) {
+        registerSession(sceneId, keyRef.current, s);
+      }
       r.onTitle?.((title) => {
         if (keyRef.current) titleStore.set(keyRef.current, { title });
       });
@@ -324,6 +343,11 @@ export function TerminalPane({
         wantFamily.delete(r);
         session.current = null;
         s.dispose();
+        // Clean up broadcast state and session registry when pane closes
+        if (sceneId && keyRef.current) {
+          unregisterSession(sceneId, keyRef.current);
+          clearPaneFromBroadcast(sceneId, keyRef.current);
+        }
       };
     });
     return () => {

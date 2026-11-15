@@ -25,6 +25,7 @@ export function SceneView({
   onFocus,
   scenes,
   onMoveScene,
+  broadcastSessions,
   ...slot
 }: SlotProps & {
   scene: string;
@@ -34,6 +35,7 @@ export function SceneView({
   onFocus: (id: string) => void;
   scenes: Scene[];
   onMoveScene: (id: string, from: string, to: string) => void;
+  broadcastSessions?: Record<string, Record<string, any>>;
 }) {
   const layout = useLayout(scene);
   const c = useCopy();
@@ -49,49 +51,50 @@ export function SceneView({
   );
   return (
     <div className="scene-view" data-active={active} aria-hidden={!active}>
-      <SceneBackground scene={scene}>
-        {layout.tree ? (
-          <SplitView
-            tree={layout.tree}
-            onSplit={layout.split}
-            onClose={layout.close}
-            onRatio={layout.ratio}
-            onSnap={layout.snap}
-            onMove={layout.move}
-            onSwap={layout.swap}
-            onRename={layout.rename}
-            onDuplicate={layout.duplicate}
-            active={active}
-            scenes={scenes.filter((x) => x.id !== scene)}
-            onMoveToScene={(id, to) => onMoveScene(id, scene, to)}
-            renderPane={(id, settled) => (
-              <div
-                style={{ height: "100%" }}
-                onFocusCapture={() => onFocus(id)}
-                onPointerDownCapture={() => onFocus(id)}
-              >
-                <PaneSlot
-                  id={id}
-                  settled={settled}
-                  visible={active}
-                  state={paneOpen[id]}
-                  {...slot}
-                />
-              </div>
-            )}
-          />
-        ) : (
-          <div className="empty" data-testid="empty-panes">
-            <Mascot />
-            <p className="empty-big">{c("empty.noPanes")}</p>
-            <p className="muted">{c("empty.noPanesHint")}</p>
-            <button className="btn reconnect" onClick={layout.reset}>
-              {c("empty.newPane")}
-            </button>
-            <EmptyPresets onPick={(n) => void fromPreset(n)} />
-          </div>
-        )}
-      </SceneBackground>
+      {layout.tree ? (
+        <SplitView
+          tree={layout.tree}
+          onSplit={layout.split}
+          onClose={layout.close}
+          onRatio={layout.ratio}
+          onSnap={layout.snap}
+          onMove={layout.move}
+          onSwap={layout.swap}
+          onRename={layout.rename}
+          onDuplicate={layout.duplicate}
+          active={active}
+          scenes={scenes.filter((x) => x.id !== scene)}
+          onMoveToScene={(id, to) => onMoveScene(id, scene, to)}
+          sceneId={scene}
+          renderPane={(id, settled) => (
+            <div
+              style={{ height: "100%" }}
+              onFocusCapture={() => onFocus(id)}
+              onPointerDownCapture={() => onFocus(id)}
+            >
+              <PaneSlot
+                id={id}
+                settled={settled}
+                visible={active}
+                state={paneOpen[id]}
+                sceneId={scene}
+                broadcastSessions={broadcastSessions}
+                {...slot}
+              />
+            </div>
+          )}
+        />
+      ) : (
+        <div className="empty" data-testid="empty-panes">
+          <Mascot />
+          <p className="empty-big">No panes.</p>
+          <p className="muted">Every shell is closed.</p>
+          <button className="btn reconnect" onClick={layout.reset}>
+            New pane
+          </button>
+          <EmptyPresets onPick={(n) => void fromPreset(n)} />
+        </div>
+      )}
     </div>
   );
 }

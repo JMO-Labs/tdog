@@ -1,4 +1,3 @@
-import { useCopy } from "../copy/copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
@@ -37,7 +36,13 @@ import {
 import { Pet, usePetAwake } from "./pet";
 import { usePetEngine } from "./usePetEngine";
 import { Tabs } from "./Tabs";
-import { MainMenu, type MenuGroup } from "./MainMenu";
+import { OverflowMenu } from "./OverflowMenu";
+import { useMaxWidth } from "./useBreakpoint";
+import {
+  toggleBroadcast,
+  clearScene as clearBroadcast,
+  getBroadcastGroup,
+} from "../broadcast/store";
 import "./shell.css";
 import "./narrow.css";
 import "./menu.css";
@@ -106,6 +111,7 @@ export function Workspace({
     (id: string) => {
       (leafMap[id] ?? []).forEach((p) => void killScene(p));
       clearLayout(id);
+      clearBroadcast(id);
       setLeafMap((m) => {
         const rest = { ...m };
         delete rest[id];
@@ -158,6 +164,18 @@ export function Workspace({
     (id: string, ms: number) => setLatencies((m) => ({ ...m, [id]: ms })),
     [],
   );
+  // Per-pane open state lives here: dockview remounts panes when splits collapse.
+  const [paneOpen, setPaneOpen] = useState<Record<string, PaneOpen>>({});
+  const onPaneOpen = useCallback(
+    (id: string, open: boolean) =>
+      setPaneOpen((m) => ({
+        ...m,
+        [id]: { open, everOpen: open || (m[id]?.everOpen ?? false) },
+      })),
+    [],
+  );
+  // Sessions map for broadcast: sceneId -> paneId -> session
+  const sessionsRef = useRef<Record<string, Record<string, any>>>({});
   const onOutput = useCallback(
     (data?: Uint8Array) => {
       setStamp((n) => n + 1);
@@ -263,9 +281,30 @@ export function Workspace({
         group: "Account",
         run: signOut,
       }),
+      registerCommand({
+        id: "broadcast:all",
+        title: "Broadcast to all panes in scene",
+        group: "Panes",
+        run: () => {
+          const sceneId = sc.active;
+          const paneIds = leafMap[sceneId] ?? [];
+          paneIds.forEach((id) => toggleBroadcast(sceneId, id));
+          toast("success", `Broadcast enabled for ${paneIds.length} panes.`);
+        },
+      }),
+      registerCommand({
+        id: "broadcast:stop",
+        title: "Stop broadcasting",
+        group: "Panes",
+        run: () => {
+          const sceneId = sc.active;
+          clearBroadcast(sceneId);
+          toast("success", "Broadcast stopped.");
+        },
+      }),
     ];
     return () => offs.forEach((f) => f());
-  }, [cycle, signOut, add, serious, setSerious]);
+  }, [cycle, signOut, add, sc.active, leafMap, toast]);
 
   const menuGroups: MenuGroup[] = [
     [
@@ -382,6 +421,7 @@ export function Workspace({
             onSize={onSize}
             onOutput={onOutput}
             onLatency={onLatency}
+            broadcastSessions={sessionsRef.current}
           />
         ))}
       </main>

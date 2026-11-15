@@ -9,6 +9,8 @@ import {
   type DragEvent,
   type ReactNode,
 } from "react";
+import { useBroadcast } from "../broadcast/useBroadcast";
+import { getBroadcastGroup } from "../broadcast/store";
 import {
   SplitviewReact,
   type ISplitviewPanelProps,
@@ -45,6 +47,8 @@ export interface SplitViewProps {
   active?: boolean;
   /** `settled` is false while a sash drag / resize is still moving. */
   renderPane: (id: string, settled: boolean) => ReactNode;
+  /** Scene ID for broadcast and other per-scene features. */
+  sceneId?: string;
 }
 
 /** Quiet time after the last relayout before terminals refit. */
@@ -58,6 +62,7 @@ type Shared = {
   names: Record<string, string>;
   focus: string | null;
   setFocus: (id: string) => void;
+  sceneId?: string;
 };
 const SharedCtx = createContext<Shared | null>(null);
 /** Children of the enclosing split, read by dockview panels "a" and "b". */
@@ -76,7 +81,16 @@ export function SplitView(props: SplitViewProps) {
   const [focus, setFocus] = useState<string | null>(null);
   const order = useMemo(() => leaves(props.tree), [props.tree]);
   const names = useMemo(() => titles(props.tree), [props.tree]);
-  const shared = { p: props, settled, busy, order, names, focus, setFocus };
+  const shared = {
+    p: props,
+    settled,
+    busy,
+    order,
+    names,
+    focus,
+    setFocus,
+    sceneId: props.sceneId,
+  };
   return (
     <SharedCtx.Provider value={shared}>
       <div className="split-root">
@@ -91,7 +105,8 @@ function NodeView({ n }: { n: Node }) {
 }
 
 function Pane({ id }: { id: string }) {
-  const { p, settled, order, names, focus, setFocus } = useContext(SharedCtx)!;
+  const { p, settled, order, names, focus, setFocus, sceneId } =
+    useContext(SharedCtx)!;
   const [zone, setZone] = useState<Zone | null>(null);
   const title = usePaneTitle(
     id,
@@ -99,6 +114,10 @@ function Pane({ id }: { id: string }) {
   );
   const [renaming, setRenaming] = useState(false);
   const clear = useCallback(() => void clearScrollback(id), [id]);
+  const { isBroadcasting, toggle: toggleBroadcast } = useBroadcast(
+    sceneId || "",
+    id,
+  );
   const live = useRef(p);
   live.current = p;
   const isFocused = focus === id && p.active !== false;
@@ -160,6 +179,7 @@ function Pane({ id }: { id: string }) {
       className="pane"
       data-pane={id}
       data-focused={focus === id}
+      data-broadcasting={isBroadcasting}
       onFocusCapture={() => setFocus(id)}
       onPointerDownCapture={() => setFocus(id)}
       onDragOver={over}
@@ -224,6 +244,7 @@ function Pane({ id }: { id: string }) {
         )}
         {/* Panes are always local PTYs for now (no remote targets in spec). */}
         <span className="chip">local</span>
+        {isBroadcasting && <span className="chip">Broadcasting</span>}
         <span className="spacer" />
         <button
           className="pane-btn pane-split icon-btn sm"
@@ -251,8 +272,8 @@ function Pane({ id }: { id: string }) {
             onDuplicate={p.onDuplicate}
             onClear={clear}
             onClose={p.onClose}
-            onSplit={p.onSplit}
-            onSnap={p.onSnap}
+            onBroadcastToggle={toggleBroadcast}
+            isBroadcasting={isBroadcasting}
           />
         )}
         <button

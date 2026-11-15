@@ -18,6 +18,8 @@ export function PaneSlot({
   onOutput,
   onLatency,
   theme,
+  sceneId,
+  broadcastSessions,
 }: {
   id: string;
   /** Terminal theme id; defaults to the page theme. */
@@ -31,6 +33,10 @@ export function PaneSlot({
   onSize: (id: string, cols: number, rows: number) => void;
   onOutput: (data?: Uint8Array) => void;
   onLatency: (id: string, ms: number) => void;
+  /** Scene ID for broadcast feature. */
+  sceneId?: string;
+  /** Map of scene ID to pane ID to session for broadcast. */
+  broadcastSessions?: Record<string, Record<string, any>>;
 }) {
   const c = useCopy();
   const { open, everOpen } = state ?? { open: false, everOpen: false };
@@ -57,6 +63,8 @@ export function PaneSlot({
         onLatency={onLat}
         onOpenChange={onOpen}
         reconnectRef={reconnectRef}
+        sceneId={sceneId}
+        broadcastSessions={broadcastSessions}
       />
       {everOpen && !open && (
         <div className="empty">

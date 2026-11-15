@@ -11,9 +11,8 @@ export interface PaneMenuProps {
   onDuplicate?: (id: string) => void;
   onClear?: (id: string) => void;
   onClose?: (id: string) => void;
-  onSplit?: (id: string, dir: "row" | "col") => void;
-  /** Returns surplus pane ids when confirmation is needed (nothing applied). */
-  onSnap?: (t: TemplateId, confirmed?: boolean) => string[];
+  onBroadcastToggle?: () => void;
+  isBroadcasting?: boolean;
 }
 
 /** Palette hint: every pane action is also a ⌘K command. */
@@ -29,8 +28,8 @@ export function PaneMenu({
   onDuplicate,
   onClear,
   onClose,
-  onSplit,
-  onSnap,
+  onBroadcastToggle,
+  isBroadcasting,
 }: PaneMenuProps) {
   const [open, setOpen] = useState(false);
   const [sub, setSub] = useState(false);
@@ -201,6 +200,15 @@ export function PaneMenu({
           {onClear && (
             <button role="menuitem" onClick={run(() => onClear(id))}>
               Clear scrollback
+            </button>
+          )}
+          {onBroadcastToggle && (
+            <button
+              role="menuitem"
+              aria-pressed={isBroadcasting}
+              onClick={run(onBroadcastToggle)}
+            >
+              {isBroadcasting ? "✓ " : ""}Broadcast input
             </button>
           )}
           <button role="menuitem" onClick={run(() => onSwap(id, -1))}>
