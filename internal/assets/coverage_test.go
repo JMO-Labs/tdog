@@ -231,7 +231,7 @@ func TestIngestRenameFails(t *testing.T) {
 	old := rename
 	rename = func(string, string) error { return boom }
 	t.Cleanup(func() { rename = old })
-	if _, err := s.ingest(bytes.NewReader([]byte("hello"))); !errors.Is(err, boom) {
+	if _, err := s.ingest(bytes.NewReader(pngBytes(t))); !errors.Is(err, boom) {
 		t.Fatalf("got %v", err)
 	}
 	m, _ := filepath.Glob(filepath.Join(s.dir, "*.json"))
