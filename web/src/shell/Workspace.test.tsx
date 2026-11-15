@@ -175,14 +175,16 @@ test("palette lists a Theme command per bundled theme and switches", async () =>
   themeStore.select("memphis-pop");
 });
 
-test("Studio opens from the brush button and ⌘.", async () => {
+// findBy* awaits a setTimeout that vitest fake timers never fire; the
+// dialog mounts synchronously inside fireEvent's act(), so query directly.
+test("Studio opens from the brush button", () => {
   render(<Workspace />);
   fireEvent.click(screen.getByRole("button", { name: "Studio" }));
-  expect(await screen.findByRole("dialog", { name: "Studio" })).toBeTruthy();
+  expect(screen.getByRole("dialog", { name: "Studio" })).toBeTruthy();
 });
 
-test("⌘. opens Studio", async () => {
+test("⌘. opens Studio", () => {
   render(<Workspace />);
   fireEvent.keyDown(document, { key: ".", metaKey: true });
-  expect(await screen.findByRole("dialog", { name: "Studio" })).toBeTruthy();
+  expect(screen.getByRole("dialog", { name: "Studio" })).toBeTruthy();
 });
