@@ -14,6 +14,7 @@ import { KillDialog } from "./KillDialog";
 import { clearLayout } from "../layout/store";
 import { moveToScene } from "../layout/transfer";
 import { newId } from "../layout/tree";
+import { useShellName } from "../terminal/shellName";
 import { killScene } from "../terminal/sessions";
 import { Icon } from "./icons";
 import { type PaneOpen } from "./PaneSlot";
@@ -51,6 +52,7 @@ export function Workspace({
   const { mode, cycle } = useThemeMode();
   const [sizes, setSizes] = useState<Record<string, Size>>({});
   const [latencies, setLatencies] = useState<Record<string, number>>({});
+  const shellName = useShellName();
   const [focused, setFocused] = useState<string | null>(null);
   const [stamp, setStamp] = useState(0);
   const [petShown, setPetShown] = usePref("pet");
@@ -330,7 +332,7 @@ export function Workspace({
           <Icon name="server" />
           container
         </span>
-        <span className="chip">shell</span>
+        <span className="chip">{shellName}</span>
         {size && (
           <span className="chip num hide-xs">
             {size.cols}×{size.rows}

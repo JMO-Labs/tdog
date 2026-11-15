@@ -3,6 +3,7 @@ import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
+import { cwdFromOsc7 } from "./titles";
 import type { TerminalRenderer, TerminalTheme } from "./renderer";
 
 const enc = new TextEncoder();
@@ -49,6 +50,16 @@ export class XtermRenderer implements TerminalRenderer {
   }
   onResize(cb: (c: number, r: number) => void): void {
     this.resizeCb = cb;
+  }
+  onTitle(cb: (title: string) => void): void {
+    this.term.onTitleChange(cb);
+  }
+  onCwd(cb: (cwd: string) => void): void {
+    this.term.parser.registerOscHandler(7, (data) => {
+      const cwd = cwdFromOsc7(data);
+      if (cwd) cb(cwd);
+      return true;
+    });
   }
   setTheme(theme: TerminalTheme): void {
     this.term.options.theme = theme;
