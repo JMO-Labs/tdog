@@ -16,6 +16,8 @@ import { moveToScene } from "../layout/transfer";
 import { newId } from "../layout/tree";
 import { useShellName } from "../terminal/shellName";
 import { killScene } from "../terminal/sessions";
+import { Studio } from "../studio/Studio";
+import { sectionFromHash } from "../studio/sections";
 import { Icon } from "./icons";
 import { type PaneOpen } from "./PaneSlot";
 import { SceneView } from "./SceneView";
@@ -39,7 +41,6 @@ import "./shell.css";
 import "./narrow.css";
 
 type Size = { cols: number; rows: number };
-const noop = () => {};
 /** Latency above this gets the dial-up icon. */
 const SLOW_MS = 150;
 
@@ -59,6 +60,7 @@ export function Workspace({
   const [petShown, setPetShown] = usePref("pet");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [studio, setStudio] = useState(() => !!sectionFromHash(location.hash));
   const awake = usePetAwake(stamp);
   const engine = usePetEngine();
   const [sc, setSc] = useState(loadScenes);
@@ -170,6 +172,9 @@ export function Workspace({
       } else if (e.key === ",") {
         e.preventDefault();
         setSettings(true);
+      } else if (e.key === "." && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        setStudio(true);
       } else if (e.key === "t" && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         add();
@@ -217,6 +222,13 @@ export function Workspace({
         group: "Panes",
         shortcut: "⌘,",
         run: () => setSettings(true),
+      }),
+      registerCommand({
+        id: "studio",
+        title: "Open Studio",
+        group: "Panes",
+        shortcut: "⌘.",
+        run: () => setStudio(true),
       }),
       registerCommand({
         id: "scene:new",
@@ -278,9 +290,7 @@ export function Workspace({
               {
                 label: "Studio",
                 icon: "brush",
-                hint: "Coming in v0.4",
-                disabled: true,
-                onSelect: noop,
+                onSelect: () => setStudio(true),
               },
               {
                 label: "Save scene",
@@ -305,9 +315,8 @@ export function Workspace({
           <>
             <IconButton
               label="Studio"
-              tip="Coming in v0.4"
-              aria-disabled="true"
-              onClick={noop}
+              shortcut="⌘."
+              onClick={() => setStudio(true)}
             >
               <Icon name="brush" />
             </IconButton>
@@ -437,6 +446,7 @@ export function Workspace({
         onConfirm={() => void runKill()}
       />
       {flows.dialogs}
+      <Studio open={studio} onClose={() => setStudio(false)} />
       <CommandPalette open={palette} onOpenChange={setPalette} />
       <Sheet
         open={settings}
