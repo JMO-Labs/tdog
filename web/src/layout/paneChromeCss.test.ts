@@ -29,11 +29,33 @@ describe("pane chrome css", () => {
     expect(rule(".snap-pop")).toMatch(/left:\s*auto/);
   });
   it(".pane border and shadow stay inside its own cell", () => {
-    const all = rule(".pane") + rule('.pane[data-focused="true"]');
+    const all =
+      rule(".pane") +
+      rule('.pane[data-focused="true"]') +
+      rule(".pane::after") +
+      rule('.pane[data-focused="true"]::after');
     // no outward (non-inset) shadow or spread ring may paint onto neighbours
     for (const layer of all.match(/box-shadow:[^;]*;/g) ?? [])
       for (const part of layer.replace("box-shadow:", "").split(/,(?![^(]*\))/))
         expect(part.trim()).toMatch(/^inset\b/);
+  });
+  it("ring and shadow paint above children via ::after", () => {
+    const base = rule(".pane");
+    expect(base).toMatch(/position\s*:\s*relative/);
+    expect(base).not.toMatch(/box-shadow/); // would sit under the opaque head
+    const after = rule(".pane::after");
+    expect(after).toMatch(/content\s*:\s*""/);
+    expect(after).toMatch(/position\s*:\s*absolute/);
+    expect(after).toMatch(/inset\s*:\s*0/);
+    expect(after).toMatch(/pointer-events\s*:\s*none/);
+    expect(after).toMatch(/box-shadow\s*:\s*inset -4px -4px 0 var\(--shadow\)/);
+    expect(rule('.pane[data-focused="true"]::after')).toMatch(
+      /inset 0 0 0 3px var\(--accent/,
+    );
+  });
+  it("theme vars cannot make a whole shadow layer outward", () => {
+    const all = rule(".pane") + rule(".pane::after");
+    expect(all).not.toMatch(/box-shadow\s*:\s*var\(/);
   });
   it(".pane is isolated so effect layers cannot escape", () => {
     expect(rule(".pane")).toMatch(/isolation\s*:\s*isolate/);
