@@ -31,8 +31,21 @@
       "shape": "block",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "share-tech-mono",
+    "effects": [
+      {
+        "id": "flicker",
+        "intensity": 0.2
+      },
+      {
+        "id": "vignette",
+        "intensity": 0.5
+      },
+      {
+        "id": "grain",
+        "intensity": 0.5
+      }
+    ]
   },
   "chrome": {
     "tokens": {
@@ -43,12 +56,71 @@
       "link": "#8fd14f"
     },
     "shape": {
-      "radius": 1,
+      "radius": 0,
       "shadow": "hard",
       "border": 1
     },
     "pattern": "zebra",
-    "boot": "drop",
-    "costume": "none"
+    "boot": "tracker",
+    "costume": {
+      "name": "bubble space helmet",
+      "rows": [
+        "....######....",
+        "..##......##..",
+        ".#..........#.",
+        "#............#",
+        "#............#",
+        "##..........##"
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 32],
+      "tile": [64, 32],
+      "shapes": [
+        {
+          "type": "polygon",
+          "points": "0,0 8,0 0,8",
+          "fill": "#3a3410"
+        },
+        {
+          "type": "polygon",
+          "points": "16,0 24,0 0,24 0,16",
+          "fill": "#3a3410"
+        },
+        {
+          "type": "polygon",
+          "points": "32,0 40,0 0,40 0,32",
+          "fill": "#3a3410"
+        },
+        {
+          "type": "polygon",
+          "points": "48,0 56,0 0,56 0,48",
+          "fill": "#3a3410"
+        },
+        {
+          "type": "circle",
+          "cx": 46,
+          "cy": 20,
+          "r": 9,
+          "stroke": "#2c4a4a",
+          "fill": "none"
+        },
+        {
+          "type": "circle",
+          "cx": 46,
+          "cy": 20,
+          "r": 5,
+          "stroke": "#2c4a4a",
+          "fill": "none"
+        },
+        {
+          "type": "circle",
+          "cx": 46,
+          "cy": 20,
+          "r": 1.5,
+          "fill": "#2c4a4a"
+        }
+      ]
+    }
   }
 }

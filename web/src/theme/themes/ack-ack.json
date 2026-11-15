@@ -31,8 +31,13 @@
       "shape": "block",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "space-mono",
+    "effects": [
+      {
+        "id": "grain",
+        "intensity": 0.5
+      }
+    ]
   },
   "chrome": {
     "tokens": {
@@ -43,12 +48,74 @@
       "link": "#6adf5a"
     },
     "shape": {
-      "radius": 1,
+      "radius": 1.2,
       "shadow": "hard",
-      "border": 1
+      "border": 3
     },
     "pattern": "none",
     "boot": "drop",
-    "costume": "none"
+    "costume": {
+      "name": "glass dome helmet",
+      "rows": [
+        ".......#......",
+        "....######....",
+        "..##......##..",
+        ".#..........#.",
+        "#............#",
+        "##############"
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 32],
+      "tile": [64, 32],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M8 14 A10 7 0 0 1 28 14 Z",
+          "fill": "#24402a"
+        },
+        {
+          "type": "path",
+          "d": "M2 16 Q18 12 34 16 Q18 21 2 16 Z",
+          "fill": "#2f5a36"
+        },
+        {
+          "type": "circle",
+          "cx": 11,
+          "cy": 17,
+          "r": 1,
+          "fill": "#9ad88a"
+        },
+        {
+          "type": "circle",
+          "cx": 18,
+          "cy": 18,
+          "r": 1,
+          "fill": "#9ad88a"
+        },
+        {
+          "type": "circle",
+          "cx": 25,
+          "cy": 17,
+          "r": 1,
+          "fill": "#9ad88a"
+        },
+        {
+          "type": "polygon",
+          "points": "14,20 22,20 28,32 8,32",
+          "fill": "#1f3a24"
+        },
+        {
+          "type": "path",
+          "d": "M44 6 A6 4 0 0 1 56 6 Z",
+          "fill": "#24402a"
+        },
+        {
+          "type": "path",
+          "d": "M40 7 Q50 5 60 7 Q50 10 40 7 Z",
+          "fill": "#2f5a36"
+        }
+      ]
+    }
   }
 }
