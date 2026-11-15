@@ -90,7 +90,9 @@
   font-size: 20px;
   color: var(--fg);
   background: none;
-  -webkit-text-stroke: 0;
+  /* Same ink outline as the sign-in wordmark. */
+  -webkit-text-stroke: 0.06em var(--ink);
+  paint-order: stroke fill;
   filter: none;
   animation: none;
   text-shadow: 2px 2px 0 var(--pink);

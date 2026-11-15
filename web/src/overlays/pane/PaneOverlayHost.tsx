@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import type { PaneOverlayContext } from "../../terminal/renderer";
 import type { TerminalRenderer } from "../../terminal/renderer";
 import { getPaneOverlay } from "./registry";
@@ -146,7 +154,12 @@ export const PaneOverlayHost = ({
   }, [open, renderer]);
 
   const overlay = overlayId ? getPaneOverlay(overlayId) : null;
-  const renderedContent = overlay && ctx ? overlay.render(ctx) : null;
+  // As an element, not a call: overlays like Diff use hooks, which would
+  // otherwise run as this host's hooks and crash when the overlay changes.
+  const renderedContent =
+    overlay && ctx
+      ? createElement(overlay.render, { key: overlay.id, ...ctx })
+      : null;
 
   return (
     <div
@@ -154,22 +167,25 @@ export const PaneOverlayHost = ({
       data-testid="pane-overlay-host"
       className="pane-overlay-host"
     >
-      {overlayId && (
-        <div className="pane-overlay-backdrop" onClick={close}>
-          <div
-            ref={containerRef}
-            className="pane-overlay-container"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") e.stopPropagation();
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
-            {renderedContent}
-          </div>
-        </div>
-      )}
+      {/* Portaled: inside the pane, a neighbouring pane paints over it. */}
+      {overlayId &&
+        createPortal(
+          <div className="pane-overlay-backdrop" onClick={close}>
+            <div
+              ref={containerRef}
+              className="pane-overlay-container"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") e.stopPropagation();
+              }}
+              role="dialog"
+              aria-modal="true"
+            >
+              {renderedContent}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

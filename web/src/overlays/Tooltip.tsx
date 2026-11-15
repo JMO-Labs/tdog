@@ -2,6 +2,7 @@ import {
   cloneElement,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactElement,
@@ -29,6 +30,21 @@ export function Tooltip({ label, shortcut, children }: Props) {
     });
   const hide = () => tooltipController.leave(id, () => setPos(null));
   useEffect(() => hide, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Keep the tip on screen: shift it in from the viewport edges (8px margin).
+  const tipRef = useRef<HTMLDivElement | null>(null);
+  const [shift, setShift] = useState(0);
+  useLayoutEffect(() => {
+    const t = tipRef.current;
+    if (!pos || !t) return setShift(0);
+    const r = t.getBoundingClientRect();
+    const half = r.width / 2;
+    const max = window.innerWidth - 8;
+    setShift(
+      pos.x + half > max
+        ? max - (pos.x + half)
+        : Math.max(0, 8 - (pos.x - half)),
+    );
+  }, [pos, label]);
   const p = children.props;
   const trigger = cloneElement(children, {
     ref: (el: HTMLElement | null) => {
@@ -54,9 +70,14 @@ export function Tooltip({ label, shortcut, children }: Props) {
       {pos &&
         createPortal(
           <div
+            ref={tipRef}
             role="tooltip"
             className="tip"
-            style={{ left: pos.x, top: pos.y, transform: "translateX(-50%)" }}
+            style={{
+              left: pos.x + shift,
+              top: pos.y,
+              transform: "translateX(-50%)",
+            }}
           >
             {label}
             {shortcut && <kbd>{shortcut}</kbd>}

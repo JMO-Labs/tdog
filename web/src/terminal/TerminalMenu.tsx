@@ -77,24 +77,29 @@ export function TerminalMenu(p: TerminalMenuProps) {
             },
           ]
         : []),
-      {
-        label: "Theme for this terminal",
-        submenu: [
-          {
-            label: "Page default",
-            isRadio: true,
-            checked: p.currentTheme === undefined,
-            onSelect: () => p.onTheme(undefined),
-          },
-          ...p.themes.map((t) => ({
-            label: t.name,
-            isRadio: true,
-            checked: p.currentTheme === t.id,
-            swatch: t.swatch,
-            onSelect: () => p.onTheme(t.id),
-          })),
-        ],
-      },
+      // No themes (serious mode): no theme submenu.
+      ...(p.themes.length
+        ? [
+            {
+              label: "Theme for this terminal",
+              submenu: [
+                {
+                  label: "Page default",
+                  isRadio: true,
+                  checked: p.currentTheme === undefined,
+                  onSelect: () => p.onTheme(undefined),
+                },
+                ...p.themes.map((t) => ({
+                  label: t.name,
+                  isRadio: true,
+                  checked: p.currentTheme === t.id,
+                  swatch: t.swatch,
+                  onSelect: () => p.onTheme(t.id),
+                })),
+              ],
+            },
+          ]
+        : []),
     ],
     [
       ...(p.onBroadcast

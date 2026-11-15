@@ -159,12 +159,6 @@ export const COPY = {
     plain: "Reconnect, or press",
   },
   "empty.offlineHint2": { fun: "for commands.", plain: "for commands." },
-  "empty.noPanes": { fun: "No panes.", plain: "No panes." },
-  "empty.noPanesHint": {
-    fun: "Every shell is closed.",
-    plain: "Every shell is closed.",
-  },
-  "empty.newPane": { fun: "New pane", plain: "New pane" },
   "empty.presets": {
     fun: "Or start from a preset:",
     plain: "Or start from a preset:",

@@ -178,18 +178,3 @@ test("save validation errors toast the server message", async () => {
     await screen.findByText("layout.ratio: must be between 0.1 and 0.9"),
   ).toBeTruthy();
 });
-
-test("empty-pane state lists terminal presets; picking one opens a pane", async () => {
-  localStorage.setItem("tdog.layout.scene 1", "null");
-  routes["GET /api/presets/terminal"] = () => json(["app-dev"]);
-  routes["GET /api/presets/resolve?terminal=app-dev"] = () => json({});
-  mount();
-  expect(screen.getByTestId("empty-panes")).toBeTruthy();
-  const btn = await screen.findByRole("button", { name: "app-dev" });
-  await act(async () => {
-    fireEvent.click(btn);
-  });
-  await waitFor(() => expect(panes()).toHaveLength(1));
-  const map = JSON.parse(localStorage.getItem("tdog.panePresets") ?? "{}");
-  expect(Object.values(map)).toEqual(["app-dev"]);
-});
