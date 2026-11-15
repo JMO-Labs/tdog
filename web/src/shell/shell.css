@@ -159,7 +159,7 @@
   box-shadow: var(--shadow-md);
   transform: none;
 }
-.ws .icon-btn .nf {
+.ws .icon-btn:not(.sm) .nf {
   font-size: 20px;
   display: block;
 }
