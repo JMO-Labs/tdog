@@ -52,10 +52,13 @@ func NewDiffHandler(cfg DiffHandlerConfig) http.Handler {
 			return
 		}
 
-		// Validate and normalize context
+		// Validate and clamp context to 0..20
 		contextLines := req.Context
 		if contextLines < 0 {
-			contextLines = diffContextIn
+			contextLines = 0
+		}
+		if contextLines > 20 {
+			contextLines = 20
 		}
 
 		// Look up session
@@ -102,48 +105,49 @@ func NewDiffHandler(cfg DiffHandlerConfig) http.Handler {
 }
 
 // handleDiff performs the diff operation with all safety checks.
-func handleDiff(ctx context.Context, sshCfg SSHConfig, sess *Session, pathA, pathB string, context int) (*FileDiffResult, int, string) {
-	// Resolve paths
-	var resolvedA, resolvedB string
-
-	if sess.target == "ssh-host" {
-		// For SSH, paths are relative to the remote home directory by default
-		// or absolute if they start with /
-		resolvedA = resolvePath(pathA, "")
-		resolvedB = resolvePath(pathB, "")
-	} else {
-		// For container, paths are relative to cwd if relative
-		// We'll use /proc/<pid>/cwd if available, otherwise treat as absolute
-		resolvedA = resolvePath(pathA, "")
-		resolvedB = resolvePath(pathB, "")
+func handleDiff(ctx context.Context, sshCfg SSHConfig, sess *Session, pathA, pathB string, contextLines int) (*FileDiffResult, int, string) {
+	// Require absolute paths; frontend resolves relative paths using OSC 7 cwd
+	if !filepath.IsAbs(pathA) {
+		return nil, http.StatusBadRequest, "paths must be absolute"
+	}
+	if !filepath.IsAbs(pathB) {
+		return nil, http.StatusBadRequest, "paths must be absolute"
 	}
 
-	// Check file sizes first
-	sizeA, errSizeA := getFileSize(sshCfg, sess, resolvedA)
-	sizeB, errSizeB := getFileSize(sshCfg, sess, resolvedB)
+	// Check file sizes first (for container target only; SSH sizes are checked during read)
+	if sess.target != "ssh-host" {
+		sizeA, errSizeA := getFileSize(sshCfg, sess, pathA)
+		sizeB, errSizeB := getFileSize(sshCfg, sess, pathB)
 
-	if errSizeA != nil {
-		return nil, http.StatusNotFound, "file a not found"
-	}
-	if errSizeB != nil {
-		return nil, http.StatusNotFound, "file b not found"
-	}
+		if errSizeA != nil {
+			return nil, http.StatusNotFound, "file a not found"
+		}
+		if errSizeB != nil {
+			return nil, http.StatusNotFound, "file b not found"
+		}
 
-	if sizeA > maxFileSize {
-		return nil, http.StatusRequestEntityTooLarge, fmt.Sprintf("file a too large: %d > %d bytes", sizeA, maxFileSize)
-	}
-	if sizeB > maxFileSize {
-		return nil, http.StatusRequestEntityTooLarge, fmt.Sprintf("file b too large: %d > %d bytes", sizeB, maxFileSize)
+		if sizeA > maxFileSize {
+			return nil, http.StatusRequestEntityTooLarge, fmt.Sprintf("file a too large: %d > %d bytes", sizeA, maxFileSize)
+		}
+		if sizeB > maxFileSize {
+			return nil, http.StatusRequestEntityTooLarge, fmt.Sprintf("file b too large: %d > %d bytes", sizeB, maxFileSize)
+		}
 	}
 
 	// Read files
-	contentA, _, errA := readFile(ctx, sshCfg, sess, resolvedA)
-	contentB, _, errB := readFile(ctx, sshCfg, sess, resolvedB)
+	contentA, sizeA, errA := readFile(ctx, sshCfg, sess, pathA)
+	contentB, sizeB, errB := readFile(ctx, sshCfg, sess, pathB)
 
 	if errA != nil {
+		if errA == ctx.Err() && ctx.Err() == context.DeadlineExceeded {
+			return nil, http.StatusRequestTimeout, "timeout reading file a"
+		}
 		return nil, http.StatusNotFound, "file a not found"
 	}
 	if errB != nil {
+		if errB == ctx.Err() && ctx.Err() == context.DeadlineExceeded {
+			return nil, http.StatusRequestTimeout, "timeout reading file b"
+		}
 		return nil, http.StatusNotFound, "file b not found"
 	}
 
@@ -166,33 +170,29 @@ func handleDiff(ctx context.Context, sshCfg SSHConfig, sess *Session, pathA, pat
 	}
 
 	// Compute diff
-	hunks := Diff(contentA, contentB, context)
+	hunks := Diff(contentA, contentB, contextLines)
+	if hunks == nil && len(contentA) > 0 && len(contentB) > 0 {
+		// nil hunks can mean identical or too-expensive; check if it's too-expensive
+		oldLines := bytes.Count(contentA, []byte("\n")) + 1
+		newLines := bytes.Count(contentB, []byte("\n")) + 1
+		if int64(oldLines)*int64(newLines) > 25_000_000 {
+			return nil, http.StatusRequestEntityTooLarge, "files differ too much to diff"
+		}
+	}
 
 	result := &FileDiffResult{
 		A: FileInfo{
-			Path: resolvedA,
+			Path: pathA,
 			Size: sizeA,
 		},
 		B: FileInfo{
-			Path: resolvedB,
+			Path: pathB,
 			Size: sizeB,
 		},
 		Hunks: hunks,
 	}
 
 	return result, http.StatusOK, ""
-}
-
-// resolvePath resolves a path. If relative, joins with cwd if provided.
-func resolvePath(path, cwd string) string {
-	if filepath.IsAbs(path) {
-		return path
-	}
-	if cwd != "" {
-		return filepath.Join(cwd, path)
-	}
-	// Make relative paths absolute from /
-	return "/" + strings.TrimLeft(path, "/")
 }
 
 // isBinary checks if content looks like a binary file.
@@ -214,17 +214,13 @@ func readFile(ctx context.Context, sshCfg SSHConfig, sess *Session, path string)
 	return readFileContainer(path)
 }
 
-// getFileSize returns the size of a file without reading it.
-func getFileSize(sshCfg SSHConfig, sess *Session, path string) (int64, error) {
+// getFileSize returns the size of a file for container targets.
+// For SSH targets, size is checked during read with head -c.
+func getFileSize(_ SSHConfig, sess *Session, path string) (int64, error) {
 	if sess.target == "ssh-host" {
-		// For SSH, we'll try to read the file and get its size
-		// This is not ideal but SSH doesn't provide a way to stat without reading
-		// In practice, the actual read will fail if the file is too large
-		// For now, return 0 and let readFile handle it
-		return 0, nil
+		return 0, nil // SSH size is validated during read
 	}
 
-	// For container, use stat
 	fi, err := os.Stat(path)
 	if err != nil {
 		return 0, err
@@ -253,9 +249,10 @@ func readFileContainer(path string) ([]byte, int64, error) {
 	return content, int64(len(content)), err
 }
 
-// readFileSSH reads a file from the remote SSH host using cat.
+// readFileSSH reads a file from the remote SSH host using head with byte limit.
+// Enforces the timeout from ctx and size limit.
 func readFileSSH(ctx context.Context, sshCfg SSHConfig, path string) ([]byte, int64, error) {
-	// Validate path to prevent shell injection
+	// Validate path
 	if !isValidPath(path) {
 		return nil, 0, fmt.Errorf("invalid path")
 	}
@@ -264,18 +261,35 @@ func readFileSSH(ctx context.Context, sshCfg SSHConfig, path string) ([]byte, in
 	if err != nil {
 		return nil, 0, err
 	}
-	defer func() { _ = client.Close() }()
+	// Close client when context is done
+	go func() {
+		<-ctx.Done()
+		_ = client.Close()
+	}()
 
 	sess, err := client.NewSession()
 	if err != nil {
+		_ = client.Close()
 		return nil, 0, err
 	}
 	defer func() { _ = sess.Close() }()
 
-	// Use cat to read the file; pass path as argv to prevent injection
-	output, err := sess.Output("cat -- " + sshQuoteForShell(path))
+	// Use head -c to limit bytes read, pass path as argument to prevent injection
+	cmd := fmt.Sprintf("head -c %d -- %s", maxFileSize+1, sshQuoteForShell(path))
+	output, err := sess.Output(cmd)
 	if err != nil {
+		_ = client.Close()
+		// Check if context was cancelled (timeout)
+		if ctx.Err() != nil {
+			return nil, 0, ctx.Err()
+		}
 		return nil, 0, err
+	}
+	_ = client.Close()
+
+	// Check if output exceeds limit
+	if int64(len(output)) > maxFileSize {
+		return nil, int64(len(output)), fmt.Errorf("file too large")
 	}
 
 	return output, int64(len(output)), nil

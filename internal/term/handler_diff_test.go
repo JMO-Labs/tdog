@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -494,26 +493,194 @@ func TestDiffHandlerIdenticalFiles(t *testing.T) {
 	}
 }
 
-func TestResolvePath(t *testing.T) {
-	tests := []struct {
-		path string
-		cwd  string
-		want string
-	}{
-		{"/absolute/path", "/some/cwd", "/absolute/path"},
-		{"relative/path", "/some/cwd", "/some/cwd/relative/path"},
-		{"./file", "/home", "/home/file"},
-		{"../file", "/home/dir", "/home/file"},
-		{"file", "", "/file"},
+func TestDiffHandlerRequiresAbsolutePaths(t *testing.T) {
+	tmpdir := t.TempDir()
+	fileA := filepath.Join(tmpdir, "a.txt")
+
+	if err := os.WriteFile(fileA, []byte("content"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%s_%s", tt.path, tt.cwd), func(t *testing.T) {
-			got := resolvePath(tt.path, tt.cwd)
-			if got != tt.want {
-				t.Errorf("resolvePath(%q, %q) = %q, want %q", tt.path, tt.cwd, got, tt.want)
-			}
-		})
+	dir := t.TempDir()
+	l := audit.New(filepath.Join(dir, "audit.log"))
+	reg := NewRegistry(l, 0)
+
+	sess := &Session{
+		id:     "test-session",
+		target: "container",
+		s: &session{
+			pid: 1234,
+		},
+		reg: reg,
+	}
+	reg.mu.Lock()
+	reg.sessions[sess.id] = sess
+	reg.mu.Unlock()
+
+	handler := NewDiffHandler(DiffHandlerConfig{
+		Registry: reg,
+		SSH:      SSHConfig{},
+		Audit:    l,
+	})
+
+	// Test relative path for A
+	body, _ := json.Marshal(DiffRequest{
+		Session: sess.id,
+		PathA:   "relative/path",
+		PathB:   fileA,
+		Context: 1,
+	})
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/diff", bytes.NewReader(body))
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for relative path A, got %d", rec.Code)
+	}
+
+	// Test relative path for B
+	body, _ = json.Marshal(DiffRequest{
+		Session: sess.id,
+		PathA:   fileA,
+		PathB:   "relative/path",
+		Context: 1,
+	})
+
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/api/diff", bytes.NewReader(body))
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for relative path B, got %d", rec.Code)
+	}
+}
+
+func TestDiffLargeFilesSmallChange(t *testing.T) {
+	// Test that prefix/suffix trimming makes diff fast for large files with small change
+	tmpdir := t.TempDir()
+	fileA := filepath.Join(tmpdir, "a.txt")
+	fileB := filepath.Join(tmpdir, "b.txt")
+
+	// Create moderately large files with only one line different
+	// ~1000 lines each = ~1M cells, well under 25M limit
+	prefix := bytes.Repeat([]byte("common line\n"), 1000)
+	smallChange := []byte("changed\n")
+	suffix := bytes.Repeat([]byte("common line\n"), 1000)
+
+	contentA := append(append(append([]byte{}, prefix...), smallChange...), suffix...)
+	contentB := append(append(append([]byte{}, prefix...), []byte("different\n")...), suffix...)
+
+	if err := os.WriteFile(fileA, contentA, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(fileB, contentB, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	dir := t.TempDir()
+	l := audit.New(filepath.Join(dir, "audit.log"))
+	reg := NewRegistry(l, 0)
+
+	sess := &Session{
+		id:     "test-session",
+		target: "container",
+		s: &session{
+			pid: 1234,
+		},
+		reg: reg,
+	}
+	reg.mu.Lock()
+	reg.sessions[sess.id] = sess
+	reg.mu.Unlock()
+
+	handler := NewDiffHandler(DiffHandlerConfig{
+		Registry: reg,
+		SSH:      SSHConfig{},
+		Audit:    l,
+	})
+
+	body, _ := json.Marshal(DiffRequest{
+		Session: sess.id,
+		PathA:   fileA,
+		PathB:   fileB,
+		Context: 1,
+	})
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/diff", bytes.NewReader(body))
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200 for large files with small change, got %d", rec.Code)
+	}
+
+	var result FileDiffResult
+	if err := json.NewDecoder(rec.Body).Decode(&result); err != nil {
+		t.Errorf("failed to decode: %v", err)
+	}
+
+	if len(result.Hunks) == 0 {
+		t.Error("expected hunks for files with change")
+	}
+}
+
+func TestDiffTooExpensiveReturns413(t *testing.T) {
+	// Test that totally-different large files return 413 without allocating huge table
+	tmpdir := t.TempDir()
+	fileA := filepath.Join(tmpdir, "a.txt")
+	fileB := filepath.Join(tmpdir, "b.txt")
+
+	// Create files that would exceed 25M cell limit
+	// ~5100 lines each would give ~26M cells
+	lineA := []byte("lineA_version_one_with_unique_content\n")
+	lineB := []byte("lineB_version_two_with_different_content\n")
+
+	contentA := bytes.Repeat(lineA, 5200)
+	contentB := bytes.Repeat(lineB, 5200)
+
+	if err := os.WriteFile(fileA, contentA, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(fileB, contentB, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	dir := t.TempDir()
+	l := audit.New(filepath.Join(dir, "audit.log"))
+	reg := NewRegistry(l, 0)
+
+	sess := &Session{
+		id:     "test-session",
+		target: "container",
+		s: &session{
+			pid: 1234,
+		},
+		reg: reg,
+	}
+	reg.mu.Lock()
+	reg.sessions[sess.id] = sess
+	reg.mu.Unlock()
+
+	handler := NewDiffHandler(DiffHandlerConfig{
+		Registry: reg,
+		SSH:      SSHConfig{},
+		Audit:    l,
+	})
+
+	body, _ := json.Marshal(DiffRequest{
+		Session: sess.id,
+		PathA:   fileA,
+		PathB:   fileB,
+		Context: 1,
+	})
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/diff", bytes.NewReader(body))
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("expected 413 for too-expensive diff, got %d", rec.Code)
 	}
 }
 
