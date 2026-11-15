@@ -5,7 +5,7 @@ const PACK = [
   ["bayside", "confetti", true, "dark"],
   ["morph-squad", "none", true, "dark"],
   ["truth-is-out-there", "none", false, "dark"],
-  ["laser-binder", "zigzag", false, "dark"],
+  ["laser-binder", "zigzag", true, "dark"],
   ["rainbow-leopard", "leopard", true, "dark"],
 ] as const;
 

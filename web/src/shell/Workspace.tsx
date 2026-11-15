@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
 import { Sheet } from "../overlays/Sheet";
@@ -16,6 +16,8 @@ import { moveToScene } from "../layout/transfer";
 import { newId } from "../layout/tree";
 import { useShellName } from "../terminal/shellName";
 import { killScene } from "../terminal/sessions";
+import { Studio } from "../studio/Studio";
+import { sectionFromHash } from "../studio/sections";
 import { Icon } from "./icons";
 import { type PaneOpen } from "./PaneSlot";
 import { SceneView } from "./SceneView";
@@ -38,7 +40,6 @@ import "./shell.css";
 import "./narrow.css";
 
 type Size = { cols: number; rows: number };
-const noop = () => {};
 /** Latency above this gets the dial-up icon. */
 const SLOW_MS = 150;
 
@@ -58,12 +59,23 @@ export function Workspace({
   const [petShown, setPetShown] = usePref("pet");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [studio, setStudio] = useState(() => !!sectionFromHash(location.hash));
   const awake = usePetAwake(stamp);
   const engine = usePetEngine();
   const [sc, setSc] = useState(loadScenes);
   const [leafMap, setLeafMap] = useState<Record<string, string[]>>({});
   const [closing, setClosing] = useState<string | null>(null);
   const [kill, setKill] = useState<string | null>(null); // "all" or scene id
+  // Per-pane open state lives here: dockview remounts panes when splits collapse.
+  const [paneOpen, setPaneOpen] = useState<Record<string, PaneOpen>>({});
+  const onPaneOpen = useCallback(
+    (id: string, open: boolean) =>
+      setPaneOpen((m) => ({
+        ...m,
+        [id]: { open, everOpen: open || (m[id]?.everOpen ?? false) },
+      })),
+    [],
+  );
   const toast = useToast();
   useEffect(() => saveScenes(sc), [sc]);
   const onLeaves = useCallback(
@@ -89,7 +101,7 @@ export function Workspace({
         delete rest[id];
         return rest;
       });
-      setSc((s) => closeScene(s, id));
+      setSc((s) => closeScene(s, id, newId("sc")));
     },
     [leafMap],
   );
@@ -107,11 +119,18 @@ export function Workspace({
     else finishClose(id);
   };
 
+  const closeActive = useRef<() => void>(() => {});
+  closeActive.current = () => requestClose(sc.active);
+
   const killTargets = (scope: string | null) =>
     (scope === "all"
       ? Object.values(leafMap).flat()
       : (leafMap[scope ?? ""] ?? [])
     ).filter((p) => paneOpen[p]?.open);
+  const closingName = sc.scenes.find((x) => x.id === closing)?.name ?? "";
+  const closingCount = closing
+    ? (leafMap[closing] ?? []).filter((p) => paneOpen[p]?.open).length
+    : 0;
   const runKill = async () => {
     const targets = killTargets(kill);
     setKill(null);
@@ -127,16 +146,6 @@ export function Workspace({
   );
   const onLatency = useCallback(
     (id: string, ms: number) => setLatencies((m) => ({ ...m, [id]: ms })),
-    [],
-  );
-  // Per-pane open state lives here: dockview remounts panes when splits collapse.
-  const [paneOpen, setPaneOpen] = useState<Record<string, PaneOpen>>({});
-  const onPaneOpen = useCallback(
-    (id: string, open: boolean) =>
-      setPaneOpen((m) => ({
-        ...m,
-        [id]: { open, everOpen: open || (m[id]?.everOpen ?? false) },
-      })),
     [],
   );
   const onOutput = useCallback(
@@ -158,6 +167,9 @@ export function Workspace({
       if (e.key === ",") {
         e.preventDefault();
         setSettings(true);
+      } else if (e.key === "." && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        setStudio(true);
       } else if (e.key === "t" && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         add();
@@ -207,11 +219,24 @@ export function Workspace({
         run: () => setSettings(true),
       }),
       registerCommand({
+        id: "studio",
+        title: "Open Studio",
+        group: "Panes",
+        shortcut: "⌘.",
+        run: () => setStudio(true),
+      }),
+      registerCommand({
         id: "scene:new",
         title: "New scene",
         group: "Scenes",
         shortcut: "⌘T",
         run: add,
+      }),
+      registerCommand({
+        id: "scene:close",
+        title: "Close scene",
+        group: "Scenes",
+        run: () => closeActive.current(),
       }),
       registerCommand({
         id: "signout",
@@ -256,9 +281,7 @@ export function Workspace({
               {
                 label: "Studio",
                 icon: "brush",
-                hint: "Coming in v0.4",
-                disabled: true,
-                onSelect: noop,
+                onSelect: () => setStudio(true),
               },
               { label: "Theme", icon: mode, onSelect: cycle },
               {
@@ -273,9 +296,8 @@ export function Workspace({
           <>
             <IconButton
               label="Studio"
-              tip="Coming in v0.4"
-              aria-disabled="true"
-              onClick={noop}
+              shortcut="⌘."
+              onClick={() => setStudio(true)}
             >
               <Icon name="brush" />
             </IconButton>
@@ -371,10 +393,13 @@ export function Workspace({
 
       <Dialog
         open={closing !== null}
-        title="Close scene?"
+        title={`Close ${closingName}?`}
         onClose={() => setClosing(null)}
       >
-        <p>This scene has running shells. Closing it hangs them up.</p>
+        <p>
+          Ends {closingCount} shell{closingCount === 1 ? "" : "s"} in it.
+          Unsaved work in them is gone.
+        </p>
         <div className="dialog-actions">
           <button className="btn" onClick={() => setClosing(null)}>
             Keep
@@ -402,6 +427,7 @@ export function Workspace({
         onConfirm={() => void runKill()}
       />
       {presetDialogs}
+      <Studio open={studio} onClose={() => setStudio(false)} />
       <CommandPalette open={palette} onOpenChange={setPalette} />
       <Sheet
         open={settings}

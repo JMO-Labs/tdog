@@ -25,7 +25,7 @@ vi.mock("../TerminalPane", () => ({
 }));
 
 import { Workspace } from "./Workspace";
-import { clearCommands } from "../overlays/commands";
+import { clearCommands, getCommands } from "../overlays/commands";
 
 beforeEach(() => {
   localStorage.clear();
@@ -103,7 +103,7 @@ test("closing a scene with running shells asks first", () => {
   act(() => opens[first](true));
   fireEvent.click(addBtn());
   fireEvent.click(screen.getByRole("button", { name: "Close scene scene 1" }));
-  const dlg = screen.getByRole("dialog", { name: "Close scene?" });
+  const dlg = screen.getByRole("dialog", { name: "Close scene 1?" });
   expect(killScene).not.toHaveBeenCalled();
   fireEvent.click(within(dlg).getByRole("button", { name: "Keep" }));
   expect(tabs()).toHaveLength(2);
@@ -136,4 +136,43 @@ test("scene list persists across reloads", () => {
   expect(screen.getByRole("tab", { name: "scene 2" }).ariaSelected).toBe(
     "true",
   );
+});
+
+test("every tab has a close button, even the only one", () => {
+  render(<Workspace />);
+  expect(
+    screen.getByRole("button", { name: "Close scene scene 1" }),
+  ).toBeTruthy();
+});
+
+test("closing the last scene warns with the shell count, kills, and leaves a fresh scene", () => {
+  render(<Workspace />);
+  const first = screen.getAllByTestId("terminal-pane")[0].dataset.scene!;
+  act(() => opens[first](true));
+  fireEvent.click(screen.getByRole("button", { name: "Close scene scene 1" }));
+  const dlg = screen.getByRole("dialog", { name: "Close scene 1?" });
+  expect(dlg.textContent).toContain(
+    "Ends 1 shell in it. Unsaved work in them is gone.",
+  );
+  expect(killScene).not.toHaveBeenCalled();
+  fireEvent.click(within(dlg).getByRole("button", { name: "Close scene" }));
+  expect(killScene).toHaveBeenCalledWith(first);
+  expect(tabs()).toEqual(["scene 1"]);
+  const panes = screen.getAllByTestId("terminal-pane");
+  expect(panes).toHaveLength(1);
+  expect(panes[0].dataset.scene).not.toBe(first);
+});
+
+test("tab context menu and palette command close the scene", () => {
+  render(<Workspace />);
+  fireEvent.click(addBtn());
+  fireEvent.contextMenu(screen.getByRole("tab", { name: "scene 1" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Close scene" }));
+  expect(tabs()).toEqual(["scene 2"]);
+  act(() => {
+    getCommands()
+      .find((c) => c.id === "scene:close")!
+      .run();
+  });
+  expect(tabs()).toEqual(["scene 1"]);
 });
