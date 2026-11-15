@@ -52,6 +52,34 @@ func TestHookDecodeProblems(t *testing.T) {
 	}
 }
 
+func TestBackgroundKindsAndRefs(t *testing.T) {
+	ok := []string{
+		`background = { kind = "gradient", ref = "linear-gradient(135deg, #ff00aa 0%, rgb(0 0 0 / 50%) 100%)" }`,
+		`background = { kind = "gradient", ref = "radial-gradient(circle at 30% 40%, hsl(200, 50%, 40%), navy)" }`,
+		`background = { kind = "pattern", ref = "dots-1" }`,
+		`background = { kind = "video", ref = "0123456789abcdef0123456789abcdef" }`,
+		`background = { kind = "image", ref = "0123456789abcdef0123456789abcdef" }`,
+	}
+	for _, src := range ok {
+		if _, err := Decode(KindScene, []byte(src)); err != nil {
+			t.Errorf("%s: %v", src, err)
+		}
+	}
+	bad := []string{
+		`background = { kind = "gradient", ref = "url(http://evil/x)" }`,
+		`background = { kind = "gradient", ref = "linear-gradient(red, blue); position: fixed" }`,
+		`background = { kind = "gradient", ref = "linear-gradient(red, blue) , url(x)" }`,
+		`background = { kind = "gradient", ref = "linear-gradient(expression(alert(1)), blue)" }`,
+		`background = { kind = "gradient", ref = "red" }`,
+		`background = { kind = "video", ref = "../../etc/passwd" }`,
+		`background = { kind = "pattern", ref = "a b" }`,
+		`background = { kind = "image", ref = "https://x/y.png" }`,
+	}
+	for _, src := range bad {
+		wantPath(t, KindTerminal, src, "background.ref")
+	}
+}
+
 func TestFieldValidation(t *testing.T) {
 	wantPath(t, KindTerminal, `background = { kind = "gif" }`, "background.kind")
 	wantPath(t, KindTerminal, `background = { blur = 101 }`, "background.blur")
