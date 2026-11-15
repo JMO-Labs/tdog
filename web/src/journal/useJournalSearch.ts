@@ -30,6 +30,7 @@ export function useJournalSearch(q: Query): { hits: Hit[]; done: boolean } {
           done: s.done || !!m.done,
         }));
       };
+      w.onerror = () => setState((s) => ({ ...s, done: true }));
       w.postMessage({ id, q: { text, regex, caseSensitive } });
     }, 150);
     return () => {

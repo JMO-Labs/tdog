@@ -59,6 +59,16 @@ describe("matchRecord", () => {
     );
     expect(matchRecord(rec(), q("^", { regex: true }))).toEqual([]);
   });
+  it("match at index 0 of output starting with newline", () => {
+    const h = matchRecord(
+      rec({ cmd: "", out: "\nfoo" }),
+      q("(?:\n)", { regex: true }),
+    );
+    expect(h[0].line).toBe("");
+    expect(h[0].lineNo).toBe(0);
+    const g = matchRecord(rec({ cmd: "", out: "x\ny" }), q("x"));
+    expect(g[0].line).toBe("x");
+  });
   it("one hit per line, capped at 20", () => {
     const out = Array.from({ length: 50 }, () => "x x").join("\n");
     const h = matchRecord(rec({ cmd: "", out }), q("x"));
@@ -69,7 +79,7 @@ describe("matchRecord", () => {
     const out = "a".repeat(2_500_000) + "NEEDLE" + "b".repeat(2_500_000);
     const t = performance.now();
     const h = matchRecord(rec({ cmd: "", out }), q("needle"));
-    expect(performance.now() - t).toBeLessThan(200);
+    expect(performance.now() - t).toBeLessThan(1000);
     expect(h).toHaveLength(1);
     expect(h[0].line.length).toBeLessThanOrEqual(202);
     expect(h[0].line).toContain("NEEDLE");

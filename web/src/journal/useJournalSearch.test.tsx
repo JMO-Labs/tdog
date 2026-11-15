@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { Hit } from "./search";
 
 type W = {
+  onerror: (() => void) | null;
   onmessage: ((e: { data: unknown }) => void) | null;
   postMessage: ReturnType<typeof vi.fn>;
   terminate: ReturnType<typeof vi.fn>;
@@ -10,7 +11,12 @@ type W = {
 const workers: W[] = [];
 vi.mock("./searchWorker", () => ({
   createSearchWorker: () => {
-    const w: W = { onmessage: null, postMessage: vi.fn(), terminate: vi.fn() };
+    const w: W = {
+      onerror: null,
+      onmessage: null,
+      postMessage: vi.fn(),
+      terminate: vi.fn(),
+    };
     workers.push(w);
     return w;
   },
@@ -66,4 +72,12 @@ it("empty query is done with no worker", () => {
   act(() => void vi.advanceTimersByTime(200));
   expect(workers).toHaveLength(0);
   expect(result.current).toEqual({ hits: [], done: true });
+});
+
+it("worker error marks done", () => {
+  const { result } = renderHook(() => useJournalSearch(q("a")));
+  act(() => void vi.advanceTimersByTime(150));
+  expect(result.current.done).toBe(false);
+  act(() => workers[0].onerror?.());
+  expect(result.current.done).toBe(true);
 });

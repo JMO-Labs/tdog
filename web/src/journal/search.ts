@@ -68,7 +68,7 @@ export function matchRecord(rec: JournalRecord, query: Query): Hit[] {
     const m = firstMatch(re, out, from);
     if (!m) break;
     const i = m.index;
-    const ls = out.lastIndexOf("\n", i - 1) + 1;
+    const ls = i ? out.lastIndexOf("\n", i - 1) + 1 : 0;
     let le = out.indexOf("\n", i);
     if (le < 0) le = out.length;
     for (let p = out.indexOf("\n", counted); p >= 0 && p < ls;)
