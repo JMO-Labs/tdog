@@ -22,6 +22,7 @@ function routes(extra: Parameters<typeof mockFetch>[0] = {}) {
     "GET /api/presets/terminal/api": new Response(API),
     "GET /api/schema/terminal": json({}),
     "POST /api/presets/resolve": json({}),
+    "GET /api/assets": json([]),
     ...extra,
   });
   vi.stubGlobal("fetch", f);
