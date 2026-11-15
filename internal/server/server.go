@@ -57,6 +57,11 @@ func NewSecuredPresets(ui fs.FS, a *auth.Auth, store *config.Store) http.Handler
 	mux.Handle("GET /ws/term", term.NewHandler(tcfg))
 	mux.Handle("GET /api/sessions", reg.ListHandler())
 	mux.Handle("GET /api/shell", term.ShellInfoHandler(term.PickShell("")))
+	mux.Handle("POST /api/diff", term.NewDiffHandler(term.DiffHandlerConfig{
+		Registry: reg,
+		SSH:      sshCfg,
+		Audit:    a.Audit(),
+	}))
 	reg.RegisterKill(mux)
 	if store != nil {
 		store.Register(mux)
