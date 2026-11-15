@@ -87,3 +87,9 @@ test("parseDraft refuses non-colour background, extra pane keys and overrides", 
     parseDraft(base("").trimEnd() + '\n[panes.override]\ntheme = "nord"\n'),
   ).toThrow(/override/);
 });
+
+test("a value that isn't valid reports its line", () => {
+  expect(() => parseDraft('name = "x"\ngap = nope')).toThrow(
+    "Can't read the value on line 2.",
+  );
+});
