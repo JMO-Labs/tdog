@@ -11,6 +11,8 @@ export interface MenuItem {
   danger?: boolean;
   checked?: boolean;
   isRadio?: boolean;
+  /** Colour dot before the label (e.g. a theme's accent). */
+  swatch?: string;
   onSelect?: () => void;
   submenu?: MenuItem[];
 }
@@ -219,6 +221,7 @@ export function ActionMenu(props: ActionMenuProps) {
           item.submenu ? "menuitem" : isRadio ? "menuitemradio" : "menuitem"
         }
         aria-checked={isRadio ? item.checked : undefined}
+        aria-expanded={item.submenu ? openSub === item.label : undefined}
         aria-haspopup={item.submenu ? "menu" : undefined}
         disabled={item.disabled}
         className={`menu-item ${item.danger ? "danger" : ""}`}
@@ -241,7 +244,11 @@ export function ActionMenu(props: ActionMenuProps) {
         {item.shortcut && (
           <span className="menu-shortcut">{item.shortcut}</span>
         )}
-        {isRadio && item.checked && <span className="menu-check">✓</span>}
+        {isRadio && item.checked && (
+          <span className="menu-check" aria-hidden="true">
+            ✓
+          </span>
+        )}
         {item.submenu && <span className="menu-arrow">›</span>}
       </button>
     );
@@ -335,7 +342,11 @@ export function ActionMenu(props: ActionMenuProps) {
                   <div key={item.label} className="menu-item-with-sub">
                     {rendered}
                     {item.submenu && openSub === item.label && !filter && (
-                      <SubMenu items={item.submenu} onSelect={run} />
+                      <SubMenu
+                        label={item.label}
+                        items={item.submenu}
+                        onSelect={run}
+                      />
                     )}
                   </div>
                 );
@@ -357,6 +368,7 @@ export function ActionMenu(props: ActionMenuProps) {
 }
 
 function SubMenu(props: {
+  label: string;
   items: MenuItem[];
   onSelect: (item: MenuItem, refocus?: boolean) => void;
 }) {
@@ -377,6 +389,7 @@ function SubMenu(props: {
       ref={ref}
       className="menu-submenu"
       role="menu"
+      aria-label={props.label}
       style={pos as React.CSSProperties}
       onKeyDown={(e) => {
         if (e.key === "Escape" || e.key === "ArrowLeft") {
@@ -396,11 +409,22 @@ function SubMenu(props: {
             title={item.tooltip}
             onClick={() => props.onSelect(item, true)}
           >
+            {item.swatch && (
+              <span
+                className="menu-swatch"
+                aria-hidden="true"
+                style={{ background: item.swatch }}
+              />
+            )}
             <span className="menu-label">{item.label}</span>
             {item.shortcut && (
               <span className="menu-shortcut">{item.shortcut}</span>
             )}
-            {isRadio && item.checked && <span className="menu-check">✓</span>}
+            {isRadio && item.checked && (
+              <span className="menu-check" aria-hidden="true">
+                ✓
+              </span>
+            )}
             {item.icon && (
               <span className="menu-dot">
                 <Icon name={item.icon} />

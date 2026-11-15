@@ -131,15 +131,29 @@ test("denied paste explains in plain words", async () => {
 });
 
 test("picking a theme repaints the pane even when a theme prop is set", async () => {
-  const [a] = THEMES;
+  const [a, b] = THEMES;
   const spy = vi.spyOn(themeStore, "terminal");
   render(<TerminalPane theme={a.id} />);
   await vi.waitFor(() => expect(m.r).toBeTruthy());
   await new Promise((r) => setTimeout(r, 0));
   fireEvent.contextMenu(screen.getByTestId("terminal-pane"));
-  const themeBtn = screen.getByRole("menuitem", { name: /Theme for this terminal/ });
-  expect(themeBtn).toBeTruthy();
-  // The submenu is rendered dynamically when clicked; test just verifies the button exists
+  const themeBtn = screen.getByRole("menuitem", {
+    name: /Theme for this terminal/,
+  });
+  fireEvent.click(themeBtn);
+
+  // Wait for submenu to render
+  const themeSubmenu = await screen.findByRole("menu", {
+    name: "Theme for this terminal",
+  });
+  expect(themeSubmenu).toBeTruthy();
+
+  m.r.setTheme.mockClear();
+  spy.mockClear();
+  const themeName = screen.getByRole("menuitemradio", { name: b.name });
+  fireEvent.click(themeName);
+  await vi.waitFor(() => expect(m.r.setTheme).toHaveBeenCalled());
+  expect(spy).toHaveBeenCalledWith(b.id);
   spy.mockRestore();
 });
 

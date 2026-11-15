@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  within,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { TerminalMenu, type TerminalMenuProps } from "./TerminalMenu";
 
@@ -77,16 +83,22 @@ test("Esc dismisses", () => {
   expect(p.onDismiss).toHaveBeenCalled();
 });
 
-test("theme submenu picks a theme", async () => {
+test("theme submenu picks a theme and ticks the current one", async () => {
   const p = setup();
-  const themeBtn = screen.getByRole("menuitem", {
-    name: /Theme for this terminal/,
+  fireEvent.click(
+    screen.getByRole("menuitem", { name: /Theme for this terminal/ }),
+  );
+  const sub = await screen.findByRole("menu", {
+    name: "Theme for this terminal",
   });
-  fireEvent.click(themeBtn);
-  // The submenu is rendered dynamically when the theme item is clicked
-  // For now, just verify the theme button exists and is clickable
-  expect(themeBtn).toBeTruthy();
-  expect(p.onTheme).not.toHaveBeenCalled(); // Not called until a theme is selected from submenu
+  // No pane theme yet: "Page default" is the checked radio.
+  expect(
+    within(sub)
+      .getByRole("menuitemradio", { name: "Page default" })
+      .getAttribute("aria-checked"),
+  ).toBe("true");
+  fireEvent.click(within(sub).getByRole("menuitemradio", { name: "Alpha" }));
+  expect(p.onTheme).toHaveBeenCalledWith("a");
 });
 
 test("stays inside the viewport", async () => {

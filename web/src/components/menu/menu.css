@@ -235,3 +235,12 @@
   white-space: nowrap;
   border-width: 0;
 }
+
+.menu-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  flex: none;
+  margin-right: 8px;
+}

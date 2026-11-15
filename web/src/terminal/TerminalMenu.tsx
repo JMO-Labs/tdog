@@ -5,7 +5,9 @@ export interface TerminalMenuProps {
   y: number;
   hasSelection: boolean;
   isBroadcasting?: boolean;
-  themes: { id: string; name: string }[];
+  themes: { id: string; name: string; swatch?: string }[];
+  /** This pane's own theme choice; undefined = page default. */
+  currentTheme?: string;
   onCopy: () => void;
   onPaste: () => void;
   onSelectAll: () => void;
@@ -81,13 +83,14 @@ export function TerminalMenu(p: TerminalMenuProps) {
           {
             label: "Page default",
             isRadio: true,
-            checked: false,
+            checked: p.currentTheme === undefined,
             onSelect: () => p.onTheme(undefined),
           },
           ...p.themes.map((t) => ({
             label: t.name,
             isRadio: true,
-            checked: false,
+            checked: p.currentTheme === t.id,
+            swatch: t.swatch,
             onSelect: () => p.onTheme(t.id),
           })),
         ],
