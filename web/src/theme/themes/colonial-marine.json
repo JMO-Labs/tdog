@@ -31,7 +31,7 @@
       "shape": "block",
       "blink": true
     },
-    "font": "vt323",
+    "font": "share-tech-mono",
     "effects": [
       {
         "id": "scanlines",

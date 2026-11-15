@@ -31,7 +31,7 @@
       "shape": "underline",
       "blink": true
     },
-    "font": "vt323",
+    "font": "courier-prime",
     "effects": [],
     "motif": {
       "viewBox": [0, 0, 64, 64],

@@ -50,7 +50,7 @@ const SPEC: [
   [
     "pocket-monochrome",
     "block",
-    "press-start-2p",
+    "jetbrains-mono",
     "cartridge",
     [["scanlines", 0.5]],
     "pixel cap",
@@ -60,7 +60,7 @@ const SPEC: [
   [
     "rip-and-tear",
     "block",
-    "vt323",
+    "space-mono",
     "post",
     [
       ["grain", 0.5],
