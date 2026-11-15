@@ -146,3 +146,30 @@ func TestSceneStartRoute(t *testing.T) {
 		t.Fatalf("missing: %d", w.Code)
 	}
 }
+
+func TestSceneStartReturnsLayout(t *testing.T) {
+	src := sceneDev + `
+[layout]
+type = "split"
+dir = "row"
+ratio = 0.5
+[layout.a]
+type = "pane"
+pane = "a"
+[layout.b]
+type = "pane"
+pane = "b"
+`
+	s, _ := sceneRig(t, map[string]string{"dev": src})
+	run, err := s.Start("dev")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if run.Layout == nil || run.Layout.Type != "split" || run.Layout.A.Pane != "a" {
+		t.Fatalf("layout: %+v", run.Layout)
+	}
+	again, _ := s.Start("dev")
+	if again.Layout == nil {
+		t.Fatal("layout lost on repeat start")
+	}
+}

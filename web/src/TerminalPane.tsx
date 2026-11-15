@@ -7,8 +7,9 @@ import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
 import { useMotifOpacity } from "./settings/prefs";
-import { findSessionId } from "./terminal/sessions";
 import { registerClear } from "./terminal/paneActions";
+import { resolvePreset, type Resolved } from "./presets/api";
+import { panePreset, resolveSession } from "./presets/panes";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -27,11 +28,21 @@ function terminalPaint(t: TerminalTheme, motif: boolean): TerminalTheme {
   return motif ? { ...t, background: "rgba(0,0,0,0)" } : t;
 }
 
-function wsUrl(scene?: string, id?: string): string {
+function applyFont(r: TerminalRenderer | null, f: Resolved) {
+  const family = f["font.family"]?.value;
+  const size = f["font.size"]?.value;
+  r?.setFont?.(
+    typeof family === "string" ? family : undefined,
+    typeof size === "number" ? size : undefined,
+  );
+}
+
+function wsUrl(scene?: string, id?: string, preset?: string): string {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const q = new URLSearchParams();
   if (scene) q.set("scene", scene);
   if (id) q.set("id", id);
+  if (preset) q.set("preset", preset);
   const qs = q.toString();
   return `${proto}://${location.host}/ws/term${qs ? `?${qs}` : ""}`;
 }
@@ -64,6 +75,13 @@ export function TerminalPane({
   reconnectRef?: { current: (() => void) | null };
 } = {}) {
   const settledRef = useRef(settled);
+  // A terminal preset's theme and font apply to this pane only.
+  const preset = sceneKey ? panePreset(sceneKey) : undefined;
+  const [resolved, setResolved] = useState<Resolved>({});
+  const presetTheme = resolved.theme?.value;
+  theme ??= typeof presetTheme === "string" ? presetTheme : undefined;
+  const fontRef = useRef<Resolved>({});
+  fontRef.current = resolved;
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const renderer = useRef<TerminalRenderer | null>(null);
@@ -75,11 +93,20 @@ export function TerminalPane({
   const connect = useCallback(() => {
     const key = keyRef.current;
     if (!key) return session.current?.connect();
-    void findSessionId(key).then((id) => {
+    void resolveSession(key).then((id) => {
       idRef.current = id;
       session.current?.connect();
     });
   }, []);
+  useEffect(() => {
+    if (!preset) return;
+    let live = true;
+    resolvePreset(preset).then(
+      (r) => live && setResolved(r),
+      () => {}, // validation errors were toasted when the pane was opened
+    );
+    return () => void (live = false);
+  }, [preset]);
   const [state, setState] = useState<SessionState>({ status: "connecting" });
 
   const toast = useToast();
@@ -107,6 +134,9 @@ export function TerminalPane({
   useEffect(() => {
     renderer.current?.setTheme(paintTheme());
   }, [theme, motifOn, paintTheme]);
+  useEffect(() => {
+    applyFont(renderer.current, resolved);
+  }, [resolved]);
   useEffect(() => {
     if (!dropped) return;
     const id = setTimeout(connect, RETRY_MS);
@@ -140,7 +170,7 @@ export function TerminalPane({
       if (cancelled) return r.dispose();
       const s = new TerminalSession(
         r,
-        () => new WebSocket(wsUrl(keyRef.current, idRef.current)),
+        () => new WebSocket(wsUrl(keyRef.current, idRef.current, preset)),
         setState,
         {
           onSize: (c, r2) => hooks.current.onSize?.(c, r2),
@@ -160,6 +190,7 @@ export function TerminalPane({
           )
         : () => {};
       r.setTheme(paintTheme());
+      applyFont(r, fontRef.current);
       const offTheme = themeStore.subscribe(() => r.setTheme(paintTheme()));
       connect();
       const ro = new ResizeObserver(() => {
@@ -178,7 +209,7 @@ export function TerminalPane({
       cancelled = true;
       cleanup();
     };
-  }, [connect, sceneKey, paintTheme]);
+  }, [connect, sceneKey, paintTheme, preset]);
 
   const bg = themeStore.terminal(theme).background;
   return (
