@@ -8,7 +8,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-const killScene = vi.fn(async (_s: string) => true);
+const killScene = vi.fn(async (_s: string) => 1);
 vi.mock("../terminal/sessions", () => ({
   killScene: (s: string) => killScene(s),
   findSessionId: vi.fn(),

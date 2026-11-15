@@ -308,3 +308,11 @@ test("serious mode disables the theme picker with a note", async () => {
   expect(card().hasAttribute("disabled")).toBe(false);
   expect(screen.queryByText(/Serious mode is on/)).toBeNull();
 });
+
+test("performance mode toggle defaults off and persists", async () => {
+  await mount({ "GET /api/session": session(false) });
+  expect(sw(/performance mode/i).getAttribute("aria-checked")).toBe("false");
+  fireEvent.click(sw(/performance mode/i));
+  expect(localStorage.getItem("tdog.perf")).toBe("1");
+  expect(getPref("perf")).toBe(true);
+});

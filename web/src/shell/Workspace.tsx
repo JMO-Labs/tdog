@@ -117,7 +117,7 @@ export function Workspace({
     const targets = killTargets(kill);
     setKill(null);
     const done = await Promise.all(targets.map((p) => killScene(p)));
-    const n = done.filter(Boolean).length;
+    const n = done.reduce((a, b) => a + b, 0);
     toast("success", `Killed ${n} shell${n === 1 ? "" : "s"}.`);
   };
 

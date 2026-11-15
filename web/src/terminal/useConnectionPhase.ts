@@ -21,7 +21,9 @@ export function useConnectionPhase(
   cb.current = onRewound;
   const quiet = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const exited = state.status === "closed" && state.exitCode !== undefined;
+  const exited =
+    state.status === "closed" &&
+    (state.exitCode !== undefined || state.killed === true);
   useEffect(() => {
     dispatch({ t: "status", status: state.status, exited });
   }, [state.status, exited]);
