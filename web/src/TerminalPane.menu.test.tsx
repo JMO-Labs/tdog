@@ -151,7 +151,7 @@ test("picking a theme repaints the pane even when a theme prop is set", async ()
 async function mountWithOps(ops = { split: vi.fn(), close: vi.fn() }) {
   render(
     <PaneOpsContext.Provider value={ops}>
-      <TerminalPane sceneKey="scene-1" />
+      <TerminalPane paneId="scene-1" sceneId="test-scene" />
     </PaneOpsContext.Provider>,
   );
   await vi.waitFor(() => expect(m.r).toBeTruthy());

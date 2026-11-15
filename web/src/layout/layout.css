@@ -112,6 +112,12 @@
   padding: 0 8px;
   font-size: 11px;
 }
+.pane-head .chip.broadcast {
+  border: 1px solid var(--accent, #6cf);
+  border-radius: 4px;
+  color: var(--accent, #6cf);
+  padding: 0 6px;
+}
 .pane-head .spacer {
   flex: 1;
 }

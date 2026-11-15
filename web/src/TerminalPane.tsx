@@ -43,6 +43,13 @@ import {
   resolveSession,
   setPaneTheme,
 } from "./presets/panes";
+import {
+  registerPaneInput,
+  unregisterPaneInput,
+  getScenePanes,
+} from "./broadcast/sessionRegistry";
+import { getBroadcastGroup } from "./broadcast/store";
+import { useBroadcast } from "./broadcast/useBroadcast";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -97,12 +104,15 @@ export function TerminalPane({
   onLatency,
   onOpenChange,
   reconnectRef,
-  sceneKey,
+  paneId,
+  sceneId,
 }: {
   /** Terminal theme id for this pane; defaults to the page theme. */
   theme?: string;
-  /** Stable pane key sent as the session `scene`; reload reattaches by it. */
-  sceneKey?: string;
+  /** Unique pane ID within a scene. */
+  paneId?: string;
+  /** Scene ID containing this pane. */
+  sceneId?: string;
   onClosed?: () => void;
   onSize?: (cols: number, rows: number) => void;
   onOutput?: (data: Uint8Array) => void;
@@ -121,28 +131,29 @@ export function TerminalPane({
   const visibleRef = useRef(visible);
   visibleRef.current = visible;
   // A terminal preset's theme and font apply to this pane only.
-  const preset = sceneKey ? panePreset(sceneKey) : undefined;
+  const preset = paneId ? panePreset(paneId) : undefined;
   const [resolved, setResolved] = useState<Resolved>({});
   const presetTheme = resolved.theme?.value;
   const [override, setOverride] = useState<string | undefined>();
-  theme ??= sceneKey ? paneTheme(sceneKey) : undefined;
+  theme ??= paneId ? paneTheme(paneId) : undefined;
   theme ??= typeof presetTheme === "string" ? presetTheme : undefined;
   // The theme picker previews on the focused pane only.
   const [, bump] = useReducer((n: number) => n + 1, 0);
   useEffect(() => themeStore.subscribe(bump), []);
-  theme = override ?? themeStore.paneTheme(sceneKey, theme);
+  theme = override ?? themeStore.paneTheme(paneId, theme);
   const fontRef = useRef<Resolved>({});
   fontRef.current = resolved;
   const themeRef = useRef(theme);
   themeRef.current = theme;
   useEffect(() => {
-    if (sceneKey && theme) titleStore.set(sceneKey, { theme });
-  }, [sceneKey, theme]);
+    if (paneId && theme) titleStore.set(paneId, { theme });
+  }, [paneId, theme]);
   const renderer = useRef<TerminalRenderer | null>(null);
   const host = useRef<HTMLDivElement>(null);
   const session = useRef<TerminalSession | null>(null);
   const idRef = useRef<string | undefined>(undefined);
-  const keyRef = useRef(sceneKey);
+  const keyRef = useRef(paneId);
+  const sceneRef = useRef(sceneId);
   /** (Re)connect; with a sceneKey, re-resolves the live session id first. */
   const connect = useCallback(() => {
     const key = keyRef.current;
@@ -164,7 +175,7 @@ export function TerminalPane({
   }, [preset]);
   const [state, setState] = useState<SessionState>({ status: "connecting" });
   const [storeKilled, setStoreKilled] = useState(
-    () => !!sceneKey && isKilled(sceneKey),
+    () => !!paneId && isKilled(paneId),
   );
   useEffect(() => {
     const sync = () =>
@@ -193,6 +204,11 @@ export function TerminalPane({
   noteRef.current = noteOutput;
   const hooks = useRef({ onSize, onOutput, onLatency });
   hooks.current = { onSize, onOutput, onLatency };
+
+  const broadcast =
+    paneId && sceneId ? useBroadcast(sceneId, paneId) : null;
+
+  sceneRef.current = sceneId;
 
   const [effects, setEffects] = useState(() => themeStore.effects(theme));
   useEffect(() => {
@@ -296,10 +312,31 @@ export function TerminalPane({
             noteRef.current();
           },
           onLatency: (ms) => hooks.current.onLatency?.(ms),
+          onBroadcast: (data) => {
+            const scene = sceneRef.current;
+            const pane = keyRef.current;
+            if (!scene || !pane) return;
+            const group = getBroadcastGroup(scene);
+            const panes = getScenePanes(scene);
+            // Fan out to all panes in the broadcast group except this one
+            group.forEach((targetPaneId) => {
+              if (targetPaneId === pane) return; // Don't echo back
+              const targetPane = panes[targetPaneId];
+              if (targetPane) targetPane.send(data);
+            });
+          },
         },
       );
       session.current = s;
       renderer.current = r;
+
+      // Register this pane for receiving broadcast input
+      if (keyRef.current && sceneRef.current) {
+        registerPaneInput(sceneRef.current, keyRef.current, (data) => {
+          r.paste?.(new TextDecoder().decode(data));
+        });
+      }
+
       // The images effect ran before this async renderer existed: apply now.
       void r.setInlineImages?.(imagesRef.current);
       r.onTitle?.((title) => {
@@ -309,8 +346,8 @@ export function TerminalPane({
         if (keyRef.current) titleStore.set(keyRef.current, { cwd });
       });
       // ED 3: erase scrollback only; works the same in both renderers.
-      const offClear = sceneKey
-        ? registerClear(sceneKey, () =>
+      const offClear = paneId
+        ? registerClear(paneId, () =>
             r.write(new TextEncoder().encode("\x1b[3J")),
           )
         : () => {};
@@ -327,6 +364,10 @@ export function TerminalPane({
       });
       ro.observe(el);
       cleanup = () => {
+        // Unregister this pane from broadcasting
+        if (keyRef.current && sceneRef.current) {
+          unregisterPaneInput(sceneRef.current, keyRef.current);
+        }
         offClear();
         offTheme();
         ro.disconnect();
@@ -340,7 +381,7 @@ export function TerminalPane({
       cleanup();
       if (keyRef.current) titleStore.remove(keyRef.current);
     };
-  }, [connect, applyScope, sceneKey, paintTheme, preset]);
+  }, [connect, applyScope, paneId, sceneId, paintTheme, preset]);
 
   const ops = usePaneOps();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -425,21 +466,23 @@ export function TerminalPane({
         <TerminalMenu
           {...menu}
           hasSelection={!!renderer.current?.getSelection?.()}
+          isBroadcasting={broadcast?.isBroadcasting}
           themes={themes}
           onCopy={copy}
           onPaste={() => void paste()}
           onSelectAll={() => renderer.current?.selectAll?.()}
-          onClear={() => sceneKey && clearScrollback(sceneKey)}
+          onClear={() => paneId && clearScrollback(paneId)}
           onSplit={(d) => ops?.split(d)}
           onTheme={(t) => {
             setOverride(t);
             // Stored per pane so reload and "Save scene" keep the choice.
             // ponytail: "default" (undefined) is not persisted; add clearPaneTheme if reload must forget it.
-            if (sceneKey && t) setPaneTheme(sceneKey, t);
+            if (paneId && t) setPaneTheme(paneId, t);
           }}
           onRename={ops?.rename}
           onShowScreen={() => openOverlay("show-screen")}
-          onKill={() => sceneKey && void killScene(sceneKey)}
+          onBroadcast={broadcast?.toggle}
+          onKill={() => paneId && void killScene(paneId)}
           onClose={() => ops?.close()}
           onDismiss={closeMenu}
         />

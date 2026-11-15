@@ -9,6 +9,7 @@ export type PaneOpen = { open: boolean; everOpen: boolean };
 /** One pane's terminal plus its closed overlay and reconnect handle. */
 export function PaneSlot({
   id,
+  sceneId,
   settled,
   visible,
   state,
@@ -20,6 +21,7 @@ export function PaneSlot({
   theme,
 }: {
   id: string;
+  sceneId: string;
   /** Terminal theme id; defaults to the page theme. */
   theme?: string;
   settled: boolean;
@@ -47,7 +49,8 @@ export function PaneSlot({
   return (
     <div style={{ position: "relative", height: "100%" }}>
       <TerminalPane
-        sceneKey={id}
+        paneId={id}
+        sceneId={sceneId}
         theme={theme}
         settled={settled}
         visible={visible}

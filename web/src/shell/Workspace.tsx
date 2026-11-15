@@ -17,6 +17,7 @@ import { preparePane } from "../presets/launch";
 import { newId } from "../layout/tree";
 import { useShellName } from "../terminal/shellName";
 import { killScene } from "../terminal/sessions";
+import { clearScene } from "../broadcast/store";
 import { Studio } from "../studio/Studio";
 import { sectionFromHash } from "../studio/sections";
 import { Icon } from "./icons";
@@ -38,6 +39,11 @@ import { Pet, usePetAwake } from "./pet";
 import { usePetEngine } from "./usePetEngine";
 import { Tabs } from "./Tabs";
 import { MainMenu, type MenuGroup } from "./MainMenu";
+import {
+  toggleBroadcast,
+  getBroadcastGroup,
+  getBroadcastStore,
+} from "../broadcast/store";
 import "./shell.css";
 import "./narrow.css";
 import "./menu.css";
@@ -84,7 +90,13 @@ export function Workspace({
   );
   const toast = useToast();
   const c = useCopy();
+  const [broadcastCount, setBroadcastCount] = useState(0);
   useEffect(() => saveScenes(sc), [sc]);
+  useEffect(() => {
+    return getBroadcastStore().subscribe(() => {
+      setBroadcastCount(getBroadcastGroup(sc.active).size);
+    });
+  }, [sc.active]);
   const onLeaves = useCallback(
     (scene: string, ids: string[]) =>
       setLeafMap((m) => ({ ...m, [scene]: ids })),
@@ -106,6 +118,7 @@ export function Workspace({
     (id: string) => {
       (leafMap[id] ?? []).forEach((p) => void killScene(p));
       clearLayout(id);
+      clearScene(id);
       setLeafMap((m) => {
         const rest = { ...m };
         delete rest[id];
@@ -263,9 +276,27 @@ export function Workspace({
         group: "Account",
         run: signOut,
       }),
+      registerCommand({
+        id: "broadcast:toggle",
+        title: "Broadcast to all panes in scene",
+        group: "Panes",
+        run: () => {
+          if (focused) toggleBroadcast(sc.active, focused);
+        },
+      }),
+      registerCommand({
+        id: "broadcast:stop",
+        title: "Stop broadcasting",
+        group: "Panes",
+        run: () => {
+          if (focused && getBroadcastGroup(sc.active).has(focused)) {
+            toggleBroadcast(sc.active, focused);
+          }
+        },
+      }),
     ];
     return () => offs.forEach((f) => f());
-  }, [cycle, signOut, add, serious, setSerious]);
+  }, [cycle, signOut, add, serious, setSerious, focused, sc.active]);
 
   const menuGroups: MenuGroup[] = [
     [
@@ -395,6 +426,24 @@ export function Workspace({
         {size && (
           <span className="chip num hide-xs">
             {size.cols}×{size.rows}
+          </span>
+        )}
+        {broadcastCount > 0 && (
+          <span className="chip broadcast">
+            Broadcasting to {broadcastCount} pane{broadcastCount === 1 ? "" : "s"}
+            <button
+              className="stop-broadcast"
+              aria-label="Stop broadcasting"
+              title="Stop broadcasting"
+              onClick={() => {
+                const group = getBroadcastGroup(sc.active);
+                group.forEach((paneId) => {
+                  toggleBroadcast(sc.active, paneId);
+                });
+              }}
+            >
+              ✕
+            </button>
           </span>
         )}
         <div className="spacer" />
