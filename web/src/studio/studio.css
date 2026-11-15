@@ -1,0 +1,103 @@
+.studio {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: var(--bg);
+  color: var(--fg);
+  outline: none;
+  overflow: hidden;
+}
+.studio-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: calc(2px * var(--border-width)) solid var(--line);
+  background: var(--surface);
+}
+.studio-title {
+  margin: 0;
+  font: 400 26px/1.1 var(--display);
+  flex: 1;
+}
+.studio-head .input {
+  width: min(320px, 100%);
+}
+.studio-body {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 0;
+}
+.studio-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 12px;
+  border-right: calc(2px * var(--border-width)) solid var(--line);
+  overflow: auto;
+}
+.studio-nav-item,
+.studio-results button {
+  text-align: left;
+  font: 700 14px var(--body, inherit);
+  color: inherit;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.studio-nav-item:hover,
+.studio-results button:hover {
+  border-color: var(--line);
+}
+.studio-nav-item[aria-current="page"] {
+  background: var(--pink);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.studio-main {
+  padding: 24px;
+  overflow: auto;
+  min-width: 0;
+}
+.studio-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.studio-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  min-height: 60%;
+  text-align: center;
+}
+.studio-empty h3 {
+  margin: 0;
+  font: 400 22px var(--display);
+}
+.studio-cassette {
+  width: 120px;
+}
+.studio-empty-big {
+  margin: 0;
+  font: 400 26px var(--display);
+}
+@media (max-width: 639px) {
+  .studio-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .studio-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: calc(2px * var(--border-width)) solid var(--line);
+  }
+}

@@ -38,13 +38,12 @@ test("renameScene trims; blank keeps the old name", () => {
   expect(renameScene(base, "b", "   ").scenes[1].name).toBe("two");
 });
 
-test("closeScene activates a neighbour; the last scene cannot close", () => {
+test("closeScene activates a neighbour; closing the last leaves a fresh one", () => {
   const s = closeScene({ ...base, active: "b" }, "b");
   expect(s.scenes.map((x) => x.id)).toEqual(["a", "c"]);
   expect(s.active).toBe("c");
-  expect(
-    closeScene({ scenes: [base.scenes[0]], active: "a" }, "a").scenes,
-  ).toHaveLength(1);
+  const last = closeScene({ scenes: [base.scenes[0]], active: "a" }, "a", "z");
+  expect(last).toEqual({ scenes: [{ id: "z", name: "scene 1" }], active: "z" });
   expect(closeScene(base, "c").active).toBe("a");
 });
 

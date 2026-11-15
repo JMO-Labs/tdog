@@ -52,11 +52,11 @@ afterEach(() => {
   clearCommands();
 });
 
-test("header: wordmark, one tab, icon buttons, Studio disabled", () => {
+test("header: wordmark, one tab, icon buttons, Studio enabled", () => {
   render(<Workspace />);
   expect(screen.getByRole("tab", { selected: true })).toBeTruthy();
   const studio = screen.getByRole("button", { name: "Studio" });
-  expect(studio.getAttribute("aria-disabled")).toBe("true");
+  expect(studio.getAttribute("aria-disabled")).toBeNull();
   const kill = screen.getByRole("button", { name: "Kill all shells" });
   expect(kill.getAttribute("aria-disabled")).toBeNull();
   expect(screen.getByRole("button", { name: "Theme" })).toBeTruthy();
@@ -168,4 +168,18 @@ test("palette has one Theme… entry that opens the picker", () => {
   expect(screen.queryByText(/^Theme: /)).toBeNull();
   fireEvent.click(screen.getByRole("option", { name: /Theme…/ }));
   expect(screen.getByRole("dialog", { name: "Theme" })).toBeTruthy();
+});
+
+// findBy* awaits a setTimeout that vitest fake timers never fire; the
+// dialog mounts synchronously inside fireEvent's act(), so query directly.
+test("Studio opens from the brush button", () => {
+  render(<Workspace />);
+  fireEvent.click(screen.getByRole("button", { name: "Studio" }));
+  expect(screen.getByRole("dialog", { name: "Studio" })).toBeTruthy();
+});
+
+test("⌘. opens Studio", () => {
+  render(<Workspace />);
+  fireEvent.keyDown(document, { key: ".", metaKey: true });
+  expect(screen.getByRole("dialog", { name: "Studio" })).toBeTruthy();
 });

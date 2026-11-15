@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { roving } from "./roving";
+import { TEMPLATES, type TemplateId } from "./templates";
 
 export interface PaneMenuProps {
   id: string;
@@ -10,7 +11,13 @@ export interface PaneMenuProps {
   onDuplicate?: (id: string) => void;
   onClear?: (id: string) => void;
   onClose?: (id: string) => void;
+  onSplit?: (id: string, dir: "row" | "col") => void;
+  /** Returns surplus pane ids when confirmation is needed (nothing applied). */
+  onSnap?: (t: TemplateId, confirmed?: boolean) => string[];
 }
+
+/** Palette hint: every pane action is also a ⌘K command. */
+const Hint = () => <kbd aria-hidden="true">⌘K</kbd>;
 
 /** Everything you can do to one pane, reachable without dragging. */
 export function PaneMenu({
@@ -22,12 +29,20 @@ export function PaneMenu({
   onDuplicate,
   onClear,
   onClose,
+  onSplit,
+  onSnap,
 }: PaneMenuProps) {
   const [open, setOpen] = useState(false);
   const [sub, setSub] = useState(false);
+  const [lay, setLay] = useState(false);
+  const [ask, setAsk] = useState<{ t: TemplateId; n: number } | null>(null);
   const menu = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!open) setSub(false);
+    if (!open) {
+      setSub(false);
+      setLay(false);
+      setAsk(null);
+    }
     if (open)
       menu.current?.querySelector<HTMLElement>("[role=menuitem]")?.focus();
   }, [open]);
@@ -71,9 +86,76 @@ export function PaneMenu({
           <h3 className="pop-title" role="presentation">
             Pane actions
           </h3>
+          {onSnap && (
+            <button
+              role="menuitem"
+              aria-haspopup="menu"
+              aria-expanded={lay}
+              onClick={() => setLay((v) => !v)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowRight") setLay(true);
+              }}
+            >
+              Layouts <Hint />
+            </button>
+          )}
+          {onSnap && lay && (
+            <div
+              role="menu"
+              aria-label="Layouts"
+              className="pane-submenu"
+              onKeyDown={(e) => {
+                if (e.key === "Escape" || e.key === "ArrowLeft") {
+                  e.stopPropagation();
+                  setLay(false);
+                  setAsk(null);
+                }
+              }}
+            >
+              {ask ? (
+                <>
+                  <button
+                    role="menuitem"
+                    className="danger"
+                    onClick={run(() => onSnap(ask.t, true))}
+                  >
+                    Close {ask.n} pane{ask.n > 1 ? "s" : ""} and apply
+                  </button>
+                  <button role="menuitem" onClick={() => setAsk(null)}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                TEMPLATES.map((t) => (
+                  <button
+                    key={t.id}
+                    role="menuitem"
+                    onClick={() => {
+                      const surplus = onSnap(t.id);
+                      if (surplus.length)
+                        setAsk({ t: t.id, n: surplus.length });
+                      else setOpen(false);
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+          {onSplit && (
+            <>
+              <button role="menuitem" onClick={run(() => onSplit(id, "row"))}>
+                Split right <Hint />
+              </button>
+              <button role="menuitem" onClick={run(() => onSplit(id, "col"))}>
+                Split down <Hint />
+              </button>
+            </>
+          )}
           {onRename && (
             <button role="menuitem" onClick={run(onRename)}>
-              Rename pane
+              Rename pane <Hint />
             </button>
           )}
           <button
@@ -133,7 +215,7 @@ export function PaneMenu({
               className="danger"
               onClick={run(() => onClose(id))}
             >
-              Close pane
+              Close pane <Hint />
             </button>
           )}
         </div>
