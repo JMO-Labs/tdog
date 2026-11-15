@@ -40,6 +40,8 @@ vi.mock("./theme/store", () => ({
   },
 }));
 vi.mock("./theme/fonts", () => ({
+  fontScale: () => 1,
+  scaledSize: (_id: string, size?: number) => size,
   fontFamily: (id: string) => `fam:${id}`,
   loadFont: () =>
     new Promise<void>((res) => {
