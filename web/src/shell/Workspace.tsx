@@ -40,6 +40,9 @@ import { Tabs } from "./Tabs";
 import { MainMenu, type MenuGroup } from "./MainMenu";
 import {
   toggleBroadcast,
+  toggleSceneBroadcast,
+  isSceneBroadcasting,
+  clearScene,
   getBroadcastGroup,
   getBroadcastStore,
 } from "../broadcast/store";
@@ -205,6 +208,7 @@ export function Workspace({
     setStudio,
     setMenu,
     setKill,
+    () => toggleSceneBroadcast(sc.active, leafMap[sc.active] ?? []),
   );
 
   useEffect(() => {
@@ -275,6 +279,13 @@ export function Workspace({
         },
       }),
       registerCommand({
+        id: "broadcast:all",
+        title: "Broadcast to all panes",
+        group: "Panes",
+        shortcut: "⇧⌘B",
+        run: () => toggleSceneBroadcast(sc.active, leafMap[sc.active] ?? []),
+      }),
+      registerCommand({
         id: "broadcast:stop",
         title: "Stop broadcasting",
         group: "Panes",
@@ -286,7 +297,7 @@ export function Workspace({
       }),
     ];
     return () => offs.forEach((f) => f());
-  }, [cycle, signOut, add, serious, setSerious, focused, sc.active]);
+  }, [cycle, signOut, add, serious, setSerious, focused, sc.active, leafMap]);
 
   const menuGroups: MenuGroup[] = [
     [
@@ -384,6 +395,8 @@ export function Workspace({
           onOpenSaved={() => void flows.openSaved()}
           onReorder={(id, to) => setSc((s) => reorderScene(s, id, to))}
           onDropPane={dropOnTab}
+          onBroadcastAll={(id) => toggleSceneBroadcast(id, leafMap[id] ?? [])}
+          broadcastAll={(id) => isSceneBroadcasting(id, leafMap[id] ?? [])}
         />
         <div className="spacer" />
         <MainMenu
@@ -442,10 +455,7 @@ export function Workspace({
               aria-label="Stop broadcasting"
               title="Stop broadcasting"
               onClick={() => {
-                const group = getBroadcastGroup(sc.active);
-                group.forEach((paneId) => {
-                  toggleBroadcast(sc.active, paneId);
-                });
+                clearScene(sc.active);
               }}
             >
               ✕

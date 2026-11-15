@@ -5,6 +5,7 @@ export interface TerminalMenuProps {
   y: number;
   hasSelection: boolean;
   isBroadcasting?: boolean;
+  allBroadcasting?: boolean;
   themes: { id: string; name: string; swatch?: string }[];
   /** This pane's own theme choice; undefined = page default. */
   currentTheme?: string;
@@ -19,6 +20,7 @@ export interface TerminalMenuProps {
   onClose: () => void;
   onShowScreen?: () => void;
   onBroadcast?: () => void;
+  onBroadcastAll?: () => void;
   onDiff?: () => void;
   /** `refocus: false` leaves focus alone (the action takes it). */
   onDismiss: (refocus?: boolean) => void;
@@ -109,6 +111,17 @@ export function TerminalMenu(p: TerminalMenuProps) {
               isRadio: true,
               checked: p.isBroadcasting ?? false,
               onSelect: p.onBroadcast,
+            },
+          ]
+        : []),
+      ...(p.onBroadcastAll
+        ? [
+            {
+              label: "Broadcast to all panes",
+              isRadio: true,
+              checked: p.allBroadcasting ?? false,
+              shortcut: "⇧⌘B",
+              onSelect: p.onBroadcastAll,
             },
           ]
         : []),

@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   toggleBroadcast,
+  toggleSceneBroadcast,
+  isSceneBroadcasting,
   clearPane,
   clearScene,
   getBroadcastGroup,
@@ -96,5 +98,31 @@ describe("broadcast store", () => {
     expect(group2.size).toBe(1);
     expect(group1.has("pane1")).toBe(true);
     expect(group2.has("pane1")).toBe(true);
+  });
+
+  it("scene toggle adds every pane when any is missing, else clears", () => {
+    const ids = ["p1", "p2", "p3"];
+    toggleBroadcast("s", "p1");
+    expect(isSceneBroadcasting("s", ids)).toBe(false);
+
+    toggleSceneBroadcast("s", ids);
+    expect([...getBroadcastGroup("s")].sort()).toEqual(ids);
+    expect(isSceneBroadcasting("s", ids)).toBe(true);
+
+    toggleSceneBroadcast("s", ids);
+    expect(getBroadcastGroup("s").size).toBe(0);
+  });
+
+  it("scene toggle leaves other scenes alone and notifies", () => {
+    let n = 0;
+    getBroadcastStore().subscribe(() => n++);
+    toggleBroadcast("other", "x");
+    toggleSceneBroadcast("s", ["p1"]);
+    expect(getBroadcastGroup("other").size).toBe(1);
+    expect(n).toBe(2);
+  });
+
+  it("an empty scene is never all-broadcasting", () => {
+    expect(isSceneBroadcasting("s", [])).toBe(false);
   });
 });

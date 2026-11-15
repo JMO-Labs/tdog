@@ -171,3 +171,15 @@ test("no match says so", () => {
   });
   expect(screen.getByText("No matching actions")).toBeTruthy();
 });
+
+test("Broadcast to all panes shows checked state and fires", () => {
+  const onBroadcastAll = vi.fn();
+  setup({ onBroadcastAll, allBroadcasting: true });
+  const item = screen.getByRole("menuitemradio", {
+    name: /Broadcast to all panes/,
+  });
+  expect(item.getAttribute("aria-checked")).toBe("true");
+  expect(item.textContent).toContain("⇧⌘B");
+  fireEvent.click(item);
+  expect(onBroadcastAll).toHaveBeenCalled();
+});
