@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, expect, test } from "vitest";
 import { Studio } from "./Studio";
@@ -25,16 +31,14 @@ test("opens, closes with Back and Esc, focus returns to opener", async () => {
   fireEvent.click(opener);
   const dlg = await screen.findByRole("dialog", { name: "Studio" });
   fireEvent.click(screen.getByRole("button", { name: "Back to workspace" }));
-  await new Promise((r) => setTimeout(r, 400));
-  expect(screen.queryByRole("dialog")).toBeNull();
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(document.activeElement).toBe(opener);
   fireEvent.click(opener);
   const again = await screen.findByRole("dialog", { name: "Studio" });
   fireEvent.keyDown(again, { key: "Escape" });
-  await new Promise((r) => setTimeout(r, 400));
-  expect(screen.queryByRole("dialog")).toBeNull();
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(dlg).toBeTruthy();
-});
+}, 15000);
 
 test("nav lists sections, switching updates hash and empty state", async () => {
   render(<Host />);

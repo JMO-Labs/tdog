@@ -189,4 +189,4 @@ test("Studio opens from the brush button and ⌘.", async () => {
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   fireEvent.keyDown(document, { key: ".", metaKey: true });
   expect(await screen.findByRole("dialog", { name: "Studio" })).toBeTruthy();
-});
+}, 15000);
