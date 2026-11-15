@@ -184,6 +184,12 @@ test("palette has every pane action for the focused pane only", () => {
   expect(p.onClose).toHaveBeenCalledWith("b");
   act(() => by("pane:rename").run());
   expect(screen.getByRole("textbox", { name: "Pane name" })).toBeTruthy();
+  by("pane:split-right").run();
+  expect(p.onSplit).toHaveBeenCalledWith("b", "row");
+  by("pane:split-down").run();
+  expect(p.onSplit).toHaveBeenCalledWith("b", "col");
+  by("pane:layout:2-up").run();
+  expect(p.onSnap).toHaveBeenCalledWith("2-up");
 });
 
 test("inactive scenes register no pane commands", () => {

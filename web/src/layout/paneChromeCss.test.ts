@@ -17,10 +17,6 @@ describe("pane chrome css", () => {
     expect(rule(".pane-body")).toMatch(/border-radius:\s*0 0 12px 12px/);
     expect(rule(".pane-body")).toMatch(/overflow\s*:\s*hidden/);
   });
-  it(".snap-pop anchors to the right edge", () => {
-    expect(rule(".snap-pop")).toMatch(/right:\s*0/);
-    expect(rule(".snap-pop")).toMatch(/left:\s*auto/);
-  });
   it("header is 28px max and never wraps", () => {
     expect(rule(".pane-head")).toMatch(/height:\s*28px/);
     expect(rule(".pane-head")).toMatch(/flex-wrap:\s*nowrap/);

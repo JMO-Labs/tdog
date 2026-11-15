@@ -161,17 +161,6 @@
   font-size: 12px;
   font-weight: 800;
 }
-.snap-pop {
-  position: absolute;
-  top: 100%;
-  left: auto;
-  right: 0;
-  z-index: 20;
-  padding-top: 4px;
-}
-.snap-pop[hidden] {
-  display: none;
-}
 .snap-panel {
   display: grid;
   grid-template-columns: repeat(3, 76px);

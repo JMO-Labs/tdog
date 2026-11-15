@@ -24,7 +24,7 @@ import { registerCommand } from "../overlays/commands";
 import { mountSplit, orientation } from "./dock";
 import type { Dir, Node } from "./tree";
 import { PaneMenu } from "./PaneMenu";
-import type { TemplateId } from "./templates";
+import { TEMPLATES, type TemplateId } from "./templates";
 import "./layout.css";
 
 export interface SplitViewProps {
@@ -115,6 +115,18 @@ function Pane({ id }: { id: string }) {
       ),
       cmd("swap-next", "Swap with next", () => live.current.onSwap?.(id, 1)),
       cmd("close", "Close", () => live.current.onClose(id)),
+      cmd("split-right", "Split right", () => live.current.onSplit(id, "row")),
+      cmd("split-down", "Split down", () => live.current.onSplit(id, "col")),
+      ...TEMPLATES.map((t) =>
+        cmd(`layout:${t.id}`, `Layout ${t.label}`, () => {
+          const n = live.current.onSnap(t.id).length;
+          if (
+            n &&
+            window.confirm(`Close ${n} pane${n > 1 ? "s" : ""} and apply?`)
+          )
+            live.current.onSnap(t.id, true);
+        }),
+      ),
       ...(live.current.scenes ?? []).map((s) =>
         registerCommand({
           id: `pane:move:${s.id}`,

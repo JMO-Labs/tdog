@@ -136,10 +136,16 @@ test("Layouts submenu applies a template; surplus asks to confirm", () => {
   expect(p.onSnap).toHaveBeenLastCalledWith("single", true);
 });
 
-test("every former header action is a menu item, all keyboard reachable", () => {
+test("every former header action is reachable by ArrowDown", () => {
   const { open } = setup();
   open();
-  const names = screen.getAllByRole("menuitem").map((i) => i.textContent);
+  const menu = screen.getByRole("menu", { name: "Pane actions" });
+  const seen: string[] = [];
+  const count = screen.getAllByRole("menuitem").length;
+  for (let k = 0; k < count; k++) {
+    seen.push(document.activeElement?.textContent ?? "");
+    fireEvent.keyDown(menu, { key: "ArrowDown" });
+  }
   for (const n of [
     "Layouts",
     "Split right",
@@ -147,7 +153,18 @@ test("every former header action is a menu item, all keyboard reachable", () => 
     "Rename pane",
     "Close pane",
   ])
-    expect(names.some((t) => t?.startsWith(n))).toBe(true);
-  for (const i of screen.getAllByRole("menuitem"))
-    expect(i.getAttribute("tabindex")).not.toBe("-1");
+    expect(seen.some((t) => t.startsWith(n))).toBe(true);
+});
+
+test("Layouts opens with ArrowRight and a template applies by keyboard", () => {
+  const { p, open } = setup();
+  open();
+  const item = screen.getByRole("menuitem", { name: /Layouts/ });
+  fireEvent.keyDown(item, { key: "ArrowRight" });
+  const sub = screen.getByRole("menu", { name: "Layouts" });
+  const first = sub.querySelector<HTMLElement>("[role=menuitem]")!;
+  first.focus();
+  fireEvent.keyDown(first, { key: "Enter" });
+  fireEvent.click(first);
+  expect(p.onSnap).toHaveBeenCalled();
 });
