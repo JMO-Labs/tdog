@@ -16,6 +16,7 @@ vi.mock("../TerminalPane", () => ({
   TerminalPane: () => <div data-testid="terminal-pane" />,
 }));
 vi.mock("../overlays/toast", () => ({ useToast: () => vi.fn() }));
+vi.mock("../studio/TerminalPreview", () => ({ TerminalPreview: () => null }));
 
 import { Workspace } from "./Workspace";
 import { clearCommands, getCommands } from "../overlays/commands";
