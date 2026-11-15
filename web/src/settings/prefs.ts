@@ -18,7 +18,12 @@ const DEFAULT: Record<PrefName, boolean> = {
 const listeners = new Set<() => void>();
 
 export function getPref(name: PrefName): boolean {
-  const v = localStorage.getItem(KEY[name]);
+  let v: string | null = null;
+  try {
+    v = localStorage.getItem(KEY[name]);
+  } catch {
+    /* storage unavailable: use the default */
+  }
   return v === null ? DEFAULT[name] : v === "1";
 }
 
