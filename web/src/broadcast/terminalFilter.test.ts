@@ -1,86 +1,161 @@
 import { describe, it, expect } from "vitest";
-import { isTerminalReport, filterTerminalReports } from "./terminalFilter";
+import { isBroadcastable, filterTerminalReports } from "./terminalFilter";
 
-describe("terminal report filter", () => {
-  describe("isTerminalReport", () => {
-    it("identifies cursor position reports", () => {
-      expect(isTerminalReport("\x1b[10;20R")).toBe(true);
-      expect(isTerminalReport("\x1b[1;1R")).toBe(true);
-    });
-
-    it("identifies device attributes (CSI ?)", () => {
-      expect(isTerminalReport("\x1b[?1;2c")).toBe(true);
-      expect(isTerminalReport("\x1b[?62c")).toBe(true);
-    });
-
-    it("identifies device attributes (CSI >)", () => {
-      expect(isTerminalReport("\x1b[>0;0;0c")).toBe(true);
-    });
-
-    it("identifies focus in event", () => {
-      expect(isTerminalReport("\x1b[I")).toBe(true);
-    });
-
-    it("identifies focus out event", () => {
-      expect(isTerminalReport("\x1b[O")).toBe(true);
-    });
-
-    it("identifies X11 mouse reports", () => {
-      expect(isTerminalReport("\x1b[M\x20\x40\x40")).toBe(true);
-    });
-
-    it("identifies SGR mouse reports", () => {
-      expect(isTerminalReport("\x1b[<0;10;20M")).toBe(true);
-      expect(isTerminalReport("\x1b[<0;10;20m")).toBe(true);
-    });
-
-    it("identifies OSC replies", () => {
-      expect(isTerminalReport("\x1b]0;title\x07")).toBe(true);
-      expect(isTerminalReport("\x1b]0;title\x1b\\")).toBe(true);
-    });
-
-    it("identifies DCS replies", () => {
-      expect(isTerminalReport("\x1bP+q41 32\x1b\\")).toBe(true);
-    });
-
+describe("terminal report allowlist filter", () => {
+  describe("Allowed user input (broadcastable)", () => {
     it("allows normal typing", () => {
-      expect(isTerminalReport("hello")).toBe(false);
-      expect(isTerminalReport("test123!@#")).toBe(false);
+      expect(isBroadcastable("hello")).toBe(true);
+      expect(isBroadcastable("test123!@#$%^&*()")).toBe(true);
+      expect(isBroadcastable("🎉")).toBe(true); // UTF-8
     });
 
-    it("allows enter key", () => {
-      expect(isTerminalReport("\r")).toBe(false);
-      expect(isTerminalReport("\n")).toBe(false);
+    it("allows line ending keys", () => {
+      expect(isBroadcastable("\r")).toBe(true);
+      expect(isBroadcastable("\n")).toBe(true);
+      expect(isBroadcastable("line\r\n")).toBe(true);
     });
 
-    it("allows ctrl-c", () => {
-      expect(isTerminalReport("\x03")).toBe(false);
+    it("allows control characters user keys produce", () => {
+      expect(isBroadcastable("\x03")).toBe(true); // Ctrl-C
+      expect(isBroadcastable("\x04")).toBe(true); // Ctrl-D
+      expect(isBroadcastable("\x1a")).toBe(true); // Ctrl-Z
+      expect(isBroadcastable("\t")).toBe(true); // Tab
+      expect(isBroadcastable("\x08")).toBe(true); // Backspace
+      expect(isBroadcastable("\x7f")).toBe(true); // DEL
     });
 
     it("allows arrow keys", () => {
-      expect(isTerminalReport("\x1b[A")).toBe(false); // Up
-      expect(isTerminalReport("\x1b[B")).toBe(false); // Down
-      expect(isTerminalReport("\x1b[C")).toBe(false); // Right
-      expect(isTerminalReport("\x1b[D")).toBe(false); // Left
+      expect(isBroadcastable("\x1b[A")).toBe(true); // Up
+      expect(isBroadcastable("\x1b[B")).toBe(true); // Down
+      expect(isBroadcastable("\x1b[C")).toBe(true); // Right
+      expect(isBroadcastable("\x1b[D")).toBe(true); // Left
     });
 
-    it("allows bracketed paste", () => {
-      expect(isTerminalReport("\x1b[200~pasted text\x1b[201~")).toBe(false);
+    it("allows home/end keys", () => {
+      expect(isBroadcastable("\x1b[H")).toBe(true); // Home
+      expect(isBroadcastable("\x1b[F")).toBe(true); // End
     });
 
-    it("allows function keys and other navigation", () => {
-      expect(isTerminalReport("\x1b[1~")).toBe(false); // Home
-      expect(isTerminalReport("\x1b[4~")).toBe(false); // End
-      expect(isTerminalReport("\x1b[5~")).toBe(false); // Page Up
-      expect(isTerminalReport("\x1b[6~")).toBe(false); // Page Down
+    it("allows function keys (F1-F24)", () => {
+      expect(isBroadcastable("\x1b[1~")).toBe(true); // F1
+      expect(isBroadcastable("\x1b[24~")).toBe(true); // F24
+      expect(isBroadcastable("\x1b[11~")).toBe(true); // F1 (alternate)
     });
 
-    it("handles both string and Uint8Array", () => {
-      const str = "\x1b[10;20R";
-      const bytes = new TextEncoder().encode(str);
+    it("allows function keys with modifiers", () => {
+      expect(isBroadcastable("\x1b[1;2~")).toBe(true); // Shift-F1
+      expect(isBroadcastable("\x1b[1;3~")).toBe(true); // Alt-F1
+      expect(isBroadcastable("\x1b[1;4~")).toBe(true); // Shift-Alt-F1
+      expect(isBroadcastable("\x1b[1;5~")).toBe(true); // Ctrl-F1
+    });
 
-      expect(isTerminalReport(str)).toBe(true);
-      expect(isTerminalReport(bytes)).toBe(true);
+    it("allows shift-tab", () => {
+      expect(isBroadcastable("\x1b[Z")).toBe(true);
+    });
+
+    it("allows SS3 forms (alternate cursor keys)", () => {
+      expect(isBroadcastable("\x1bOA")).toBe(true); // Up
+      expect(isBroadcastable("\x1bOB")).toBe(true); // Down
+      expect(isBroadcastable("\x1bOC")).toBe(true); // Right
+      expect(isBroadcastable("\x1bOD")).toBe(true); // Left
+      expect(isBroadcastable("\x1bOH")).toBe(true); // Home
+      expect(isBroadcastable("\x1bOF")).toBe(true); // End
+      expect(isBroadcastable("\x1bOP")).toBe(true); // F1
+      expect(isBroadcastable("\x1bOS")).toBe(true); // F4
+    });
+
+    it("allows Alt+key", () => {
+      expect(isBroadcastable("\x1ba")).toBe(true); // Alt-a
+      expect(isBroadcastable("\x1b1")).toBe(true); // Alt-1
+      expect(isBroadcastable("\x1b!")).toBe(true); // Alt-!
+      expect(isBroadcastable("text\x1btext")).toBe(true); // "text" + Alt-t + "ext"
+    });
+
+    it("allows complete bracketed paste", () => {
+      expect(isBroadcastable("\x1b[200~hello\x1b[201~")).toBe(true);
+      expect(isBroadcastable("\x1b[200~line1\nline2\nline3\x1b[201~")).toBe(
+        true,
+      );
+      expect(isBroadcastable("\x1b[200~with\ttabs\x1b[201~")).toBe(true);
+    });
+
+    it("allows mixed input", () => {
+      expect(isBroadcastable("hello\x1b[A\x03world")).toBe(true);
+      expect(isBroadcastable("type\x1b[1~more")).toBe(true);
+    });
+  });
+
+  describe("Blocked terminal reports (not broadcastable)", () => {
+    it("blocks cursor position reports", () => {
+      expect(isBroadcastable("\x1b[10;20R")).toBe(false);
+      expect(isBroadcastable("\x1b[1;1R")).toBe(false);
+    });
+
+    it("blocks device attributes (CSI ?)", () => {
+      expect(isBroadcastable("\x1b[?1;2c")).toBe(false);
+      expect(isBroadcastable("\x1b[?62c")).toBe(false);
+    });
+
+    it("blocks device attributes (CSI >)", () => {
+      expect(isBroadcastable("\x1b[>0;0;0c")).toBe(false);
+    });
+
+    it("blocks focus in/out", () => {
+      expect(isBroadcastable("\x1b[I")).toBe(false); // Focus in
+      expect(isBroadcastable("\x1b[O")).toBe(false); // Focus out (SS3 prefix would be allowed, but plain CSI is not)
+    });
+
+    it("blocks X11 mouse reports", () => {
+      expect(isBroadcastable("\x1b[M\x20\x40\x40")).toBe(false);
+    });
+
+    it("blocks SGR mouse reports", () => {
+      expect(isBroadcastable("\x1b[<0;10;20M")).toBe(false);
+      expect(isBroadcastable("\x1b[<0;10;20m")).toBe(false);
+    });
+
+    it("blocks OSC sequences", () => {
+      expect(isBroadcastable("\x1b]0;title\x07")).toBe(false); // BEL
+      expect(isBroadcastable("\x1b]0;title\x1b\\")).toBe(false); // ST
+    });
+
+    it("blocks DCS sequences", () => {
+      expect(isBroadcastable("\x1bP+q41 32\x1b\\")).toBe(false);
+    });
+
+    it("blocks incomplete CSI sequences", () => {
+      expect(isBroadcastable("\x1b[")).toBe(false);
+      expect(isBroadcastable("\x1b[1")).toBe(false); // No final byte
+    });
+
+    it("blocks incomplete paste spans", () => {
+      expect(isBroadcastable("\x1b[200~but no end")).toBe(false);
+      expect(isBroadcastable("text \x1b[200~incomplete")).toBe(false);
+    });
+
+    it("blocks paste containing ESC (would hide other sequences)", () => {
+      expect(isBroadcastable("\x1b[200~pasted\x1b[Atext\x1b[201~")).toBe(false);
+      expect(isBroadcastable("\x1b[200~pasted\x1b]osc\x1b[201~")).toBe(false);
+    });
+
+    it("blocks report hidden after paste marker in same chunk", () => {
+      expect(isBroadcastable("\x1b[200~pasted\x1b[201~\x1b[10;20R")).toBe(
+        false,
+      );
+    });
+
+    it("blocks empty input", () => {
+      expect(isBroadcastable("")).toBe(false);
+    });
+
+    it("blocks standalone ESC at end", () => {
+      expect(isBroadcastable("hello\x1b")).toBe(false);
+    });
+
+    it("blocks other control characters", () => {
+      expect(isBroadcastable("\x00")).toBe(false); // NULL
+      expect(isBroadcastable("\x1b")).toBe(false); // ESC alone at end
+      expect(isBroadcastable("text\x1b\x00text")).toBe(false); // ESC followed by null
     });
   });
 
@@ -97,10 +172,24 @@ describe("terminal report filter", () => {
       expect(new TextDecoder().decode(filtered)).toBe("hello");
     });
 
-    it("preserves control input like arrow keys", () => {
+    it("preserves allowed escape sequences", () => {
       const input = new TextEncoder().encode("\x1b[A");
       const filtered = filterTerminalReports(input);
       expect(new TextDecoder().decode(filtered)).toBe("\x1b[A");
+    });
+
+    it("removes disallowed sequences", () => {
+      const input = new TextEncoder().encode("\x1b[?62c");
+      const filtered = filterTerminalReports(input);
+      expect(filtered.length).toBe(0);
+    });
+
+    it("handles both string and Uint8Array", () => {
+      const str = "hello";
+      const bytes = new TextEncoder().encode(str);
+
+      expect(isBroadcastable(str)).toBe(true);
+      expect(filterTerminalReports(bytes).length).toBe(bytes.length);
     });
   });
 });
