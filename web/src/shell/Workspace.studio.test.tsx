@@ -54,10 +54,10 @@ test("the 'Open Studio' command opens Studio", () => {
   expect(studio()).not.toBeNull();
 });
 
-test("narrow More menu: Studio item opens Studio", () => {
+test("narrow Menu: Studio item opens Studio", () => {
   setWidth(390);
   render(<Workspace />);
-  fireEvent.click(screen.getByRole("button", { name: "More" }));
+  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
   fireEvent.click(screen.getByRole("menuitem", { name: /Studio/ }));
   expect(studio()).not.toBeNull();
 });

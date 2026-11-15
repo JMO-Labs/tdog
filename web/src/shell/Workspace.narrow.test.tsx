@@ -54,11 +54,11 @@ test("390px: Menu lists Studio, Settings, Sign out", () => {
   expect(screen.getByRole("menuitem", { name: /Sign out/ })).toBeTruthy();
 });
 
-test("390px: More menu 'Serious mode' toggles the pref", () => {
+test("390px: Menu 'Serious mode' toggles the pref", () => {
   setWidth(390);
   render(<Workspace />);
   const open = () =>
-    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
   open();
   const item = () => screen.getByRole("menuitem", { name: /Serious mode/ });
   expect(item().textContent).toContain("Off");
