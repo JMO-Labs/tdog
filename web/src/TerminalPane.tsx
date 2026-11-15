@@ -323,7 +323,7 @@ export function TerminalPane({
       renderer.current?.paste?.(await navigator.clipboard.readText());
     } catch {
       toast(
-        "error",
+        "fail",
         "Allow clipboard access in your browser to paste here, or press Ctrl+Shift+V.",
       );
     }

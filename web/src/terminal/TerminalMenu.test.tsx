@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import { TerminalMenu, type TerminalMenuProps } from "./TerminalMenu";
 
@@ -57,7 +56,7 @@ test("Copy is disabled without a selection", async () => {
 
 test("Copy with a selection calls onCopy then dismisses", async () => {
   const p = setup({ hasSelection: true });
-  await userEvent.click(screen.getByRole("menuitem", { name: /^Copy/ }));
+  fireEvent.click(screen.getByRole("menuitem", { name: /^Copy/ }));
   expect(p.onCopy).toHaveBeenCalled();
   expect(p.onDismiss).toHaveBeenCalled();
 });
@@ -80,10 +79,10 @@ test("Esc dismisses", () => {
 
 test("theme submenu picks a theme", async () => {
   const p = setup();
-  await userEvent.click(
+  fireEvent.click(
     screen.getByRole("menuitem", { name: /Theme for this terminal/ }),
   );
-  await userEvent.click(screen.getByRole("menuitem", { name: "Alpha" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Alpha" }));
   expect(p.onTheme).toHaveBeenCalledWith("a");
 });
 
