@@ -143,3 +143,40 @@ test("unsaved dot appears on a title change and on a cwd change", async () => {
   act(() => titleStore.set("p1", { cwd: "/b" }));
   await waitFor(() => expect(dots()).toHaveLength(1));
 });
+
+const tabMenu = (name: string) => {
+  fireEvent.contextMenu(screen.getByRole("tab", { name: /scene 1/ }));
+  return screen.getByRole("menuitem", { name });
+};
+
+test("tab context menu Save writes the linked preset", async () => {
+  saveLayout("scene 1", split(0.5));
+  link();
+  mount();
+  await act(async () => {
+    fireEvent.click(tabMenu("Save"));
+  });
+  expect(puts().map((c) => c.url)).toEqual(["/api/presets/scene/mine"]);
+});
+
+test("tab context menu Save as… opens the name dialog", async () => {
+  saveLayout("scene 1", split(0.5));
+  mount();
+  await act(async () => {
+    fireEvent.click(tabMenu("Save as…"));
+  });
+  expect(await screen.findByLabelText("Preset name")).toBeTruthy();
+});
+
+test("tab context menu 'New scene from saved…' opens the picker", async () => {
+  (fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string) => {
+    if (url === "/api/presets/scene") return json(["dev"]);
+    throw new Error(`unmocked ${url}`);
+  });
+  saveLayout("scene 1", split(0.5));
+  mount();
+  await act(async () => {
+    fireEvent.click(tabMenu("New scene from saved…"));
+  });
+  expect(await screen.findByText("dev")).toBeTruthy();
+});
