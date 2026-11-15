@@ -4,7 +4,13 @@ import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { cwdFromOsc7 } from "./titles";
-import type { CursorStyle, TerminalRenderer, TerminalTheme } from "./renderer";
+import type {
+  CellGeometry,
+  CursorStyle,
+  ScreenLine,
+  TerminalRenderer,
+  TerminalTheme,
+} from "./renderer";
 
 const enc = new TextEncoder();
 
@@ -99,6 +105,33 @@ export class XtermRenderer implements TerminalRenderer {
   }
   mouseReporting(): boolean {
     return this.term.modes.mouseTrackingMode !== "none";
+  }
+  screenLines(): ScreenLine[] {
+    const lines: ScreenLine[] = [];
+    const buffer = this.term.buffer.active;
+    const startRow = buffer.viewportY;
+    const endRow = Math.min(startRow + this.term.rows, buffer.length);
+    for (let y = startRow; y < endRow; y++) {
+      const line = buffer.getLine(y);
+      if (line) {
+        const text = line.translateToString(true);
+        lines.push({ row: y - startRow, text });
+      }
+    }
+    return lines;
+  }
+  cellGeometry(): CellGeometry | null {
+    const screen = this.term.element?.querySelector(".xterm-screen");
+    if (!screen) return null;
+    const { cols, rows } = this.term;
+    if (!cols || !rows) return null;
+    const b = screen.getBoundingClientRect();
+    return {
+      cellWidth: b.width / cols,
+      cellHeight: b.height / rows,
+      offsetX: b.left,
+      offsetY: b.top,
+    };
   }
   dispose(): void {
     this.term.dispose();
