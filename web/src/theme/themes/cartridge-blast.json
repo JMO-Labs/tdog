@@ -35,6 +35,7 @@
     "effects": []
   },
   "chrome": {
+    "accent": "#ff4040",
     "tokens": {
       "bg": "#141417",
       "surface": "#26262c",
@@ -192,7 +193,8 @@
         "term-bg": "#f4f4f8",
         "term-fg": "#1c1c20",
         "term-dim": "#5c5c6a"
-      }
+      },
+      "accent": "#d01818"
     }
   }
 }

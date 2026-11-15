@@ -40,6 +40,7 @@
     ]
   },
   "chrome": {
+    "accent": "#ff3d81",
     "tokens": {
       "bg": "#050308",
       "surface": "#0f0a1a",
@@ -135,7 +136,8 @@
         "yellow": "#a38a00",
         "purple": "#9a1fc4",
         "link": "#07616e"
-      }
+      },
+      "accent": "#d6246e"
     }
   }
 }

@@ -59,7 +59,11 @@ describe("themeStore", () => {
   });
   it("themeAccent prefers chrome.accent, else the pink token", () => {
     const base = findTheme("memphis-pop")!;
-    const chrome = { ...base.chrome, tokens: { pink: "#abcdef" } };
+    const chrome = {
+      ...base.chrome,
+      accent: undefined,
+      tokens: { pink: "#abcdef" },
+    };
     expect(
       themeAccent({ ...base, chrome: { ...chrome, accent: "#123456" } }),
     ).toBe("#123456");

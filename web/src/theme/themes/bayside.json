@@ -35,6 +35,7 @@
     "effects": []
   },
   "chrome": {
+    "accent": "#ff6b9d",
     "tokens": {
       "bg": "#06292b",
       "surface": "#0a3a3d",
@@ -159,7 +160,8 @@
         "pink": "#d6336c",
         "cyan": "#0a7d86",
         "yellow": "#a87b00"
-      }
+      },
+      "accent": "#d6336c"
     }
   }
 }

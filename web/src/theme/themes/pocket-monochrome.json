@@ -40,6 +40,7 @@
     ]
   },
   "chrome": {
+    "accent": "#9bbc0f",
     "tokens": {
       "bg": "#0f380f",
       "surface": "#0f380f",
@@ -253,7 +254,8 @@
         "line": "#0f380f",
         "shadow": "#306230",
         "link": "#0f380f"
-      }
+      },
+      "accent": "#0f380f"
     }
   }
 }

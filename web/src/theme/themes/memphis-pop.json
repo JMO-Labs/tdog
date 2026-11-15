@@ -35,6 +35,7 @@
     "effects": []
   },
   "chrome": {
+    "accent": "#ff2d95",
     "tokens": {},
     "shape": {
       "radius": 1,
