@@ -52,15 +52,30 @@ afterEach(() => {
   clearCommands();
 });
 
-test("header: wordmark, one tab, icon buttons, Studio enabled", () => {
+test("header: wordmark, tab, one Menu button and Kill", () => {
   render(<Workspace />);
   expect(screen.getByRole("tab", { selected: true })).toBeTruthy();
-  const studio = screen.getByRole("button", { name: "Studio" });
-  expect(studio.getAttribute("aria-disabled")).toBeNull();
   const kill = screen.getByRole("button", { name: "Kill all shells" });
   expect(kill.getAttribute("aria-disabled")).toBeNull();
-  expect(screen.getByRole("button", { name: "Theme" })).toBeTruthy();
-  expect(screen.getByRole("button", { name: "Settings" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Menu" })).toBeTruthy();
+  for (const n of ["Studio", "Theme", "Settings"])
+    expect(screen.queryByRole("button", { name: n })).toBeNull();
+});
+
+test("main menu lists grouped items; Appearance submenu sets the mode", () => {
+  render(<Workspace />);
+  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+  const names = screen.getAllByRole("menuitem").map((e) => e.textContent ?? "");
+  for (const n of ["Theme…", "Appearance", "Studio", "Settings", "Sign out"])
+    expect(names.some((t) => t.includes(n))).toBe(true);
+  expect(
+    screen
+      .getByRole("menuitem", { name: /Studio/ })
+      .getAttribute("aria-disabled"),
+  ).toBeNull();
+  fireEvent.click(screen.getByRole("menuitem", { name: "Appearance" }));
+  fireEvent.click(screen.getByRole("menuitemradio", { name: "Dark" }));
+  expect(localStorage.getItem("tdog.theme")).toBe("dark");
 });
 
 test("status bar shows live cols×rows and opens palette", () => {
@@ -141,7 +156,8 @@ test("⌘, opens settings; hiding the pet persists", () => {
 test("Settings button opens the sheet; Escape closes it", () => {
   render(<Workspace />);
   expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: /Settings/ }));
   const sheet = screen.getByRole("dialog", { name: "Settings" });
   fireEvent.keyDown(sheet, { key: "Escape" });
   expect(screen.queryByRole("dialog", { name: "Settings" })).toBeNull();
@@ -175,11 +191,36 @@ test("palette lists a Theme command per bundled theme and switches", async () =>
   themeStore.select("memphis-pop");
 });
 
+test("⇧⌘K opens only the kill dialog", () => {
+  render(<Workspace />);
+  fireEvent.keyDown(document, { key: "K", metaKey: true, shiftKey: true });
+  expect(screen.getByText("Kill all shells?")).toBeTruthy();
+  expect(screen.queryByRole("dialog", { name: /command palette/i })).toBeNull();
+});
+
+// Separate render: motion's exit animation never finishes under fake timers.
+test("⌘K opens only the palette, not the kill dialog", () => {
+  render(<Workspace />);
+  fireEvent.keyDown(document, { key: "k", metaKey: true });
+  expect(screen.queryByText("Kill all shells?")).toBeNull();
+  expect(screen.getByRole("dialog", { name: /command palette/i })).toBeTruthy();
+});
+
+test("⇧⌘M toggles the main menu", () => {
+  render(<Workspace />);
+  expect(screen.queryByRole("menu", { name: "Main menu" })).toBeNull();
+  fireEvent.keyDown(document, { key: "M", metaKey: true, shiftKey: true });
+  expect(screen.getByRole("menu", { name: "Main menu" })).toBeTruthy();
+  fireEvent.keyDown(document, { key: "M", metaKey: true, shiftKey: true });
+  expect(screen.queryByRole("menu", { name: "Main menu" })).toBeNull();
+});
+
 // findBy* awaits a setTimeout that vitest fake timers never fire; the
 // dialog mounts synchronously inside fireEvent's act(), so query directly.
-test("Studio opens from the brush button", () => {
+test("Studio opens from the main menu", () => {
   render(<Workspace />);
-  fireEvent.click(screen.getByRole("button", { name: "Studio" }));
+  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: /Studio/ }));
   expect(screen.getByRole("dialog", { name: "Studio" })).toBeTruthy();
 });
 

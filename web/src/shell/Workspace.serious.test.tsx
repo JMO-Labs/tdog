@@ -31,13 +31,17 @@ test("serious hides the pet; off brings it back", () => {
   expect(screen.getByTestId("pet")).toBeTruthy();
 });
 
-test("header toggle and ⌘K command switch serious live", () => {
+test("menu toggle and ⌘K command switch serious live", () => {
   render(<Workspace />);
-  const btn = () => screen.getByRole("button", { name: "Serious mode" });
-  expect(btn().getAttribute("aria-pressed")).toBe("false");
-  act(() => btn().click());
+  const item = () => {
+    if (!screen.queryByRole("menuitem", { name: /Serious mode/ }))
+      act(() => screen.getByRole("button", { name: "Menu" }).click());
+    return screen.getByRole("menuitem", { name: /Serious mode/ });
+  };
+  expect(item().textContent).toContain("Off");
+  act(() => item().click());
   expect(getPref("serious")).toBe(true);
-  expect(btn().getAttribute("aria-pressed")).toBe("true");
+  expect(item().textContent).toContain("On");
   expect(document.documentElement.dataset.serious).toBe("1");
   expect(getCommands().some((c) => c.id.startsWith("theme:"))).toBe(false);
   act(() =>
