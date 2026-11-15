@@ -107,3 +107,16 @@ test("typing to filter shows matching scene actions", async () => {
   expect(items).toHaveLength(1);
   expect(items[0].textContent).toContain("Kill scene");
 });
+
+test("context menu Broadcast to all panes toggles the scene", async () => {
+  const onBroadcastAll = vi.fn();
+  mount({ onBroadcastAll, broadcastAll: (id) => id === "b" });
+  await openMenu("beta");
+  const item = screen.getByRole("menuitemradio", {
+    name: /Broadcast to all panes/,
+  });
+  expect(item.getAttribute("aria-checked")).toBe("true");
+  expect(item.textContent).toContain("⇧⌘B");
+  fireEvent.click(item);
+  expect(onBroadcastAll).toHaveBeenCalledWith("b");
+});

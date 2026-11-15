@@ -14,6 +14,7 @@ import { fontFamily, fontScale, loadFont, scaledSize } from "./theme/fonts";
 import { whenFamilyReady } from "./theme/serverFonts";
 import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
+import { PaneIntro } from "./terminal/PaneIntro";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
 import { PaneOverlayHost, usePaneOverlayHost } from "./overlays/pane";
@@ -515,6 +516,7 @@ export function TerminalPane({
       />
       <EffectsOverlay effects={effects} />
       <ConnectionGag phase={phase} onReconnect={connect} />
+      <PaneIntro theme={theme} />
       {(killed ||
         (state.status === "closed" && state.exitCode !== undefined)) && (
         <EndedPanel
@@ -541,6 +543,7 @@ export function TerminalPane({
           {...menu}
           hasSelection={!!renderer.current?.getSelection?.()}
           isBroadcasting={broadcast?.isBroadcasting}
+          allBroadcasting={broadcast?.allBroadcasting}
           themes={themes}
           currentTheme={override}
           onCopy={copy}
@@ -557,6 +560,7 @@ export function TerminalPane({
           onRename={ops?.rename}
           onShowScreen={() => openOverlay("show-screen")}
           onBroadcast={broadcast?.toggle}
+          onBroadcastAll={broadcast?.toggleAll}
           onDiff={() => openOverlay("diff")}
           onKill={() => paneId && void killScene(paneId)}
           onClose={() => ops?.close()}

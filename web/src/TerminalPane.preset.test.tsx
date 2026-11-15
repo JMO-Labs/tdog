@@ -27,6 +27,7 @@ vi.mock("./terminal/xtermRenderer", () => ({
 }));
 vi.mock("./theme/store", () => ({
   themeStore: {
+    get: () => ({ id: "plain" }),
     terminal: (id?: string) => {
       h.themeIds.push(id);
       return { background: "#000" };

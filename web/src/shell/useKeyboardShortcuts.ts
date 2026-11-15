@@ -12,6 +12,7 @@ export function useKeyboardShortcuts(
   setStudio: (v: boolean) => void,
   setMenu: (v: (o: boolean) => boolean) => void,
   setKill: (v: string | null) => void,
+  broadcastAll: () => void,
 ) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -25,6 +26,9 @@ export function useKeyboardShortcuts(
       } else if (e.shiftKey && e.key.toLowerCase() === "m") {
         e.preventDefault();
         setMenu((o) => !o);
+      } else if (e.shiftKey && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        broadcastAll();
       } else if (e.shiftKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setKill("all");
@@ -44,5 +48,15 @@ export function useKeyboardShortcuts(
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [add, select, sceneIds, flows, setSettings, setStudio, setMenu, setKill]);
+  }, [
+    add,
+    select,
+    sceneIds,
+    flows,
+    setSettings,
+    setStudio,
+    setMenu,
+    setKill,
+    broadcastAll,
+  ]);
 }
