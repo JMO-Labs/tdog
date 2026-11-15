@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { themeStore, toTerminalTheme } from "./store";
-import { THEMES } from "./registry";
+import { THEMES, findTheme } from "./registry";
 
 const KEY = "tdog.theme.id";
 beforeEach(() => {
@@ -90,6 +90,40 @@ describe("themeStore", () => {
       expect(l.background, t.id).not.toBe(d.background);
     }
   });
+  it("toggle swaps terminal bg/fg for a light-first theme", () => {
+    const base = findTheme("memphis-pop")!;
+    const dark = base.terminal.palette;
+    const lightPal = { ...dark, bg: "#fafafa", fg: "#111111" };
+    THEMES.push({
+      ...base,
+      id: "light-first-test",
+      appearance: "light",
+      terminal: { ...base.terminal, palette: lightPal },
+      light: { terminal: { palette: dark }, chrome: base.chrome },
+    });
+    try {
+      themeStore.select("light-first-test");
+      themeStore.setScheme("light");
+      expect(themeStore.terminal().background).toBe("#fafafa");
+      expect(themeStore.terminal().foreground).toBe("#111111");
+      themeStore.setScheme("dark");
+      expect(themeStore.terminal().background).toBe(dark.bg);
+      expect(themeStore.terminal().foreground).toBe(dark.fg);
+      expect(document.documentElement.dataset.theme).toBe("dark");
+    } finally {
+      THEMES.pop();
+    }
+  });
+  it("toggle swaps terminal bg/fg for a dark-first theme", () => {
+    const base = findTheme("memphis-pop")!;
+    themeStore.select("memphis-pop");
+    themeStore.setScheme("dark");
+    expect(themeStore.terminal().background).toBe(base.terminal.palette.bg);
+    themeStore.setScheme("light");
+    expect(themeStore.terminal().background).toBe(
+      base.light!.terminal.palette.bg,
+    );
+  });
   it("system follows prefers-color-scheme changes live", () => {
     let matches = false;
     let fire: () => void = () => {};
@@ -107,7 +141,7 @@ describe("themeStore", () => {
       matches = true;
       fire();
       expect(themeStore.terminal().background).toBe(
-        THEMES[0].light!.terminal.palette.bg,
+        findTheme("memphis-pop")!.light!.terminal.palette.bg,
       );
       expect(themeStore.terminal().background).not.toBe(before);
     } finally {

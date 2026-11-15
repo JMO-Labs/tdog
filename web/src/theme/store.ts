@@ -76,7 +76,8 @@ const current = (): Theme => findTheme(previewId ?? id) ?? THEMES[0];
 
 function variant(t: Theme): ThemeVariant {
   const light = scheme === "light" || (scheme === "system" && prefersLight());
-  return light && t.light ? t.light : t;
+  // `light` holds the alternate-appearance variant: the base serves its own appearance.
+  return (light ? "light" : "dark") === t.appearance ? t : (t.light ?? t);
 }
 
 /** Theme tokens merged over computed CSS defaults, so unset tokens still resolve. */
