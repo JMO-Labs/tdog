@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { json, mockFetch } from "../auth/testutil";
@@ -52,11 +52,11 @@ afterEach(() => {
   clearCommands();
 });
 
-test("header: wordmark, one tab, icon buttons, Studio disabled", () => {
+test("header: wordmark, one tab, icon buttons, Studio enabled", () => {
   render(<Workspace />);
   expect(screen.getByRole("tab", { selected: true })).toBeTruthy();
   const studio = screen.getByRole("button", { name: "Studio" });
-  expect(studio.getAttribute("aria-disabled")).toBe("true");
+  expect(studio.getAttribute("aria-disabled")).toBeNull();
   const kill = screen.getByRole("button", { name: "Kill all shells" });
   expect(kill.getAttribute("aria-disabled")).toBeNull();
   expect(screen.getByRole("button", { name: "Theme" })).toBeTruthy();
@@ -173,4 +173,14 @@ test("palette lists a Theme command per bundled theme and switches", async () =>
   expect(localStorage.getItem("tdog.theme.id")).toBe("night-market");
   const { themeStore } = await import("../theme/store");
   themeStore.select("memphis-pop");
+});
+
+test("Studio opens from the brush button and ⌘.", async () => {
+  render(<Workspace />);
+  fireEvent.click(screen.getByRole("button", { name: "Studio" }));
+  expect(await screen.findByRole("dialog", { name: "Studio" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Back to workspace" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  fireEvent.keyDown(document, { key: ".", metaKey: true });
+  expect(await screen.findByRole("dialog", { name: "Studio" })).toBeTruthy();
 });

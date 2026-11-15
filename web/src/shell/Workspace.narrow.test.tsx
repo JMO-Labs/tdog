@@ -46,8 +46,7 @@ test("390px: header actions collapse into the More menu", () => {
     ]),
   );
   const studio = screen.getByRole("menuitem", { name: /Studio/ });
-  expect(studio.getAttribute("aria-disabled")).toBe("true");
-  expect(studio.textContent).toContain("Coming in v0.4");
+  expect(studio.getAttribute("aria-disabled")).toBeNull();
 });
 
 test("1024px: inline buttons, no More", () => {
