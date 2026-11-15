@@ -22,7 +22,7 @@
 }
 .card {
   background: var(--surface);
-  border: 2px solid var(--line);
+  border: calc(2px * var(--border-width)) solid var(--line);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-hard-lg);
   padding: 28px;
@@ -121,8 +121,8 @@
 }
 .tape {
   height: 16px;
-  border: 2px solid var(--line);
-  border-radius: 99px;
+  border: calc(2px * var(--border-width)) solid var(--line);
+  border-radius: calc(99px * var(--radius-scale));
   background: var(--surface-2);
   overflow: hidden;
   margin-top: -6px;
@@ -171,7 +171,7 @@
   background: #120a26;
   color: var(--yellow);
   border: 10px solid #3a2a6b;
-  border-radius: 28px;
+  border-radius: calc(28px * var(--radius-scale));
   box-shadow:
     10px 10px 0 var(--ink),
     inset 0 0 40px rgb(34 211 238 / 0.3);
@@ -187,7 +187,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 18px;
+  border-radius: calc(18px * var(--radius-scale));
   pointer-events: none;
   background: repeating-linear-gradient(
     0deg,
@@ -294,8 +294,8 @@
 .step-ico {
   width: 34px;
   height: 34px;
-  border: 2px solid var(--line);
-  border-radius: 10px;
+  border: calc(2px * var(--border-width)) solid var(--line);
+  border-radius: calc(10px * var(--radius-scale));
   background: var(--surface-2);
 }
 .steps li.on .step-ico {

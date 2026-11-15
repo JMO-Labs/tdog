@@ -22,6 +22,11 @@ export interface TerminalTheme {
   brightWhite?: string;
 }
 
+export interface CursorStyle {
+  shape: "block" | "bar" | "underline";
+  blink: boolean;
+}
+
 export interface TerminalRenderer {
   /** Write bytes; `cb` fires once the renderer has processed them (flow control). */
   write(data: Uint8Array, cb?: () => void): void;
@@ -35,7 +40,8 @@ export interface TerminalRenderer {
   /** Shell cwd reports (OSC 7), already decoded to a path. */
   onCwd?(cb: (cwd: string) => void): void;
   setTheme(theme: TerminalTheme): void;
-  /** Optional: per-terminal font from a preset. Unset values keep the default. */
+  setCursor(c: CursorStyle): void;
+  /** Set font family and/or size, then refit. Unset values keep the current one. */
   setFont?(family?: string, size?: number): void;
   dispose(): void;
 }

@@ -9,6 +9,8 @@ vi.mock("../terminal/resttyRenderer", () => ({
     }
     write() {}
     setTheme() {}
+    setCursor() {}
+    setFont() {}
     dispose() {
       h.disposed++;
     }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { TerminalSession, type SessionState } from "./terminal/session";
 import type { TerminalRenderer, TerminalTheme } from "./terminal/renderer";
 import { themeStore } from "./theme/store";
+import { fontFamily, loadFont } from "./theme/fonts";
 import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
@@ -34,10 +35,9 @@ function terminalPaint(t: TerminalTheme, clear: boolean): TerminalTheme {
 function applyFont(r: TerminalRenderer | null, f: Resolved) {
   const family = f["font.family"]?.value;
   const size = f["font.size"]?.value;
-  r?.setFont?.(
-    typeof family === "string" ? family : undefined,
-    typeof size === "number" ? size : undefined,
-  );
+  const f2 = typeof family === "string" ? family : undefined;
+  const s2 = typeof size === "number" ? size : undefined;
+  if (f2 || s2) r?.setFont?.(f2, s2);
 }
 
 function wsUrl(scene?: string, id?: string, preset?: string): string {
@@ -54,6 +54,7 @@ export function TerminalPane({
   theme,
   onClosed,
   settled = true,
+  visible = true,
   onSize,
   onOutput,
   onLatency,
@@ -72,12 +73,16 @@ export function TerminalPane({
   onLatency?: (ms: number) => void;
   /** True while the socket is open. */
   onOpenChange?: (open: boolean) => void;
+  /** False for panes in a hidden scene; their font loads once visible. */
+  visible?: boolean;
   /** False while a layout animation runs; the terminal refits once true. */
   settled?: boolean;
   /** Filled with a function that reconnects the session. */
   reconnectRef?: { current: (() => void) | null };
 } = {}) {
   const settledRef = useRef(settled);
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
   // A terminal preset's theme and font apply to this pane only.
   const preset = sceneKey ? panePreset(sceneKey) : undefined;
   const [resolved, setResolved] = useState<Resolved>({});
@@ -145,9 +150,27 @@ export function TerminalPane({
   );
 
   const dropped = state.status === "closed" && state.exitCode === undefined;
+  const scopeFontRef = useRef<string | null>(null);
+  /** Cursor now; theme font once loaded, unless a preset sets the family. */
+  const applyScope = useCallback((r: TerminalRenderer) => {
+    const { cursor, font } = themeStore.scope(themeRef.current);
+    r.setCursor(cursor);
+    const presetFont = () =>
+      typeof fontRef.current["font.family"]?.value === "string";
+    if (presetFont()) return;
+    if (!visibleRef.current || scopeFontRef.current === font) return;
+    scopeFontRef.current = font;
+    void loadFont(font).then(() => {
+      if (renderer.current !== r || scopeFontRef.current !== font) return;
+      if (!presetFont()) r.setFont?.(fontFamily(font));
+    });
+  }, []);
   useEffect(() => {
-    renderer.current?.setTheme(paintTheme());
-  }, [theme, clear, paintTheme]);
+    const r = renderer.current;
+    if (!r) return;
+    r.setTheme(paintTheme());
+    applyScope(r);
+  }, [theme, visible, clear, paintTheme, applyScope]);
   useEffect(() => {
     applyFont(renderer.current, resolved);
   }, [resolved]);
@@ -210,8 +233,12 @@ export function TerminalPane({
           )
         : () => {};
       r.setTheme(paintTheme());
+      applyScope(r);
       applyFont(r, fontRef.current);
-      const offTheme = themeStore.subscribe(() => r.setTheme(paintTheme()));
+      const offTheme = themeStore.subscribe(() => {
+        r.setTheme(paintTheme());
+        applyScope(r);
+      });
       connect();
       const ro = new ResizeObserver(() => {
         if (settledRef.current) r.resize();
@@ -230,7 +257,7 @@ export function TerminalPane({
       cleanup();
       if (keyRef.current) titleStore.remove(keyRef.current);
     };
-  }, [connect, sceneKey, paintTheme, preset]);
+  }, [connect, applyScope, sceneKey, paintTheme, preset]);
 
   const bg = themeStore.terminal(theme).background;
   return (

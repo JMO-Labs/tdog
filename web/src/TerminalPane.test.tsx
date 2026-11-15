@@ -17,6 +17,8 @@ vi.mock("./terminal/xtermRenderer", () => ({
     write() {}
     resize() {}
     setTheme() {}
+    setCursor() {}
+    setFont() {}
     dispose() {
       h.disposed++;
     }

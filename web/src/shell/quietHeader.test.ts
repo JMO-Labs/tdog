@@ -36,7 +36,7 @@ test("tabs are flat with a flat yellow pill", () => {
   expect(t).not.toContain("box-shadow: 4px");
   expect(rule(".tab")).toContain("color: var(--muted)");
   const p = rule(".tab-pill");
-  expect(p).toContain("1.5px solid var(--line)");
+  expect(p).toContain("calc(1.5px * var(--border-width)) solid var(--line)");
   expect(p).toContain("background: var(--yellow)");
   expect(p).not.toContain("gradient");
 });

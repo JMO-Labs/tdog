@@ -69,6 +69,7 @@ export function SceneView({
               <PaneSlot
                 id={id}
                 settled={settled}
+                visible={active}
                 state={paneOpen[id]}
                 {...slot}
               />

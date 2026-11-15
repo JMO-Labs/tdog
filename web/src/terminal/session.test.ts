@@ -34,6 +34,8 @@ function mockRenderer() {
       r.resized = cb;
     },
     setTheme: vi.fn(),
+    setCursor: vi.fn(),
+    setFont: vi.fn(),
     dispose: vi.fn(),
   };
   return r satisfies TerminalRenderer & Record<string, unknown>;

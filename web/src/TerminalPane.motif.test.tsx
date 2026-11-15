@@ -15,6 +15,8 @@ vi.mock("./terminal/xtermRenderer", () => ({
     setTheme(t: unknown) {
       h.themes.push(t);
     }
+    setCursor() {}
+    setFont() {}
     dispose() {}
   },
 }));
@@ -27,6 +29,10 @@ vi.mock("./theme/store", () => ({
     terminalMotif: () => 'url("data:image/svg+xml,x")',
     effects: () => [],
     subscribe: () => () => {},
+    scope: () => ({
+      cursor: { shape: "block", blink: true },
+      font: "jetbrains-mono",
+    }),
   },
 }));
 vi.stubGlobal(

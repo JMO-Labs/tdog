@@ -4,7 +4,7 @@ import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { cwdFromOsc7 } from "./titles";
-import type { TerminalRenderer, TerminalTheme } from "./renderer";
+import type { CursorStyle, TerminalRenderer, TerminalTheme } from "./renderer";
 
 const enc = new TextEncoder();
 
@@ -63,6 +63,10 @@ export class XtermRenderer implements TerminalRenderer {
   }
   setTheme(theme: TerminalTheme): void {
     this.term.options.theme = theme;
+  }
+  setCursor(c: CursorStyle): void {
+    this.term.options.cursorStyle = c.shape;
+    this.term.options.cursorBlink = c.blink;
   }
   setFont(family?: string, size?: number): void {
     if (family) this.term.options.fontFamily = family;

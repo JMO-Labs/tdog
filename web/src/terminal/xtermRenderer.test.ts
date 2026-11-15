@@ -126,6 +126,17 @@ test("resize callback fires with cols and rows; no-op before registration", () =
   expect(cb).toHaveBeenCalledWith(90, 20);
 });
 
+test("cursor and font options are applied and refit", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  m.fit.mockClear();
+  r.setCursor({ shape: "bar", blink: false });
+  expect(m.term.options.cursorStyle).toBe("bar");
+  expect(m.term.options.cursorBlink).toBe(false);
+  r.setFont('"VT323", monospace');
+  expect(m.term.options.fontFamily).toBe('"VT323", monospace');
+  expect(m.fit).toHaveBeenCalled();
+});
+
 test("setFont applies family and size and refits; no-op without args", () => {
   const r = new XtermRenderer(document.createElement("div"));
   m.fit.mockClear();

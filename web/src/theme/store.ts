@@ -1,6 +1,7 @@
 import type { TerminalTheme } from "../terminal/renderer";
 import { DEFAULT_THEME_ID, THEMES, findTheme, type Theme } from "./registry";
 import { motifSvg } from "./motif";
+import { shapeVars } from "./shape";
 import {
   CHROME_TOKENS,
   type Effect,
@@ -91,9 +92,7 @@ function apply() {
   const tokens = variant(t).chrome.tokens;
   for (const [k, v] of Object.entries(tokens)) set(`--${k}`, v);
   const { shape, pattern, motif } = t.chrome;
-  set("--radius-scale", pretty(shape.radius));
-  set("--border-width", pretty(shape.border));
-  set("--shadow-style", shape.shadow);
+  for (const [k, v] of Object.entries(shapeVars(shape))) set(k, v);
   if (pattern !== "confetti")
     set("--pattern", pattern === "none" ? "none" : `var(--pat-${pattern})`);
   if (motif) {
@@ -120,6 +119,13 @@ export const themeStore = {
       variant((themeId ? findTheme(themeId) : undefined) ?? current()).terminal
         .palette,
     ),
+  /** Cursor and font id for a pane's theme (defaults to the page theme). */
+  scope(themeId?: string | null) {
+    const { cursor, font } = (
+      (themeId ? findTheme(themeId) : undefined) ?? current()
+    ).terminal;
+    return { cursor, font };
+  },
   /** Screen effects declared by a terminal theme (data only). */
   effects: (themeId?: string | null): Effect[] =>
     ((themeId ? findTheme(themeId) : undefined) ?? current()).terminal.effects,

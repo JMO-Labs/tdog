@@ -23,6 +23,7 @@ vi.mock("./terminal/xtermRenderer", () => ({
     write() {}
     resize() {}
     setTheme() {}
+    setCursor() {}
     dispose() {}
   },
 }));

@@ -5,6 +5,7 @@ const h = vi.hoisted(() => ({
   themeIds: [] as (string | undefined)[],
   fonts: [] as unknown[],
   urls: [] as string[],
+  fontLoaded: null as null | (() => void),
 }));
 
 vi.mock("./terminal/xtermRenderer", () => ({
@@ -17,6 +18,7 @@ vi.mock("./terminal/xtermRenderer", () => ({
     write() {}
     resize() {}
     setTheme() {}
+    setCursor() {}
     setFont(family?: string, size?: number) {
       h.fonts.push([family, size]);
     }
@@ -32,7 +34,15 @@ vi.mock("./theme/store", () => ({
     terminalMotif: () => null,
     effects: () => [],
     subscribe: () => () => {},
+    scope: () => ({ cursor: { shape: "block", blink: true }, font: "vt323" }),
   },
+}));
+vi.mock("./theme/fonts", () => ({
+  fontFamily: (id: string) => `fam:${id}`,
+  loadFont: () =>
+    new Promise<void>((res) => {
+      h.fontLoaded = res;
+    }),
 }));
 vi.mock("./terminal/sessions", () => ({
   findSessionId: async () => undefined,
@@ -63,6 +73,7 @@ beforeEach(() => {
   h.themeIds.length = 0;
   h.fonts.length = 0;
   h.urls.length = 0;
+  h.fontLoaded = null;
 });
 
 const resolved = {
@@ -86,4 +97,18 @@ test("preset theme and font apply to that pane only and launch via ?preset=", as
   render(<TerminalPane sceneKey="p2" />);
   await waitFor(() => expect(h.themeIds.length).toBeGreaterThan(0));
   expect(h.themeIds).not.toContain("mtv-neon");
+});
+
+test("a preset font family wins over a late-loading theme font", async () => {
+  localStorage.setItem("tdog.panePresets", JSON.stringify({ p3: "app-dev" }));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => new Response(JSON.stringify(resolved), { status: 200 })),
+  );
+  render(<TerminalPane sceneKey="p3" />);
+  await waitFor(() => expect(h.fonts).toContainEqual(["Fira Code", 16]));
+  await waitFor(() => expect(h.fontLoaded).not.toBeNull());
+  h.fontLoaded!();
+  await new Promise((r) => setTimeout(r, 0));
+  expect(h.fonts.at(-1)).toEqual(["Fira Code", 16]);
 });
