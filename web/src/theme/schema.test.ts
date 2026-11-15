@@ -137,7 +137,6 @@ describe("bundled themes", () => {
       "bug-hunt",
       "cartridge-blast",
       "colonial-marine",
-
     ])
       expect(THEMES.find((t) => t.id === id)?.light, id).toBeDefined();
   });
