@@ -272,7 +272,7 @@ export function Workspace({
       }),
       registerCommand({
         id: "broadcast:toggle",
-        title: "Broadcast to all panes in scene",
+        title: "Broadcast this pane",
         group: "Panes",
         run: () => {
           if (focused) toggleBroadcast(sc.active, focused);
