@@ -14,6 +14,20 @@ describe("validateTheme", () => {
   it("accepts a good theme", () => {
     expect(validateTheme(ok()).ok).toBe(true);
   });
+  it("validates optional accent, tint and tintPct", () => {
+    const t = ok();
+    Object.assign(t.chrome, { accent: "#112233", tint: "#445566", tintPct: 5 });
+    expect(validateTheme(t).ok).toBe(true);
+    for (const bad of [
+      { accent: "red" },
+      { tint: "#12" },
+      { tintPct: 6 },
+      { tintPct: -1 },
+    ])
+      expect(validateTheme({ ...t, chrome: { ...t.chrome, ...bad } }).ok).toBe(
+        false,
+      );
+  });
   it("rejects unknown keys at every level", () => {
     for (const mutate of [
       (t: any) => (t.css = "body{}"),

@@ -8,7 +8,6 @@ import {
 } from "./registry";
 import { getPref, subscribePrefs } from "../settings/prefs";
 import { motifSvg } from "./motif";
-import { shapeVars } from "./shape";
 import {
   CHROME_TOKENS,
   type Effect,
@@ -92,7 +91,23 @@ function resolveTokens(tokens: Record<string, string>): Record<string, string> {
   return resolved;
 }
 
-const pretty = (n: number) => String(Math.round(n * 1000) / 1000);
+const NAMED_COLORS = ["pink", "cyan", "yellow", "purple"] as const;
+
+/** Accent for a theme: its chrome.accent, else the pink token. */
+export function themeAccent(t: Theme): string {
+  return t.chrome.accent ?? t.chrome.tokens.pink ?? "";
+}
+
+/** Readable text on an accent: white or near-black by relative luminance. */
+function inkFor(hex: string): string {
+  let h = hex.slice(1);
+  if (h.length === 3) h = [...h].map((c) => c + c).join("");
+  const [r, g, b] = [0, 2, 4].map((i) => {
+    const c = parseInt(h.slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? "#111" : "#fff";
+}
 
 function apply() {
   const t = current();
@@ -106,17 +121,24 @@ function apply() {
     applied.push(p);
   };
   const tokens = variant(t).chrome.tokens;
-  for (const [k, v] of Object.entries(tokens)) set(`--${k}`, v);
-  const { shape, pattern, motif } = t.chrome;
-  for (const [k, v] of Object.entries(shapeVars(shape))) set(k, v);
+  const { pattern, motif, tint, tintPct } = t.chrome;
+  const accent = themeAccent(t);
+  if (accent) {
+    set("--accent", accent);
+    set("--accent-ink", inkFor(accent));
+  }
+  if (tint) {
+    set("--tint", tint);
+    set("--tint-pct", `${Math.min(5, Math.max(0, tintPct ?? 0))}%`);
+  }
+  for (const k of NAMED_COLORS) if (tokens[k]) set(`--${k}`, tokens[k]!);
+  for (const [k, v] of Object.entries(tokens))
+    if (k.startsWith("term-")) set(`--${k}`, v);
   if (pattern !== "confetti")
     set("--pattern", pattern === "none" ? "none" : `var(--pat-${pattern})`);
-  if (motif) {
-    const url = `url("${motifSvg(motif, resolveTokens(tokens))}")`;
-    set("--header-motif", url);
-    // Auth backdrop and empty panes read --pattern: the motif replaces confetti there.
-    set("--pattern", url);
-  }
+  // Auth backdrop and empty panes read --pattern: the motif replaces confetti there.
+  if (motif)
+    set("--pattern", `url("${motifSvg(motif, resolveTokens(tokens))}")`);
   // A theme with a light variant follows the scheme; others pin their appearance.
   if (t.light) {
     if (scheme === "system") el.removeAttribute("data-theme");

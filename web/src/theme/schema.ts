@@ -113,6 +113,11 @@ export interface ChromeScope {
   /** Dogbert costume: pixel rows over the head, or "none". */
   costume: "none" | Costume;
   motif?: Motif;
+  /** Hairline accent (hex); falls back to the pink token. */
+  accent?: string;
+  /** Surface tint (hex), mixed in at tintPct (0-5; higher is clamped on apply). */
+  tint?: string;
+  tintPct?: number;
 }
 function costume(v: unknown, at: string): string | null {
   if (v === "none") return null;
@@ -273,6 +278,9 @@ function chrome(v: unknown, at: string): string | null {
     "boot",
     "costume",
     "motif",
+    "accent",
+    "tint",
+    "tintPct",
   ]);
   if (extra.length) return `${at}: unknown key ${extra[0]}`;
   const s = v.shape;
@@ -286,6 +294,11 @@ function chrome(v: unknown, at: string): string | null {
   if (!oneOf(BOOTS, v.boot)) return `${at}.boot is not allowed`;
   const c = costume(v.costume, `${at}.costume`);
   if (c) return c;
+  for (const k of ["accent", "tint"])
+    if (v[k] !== undefined && !isHex(v[k]))
+      return `${at}.${k} must be a hex color`;
+  if (v.tintPct !== undefined && !isNum(v.tintPct, 0, 5))
+    return `${at}.tintPct must be 0..5`;
   return (
     tokens(v.tokens, `${at}.tokens`) ??
     (v.motif === undefined ? null : motif(v.motif, `${at}.motif`))

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { themeStore, toTerminalTheme } from "./store";
+import { themeAccent, themeStore, toTerminalTheme } from "./store";
+import { setPref } from "../settings/prefs";
 import { THEMES, findTheme } from "./registry";
 
 const KEY = "tdog.theme.id";
@@ -38,18 +39,71 @@ describe("themeStore", () => {
       themeStore.terminal().background,
     );
   });
-  it("applies chrome shape vars page-wide", () => {
-    themeStore.select("memphis-pop");
-    const s = document.documentElement.style;
-    expect(s.getPropertyValue("--radius-scale")).toBe("1");
-    expect(s.getPropertyValue("--border-width")).toBe("1");
+  it("apply sets --accent from the theme and leaves base surfaces to CSS", () => {
+    const base = findTheme("memphis-pop")!;
+    THEMES.push({
+      ...base,
+      id: "accent-test",
+      chrome: { ...base.chrome, accent: "#102030" },
+    });
+    try {
+      themeStore.select("accent-test");
+      const s = document.documentElement.style;
+      expect(s.getPropertyValue("--accent")).toBe("#102030");
+      expect(s.getPropertyValue("--accent-ink")).toBe("#fff");
+      for (const p of ["--bg", "--surface", "--radius-scale", "--border-width"])
+        expect(s.getPropertyValue(p)).toBe("");
+    } finally {
+      THEMES.pop();
+    }
   });
-  it("applies chrome vars and pattern, notifies subscribers", () => {
+  it("themeAccent prefers chrome.accent, else the pink token", () => {
+    const base = findTheme("memphis-pop")!;
+    const chrome = { ...base.chrome, tokens: { pink: "#abcdef" } };
+    expect(
+      themeAccent({ ...base, chrome: { ...chrome, accent: "#123456" } }),
+    ).toBe("#123456");
+    expect(themeAccent({ ...base, chrome })).toBe("#abcdef");
+  });
+  it("serious mode accent is the plain theme's accent", () => {
+    const base = findTheme("memphis-pop")!;
+    THEMES.push({
+      ...base,
+      id: "accent-test",
+      chrome: { ...base.chrome, accent: "#102030" },
+    });
+    try {
+      themeStore.select("accent-test");
+      setPref("serious", true);
+      const got = document.documentElement.style.getPropertyValue("--accent");
+      expect(got).toBe(themeAccent(findTheme("plain")!));
+      expect(got).not.toBe("#102030");
+    } finally {
+      setPref("serious", false);
+      THEMES.pop();
+    }
+  });
+  it("tint is written as --tint and --tint-pct (max 5)", () => {
+    const base = findTheme("memphis-pop")!;
+    THEMES.push({
+      ...base,
+      id: "tint-test",
+      chrome: { ...base.chrome, tint: "#ff0000", tintPct: 9 },
+    });
+    try {
+      themeStore.select("tint-test");
+      const s = document.documentElement.style;
+      expect(s.getPropertyValue("--tint")).toBe("#ff0000");
+      expect(s.getPropertyValue("--tint-pct")).toBe("5%");
+    } finally {
+      THEMES.pop();
+    }
+  });
+  it("applies pattern and notifies subscribers", () => {
     const fn = vi.fn();
     const off = themeStore.subscribe(fn);
     themeStore.select("night-market");
     const s = document.documentElement.style;
-    expect(s.getPropertyValue("--bg")).toMatch(/^#/);
     expect(s.getPropertyValue("--pattern")).toMatch(/^url\("data:image\/svg/);
     expect(fn).toHaveBeenCalled();
     off();
@@ -154,7 +208,9 @@ describe("themeStore", () => {
     expect(localStorage.getItem(KEY)).toBeNull();
     themeStore.preview(null);
     expect(themeStore.get().id).toBe("memphis-pop");
-    expect(document.documentElement.style.getPropertyValue("--bg")).toBe("");
+    expect(document.documentElement.style.getPropertyValue("--pattern")).toBe(
+      "",
+    );
   });
   it("maps to a renderer theme", () => {
     const t = toTerminalTheme(THEMES[0].terminal.palette);
@@ -175,52 +231,11 @@ describe("themeStore", () => {
   });
 });
 
-describe("header motif", () => {
-  it("sets --header-motif from chrome.motif and removes it on switch", () => {
-    const base = THEMES.find((t) => t.id === "memphis-pop")!;
-    const withMotif = {
-      ...base,
-      id: "motif-test",
-      chrome: {
-        ...base.chrome,
-        motif: {
-          viewBox: [0, 0, 10, 10] as [number, number, number, number],
-          tile: [10, 10] as [number, number],
-          shapes: [
-            {
-              type: "circle" as const,
-              cx: 5,
-              cy: 5,
-              r: 2,
-              fill: "pink" as const,
-            },
-          ],
-        },
-      },
-    };
-    THEMES.push(withMotif);
-    try {
-      themeStore.select("motif-test");
-      const v =
-        document.documentElement.style.getPropertyValue("--header-motif");
-      expect(v).toMatch(/^url\("data:image\/svg\+xml,/);
-      expect(decodeURIComponent(v)).not.toContain('fill="none"');
-      themeStore.select("memphis-pop");
-      expect(
-        document.documentElement.style.getPropertyValue("--header-motif"),
-      ).toBe("");
-    } finally {
-      THEMES.pop();
-    }
-  });
-});
-
 describe("motif fallbacks and terminal motif", () => {
   it("themes without a motif keep --pattern behaviour and have no terminal motif", () => {
     themeStore.select("memphis-pop");
     const s = document.documentElement.style;
     expect(s.getPropertyValue("--pattern")).toBe("");
-    expect(s.getPropertyValue("--header-motif")).toBe("");
     expect(themeStore.terminalMotif()).toBeNull();
   });
 
