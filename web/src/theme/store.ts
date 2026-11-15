@@ -68,6 +68,7 @@ const findTheme = (tid: string | null | undefined) =>
 
 let id = read();
 let previewId: string | null = null;
+let panePreview: { pane: string; theme: string } | null = null;
 let scheme: Scheme = "system";
 let applied: string[] = [];
 const listeners = new Set<() => void>();
@@ -76,7 +77,8 @@ const current = (): Theme => findTheme(previewId ?? id) ?? THEMES[0];
 
 function variant(t: Theme): ThemeVariant {
   const light = scheme === "light" || (scheme === "system" && prefersLight());
-  return light && t.light ? t.light : t;
+  // `light` holds the alternate-appearance variant: the base serves its own appearance.
+  return (light ? "light" : "dark") === t.appearance ? t : (t.light ?? t);
 }
 
 /** Theme tokens merged over computed CSS defaults, so unset tokens still resolve. */
@@ -151,6 +153,24 @@ export const themeStore = {
     const tokens = variant(t).chrome.tokens as Record<string, string>;
     return `url("${motifSvg(m, resolveTokens(tokens))}")`;
   },
+  /** Page-chrome backdrop for a theme card: its motif url, else its pattern. */
+  backdrop(themeId: string): string {
+    const t = findTheme(themeId);
+    if (!t) return "none";
+    const { pattern, motif } = t.chrome;
+    if (motif)
+      return `url("${motifSvg(motif, resolveTokens(variant(t).chrome.tokens))}")`;
+    return pattern === "none" ? "none" : `var(--pat-${pattern})`;
+  },
+  /** Theme id a pane should show: its previewed theme, else `fallback`. */
+  paneTheme: (pane: string | undefined, fallback: string | undefined) =>
+    panePreview && panePreview.pane === pane ? panePreview.theme : fallback,
+  /** Preview a terminal theme on one pane only; page chrome is untouched. */
+  previewPane(pane: string | null, themeId: string | null) {
+    panePreview =
+      pane && themeId && findTheme(themeId) ? { pane, theme: themeId } : null;
+    listeners.forEach((l) => l());
+  },
   subscribe(l: () => void) {
     listeners.add(l);
     return () => void listeners.delete(l);
@@ -180,10 +200,25 @@ export const themeStore = {
     serious = getPref("serious");
     id = read();
     previewId = null;
+    panePreview = null;
     scheme = "system";
+    watchScheme();
     apply();
   },
 };
+
+// System scheme follows the OS live; explicit light/dark ignore it.
+const watched = new WeakSet<object>();
+function watchScheme() {
+  if (typeof matchMedia !== "function") return;
+  const mq = matchMedia("(prefers-color-scheme: light)");
+  if (!mq || watched.has(mq)) return;
+  watched.add(mq);
+  mq.addEventListener?.("change", () => {
+    if (scheme === "system") apply();
+  });
+}
+watchScheme();
 
 // Serious mode flips live: re-apply whenever the pref changes.
 subscribePrefs(() => {

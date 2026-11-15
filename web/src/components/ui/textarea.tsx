@@ -1,6 +1,10 @@
-import type { ComponentProps } from "react";
+import { forwardRef, type ComponentProps } from "react";
 import { cn } from "../../lib/utils";
 
-export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
-  return <textarea className={cn("input", className)} {...props} />;
-}
+/** Multi-line sibling of Input (same control styling). */
+export const Textarea = forwardRef<
+  HTMLTextAreaElement,
+  ComponentProps<"textarea">
+>(function Textarea({ className, ...props }, ref) {
+  return <textarea ref={ref} className={cn("input", className)} {...props} />;
+});

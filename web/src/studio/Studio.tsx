@@ -15,10 +15,12 @@ type Props = {
   onClose: () => void;
   /** Launch a saved scene preset in a new scene tab. */
   onOpenScene?: (name: string) => Promise<void>;
+  /** Open a saved terminal preset as a pane (closes the Studio). */
+  onTry?: (preset: string) => void;
 };
 
 /** Full-screen Studio: nav + settings search (sections are placeholders). */
-export function Studio({ open, onClose, onOpenScene }: Props) {
+export function Studio({ open, onClose, onOpenScene, onTry }: Props) {
   const [current, setCurrent] = useState(
     () => sectionFromHash(location.hash) ?? SECTIONS[0].id,
   );
@@ -162,7 +164,22 @@ export function Studio({ open, onClose, onOpenScene }: Props) {
               <ThemeGallery />
             </>
           ) : section.id === "terminal" ? (
-            <TerminalDesigner onDirty={setDirty} />
+            <TerminalDesigner
+              onDirty={setDirty}
+              onTry={
+                onTry &&
+                ((n) => {
+                  setDirty(false);
+                  setQuery("");
+                  history.replaceState(
+                    null,
+                    "",
+                    location.pathname + location.search,
+                  );
+                  onTry(n);
+                })
+              }
+            />
           ) : (
             <section className="studio-empty">
               <h3>{section.label}</h3>

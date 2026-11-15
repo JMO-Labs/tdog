@@ -2,18 +2,18 @@ import { useCopy } from "../copy/copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
+import { ThemePicker } from "../overlays/ThemePicker";
 import { Sheet } from "../overlays/Sheet";
 import { registerCommand } from "../overlays/commands";
 import { SettingsPanel } from "../settings/SettingsPanel";
 import { getPref, usePref } from "../settings/prefs";
-import { THEMES } from "../theme/registry";
-import { themeStore } from "../theme/store";
 import { MODES, useThemeMode } from "../theme/useThemeMode";
 import { Dialog } from "../overlays/Dialog";
 import { useToast } from "../overlays/toast";
 import { KillDialog } from "./KillDialog";
 import { clearLayout } from "../layout/store";
-import { moveToScene } from "../layout/transfer";
+import { addLeaf, moveToScene } from "../layout/transfer";
+import { preparePane } from "../presets/launch";
 import { newId } from "../layout/tree";
 import { useShellName } from "../terminal/shellName";
 import { killScene } from "../terminal/sessions";
@@ -63,6 +63,7 @@ export function Workspace({
   const [serious, setSerious] = usePref("serious");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [picker, setPicker] = useState(false);
   const [menu, setMenu] = useState(false);
   const [studio, setStudio] = useState(() => !!sectionFromHash(location.hash));
   const awake = usePetAwake(stamp);
@@ -212,29 +213,23 @@ export function Workspace({
         shortcut: "⇧⌘L",
         run: cycle,
       }),
+      // Serious mode forces Plain, so theme choice is hidden.
+      ...(serious
+        ? []
+        : [
+            registerCommand({
+              id: "theme:pick",
+              title: "Theme…",
+              group: "Themes",
+              run: () => setPicker(true),
+            }),
+          ]),
       registerCommand({
         id: "serious",
         title: "Serious mode",
         group: "Themes",
         run: () => setSerious(!getPref("serious")),
       }),
-      ...(serious ? [] : THEMES).map((t) =>
-        registerCommand({
-          id: `theme:${t.id}`,
-          title: `Theme: ${t.name}`,
-          group: "Themes",
-          swatch: [
-            t.terminal.palette.bg,
-            t.terminal.palette.ansi[1],
-            t.terminal.palette.ansi[2],
-            t.terminal.palette.ansi[4],
-            t.terminal.palette.fg,
-          ],
-          run: () => themeStore.select(t.id),
-          preview: () => themeStore.preview(t.id),
-          revert: () => themeStore.preview(null),
-        }),
-      ),
       registerCommand({
         id: "settings",
         title: "Open settings",
@@ -277,8 +272,7 @@ export function Workspace({
       {
         label: "Theme…",
         icon: "system",
-        shortcut: "⌘K",
-        onSelect: () => setPalette(true),
+        onSelect: () => setPicker(true),
       },
       {
         label: "Appearance",
@@ -470,8 +464,19 @@ export function Workspace({
           await openScenePreset(name, openSceneTab, toast, c);
           setStudio(false);
         }}
+        onTry={(name) => {
+          setStudio(false);
+          void preparePane(name, toast).then((id) => {
+            if (id) addLeaf(sc.active, id);
+          });
+        }}
       />
       <CommandPalette open={palette} onOpenChange={setPalette} />
+      <ThemePicker
+        open={picker}
+        pane={shown}
+        onClose={() => setPicker(false)}
+      />
       <Sheet
         open={settings}
         title="Settings"

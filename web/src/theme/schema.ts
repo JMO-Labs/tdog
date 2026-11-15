@@ -138,6 +138,7 @@ export interface ThemeData {
   terminal: TerminalScope;
   /** Applies page-wide, from the page theme only. */
   chrome: ChromeScope;
+  /** Variant for the opposite appearance of `appearance` (named light for dark-first themes). */
   light?: ThemeVariant;
 }
 

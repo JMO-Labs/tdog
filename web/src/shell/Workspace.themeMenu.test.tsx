@@ -18,10 +18,10 @@ afterEach(() => {
   clearCommands();
 });
 
-test("main menu 'Theme…' opens the command palette", () => {
+test("main menu 'Theme…' opens the theme picker", () => {
   render(<Workspace />);
-  expect(screen.queryByRole("combobox")).toBeNull();
+  expect(screen.queryByRole("searchbox", { name: "Filter themes" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Menu" }));
   fireEvent.click(screen.getByRole("menuitem", { name: /Theme…/ }));
-  expect(screen.getByRole("combobox")).toBeTruthy();
+  expect(screen.getByRole("searchbox", { name: "Filter themes" })).toBeTruthy();
 });

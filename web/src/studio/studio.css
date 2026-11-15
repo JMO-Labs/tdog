@@ -402,3 +402,44 @@
 .td-hook .td-env-row {
   grid-template-columns: 1fr auto;
 }
+
+.td {
+  max-width: 1100px;
+}
+.td-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 800px) {
+  .td-split {
+    grid-template-columns: 1fr;
+  }
+}
+.td-preview {
+  position: sticky;
+  top: 8px;
+  overflow: hidden;
+  min-height: 160px;
+  border: calc(2px * var(--border-width)) solid var(--line);
+  border-radius: 12px;
+}
+.td-preview-bg {
+  position: absolute;
+  inset: 0;
+}
+.td-preview-term {
+  position: relative;
+  padding: 8px;
+}
+.td-toml {
+  width: 100%;
+  min-height: 320px;
+  font-family: ui-monospace, monospace;
+  resize: vertical;
+}
+.td-toml-err {
+  color: var(--danger, #c0392b);
+  margin: 6px 0 0;
+}
