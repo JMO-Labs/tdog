@@ -2,86 +2,68 @@
 export type Cell = [number, number];
 export type Rows = readonly string[];
 
-/** Front view, 14x11, no eyes or mouth; beagle ears hang beside the head. */
+/** Side view facing right, 14x11: pointed ears, outlined head, solid body. */
 export const FACE: Rows = [
-  "...########...",
-  "..#........#..",
-  ".##........##.",
-  "#.#........#.#",
-  "#.#........#.#",
-  "#.#........#.#",
-  ".##........##.",
-  "..#........#..",
-  "...########...",
-  "...#......#...",
-  "...#......#...",
+  "......#..#....",
+  "......##.##...",
+  "......#####...",
+  "......#...##..",
+  "......#....#..",
+  "......######..",
+  "..#########...",
+  ".###########..",
+  "..##########..",
+  "..##....##....",
+  "..##....##....",
 ];
 export const LEGS: readonly (readonly [string, string])[] = [
-  ["...#.#..#.#...", "...##....##..."],
-  ["...#.#..#.#...", "....##..##...."],
+  ["..##....##....", "..##....##...."],
+  ["..##....##....", ".##....##....."],
 ];
+/** One visible eye, inside the head (cols 6-10, rows 3-4). */
 export const EYES: Record<string, readonly Cell[]> = {
   open: [
-    [4, 4],
-    [4, 5],
-    [9, 4],
-    [9, 5],
+    [8, 3],
+    [8, 4],
   ],
   left: [
-    [3, 4],
-    [3, 5],
-    [8, 4],
-    [8, 5],
+    [7, 3],
+    [7, 4],
   ],
   right: [
-    [5, 4],
-    [5, 5],
-    [10, 4],
-    [10, 5],
-  ],
-  up: [
-    [4, 4],
+    [9, 3],
     [9, 4],
   ],
+  up: [[8, 3]],
   closed: [
-    [3, 5],
-    [4, 5],
-    [9, 5],
-    [10, 5],
+    [7, 4],
+    [8, 4],
   ],
   happy: [
-    [3, 5],
-    [4, 4],
-    [5, 5],
-    [8, 5],
+    [7, 4],
+    [8, 3],
     [9, 4],
-    [10, 5],
   ],
   shock: [
-    [3, 4],
-    [4, 4],
-    [3, 5],
-    [4, 5],
-    [9, 4],
-    [10, 4],
-    [9, 5],
-    [10, 5],
+    [7, 3],
+    [8, 3],
+    [7, 4],
+    [8, 4],
   ],
   sad: [
-    [3, 4],
-    [4, 5],
-    [10, 4],
-    [9, 5],
+    [7, 3],
+    [8, 4],
   ],
 };
+/** Lying side view, 14x7: head up at the right, paws forward, tail at the left. */
 export const LYING: Rows = [
-  "..##......##..",
-  ".#..######..#.",
-  "#............#",
-  "#..##....##..#",
-  "#.....##.....#",
-  ".#..........#.",
-  "..##########..",
+  ".........#..#.",
+  ".........#####",
+  ".........#.#.#",
+  "..#####..#####",
+  ".###########..",
+  "#############.",
+  "..############",
 ];
 export const SPR: Record<string, Rows> = {
   bone: ["#...#", ".###.", "#...#"],
@@ -151,19 +133,22 @@ export function spr(rows: Rows, ox: number, oy: number): Cell[] {
   return out;
 }
 
-/** Dogbert's front view: body, legs, nose, eyes, optional mouth and tail. */
+/** Dogbert's side view: body, legs, one eye, optional nose, mouth and wagging tail. */
 export function face(
   eyes: string,
   { legs = 0, mouth = false, tail = 0, nose = true, costume }: FaceOpts = {},
   ox = 0,
   oy = 0,
 ): Cell[] {
-  const rows = [...FACE, ...LEGS[legs]];
-  if (nose) rows[6] = ".##...##...##.";
-  const c = spr(rows, ox, oy);
-  for (const [x, y] of EYES[eyes] ?? []) c.push([ox + x, oy + y]);
-  if (mouth) c.push([ox + 6, oy + 7], [ox + 7, oy + 7]);
-  if (tail) c.push([ox + 11, oy + 10], [ox + 12, oy + (tail === 1 ? 9 : 11)]);
+  const c = spr([...FACE, ...LEGS[legs]], ox, oy);
+  const add = (...p: Cell[]) =>
+    c.push(...p.map(([x, y]): Cell => [ox + x, oy + y]));
+  if (!tail) add([0, 7]);
+  if (nose) add([12, 3], [13, 3], [12, 4], [13, 4]);
+  for (const [x, y] of EYES[eyes] ?? []) add([x, y]);
+  if (mouth) add([11, 6], [11, 7]);
+  if (tail === 1) add([1, 6], [0, 5], [0, 4]);
+  if (tail === 2) add([0, 8], [0, 9]);
   if (costume) c.push(...costumeCells(costume, ox, oy));
   return c;
 }

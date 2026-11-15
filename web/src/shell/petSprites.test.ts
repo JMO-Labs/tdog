@@ -35,20 +35,20 @@ describe("sprite data", () => {
 });
 
 describe("face composition", () => {
-  test("open eyes add four segments", () => {
+  test("open eye adds two segments", () => {
     const base = face("none");
     const open = face("open");
-    expect(open.length - base.length).toBe(4);
-    expect(has(open, 4, 4) && has(open, 9, 5)).toBe(true);
+    expect(open.length - base.length).toBe(2);
+    expect(has(open, 8, 3) && has(open, 8, 4)).toBe(true);
   });
-  test("mouth adds two segments at row 7", () => {
+  test("mouth (tongue) adds two segments below the jaw", () => {
     const d = face("open", { mouth: true }).length - face("open").length;
     expect(d).toBe(2);
-    expect(has(face("open", { mouth: true }), 6, 7)).toBe(true);
+    expect(has(face("open", { mouth: true }), 11, 7)).toBe(true);
   });
-  test("tail adds two segments, position by variant", () => {
-    expect(has(face("open", { tail: 1 }), 12, 9)).toBe(true);
-    expect(has(face("open", { tail: 2 }), 12, 11)).toBe(true);
+  test("wagging tail swaps the rest stub, position by variant", () => {
+    expect(has(face("open", { tail: 1 }), 0, 4)).toBe(true);
+    expect(has(face("open", { tail: 2 }), 0, 9)).toBe(true);
     expect(face("open", { tail: 1 }).length).toBe(face("open").length + 2);
   });
   test("legs alternate frames", () => {
