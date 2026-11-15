@@ -1,3 +1,4 @@
+import { STARTERS } from "../backgrounds/starters";
 import {
   cleanup,
   fireEvent,
@@ -23,7 +24,17 @@ const SCHEMA = {
     },
     background: {
       properties: {
-        kind: { enum: ["none", "color"] },
+        kind: {
+          enum: [
+            "none",
+            "color",
+            "image",
+            "shader",
+            "gradient",
+            "pattern",
+            "video",
+          ],
+        },
         opacity: { type: "number", minimum: 0, maximum: 1 },
       },
     },
@@ -215,4 +226,26 @@ test("env rows and hook chains edit into the saved toml", async () => {
   const body = String(calls(f, "PUT")[0][1]?.body);
   expect(body).toContain('[env]\nA = "1"');
   expect(body).toContain('[pre_exec]\nmode = "stop_on_fail"\nrun = ["make"]');
+});
+
+test("Look background picker writes the chosen starter into the saved preset", async () => {
+  const f = routes({
+    "GET /api/assets": json([]),
+    "PUT /api/presets/terminal/api": new Response(null, { status: 204 }),
+  });
+  render(<TerminalDesigner onDirty={() => {}} />);
+  await screen.findByLabelText("Name");
+  // First starter tile in the picker's grid (other toggle buttons exist).
+  const tile = document.querySelector<HTMLButtonElement>(
+    '.bgp-grid button[aria-pressed="false"]',
+  )!;
+  fireEvent.click(tile);
+  expect(tile.getAttribute("aria-pressed")).toBe("true");
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(calls(f, "PUT")).toHaveLength(1));
+  const body = String(calls(f, "PUT")[0][1]?.body);
+  expect(body).toContain("[background]");
+  const first = STARTERS[0];
+  expect(body).toContain(`kind = "${first.kind}"`);
+  expect(body).toContain(`ref = "${first.ref}"`);
 });

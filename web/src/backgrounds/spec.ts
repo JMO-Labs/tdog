@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Resolved } from "../presets/api";
+import { STARTER_PATTERNS, isAnimated } from "./starters";
+import "./backgrounds.css";
 
 export type BgKind = "color" | "gradient" | "pattern" | "image" | "video";
 export interface BgSpec {
@@ -36,14 +38,6 @@ export function bgSpec(r: Resolved): BgSpec | null {
 
 export const assetUrl = (id: string) => `/api/assets/${encodeURIComponent(id)}`;
 
-const dot = (c: string) =>
-  `radial-gradient(${c} 1.5px, transparent 1.5px) 0 0 / 14px 14px`;
-const PATTERNS: Record<string, string> = {
-  dots: dot("#8884"),
-  grid: "linear-gradient(#8883 1px, transparent 1px) 0 0 / 16px 16px, linear-gradient(90deg, #8883 1px, transparent 1px) 0 0 / 16px 16px",
-  stripes:
-    "repeating-linear-gradient(45deg, #8882 0 6px, transparent 6px 12px)",
-};
 const SAFE_COLOR =
   /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+|(rgb|hsl)a?\([0-9\s.,%/-]+\))$/;
 const SAFE_GRADIENT = /^(linear|radial)-gradient\([A-Za-z0-9#%.,\s()/+-]+\)$/;
@@ -55,8 +49,13 @@ export function layerCss(s: BgSpec): CSSProperties | null {
     paint = { background: s.ref };
   } else if (s.kind === "gradient" && SAFE_GRADIENT.test(s.ref)) {
     paint = { backgroundImage: s.ref };
-  } else if (s.kind === "pattern" && s.ref in PATTERNS) {
-    paint = { background: PATTERNS[s.ref] };
+  } else if (s.kind === "pattern" && s.ref in STARTER_PATTERNS) {
+    paint = {
+      background: STARTER_PATTERNS[s.ref],
+      ...(isAnimated(s.ref)
+        ? { animation: "tdog-bg-drift 6s linear infinite" }
+        : {}),
+    };
   } else if (s.kind === "image" && s.ref) {
     paint = {
       backgroundImage: `url("${assetUrl(s.ref)}")`,

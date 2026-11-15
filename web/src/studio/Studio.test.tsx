@@ -68,8 +68,9 @@ test("nav lists sections, switching updates hash and empty state", async () => {
   fireEvent.click(nav().getByRole("button", { name: "Backgrounds" }));
   expect(location.hash).toBe("#studio/backgrounds");
   expect(screen.getByRole("heading", { name: "Backgrounds" })).toBeTruthy();
-  expect(screen.getByRole("img", { name: "Cassette" })).toBeTruthy();
-  expect(screen.getByText("Coming in v0.4")).toBeTruthy();
+  const tabs = screen.getByRole("radiogroup", { name: "Background source" });
+  for (const n of ["Starters", "Uploads", "Gradient"])
+    expect(within(tabs).getByText(n)).toBeTruthy();
   fireEvent.click(nav().getByRole("button", { name: "Fonts" }));
   expect(location.hash).toBe("#studio/fonts");
   const fonts = nav().getByRole("button", { name: "Fonts" });
@@ -150,6 +151,20 @@ test("terminal section hosts the designer and guards unsaved edits", async () =>
   ask.mockReturnValue(true);
   fireEvent.click(nav().getByRole("button", { name: "Fonts" }));
   expect(location.hash).toBe("#studio/fonts");
+});
+
+test("Backgrounds section mounts the library without a stray picker state", async () => {
+  location.hash = "#studio/backgrounds";
+  vi.stubGlobal("fetch", mockFetch({ "GET /api/assets": json([]) }));
+  render(<Host />);
+  fireEvent.click(screen.getByText("opener"));
+  await screen.findByRole("dialog", { name: "Studio" });
+  expect(screen.getByRole("heading", { name: "Backgrounds" })).toBeTruthy();
+  const tile = document.querySelector<HTMLButtonElement>(
+    '.bgp-grid button[aria-pressed="false"]',
+  )!;
+  fireEvent.click(tile);
+  expect(tile.getAttribute("aria-pressed")).toBe("true");
 });
 
 test("Try it clears the dirty guard and search, then hands the preset on", async () => {
