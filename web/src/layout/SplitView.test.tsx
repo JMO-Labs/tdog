@@ -165,7 +165,11 @@ test("menu duplicate and clear scrollback act on that pane", () => {
 test("palette has every pane action for the focused pane only", () => {
   clearCommands();
   const { p } = setup(two);
-  expect(getCommands()).toHaveLength(0);
+  // Before any focus, the first pane is the target.
+  getCommands()
+    .find((c) => c.id === "pane:split-right")!
+    .run();
+  expect(p.onSplit).toHaveBeenLastCalledWith("a", "row");
   fireEvent.focus(screen.getAllByRole("button", { name: "Split down" })[1]);
   const by = (id: string) => getCommands().find((c) => c.id === id)!;
   const clear = vi.fn();

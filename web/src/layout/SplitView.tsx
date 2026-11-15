@@ -103,7 +103,9 @@ function Pane({ id }: { id: string }) {
   const clear = useCallback(() => void clearScrollback(id), [id]);
   const live = useRef(p);
   live.current = p;
-  const isFocused = focus === id && p.active !== false;
+  // Last focused pane, else the first: ⌘K targets it even before any click.
+  const current = focus && order.includes(focus) ? focus : order[0];
+  const isFocused = current === id && p.active !== false;
 
   // Every pane in the group shows the chip, focused or not.
   const { isBroadcasting } = useBroadcast(p.sceneId, id);
