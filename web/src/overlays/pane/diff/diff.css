@@ -33,24 +33,24 @@
 }
 
 .diff-error {
-  color: var(--tdog-red, #ff5555);
+  color: var(--pink);
   font-size: 12px;
   font-weight: normal;
 }
 
 .diff-form-group input {
   padding: 8px;
-  border: 1px solid var(--tdog-border, #555);
+  border: 1px solid var(--line);
   border-radius: 4px;
   font-family: monospace;
   font-size: 13px;
-  background: var(--tdog-input-bg, #1a1a1a);
-  color: var(--tdog-text, #fff);
+  background: var(--term-bg);
+  color: var(--term-fg);
 }
 
 .diff-form-group input:focus {
   outline: none;
-  border-color: var(--tdog-blue, #55aaff);
+  border-color: var(--cyan);
 }
 
 .diff-form-actions,
@@ -63,17 +63,17 @@
 .diff-form-actions button,
 .diff-actions button {
   padding: 6px 12px;
-  border: 1px solid var(--tdog-border, #555);
+  border: 1px solid var(--line);
   border-radius: 4px;
-  background: var(--tdog-btn-bg, #333);
-  color: var(--tdog-text, #fff);
+  background: var(--surface-2);
+  color: var(--term-fg);
   cursor: pointer;
   font-size: 13px;
 }
 
 .diff-form-actions button:hover,
 .diff-actions button:hover {
-  background: var(--tdog-btn-hover, #444);
+  background: var(--surface);
 }
 
 .diff-form-actions button:active,
@@ -99,35 +99,35 @@
 }
 
 .diff-file-a {
-  color: var(--tdog-red, #ff5555);
+  color: var(--pink);
 }
 
 .diff-file-b {
-  color: var(--tdog-green, #55ff55);
+  color: var(--cyan);
 }
 
 .diff-hunk-info {
   padding: 4px 8px;
-  background: var(--tdog-subtle-bg, #222);
+  background: var(--term-bg);
   border-radius: 4px;
   font-size: 12px;
   text-align: center;
 }
 
 .diff-hunk {
-  border: 1px solid var(--tdog-border, #555);
+  border: 1px solid var(--line);
   border-radius: 4px;
   overflow: auto;
   max-height: 40vh;
-  background: var(--tdog-subtle-bg, #1a1a1a);
+  background: var(--term-bg);
 }
 
 .diff-hunk-header {
   padding: 4px 8px;
-  background: var(--tdog-header-bg, #2a2a2a);
-  color: var(--tdog-cyan, #55ffff);
+  background: var(--surface-2);
+  color: var(--yellow);
   font-size: 12px;
-  border-bottom: 1px solid var(--tdog-border, #555);
+  border-bottom: 1px solid var(--line);
 }
 
 .diff-line {
@@ -145,17 +145,17 @@
 }
 
 .diff-line-context {
-  color: var(--tdog-text, #fff);
+  color: var(--term-fg);
 }
 
 .diff-line-add {
   background: rgba(85, 255, 85, 0.1);
-  color: var(--tdog-green, #55ff55);
+  color: var(--cyan);
 }
 
 .diff-line-remove {
   background: rgba(255, 85, 85, 0.1);
-  color: var(--tdog-red, #ff5555);
+  color: var(--pink);
 }
 
 .diff-nav {
@@ -166,16 +166,16 @@
 
 .diff-nav button {
   padding: 6px 12px;
-  border: 1px solid var(--tdog-border, #555);
+  border: 1px solid var(--line);
   border-radius: 4px;
-  background: var(--tdog-btn-bg, #333);
-  color: var(--tdog-text, #fff);
+  background: var(--surface-2);
+  color: var(--term-fg);
   cursor: pointer;
   font-size: 12px;
 }
 
 .diff-nav button:hover:not(:disabled) {
-  background: var(--tdog-btn-hover, #444);
+  background: var(--surface);
 }
 
 .diff-nav button:disabled {

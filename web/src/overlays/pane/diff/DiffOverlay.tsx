@@ -1,3 +1,4 @@
+import { Button } from "../../../components/ui/button";
 import { useState, useCallback } from "react";
 import type { PaneOverlayContext } from "../../../terminal/renderer";
 import { DiffForm } from "./DiffForm";
@@ -84,8 +85,12 @@ export function DiffOverlay(ctx: PaneOverlayContext) {
         <div style={{ padding: "20px" }}>
           <h2>Error</h2>
           <p>{error.message}</p>
-          <button onClick={handleBack}>Back</button>
-          <button onClick={handleClose}>Close</button>
+          <Button variant="ghost" size="sm" onClick={handleBack}>
+            Back
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleClose}>
+            Close
+          </Button>
         </div>
       </div>
     );

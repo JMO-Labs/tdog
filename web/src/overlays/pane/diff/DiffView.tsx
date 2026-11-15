@@ -1,3 +1,4 @@
+import { Button } from "../../../components/ui/button";
 import { useState, useCallback, useMemo } from "react";
 import type { DiffResult } from "./types";
 import { toUnifiedDiff } from "./unifiedDiff";
@@ -57,8 +58,12 @@ export function DiffView({ result, onBack, onClose, onCopy }: DiffViewProps) {
         <p>{result.a.path}</p>
         <p>{result.b.path}</p>
         <div className="diff-actions">
-          <button onClick={onBack}>Back</button>
-          <button onClick={onClose}>Close</button>
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            Back
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Close
+          </Button>
         </div>
       </div>
     );
@@ -98,21 +103,25 @@ export function DiffView({ result, onBack, onClose, onCopy }: DiffViewProps) {
       </div>
 
       <div className="diff-nav">
-        <button onClick={handlePrevHunk} disabled={currentHunkIndex === 0}>
+        <Button onClick={handlePrevHunk} disabled={currentHunkIndex === 0}>
           ↑ Previous (p)
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleNextHunk}
           disabled={currentHunkIndex >= hunks.length - 1}
         >
           Next (n) ↓
-        </button>
+        </Button>
       </div>
 
       <div className="diff-actions">
-        <button onClick={handleCopyAsUnified}>Copy as unified diff</button>
-        <button onClick={onBack}>Back</button>
-        <button onClick={onClose}>Close</button>
+        <Button onClick={handleCopyAsUnified}>Copy as unified diff</Button>
+        <Button variant="ghost" size="sm" onClick={onBack}>
+          Back
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          Close
+        </Button>
       </div>
     </div>
   );

@@ -1,3 +1,5 @@
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
 import { useState, useCallback, useEffect } from "react";
 import { resolvePath } from "./pathResolver";
 import "./diff.css";
@@ -70,7 +72,7 @@ export function DiffForm({ cwd, onDiff, onClose }: DiffFormProps) {
           File A:
           {errorA && <span className="diff-error">{errorA}</span>}
         </label>
-        <input
+        <Input
           id="path-a"
           type="text"
           placeholder="Absolute path or relative to cwd"
@@ -89,7 +91,7 @@ export function DiffForm({ cwd, onDiff, onClose }: DiffFormProps) {
           File B:
           {errorB && <span className="diff-error">{errorB}</span>}
         </label>
-        <input
+        <Input
           id="path-b"
           type="text"
           placeholder="Absolute path or relative to cwd"
@@ -103,8 +105,10 @@ export function DiffForm({ cwd, onDiff, onClose }: DiffFormProps) {
       </div>
 
       <div className="diff-form-actions">
-        <button onClick={handleSubmit}>Compare</button>
-        <button onClick={onClose}>Cancel</button>
+        <Button onClick={handleSubmit}>Compare</Button>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          Cancel
+        </Button>
       </div>
     </div>
   );
