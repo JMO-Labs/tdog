@@ -30,6 +30,7 @@ vi.mock("./theme/store", () => ({
     terminalMotif: () => 'url("data:image/svg+xml,x")',
     effects: () => [],
     subscribe: () => () => {},
+    paneTheme: (_p?: string, fallback?: string) => fallback,
     scope: () => ({
       cursor: { shape: "block", blink: true },
       font: "jetbrains-mono",
@@ -76,4 +77,10 @@ test("no motif keeps the opaque renderer background", async () => {
   await waitFor(() =>
     expect(h.themes.at(-1)).toMatchObject({ background: "#123456" }),
   );
+});
+
+test("motif layer is clipped to the pane", () => {
+  h.pct = 6;
+  render(<TerminalPane />);
+  expect(screen.getByTestId("terminal-motif").style.overflow).toBe("hidden");
 });

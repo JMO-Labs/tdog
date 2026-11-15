@@ -1,4 +1,12 @@
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useCopy } from "./copy/copy";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import { TerminalSession, type SessionState } from "./terminal/session";
 import type { TerminalRenderer, TerminalTheme } from "./terminal/renderer";
 import { themeStore } from "./theme/store";
@@ -24,7 +32,7 @@ import {
   markKilled,
   subscribeKilled,
 } from "./terminal/killed";
-import { panePreset, resolveSession } from "./presets/panes";
+import { paneTheme, panePreset, resolveSession } from "./presets/panes";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -106,11 +114,19 @@ export function TerminalPane({
   const preset = sceneKey ? panePreset(sceneKey) : undefined;
   const [resolved, setResolved] = useState<Resolved>({});
   const presetTheme = resolved.theme?.value;
+  theme ??= sceneKey ? paneTheme(sceneKey) : undefined;
   theme ??= typeof presetTheme === "string" ? presetTheme : undefined;
+  // The theme picker previews on the focused pane only.
+  const [, bump] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => themeStore.subscribe(bump), []);
+  theme = themeStore.paneTheme(sceneKey, theme);
   const fontRef = useRef<Resolved>({});
   fontRef.current = resolved;
   const themeRef = useRef(theme);
   themeRef.current = theme;
+  useEffect(() => {
+    if (sceneKey && theme) titleStore.set(sceneKey, { theme });
+  }, [sceneKey, theme]);
   const renderer = useRef<TerminalRenderer | null>(null);
   const host = useRef<HTMLDivElement>(null);
   const session = useRef<TerminalSession | null>(null);
@@ -158,8 +174,9 @@ export function TerminalPane({
   }, [connect]);
 
   const toast = useToast();
+  const c = useCopy();
   const { phase, noteOutput } = useConnectionPhase(state, () =>
-    toast("success", "Reconnected. Scrollback replayed."),
+    toast("success", c("conn.back")),
   );
   const noteRef = useRef(noteOutput);
   noteRef.current = noteOutput;
@@ -321,6 +338,7 @@ export function TerminalPane({
             position: "absolute",
             inset: 0,
             pointerEvents: "none",
+            overflow: "hidden",
             backgroundImage: motifUrl,
             opacity: motifPct / 100,
           }}

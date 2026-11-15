@@ -51,9 +51,20 @@
   box-sizing: border-box;
   border: 2px solid var(--line);
   border-radius: calc(14px * var(--radius-scale));
-  /* no overflow:hidden here: popovers in the head must not be clipped */
+  /* not clipped: popovers in the head must stay visible */
   background: var(--term-bg);
-  box-shadow: 6px 6px 0 var(--shadow);
+  isolation: isolate; /* effects/z-index stay inside this pane */
+  position: relative;
+}
+/* inset only: shadows and rings must never paint onto neighbours; drawn on
+   a pseudo-element so they sit above the opaque head and body */
+.pane::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset -4px -4px 0 var(--shadow);
 }
 /* a scene background shows through; the pane's own layer/theme tints it */
 .scene-view:has(> [data-scene-bg]) .pane {
@@ -61,19 +72,25 @@
 }
 .pane[data-focused="true"] {
   border-color: var(--accent, #6cf);
+}
+.pane[data-focused="true"]::after {
   box-shadow:
-    0 0 0 3px var(--accent, #6cf),
-    6px 6px 0 3px var(--shadow);
+    inset 0 0 0 3px var(--accent, #6cf),
+    inset -4px -4px 0 var(--shadow);
 }
 .pane-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px 6px 12px;
+  flex-wrap: nowrap;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 4px 0 10px;
   background: var(--surface);
   border-bottom: 2px solid var(--line);
   border-radius: 12px 12px 0 0;
   min-width: 0;
+  container-type: inline-size;
 }
 .pane[data-focused="true"] .pane-head {
   background: var(--surface-2);
@@ -100,16 +117,36 @@
 }
 .pane-head .pane-btn {
   flex: none;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border-radius: calc(7px * var(--radius-scale));
-  box-shadow: 2px 2px 0 var(--shadow);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
   font-size: 14px;
   line-height: 1;
 }
 .pane-head .pane-btn svg {
   width: 14px;
   height: 14px;
+}
+.pane-head .pane-btn:hover {
+  background: var(--surface-2);
+}
+.pane-head .pane-split {
+  display: none;
+}
+/* Split buttons only on hover/focus, and only if the header is wide enough. */
+@container (min-width: 300px) {
+  .pane-head:hover .pane-split,
+  .pane-head:focus-within .pane-split {
+    display: inline-flex;
+  }
+}
+.pane-menu kbd {
+  margin-left: auto;
+  opacity: 0.6;
+  font-size: 10px;
 }
 .pane-head .pane-btn:focus-visible {
   outline: 2px solid var(--accent, #6cf);
@@ -140,17 +177,6 @@
   margin: 0 4px 2px;
   font-size: 12px;
   font-weight: 800;
-}
-.snap-pop {
-  position: absolute;
-  top: 100%;
-  left: auto;
-  right: 0;
-  z-index: 20;
-  padding-top: 4px;
-}
-.snap-pop[hidden] {
-  display: none;
 }
 .snap-panel {
   display: grid;

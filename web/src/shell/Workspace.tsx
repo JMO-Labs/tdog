@@ -1,25 +1,30 @@
+import { useCopy } from "../copy/copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
+import { ThemePicker } from "../overlays/ThemePicker";
 import { Sheet } from "../overlays/Sheet";
 import { registerCommand } from "../overlays/commands";
 import { SettingsPanel } from "../settings/SettingsPanel";
-import { usePref } from "../settings/prefs";
-import { THEMES } from "../theme/registry";
-import { themeStore } from "../theme/store";
-import { useThemeMode } from "../theme/useThemeMode";
+import { getPref, usePref } from "../settings/prefs";
+import { MODES, useThemeMode } from "../theme/useThemeMode";
 import { Dialog } from "../overlays/Dialog";
 import { useToast } from "../overlays/toast";
 import { KillDialog } from "./KillDialog";
 import { clearLayout } from "../layout/store";
-import { moveToScene } from "../layout/transfer";
+import { addLeaf, moveToScene } from "../layout/transfer";
+import { preparePane } from "../presets/launch";
 import { newId } from "../layout/tree";
 import { useShellName } from "../terminal/shellName";
 import { killScene } from "../terminal/sessions";
+import { Studio } from "../studio/Studio";
+import { sectionFromHash } from "../studio/sections";
 import { Icon } from "./icons";
 import { type PaneOpen } from "./PaneSlot";
 import { SceneView } from "./SceneView";
+import { openScenePreset } from "../presets/openScene";
 import { usePresetFlows } from "../presets/usePresetFlows";
+import { useDirtyScenes } from "../presets/useDirtyScenes";
 import {
   addNamedScene,
   addScene,
@@ -32,13 +37,12 @@ import {
 import { Pet, usePetAwake } from "./pet";
 import { usePetEngine } from "./usePetEngine";
 import { Tabs } from "./Tabs";
-import { OverflowMenu } from "./OverflowMenu";
-import { useMaxWidth } from "./useBreakpoint";
+import { MainMenu, type MenuGroup } from "./MainMenu";
 import "./shell.css";
 import "./narrow.css";
+import "./menu.css";
 
 type Size = { cols: number; rows: number };
-const noop = () => {};
 /** Latency above this gets the dial-up icon. */
 const SLOW_MS = 150;
 
@@ -49,15 +53,19 @@ export function Workspace({
   onClosed?: () => void;
   onSignedOut?: () => void;
 }) {
-  const { mode, cycle } = useThemeMode();
+  const { mode, cycle, set: setMode } = useThemeMode();
   const [sizes, setSizes] = useState<Record<string, Size>>({});
   const [latencies, setLatencies] = useState<Record<string, number>>({});
   const shellName = useShellName();
   const [focused, setFocused] = useState<string | null>(null);
   const [stamp, setStamp] = useState(0);
   const [petShown, setPetShown] = usePref("pet");
+  const [serious, setSerious] = usePref("serious");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [picker, setPicker] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const [studio, setStudio] = useState(() => !!sectionFromHash(location.hash));
   const awake = usePetAwake(stamp);
   const engine = usePetEngine();
   const [sc, setSc] = useState(loadScenes);
@@ -75,6 +83,7 @@ export function Workspace({
     [],
   );
   const toast = useToast();
+  const c = useCopy();
   useEffect(() => saveScenes(sc), [sc]);
   const onLeaves = useCallback(
     (scene: string, ids: string[]) =>
@@ -86,10 +95,13 @@ export function Workspace({
     [],
   );
   const add = useCallback(() => setSc((s) => addScene(s, newId("sc"))), []);
-  const presetDialogs = usePresetFlows({
+  const openSceneTab = (id: string, name: string) =>
+    setSc((s) => addNamedScene(s, id, name));
+  const flows = usePresetFlows({
     scene: sc.active,
-    openTab: (id, name) => setSc((s) => addNamedScene(s, id, name)),
+    openTab: openSceneTab,
   });
+  const dirty = useDirtyScenes(sc.scenes.map((x) => x.id));
   const finishClose = useCallback(
     (id: string) => {
       (leafMap[id] ?? []).forEach((p) => void killScene(p));
@@ -134,7 +146,7 @@ export function Workspace({
     setKill(null);
     const done = await Promise.all(targets.map((p) => killScene(p)));
     const n = done.reduce((a, b) => a + b, 0);
-    toast("success", `Killed ${n} shell${n === 1 ? "" : "s"}.`);
+    toast("success", c(n === 1 ? "kill.done1" : "kill.done", { n }));
   };
 
   const onSize = useCallback(
@@ -162,9 +174,21 @@ export function Workspace({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) return;
-      if (e.key === ",") {
+      if (e.key === "s" && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        void flows.save();
+      } else if (e.key === ",") {
         e.preventDefault();
         setSettings(true);
+      } else if (e.shiftKey && e.key.toLowerCase() === "m") {
+        e.preventDefault();
+        setMenu((o) => !o);
+      } else if (e.shiftKey && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setKill("all");
+      } else if (e.key === "." && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        setStudio(true);
       } else if (e.key === "t" && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         add();
@@ -178,7 +202,7 @@ export function Workspace({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [add, select, sc.scenes]);
+  }, [add, select, sc.scenes, flows]);
 
   useEffect(() => {
     const offs = [
@@ -189,29 +213,36 @@ export function Workspace({
         shortcut: "⇧⌘L",
         run: cycle,
       }),
-      ...THEMES.map((t) =>
-        registerCommand({
-          id: `theme:${t.id}`,
-          title: `Theme: ${t.name}`,
-          group: "Themes",
-          swatch: [
-            t.terminal.palette.bg,
-            t.terminal.palette.ansi[1],
-            t.terminal.palette.ansi[2],
-            t.terminal.palette.ansi[4],
-            t.terminal.palette.fg,
-          ],
-          run: () => themeStore.select(t.id),
-          preview: () => themeStore.preview(t.id),
-          revert: () => themeStore.preview(null),
-        }),
-      ),
+      // Serious mode forces Plain, so theme choice is hidden.
+      ...(serious
+        ? []
+        : [
+            registerCommand({
+              id: "theme:pick",
+              title: "Theme…",
+              group: "Themes",
+              run: () => setPicker(true),
+            }),
+          ]),
+      registerCommand({
+        id: "serious",
+        title: "Serious mode",
+        group: "Themes",
+        run: () => setSerious(!getPref("serious")),
+      }),
       registerCommand({
         id: "settings",
         title: "Open settings",
         group: "Panes",
         shortcut: "⌘,",
         run: () => setSettings(true),
+      }),
+      registerCommand({
+        id: "studio",
+        title: "Open Studio",
+        group: "Panes",
+        shortcut: "⌘.",
+        run: () => setStudio(true),
       }),
       registerCommand({
         id: "scene:new",
@@ -234,16 +265,65 @@ export function Workspace({
       }),
     ];
     return () => offs.forEach((f) => f());
-  }, [cycle, signOut, add]);
+  }, [cycle, signOut, add, serious, setSerious]);
 
-  const themeLabel = `Theme: ${mode[0].toUpperCase()}${mode.slice(1)}`;
+  const menuGroups: MenuGroup[] = [
+    [
+      {
+        label: "Theme…",
+        icon: "system",
+        onSelect: () => setPicker(true),
+      },
+      {
+        label: "Appearance",
+        icon: "light",
+        submenu: MODES.map((m) => ({
+          label: `${m[0].toUpperCase()}${m.slice(1)}`,
+          checked: m === mode,
+          onSelect: () => setMode(m),
+        })),
+      },
+      {
+        label: "Serious mode",
+        icon: "briefcase",
+        hint: serious ? "On" : "Off",
+        onSelect: () => setSerious(!serious),
+      },
+    ],
+    [
+      {
+        label: "Save scene",
+        icon: "server",
+        shortcut: "⌘S",
+        onSelect: () => void flows.save(),
+      },
+      {
+        label: "Save scene as…",
+        icon: "server",
+        onSelect: () => void flows.saveAs(),
+      },
+    ],
+    [
+      {
+        label: "Studio",
+        icon: "brush",
+        shortcut: "⌘.",
+        onSelect: () => setStudio(true),
+      },
+      {
+        label: "Settings",
+        icon: "gear",
+        shortcut: "⌘,",
+        onSelect: () => setSettings(true),
+      },
+    ],
+    [{ label: "Sign out", icon: "signout", onSelect: signOut }],
+  ];
   // Status bar follows the focused pane, else the first one.
   const ids = leafMap[sc.active] ?? [];
   const shown = focused && ids.includes(focused) ? focused : ids[0];
   const size = shown ? sizes[shown] : undefined;
   const latency = shown !== undefined ? (latencies[shown] ?? null) : null;
-
-  const narrow = useMaxWidth(639);
 
   return (
     <div className="ws">
@@ -262,65 +342,28 @@ export function Workspace({
           onRename={(id, n) => setSc((s) => renameScene(s, id, n))}
           onClose={requestClose}
           onKill={setKill}
+          dirty={dirty}
+          onSave={(id) => void flows.save(id)}
+          onSaveAs={(id) => void flows.saveAs(id)}
+          onOpenSaved={() => void flows.openSaved()}
           onReorder={(id, to) => setSc((s) => reorderScene(s, id, to))}
           onDropPane={dropOnTab}
         />
         <div className="spacer" />
-        {narrow ? (
-          <OverflowMenu
-            items={[
-              {
-                label: "Studio",
-                icon: "brush",
-                hint: "Coming in v0.4",
-                disabled: true,
-                onSelect: noop,
-              },
-              { label: "Theme", icon: mode, onSelect: cycle },
-              {
-                label: "Kill all shells",
-                icon: "power",
-                danger: true,
-                onSelect: () => setKill("all"),
-              },
-            ]}
-          />
-        ) : (
-          <>
-            <IconButton
-              label="Studio"
-              tip="Coming in v0.4"
-              aria-disabled="true"
-              onClick={noop}
-            >
-              <Icon name="brush" />
-            </IconButton>
-            <IconButton
-              label="Theme"
-              tip={themeLabel}
-              shortcut="⇧⌘L"
-              onClick={cycle}
-            >
-              <Icon name={mode} />
-            </IconButton>
-          </>
-        )}
+        <MainMenu
+          groups={menuGroups}
+          open={menu}
+          onOpenChange={setMenu}
+          shortcut="⇧⌘M"
+        />
         <IconButton
-          label="Settings"
-          shortcut="⌘,"
-          onClick={() => setSettings(true)}
+          label="Kill all shells"
+          shortcut="⇧⌘K"
+          variant="danger"
+          onClick={() => setKill("all")}
         >
-          <Icon name="gear" />
+          <Icon name="power" />
         </IconButton>
-        {!narrow && (
-          <IconButton
-            label="Kill all shells"
-            variant="danger"
-            onClick={() => setKill("all")}
-          >
-            <Icon name="power" />
-          </IconButton>
-        )}
       </header>
 
       <main className="panes">
@@ -359,17 +402,13 @@ export function Workspace({
           <span
             data-testid="latency"
             className={`chip num hide-xs${latency > SLOW_MS ? " slow" : ""}`}
-            title={
-              latency > SLOW_MS
-                ? "Dial-up speeds. Typing may feel sluggish."
-                : undefined
-            }
+            title={latency > SLOW_MS ? c("conn.slow") : undefined}
           >
             <Icon name={latency > SLOW_MS ? "modem" : "bolt"} />
             {latency} ms
           </span>
         )}
-        {petShown && (
+        {petShown && !serious && (
           <Pet
             awake={awake}
             engine={engine.pet}
@@ -420,8 +459,27 @@ export function Workspace({
         onClose={() => setKill(null)}
         onConfirm={() => void runKill()}
       />
-      {presetDialogs}
+      {flows.dialogs}
+      <Studio
+        open={studio}
+        onClose={() => setStudio(false)}
+        onOpenScene={async (name) => {
+          await openScenePreset(name, openSceneTab, toast, c);
+          setStudio(false);
+        }}
+        onTry={(name) => {
+          setStudio(false);
+          void preparePane(name, toast).then((id) => {
+            if (id) addLeaf(sc.active, id);
+          });
+        }}
+      />
       <CommandPalette open={palette} onOpenChange={setPalette} />
+      <ThemePicker
+        open={picker}
+        pane={shown}
+        onClose={() => setPicker(false)}
+      />
       <Sheet
         open={settings}
         title="Settings"

@@ -29,6 +29,7 @@ vi.mock("./theme/store", () => ({
     terminalMotif: () => 'url("data:image/svg+xml,x")',
     effects: () => [{ id: "glyph-rain", intensity: 1 }],
     subscribe: () => () => {},
+    paneTheme: (_p?: string, fallback?: string) => fallback,
     scope: () => ({
       cursor: { shape: "block", blink: true },
       font: "jetbrains-mono",

@@ -27,3 +27,16 @@ test("escapes quotes in names", () => {
     'name = "a\\"b"',
   );
 });
+
+test("writes per-pane overrides for cwd, title and theme", () => {
+  const out = sceneToml(
+    "dev",
+    tree,
+    {},
+    { p1: { cwd: "/srv", theme: "x", title: "api" } },
+  );
+  expect(out).toContain(
+    '[[panes]]\nid = "p1"\n\n[panes.override]\ncwd = "/srv"\ntheme = "x"\nname = "api"\n',
+  );
+  expect(out).not.toContain('[panes.override]\n\n[[panes]]\nid = "p2"');
+});

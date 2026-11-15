@@ -2,9 +2,15 @@ import { afterEach, expect, test, vi } from "vitest";
 import { json } from "../auth/testutil";
 import {
   PresetError,
+  deletePreset,
+  getPresetToml,
+  getSchema,
   listPresets,
+  putPresetToml,
+  resolveDraft,
   putScenePreset,
   resolvePreset,
+  resolveScene,
   startScene,
 } from "./api";
 
@@ -50,4 +56,52 @@ test("putScenePreset PUTs the toml", async () => {
   expect(url).toBe("/api/presets/scene/dev");
   expect(init.method).toBe("PUT");
   expect(init.body).toBe('name = "dev"');
+});
+
+test("resolveScene queries by scene name", async () => {
+  const body = { theme: { value: "dark", origin: "scene" } };
+  const f = stub(json(body));
+  expect(await resolveScene("dev&x")).toEqual(body);
+  expect(f.mock.calls[0][0]).toBe("/api/presets/resolve?scene=dev%26x");
+});
+
+test("resolveScene surfaces server errors", async () => {
+  stub(json({ error: "scene not found" }, 404));
+  await expect(resolveScene("nope")).rejects.toThrow("scene not found");
+});
+
+test("getPresetToml returns the raw text", async () => {
+  const f = stub(new Response('name = "a"\n'));
+  expect(await getPresetToml("terminal", "a b")).toBe('name = "a"\n');
+  expect(f.mock.calls[0][0]).toBe("/api/presets/terminal/a%20b");
+});
+
+test("putPresetToml PUTs and surfaces validation errors", async () => {
+  const f = stub(new Response(null, { status: 204 }));
+  await putPresetToml("terminal", "a", "x");
+  expect((f.mock.calls[0][1] as RequestInit).method).toBe("PUT");
+  stub(json({ error: "font.size: must be 6-72" }, 400));
+  await expect(putPresetToml("terminal", "a", "x")).rejects.toThrow(
+    "font.size: must be 6-72",
+  );
+});
+
+test("deletePreset sends DELETE", async () => {
+  const f = stub(new Response(null, { status: 204 }));
+  await deletePreset("terminal", "a");
+  expect(f.mock.calls[0][0]).toBe("/api/presets/terminal/a");
+  expect((f.mock.calls[0][1] as RequestInit).method).toBe("DELETE");
+});
+
+test("resolveDraft POSTs the toml as the pane layer", async () => {
+  const body = { theme: { value: "x", origin: "global" } };
+  const f = stub(json(body));
+  expect(await resolveDraft("name = 1")).toEqual(body);
+  expect(f.mock.calls[0][0]).toBe("/api/presets/resolve");
+  expect((f.mock.calls[0][1] as RequestInit).method).toBe("POST");
+});
+
+test("getSchema returns parsed JSON", async () => {
+  stub(json({ title: "t" }));
+  expect(await getSchema("terminal")).toEqual({ title: "t" });
 });
