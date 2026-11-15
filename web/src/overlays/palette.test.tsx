@@ -268,3 +268,10 @@ describe("CommandPalette preview", () => {
     expect(run).toHaveBeenCalledOnce();
   });
 });
+
+describe("floating surface", () => {
+  it("palette card carries the float class", () => {
+    render(<CommandPalette defaultOpen />);
+    expect(document.querySelector(".cmdk")!.classList).toContain("float");
+  });
+});

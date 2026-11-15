@@ -98,7 +98,7 @@ export function CommandPalette({
       title="Command palette"
       hideTitle
       onClose={close}
-      className="dialog cmdk"
+      className="dialog cmdk float"
     >
       <label className="cmdk-filter">
         <Icon name="search" />

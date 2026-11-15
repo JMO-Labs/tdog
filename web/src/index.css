@@ -210,3 +210,16 @@ body {
 html[data-serious] .mascot {
   display: none !important;
 }
+
+/* Floating surfaces (menus, palette, toasts, dialogs) carry the retro signature. */
+.float {
+  background: var(--surface);
+  border: 1.5px solid var(--fg);
+  border-radius: 8px;
+  box-shadow: 3px 3px 0 var(--accent);
+}
+html[data-serious] .float,
+[data-serious] .float {
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  border-color: var(--line);
+}

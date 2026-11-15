@@ -8,12 +8,6 @@
   overflow: hidden;
   background: var(--surface);
   color: var(--fg);
-  border: 2px solid var(--line);
-  border-radius: calc(12px * var(--radius-scale));
-  /* Sticker shadow plus a soft drop so it lifts off dark terminals too. */
-  box-shadow:
-    var(--shadow-sm),
-    0 12px 28px rgb(8 4 24 / 0.45);
 }
 
 /* Filter input at top */
@@ -197,9 +191,6 @@
   overflow-y: auto;
   background: var(--surface);
   color: var(--fg);
-  border: 2px solid var(--line);
-  border-radius: calc(10px * var(--radius-scale));
-  box-shadow: var(--shadow-sm);
   z-index: 70;
 }
 

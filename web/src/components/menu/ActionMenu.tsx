@@ -315,7 +315,7 @@ export function ActionMenu(props: ActionMenuProps) {
   return createPortal(
     <div
       ref={ref}
-      className="action-menu pop-card"
+      className="action-menu float"
       role="menu"
       aria-label={props.ariaLabel || "Actions"}
       style={{ left: pos.x, top: pos.y }}
