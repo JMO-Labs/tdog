@@ -22,7 +22,7 @@ function setup() {
 
 test("context menu Kill scene kills that scene and closes the menu", () => {
   const fns = setup();
-  fireEvent.contextMenu(screen.getByRole("button", { name: "beta" }));
+  fireEvent.contextMenu(screen.getByRole("tab", { name: "beta" }));
   fireEvent.click(screen.getByRole("menuitem", { name: "Kill scene" }));
   expect(fns.onKill).toHaveBeenCalledWith("b");
   expect(fns.onClose).not.toHaveBeenCalled();
@@ -31,7 +31,7 @@ test("context menu Kill scene kills that scene and closes the menu", () => {
 
 test("context menu Close scene closes that scene and the menu", () => {
   const fns = setup();
-  fireEvent.contextMenu(screen.getByRole("button", { name: "alpha" }));
+  fireEvent.contextMenu(screen.getByRole("tab", { name: "alpha" }));
   fireEvent.click(screen.getByRole("menuitem", { name: "Close scene" }));
   expect(fns.onClose).toHaveBeenCalledWith("a");
   expect(fns.onKill).not.toHaveBeenCalled();
