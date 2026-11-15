@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 import { clearCommands, getCommands } from "../overlays/commands";
 
@@ -58,9 +64,9 @@ test("the picker closes on Escape", async () => {
   await run("preset:open-scene");
   expect(screen.getByText("dev")).toBeTruthy();
   await act(async () => {
-    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
   });
-  expect(screen.queryByText("dev")).toBeNull();
+  await waitFor(() => expect(screen.queryByText("dev")).toBeNull());
 });
 
 test("saving with no panes toasts info and closes the dialog", async () => {
@@ -76,7 +82,7 @@ test("saving with no panes toasts info and closes the dialog", async () => {
     "info",
     "Nothing to save: this scene has no panes.",
   );
-  expect(screen.queryByRole("textbox")).toBeNull();
+  await waitFor(() => expect(screen.queryByRole("textbox")).toBeNull());
 });
 
 test("the name dialog closes on Cancel", async () => {
@@ -85,5 +91,5 @@ test("the name dialog closes on Cancel", async () => {
   await act(async () => {
     fireEvent.click(screen.getByText("Cancel"));
   });
-  expect(screen.queryByRole("textbox")).toBeNull();
+  await waitFor(() => expect(screen.queryByRole("textbox")).toBeNull());
 });
