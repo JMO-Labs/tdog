@@ -104,9 +104,8 @@ test("login shows plain wrong-password text and sign-in toast", async () => {
 
 test("setup tape meter and auth gags are plain in serious mode", async () => {
   const { SetupScreen } = await import("../auth/screens");
-  const { NoNo } = await vi.importActual<typeof import("../auth/SignOn")>(
-    "../auth/SignOn",
-  );
+  const { NoNo } =
+    await vi.importActual<typeof import("../auth/SignOn")>("../auth/SignOn");
   render(
     <ToastProvider>
       <SetupScreen onDone={() => {}} />
