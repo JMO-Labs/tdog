@@ -28,11 +28,43 @@
       ]
     },
     "cursor": {
-      "shape": "block",
+      "shape": "bar",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "share-tech-mono",
+    "effects": [
+      {
+        "id": "glow",
+        "intensity": 0.5
+      },
+      {
+        "id": "scanlines",
+        "intensity": 0.3
+      }
+    ],
+    "motif": {
+      "viewBox": [0, 0, 32, 32],
+      "tile": [32, 32],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 8H32M0 16H32M0 24H32M8 0V32M16 0V32M24 0V32",
+          "stroke": "cyan"
+        },
+        {
+          "type": "path",
+          "d": "M2 30C8 22 12 26 16 18S26 14 30 4",
+          "stroke": "pink"
+        },
+        {
+          "type": "circle",
+          "cx": 16,
+          "cy": 18,
+          "r": 1.5,
+          "fill": "pink"
+        }
+      ]
+    }
   },
   "chrome": {
     "tokens": {
@@ -53,12 +85,38 @@
       "term-dim": "#8a85c8"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
+      "radius": 0,
+      "shadow": "none",
       "border": 1
     },
     "pattern": "none",
-    "boot": "drop",
-    "costume": "none"
+    "boot": "rain",
+    "costume": {
+      "name": "vr visor",
+      "rows": ["..##########..", ".############.", ".##.######.##."]
+    },
+    "motif": {
+      "viewBox": [0, 0, 32, 32],
+      "tile": [32, 32],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 8H32M0 16H32M0 24H32M8 0V32M16 0V32M24 0V32",
+          "stroke": "cyan"
+        },
+        {
+          "type": "path",
+          "d": "M2 30C8 22 12 26 16 18S26 14 30 4",
+          "stroke": "pink"
+        },
+        {
+          "type": "circle",
+          "cx": 16,
+          "cy": 18,
+          "r": 1.5,
+          "fill": "pink"
+        }
+      ]
+    }
   }
 }

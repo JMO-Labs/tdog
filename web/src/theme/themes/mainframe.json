@@ -31,8 +31,48 @@
       "shape": "block",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "share-tech-mono",
+    "effects": [
+      {
+        "id": "glow",
+        "intensity": 0.6
+      }
+    ],
+    "motif": {
+      "viewBox": [0, 0, 32, 32],
+      "tile": [32, 32],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 6H20L26 12H32",
+          "stroke": "cyan"
+        },
+        {
+          "type": "path",
+          "d": "M0 20H8L14 26H32",
+          "stroke": "pink"
+        },
+        {
+          "type": "path",
+          "d": "M16 0V8L10 14V32",
+          "stroke": "cyan"
+        },
+        {
+          "type": "circle",
+          "cx": 20,
+          "cy": 6,
+          "r": 1.2,
+          "fill": "cyan"
+        },
+        {
+          "type": "circle",
+          "cx": 8,
+          "cy": 20,
+          "r": 1.2,
+          "fill": "pink"
+        }
+      ]
+    }
   },
   "chrome": {
     "tokens": {
@@ -53,12 +93,50 @@
       "term-dim": "#6a8fb0"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
+      "radius": 0,
+      "shadow": "glow",
       "border": 1
     },
     "pattern": "none",
-    "boot": "post",
-    "costume": "none"
+    "boot": "tracker",
+    "costume": {
+      "name": "visor ring",
+      "rows": ["..##########..", ".#..........#.", ".#..........#."]
+    },
+    "motif": {
+      "viewBox": [0, 0, 32, 32],
+      "tile": [32, 32],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 6H20L26 12H32",
+          "stroke": "cyan"
+        },
+        {
+          "type": "path",
+          "d": "M0 20H8L14 26H32",
+          "stroke": "pink"
+        },
+        {
+          "type": "path",
+          "d": "M16 0V8L10 14V32",
+          "stroke": "cyan"
+        },
+        {
+          "type": "circle",
+          "cx": 20,
+          "cy": 6,
+          "r": 1.2,
+          "fill": "cyan"
+        },
+        {
+          "type": "circle",
+          "cx": 8,
+          "cy": 20,
+          "r": 1.2,
+          "fill": "pink"
+        }
+      ]
+    }
   }
 }
