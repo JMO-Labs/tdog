@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -275,5 +276,45 @@ func TestJournalForgetRepliesForgotten(t *testing.T) {
 	}
 	if len(got) != 1 || got[0][0] != byte(frame.Control) || string(got[0][1:]) != `{"type":"jrnl-forgotten"}` {
 		t.Fatalf("replies = %q", got)
+	}
+}
+
+// A batch read before the wipe must reach the client before jrnl-forgotten.
+// afterSince pauses stream between Since and write so the order is forced.
+func TestJournalForgetWaitsForInFlightBatch(t *testing.T) {
+	j := newJrnl()
+	defer j.stop()
+	j.feed([]byte("\x1b]133;C\x07x\n"))
+	entered, release := make(chan struct{}), make(chan struct{})
+	var once sync.Once
+	j.afterSince = func() {
+		once.Do(func() { close(entered); <-release })
+	}
+	var mu sync.Mutex
+	var out []string // "journal" or "forgotten", in wire order
+	write := func(f []byte) error {
+		mu.Lock()
+		defer mu.Unlock()
+		if f[0] == byte(frame.Journal) {
+			out = append(out, "journal")
+		} else {
+			out = append(out, "forgotten")
+		}
+		return nil
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go j.stream(ctx, write)
+	<-entered
+	done := make(chan struct{})
+	go func() { j.control([]byte(`{"type":"jrnl-forget"}`), write); close(done) }()
+	time.Sleep(100 * time.Millisecond) // let forget wipe/reply if it is not blocked
+	close(release)
+	<-done
+	jWait(t, "both frames", func() bool { mu.Lock(); defer mu.Unlock(); return len(out) >= 2 })
+	mu.Lock()
+	defer mu.Unlock()
+	if out[0] != "journal" || out[1] != "forgotten" {
+		t.Fatalf("wire order = %v, want journal before forgotten", out)
 	}
 }

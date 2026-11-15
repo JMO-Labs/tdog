@@ -30,6 +30,9 @@ type jrnl struct {
 	last            time.Time
 	done            chan struct{}
 	once            sync.Once
+
+	streamMu   sync.Mutex // serializes stream's Since+write with forget's wipe+reply
+	afterSince func()     // test seam: runs in stream between Since and write
 }
 
 func newJrnl() *jrnl {
@@ -111,6 +114,8 @@ func (j *jrnl) control(p []byte, reply func([]byte) error) {
 		j.mu.Unlock()
 		j.buf.Ack(seq)
 	case "jrnl-forget":
+		j.streamMu.Lock()
+		defer j.streamMu.Unlock()
 		j.buf.Wipe()
 		// The socket is ordered: the client drops journal frames until this
 		// arrives, so none sent before the wipe can re-add rows afterwards.
@@ -148,16 +153,33 @@ func (j *jrnl) stream(ctx context.Context, write func([]byte) error) {
 			return
 		case <-t.C:
 		}
-		evs := j.buf.Since(sent)
-		if len(evs) == 0 {
-			continue
-		}
-		if write(frame.EncodeJournal(evs)) != nil {
+		if !j.flush(&sent, write) {
 			return
 		}
-		sent = evs[len(evs)-1].Seq
-		j.mu.Lock()
-		j.sent = max(j.sent, sent)
-		j.mu.Unlock()
 	}
+}
+
+// flush sends one batch. Since+write+sent update hold streamMu so a forget's
+// wipe+reply cannot fall between them: a batch read before the wipe is written
+// before jrnl-forgotten, where the client still drops it. A wipe keeps seqs
+// monotonic (the parser is not reset), so the local sent stays valid. Returns
+// false when the write failed.
+func (j *jrnl) flush(sent *uint64, write func([]byte) error) bool {
+	j.streamMu.Lock()
+	defer j.streamMu.Unlock()
+	evs := j.buf.Since(*sent)
+	if j.afterSince != nil {
+		j.afterSince()
+	}
+	if len(evs) == 0 {
+		return true
+	}
+	if write(frame.EncodeJournal(evs)) != nil {
+		return false
+	}
+	*sent = evs[len(evs)-1].Seq
+	j.mu.Lock()
+	j.sent = max(j.sent, *sent)
+	j.mu.Unlock()
+	return true
 }
