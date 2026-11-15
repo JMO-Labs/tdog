@@ -71,6 +71,9 @@ export const encodeJournalAck = (seq: number) =>
 export const encodeJournalRecord = (on: boolean) =>
   control({ type: "jrnl-record", on });
 export const encodeJournalForget = () => control({ type: "jrnl-forget" });
+/** Ask the server to pull a disconnect gap's missed lines from the host. */
+export const encodeJournalRestore = (rec: number) =>
+  control({ type: "jrnl-restore", rec });
 
 export function decodeFrame(buf: ArrayBuffer): Decoded {
   const b = new Uint8Array(buf);

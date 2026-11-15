@@ -51,8 +51,25 @@ export function onJournalStart(cb: StartCb): () => void {
   return () => void startSubs.delete(cb);
 }
 
+type GapCb = (pane: string, sid: string, rec: number, why: string) => void;
+const gapSubs = new Set<GapCb>();
+
+/** Subscribe to gap events (pane, session id, rec, why); returns unsubscribe. */
+export function onJournalGap(cb: GapCb): () => void {
+  gapSubs.add(cb);
+  return () => void gapSubs.delete(cb);
+}
+
+const outSubs = new Set<StartCb>();
+
+/** Subscribe to out events (pane, session id, rec); returns unsubscribe. */
+export function onJournalOut(cb: StartCb): () => void {
+  outSubs.add(cb);
+  return () => void outSubs.delete(cb);
+}
+
 /**
- * Persist events, then notify start subscribers. Resolves to the highest seq
+ * Persist events, then notify start, gap and out subscribers. Resolves to the highest seq
  * in `evs`; rejects (without notifying) if the db fails. Duplicate seqs are
  * dropped by the db (idempotent per pane).
  */
@@ -64,9 +81,12 @@ export async function ingest(
 ): Promise<number> {
   const prev = (await db.apply(pane, sid, evs)) ?? 0;
   for (const e of evs) {
-    // Resent (already stored) starts are not new: no second marker.
-    if (e.kind === "start" && e.seq > prev)
-      startSubs.forEach((cb) => cb(pane, sid, e.rec));
+    // Resent (already stored) events are not new: notify once.
+    if (e.seq <= prev) continue;
+    if (e.kind === "start") startSubs.forEach((cb) => cb(pane, sid, e.rec));
+    if (e.kind === "gap")
+      gapSubs.forEach((cb) => cb(pane, sid, e.rec, e.why ?? ""));
+    if (e.kind === "out") outSubs.forEach((cb) => cb(pane, sid, e.rec));
   }
   return evs.reduce((m, e) => Math.max(m, e.seq), 0);
 }

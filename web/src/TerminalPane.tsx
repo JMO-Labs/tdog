@@ -33,6 +33,7 @@ import {
 } from "./terminal/killed";
 import { PaneMenu } from "./terminal/PaneMenu";
 import { useJournalMarkers } from "./journal/useJournalMarkers";
+import { GapBanner } from "./journal/GapBanner";
 import { usePaneCommands } from "./terminal/usePaneCommands";
 import { usePaneOps } from "./layout/paneOps";
 import { killScene } from "./terminal/sessions";
@@ -373,6 +374,10 @@ export function TerminalPane({
         style={{ position: "relative", zIndex: 1, height: "100%" }}
       />
       <EffectsOverlay effects={effects} />
+      <GapBanner
+        pane={paneId}
+        onRestore={(rec) => session.current?.restore(rec)}
+      />
       <ConnectionGag phase={phase} onReconnect={connect} />
       <PaneIntro theme={theme} />
       {(killed ||

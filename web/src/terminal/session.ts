@@ -6,6 +6,7 @@ import {
   encodeJournalAck,
   encodeJournalForget,
   encodeJournalRecord,
+  encodeJournalRestore,
   encodePing,
   encodeResize,
 } from "../protocol/frames";
@@ -157,6 +158,11 @@ export class TerminalSession {
     this.forgetting = true;
     if (this.ready && this.sid) this.send(encodeJournalForget());
     else this.pendingForget = true; // sent after the next session frame
+  }
+
+  /** Ask the server to restore a disconnect gap from the host's scrollback. */
+  restore(rec: number): void {
+    this.send(encodeJournalRestore(rec));
   }
 
   private journaled(f: JournalEvent[]): void {

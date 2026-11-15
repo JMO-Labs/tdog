@@ -100,13 +100,15 @@ test("no ack when apply rejects; warns once", async () => {
   expect(warn).toHaveBeenCalledTimes(1);
 });
 
-test("setRecording and forget send controls", () => {
+test("setRecording, forget and restore send controls", () => {
   const { s, ctl } = setup(memJournal());
   s.setRecording(false);
   s.forget();
+  s.restore(7);
   expect(ctl()).toEqual([
     { type: "jrnl-record", on: false },
     { type: "jrnl-forget" },
+    { type: "jrnl-restore", rec: 7 },
   ]);
 });
 
