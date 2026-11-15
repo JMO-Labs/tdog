@@ -27,6 +27,27 @@ export interface CursorStyle {
   blink: boolean;
 }
 
+export interface ScreenLine {
+  row: number;
+  text: string;
+}
+
+export interface CellGeometry {
+  cellWidth: number;
+  cellHeight: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+export interface PaneOverlayContext {
+  screen: ScreenLine[];
+  cellGeometry: CellGeometry;
+  insert(text: string): void;
+  copy(text: string): void;
+  open(url: string): void;
+  close(): void;
+}
+
 export interface TerminalRenderer {
   /** Write bytes; `cb` fires once the renderer has processed them (flow control). */
   write(data: Uint8Array, cb?: () => void): void;
@@ -53,5 +74,9 @@ export interface TerminalRenderer {
   cursorRect?(): { x: number; y: number } | null;
   /** True while the running app has asked for mouse events (vim, htop). */
   mouseReporting?(): boolean;
+  /** Visible screen lines with row numbers from the viewport. Optional: for overlays. */
+  screenLines?(): ScreenLine[];
+  /** Cell geometry: dimensions and offsets for layout. Optional: for overlays. */
+  cellGeometry?(): CellGeometry | null;
   dispose(): void;
 }

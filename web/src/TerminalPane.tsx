@@ -16,6 +16,7 @@ import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
+import { PaneOverlayHost, usePaneOverlayHost } from "./overlays/pane";
 import { BackgroundLayer } from "./backgrounds/BackgroundLayer";
 import { SceneBgContext } from "./backgrounds/SceneBackground";
 import { bgSpec } from "./backgrounds/spec";
@@ -339,6 +340,7 @@ export function TerminalPane({
     setMenu(null);
     if (refocus) renderer.current?.focus?.();
   };
+  const { hostRef, openOverlay } = usePaneOverlayHost();
   const paste = async () => {
     try {
       renderer.current?.paste?.(await navigator.clipboard.readText());
@@ -409,6 +411,7 @@ export function TerminalPane({
           onStart={killed ? startNew : connect}
         />
       )}
+      <PaneOverlayHost renderer={renderer.current} />
       {menu && (
         <TerminalMenu
           {...menu}
@@ -426,6 +429,7 @@ export function TerminalPane({
             if (sceneKey && t) setPaneTheme(sceneKey, t);
           }}
           onRename={ops?.rename}
+          onShowScreen={() => openOverlay("show-screen")}
           onKill={() => sceneKey && void killScene(sceneKey)}
           onClose={() => ops?.close()}
           onDismiss={closeMenu}
