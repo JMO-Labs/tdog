@@ -74,10 +74,11 @@ test("search filters nav sections and fields by label", async () => {
   await screen.findByRole("dialog");
   const box = screen.getByRole("searchbox", { name: "Search settings" });
   fireEvent.change(box, { target: { value: "font size" } });
-  expect(nav().getAllByRole("button").map((b) => b.textContent)).toEqual([
-    "Terminal design",
-    "Fonts",
-  ]);
+  expect(
+    nav()
+      .getAllByRole("button")
+      .map((b) => b.textContent),
+  ).toEqual(["Terminal design", "Fonts"]);
   const results = within(
     screen.getByRole("list", { name: "Matching settings" }),
   );

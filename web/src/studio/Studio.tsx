@@ -3,12 +3,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Modal } from "../overlays/Modal";
 import { Cassette } from "./Cassette";
-import {
-  SECTIONS,
-  filterSections,
-  hashFor,
-  sectionFromHash,
-} from "./sections";
+import { SECTIONS, filterSections, hashFor, sectionFromHash } from "./sections";
 import "./studio.css";
 
 type Props = { open: boolean; onClose: () => void };
@@ -131,9 +126,7 @@ export function Studio({ open, onClose }: Props) {
                 )}
               </ul>
             ) : (
-              <p className="studio-none">
-                No settings match “{query.trim()}”.
-              </p>
+              <p className="studio-none">No settings match “{query.trim()}”.</p>
             )
           ) : (
             <section className="studio-empty">
