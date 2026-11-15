@@ -149,8 +149,12 @@ test("Theme art in this scene is unchecked by default, toggles and persists", as
 
 test("Theme art item is absent in serious mode", async () => {
   setPref("serious", true);
-  mount();
-  await openMenu("beta");
-  expect(screen.queryByText(/Theme art in this scene/)).toBeNull();
-  setPref("serious", false);
+  try {
+    mount();
+    await openMenu("beta");
+    expect(screen.getByRole("menuitem", { name: /Close scene/ })).toBeTruthy();
+    expect(screen.queryByText(/Theme art in this scene/)).toBeNull();
+  } finally {
+    setPref("serious", false);
+  }
 });
