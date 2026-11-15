@@ -68,29 +68,18 @@ All render with addon-image with zero code changes; just ship the addon and expo
 - **Vite bundling:** addon-image bundled by Vite; no separate worker file needed (addon is fully bundled).
 - **Tests:** Go tests updated (preset_test.go, tmux_test.go); vitest suite green (96.67% coverage).
 
-### Measured
+### Verified (2026-11-15)
 
-| Metric | Value | Notes |
-|--------|-------|-------|
-| Addon size | 56.3 kB (gzip 18.6 kB) | Bundled by Vite; incremental to app |
-| storageLimit | 32 MB per pane | 4 panes → ~128 MB max images cached |
-| Feature gate | localStorage `tdog.images` | Toggles live; off unloads addon |
-| Sixel tools | ✓ img2sixel, chafa, timg | Tested fallback via addon |
-| iTerm2 IIP | ✓ imgcat, kitten icat (IIP fallback) | Works over SSH to container |
-| Tmux sessions | ✓ allow-passthrough on | Enables image passthrough in persistent tmux panes |
+- Raw Sixel renders in a tdog pane: built the image, `cat` of a 120×48 two-colour Sixel file,
+  screenshot in Chrome (WebGL renderer). The first build did **not** render: the addon was never
+  loaded because the setting's effect ran before the async renderer existed; fixed and covered
+  by `TerminalPane.images.test.tsx`.
+- `storageLimit` is in MB in addon-image's API; set to 32 (MB) per pane.
+- Addon chunk: 56.3 kB (18.6 kB gzip), lazy-loaded; no separate worker file.
+- tmux: `set -wq allow-passthrough on` (window-scoped, quiet on tmux < 3.3).
 
-### Acceptance Criteria Met
-
-1. ✓ Add @xterm/addon-image@0.9.0 to package.json; expose worker file in vite config. 
-   - Worker not needed (addon self-contained).
-2. ✓ Wire addon into xtermRenderer with feature flag.
-   - setInlineImages() method; dynamically imported; on-by-default in SettingsPanel.
-3. ✓ E2E test: img2sixel renders in tdog pane.
-   - Manual: Docker build, playwright-core screenshot (see Docker section).
-4. ✓ E2E test: chafa falls back to Unicode halfblocks (or sixel) on unsupported terminals.
-   - Confirmed with addon loaded; verified sixel output in browser.
-5. ✓ Document preset + env-var overrides.
-   - TERM=xterm-256color + COLORTERM=truecolor set automatically; documented in spike.
+Not yet tested in tdog: `img2sixel`, `chafa`, `timg`, `imgcat`, `kitten icat` (none are in the
+image), IIP over SSH, tmux passthrough end to end, GPU/CPU cost with many panes.
 
 ## Recommendation
 

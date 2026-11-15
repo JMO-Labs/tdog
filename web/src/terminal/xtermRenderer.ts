@@ -48,9 +48,8 @@ export class XtermRenderer implements TerminalRenderer {
     if (enabled && !this.imageAddon) {
       try {
         const { ImageAddon } = await import("@xterm/addon-image");
-        const img = new ImageAddon();
-        // Lower storageLimit for many panes (default 128 MB -> 32 MB)
-        img.storageLimit = 32 * 1024 * 1024; // 32 MB
+        // storageLimit is in MB (default 128); lower it since tdog runs many panes.
+        const img = new ImageAddon({ storageLimit: 32 });
         t.loadAddon(img);
         this.imageAddon = img;
       } catch (e) {

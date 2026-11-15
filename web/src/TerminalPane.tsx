@@ -23,7 +23,7 @@ import { bgSpec } from "./backgrounds/spec";
 import { EffectsOverlay } from "./effects/EffectsOverlay";
 import { useActiveEffects } from "./effects/useActiveEffects";
 import { titleStore } from "./terminal/titles";
-import { useMotifOpacity, usePref } from "./settings/prefs"; // ponytail: inline-images feature, delete after v0.6
+import { useMotifOpacity, usePref } from "./settings/prefs";
 import { clearScrollback, registerClear } from "./terminal/paneActions";
 import { resolvePreset, type Resolved } from "./presets/api";
 import { EndedPanel } from "./terminal/EndedPanel";
@@ -273,6 +273,8 @@ export function TerminalPane({
   }, [settled]);
 
   const [images] = usePref("images");
+  const imagesRef = useRef(images);
+  imagesRef.current = images;
   useEffect(() => {
     renderer.current?.setInlineImages?.(images);
   }, [images]);
@@ -298,6 +300,8 @@ export function TerminalPane({
       );
       session.current = s;
       renderer.current = r;
+      // The images effect ran before this async renderer existed: apply now.
+      void r.setInlineImages?.(imagesRef.current);
       r.onTitle?.((title) => {
         if (keyRef.current) titleStore.set(keyRef.current, { title });
       });

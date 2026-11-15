@@ -183,7 +183,9 @@ func (sp Spec) tmuxCmd(id string) string {
 	for _, k := range sp.envKeys() {
 		cmd += " -e " + shQuote(k+"="+sp.Env[k])
 	}
-	cmd += " \\; set -g allow-passthrough on"
+	// Images (Sixel/IIP) pass through tmux. Window-scoped and quiet (-wq): never
+	// touch the user's other tmux sessions; tmux < 3.3 ignores the unknown option.
+	cmd += " \\; set -wq allow-passthrough on"
 	if sp.Cwd != "" {
 		cmd = "cd " + cdArg(sp.Cwd) + " && " + cmd
 	}
