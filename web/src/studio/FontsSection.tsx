@@ -7,6 +7,7 @@ import { Switch } from "../components/ui/switch";
 import { loadServerFonts } from "../theme/serverFonts";
 import {
   applyFontToPreset,
+  getPresetLigatures,
   installFont,
   listFonts,
   listTerminalPresets,
@@ -51,6 +52,16 @@ export function FontsSection() {
     void refresh();
     listTerminalPresets().then(setPresets, () => setPresets([]));
   }, [refresh]);
+  useEffect(() => {
+    let live = true;
+    getPresetLigatures(target).then(
+      (v) => live && setLigatures(v),
+      () => live && setLigatures(true),
+    );
+    return () => {
+      live = false;
+    };
+  }, [target]);
 
   const run = async (doing: string, done: string, fn: () => Promise<void>) => {
     setError("");
@@ -175,7 +186,10 @@ export function FontsSection() {
                 <pre
                   data-testid={`sample-${f.family}`}
                   className="fonts-sample"
-                  style={{ fontFamily: `"${f.family}", monospace` }}
+                  style={{
+                    fontFamily: `"${f.family}", monospace`,
+                    fontVariantLigatures: ligatures ? "normal" : "none",
+                  }}
                 >
                   {sample || SAMPLE}
                 </pre>

@@ -3,6 +3,7 @@ import {
   installFont,
   searchCatalog,
   uploadFont,
+  readLigatures,
   withFont,
   applyFontToPreset,
 } from "./fontsApi";
@@ -86,4 +87,11 @@ test("applyFontToPreset reads, edits and puts the preset", async () => {
   await applyFontToPreset("dev", { family: "Hack" });
   expect(calls[1][0]).toBe("PUT /api/presets/terminal/dev");
   expect(calls[1][1]).toContain('family = "Hack"');
+});
+
+test("readLigatures reads inline, table, and defaults to on", () => {
+  expect(readLigatures("font = { ligatures = false }\n")).toBe(false);
+  expect(readLigatures("[font]\nligatures = false\n")).toBe(false);
+  expect(readLigatures('[font]\nfamily = "x"\n')).toBe(true);
+  expect(readLigatures("")).toBe(true);
 });

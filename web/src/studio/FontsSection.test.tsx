@@ -7,6 +7,7 @@ beforeEach(() => {
   vi.spyOn(api, "listFonts").mockResolvedValue([
     { family: "Hack Nerd Font", source: "nerd", styles: ["Regular"] },
   ]);
+  vi.spyOn(api, "getPresetLigatures").mockResolvedValue(true);
   vi.spyOn(api, "listTerminalPresets").mockResolvedValue(["dev"]);
 });
 afterEach(() => vi.restoreAllMocks());
@@ -81,5 +82,28 @@ test("apply to a preset and toggle ligatures", async () => {
   fireEvent.click(screen.getByRole("switch", { name: "Ligatures" }));
   await waitFor(() =>
     expect(ap).toHaveBeenCalledWith("dev", { ligatures: false }),
+  );
+});
+
+test("ligatures switch reflects the selected preset", async () => {
+  vi.spyOn(api, "getPresetLigatures").mockImplementation(
+    async (n) => n !== "dev",
+  );
+  const ap = vi.spyOn(api, "applyFontToPreset").mockResolvedValue();
+  render(<FontsSection />);
+  await screen.findByText("Hack Nerd Font");
+  fireEvent.change(screen.getByLabelText("Apply to"), {
+    target: { value: "dev" },
+  });
+  await waitFor(() =>
+    expect(
+      screen
+        .getByRole("switch", { name: "Ligatures" })
+        .getAttribute("aria-checked"),
+    ).toBe("false"),
+  );
+  fireEvent.click(screen.getByRole("switch", { name: "Ligatures" }));
+  await waitFor(() =>
+    expect(ap).toHaveBeenCalledWith("dev", { ligatures: true }),
   );
 });

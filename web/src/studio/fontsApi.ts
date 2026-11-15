@@ -182,3 +182,28 @@ export async function applyFontToPreset(
     "Could not save preset",
   );
 }
+
+/** Read `font.ligatures` from preset TOML (inline or table); unset means on. */
+export function readLigatures(toml: string): boolean {
+  const inline = /^font\s*=\s*\{([^}]*)\}/m.exec(toml);
+  if (inline) {
+    const m = /(?:^|,)\s*ligatures\s*=\s*(true|false)/.exec(inline[1]);
+    return m ? m[1] === "true" : true;
+  }
+  const lines = toml.split("\n");
+  const start = lines.findIndex((l) => l.trim() === "[font]");
+  if (start < 0) return true;
+  for (let i = start + 1; i < lines.length; i++) {
+    const l = lines[i].trim();
+    if (l.startsWith("[")) break;
+    const m = /^ligatures\s*=\s*(true|false)/.exec(l);
+    if (m) return m[1] === "true";
+  }
+  return true;
+}
+
+/** Ligature setting of a terminal preset; 404 or unreadable counts as on. */
+export async function getPresetLigatures(name: string): Promise<boolean> {
+  const r = await apiFetch(`/api/presets/terminal/${encodeURIComponent(name)}`);
+  return r.ok ? readLigatures(await r.text()) : true;
+}
