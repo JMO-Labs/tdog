@@ -66,6 +66,8 @@ export interface TerminalRenderer {
   setCursor(c: CursorStyle): void;
   /** Set font family and/or size, then refit. Unset values keep the current one. */
   setFont?(family?: string, size?: number): void;
+  /** Zoom steps (1px each) on top of the font size; 0 = none. */
+  setZoom?(steps: number): void;
   /** Selected text, or "" when nothing is selected. */
   getSelection?(): string;
   selectAll?(): void;

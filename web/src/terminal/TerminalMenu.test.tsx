@@ -183,3 +183,24 @@ test("Broadcast to all panes shows checked state and fires", () => {
   fireEvent.click(item);
   expect(onBroadcastAll).toHaveBeenCalled();
 });
+
+test("zoom items step, stay open, and reset shows the current zoom", () => {
+  const onZoom = vi.fn();
+  const p = setup({ zoom: 2, onZoom });
+  fireEvent.click(screen.getByRole("menuitem", { name: "Zoom in" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Zoom out" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: /Reset zoom/ }));
+  expect(onZoom.mock.calls).toEqual([[1], [-1], [0]]);
+  expect(p.onDismiss).not.toHaveBeenCalled();
+  expect(
+    screen.getByRole("menuitem", { name: /Reset zoom/ }).textContent,
+  ).toContain("+2");
+});
+
+test("reset zoom is disabled at the default size", () => {
+  setup({ zoom: 0, onZoom: vi.fn() });
+  expect(
+    (screen.getByRole("menuitem", { name: /Reset zoom/ }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+});

@@ -1,6 +1,8 @@
 import { beforeEach, expect, test } from "vitest";
 import {
   panePreset,
+  paneZoom,
+  setPaneZoom,
   panePresets,
   scenePreset,
   setPanePreset,
@@ -51,4 +53,14 @@ test("paneTheme is undefined for corrupt or non-object storage", async () => {
   expect(paneTheme("p1")).toBeUndefined();
   localStorage.setItem("tdog.paneThemes", "[1]");
   expect(paneTheme("p1")).toBeUndefined();
+});
+
+test("pane zoom persists per pane and 0 clears it", () => {
+  expect(paneZoom("p1")).toBe(0);
+  setPaneZoom("p1", 3);
+  setPaneZoom("p2", -1);
+  expect([paneZoom("p1"), paneZoom("p2")]).toEqual([3, -1]);
+  setPaneZoom("p1", 0);
+  expect(paneZoom("p1")).toBe(0);
+  expect(localStorage.getItem("tdog.paneZoom")).toBe('{"p2":-1}');
 });
