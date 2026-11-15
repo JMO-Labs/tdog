@@ -73,3 +73,19 @@ export async function resolveScene(name: string): Promise<Resolved> {
   const r = await check(await apiFetch(`/api/presets/resolve?${q}`));
   return (await r.json()) as Resolved;
 }
+
+/** Raw TOML of a stored terminal preset. */
+export async function getTerminalPreset(name: string): Promise<string> {
+  const r = await check(
+    await apiFetch(`/api/presets/terminal/${encodeURIComponent(name)}`),
+  );
+  return r.text();
+}
+
+export async function putTerminalPreset(
+  name: string,
+  toml: string,
+): Promise<void> {
+  const path = `/api/presets/terminal/${encodeURIComponent(name)}`;
+  await check(await apiPut(path, toml));
+}

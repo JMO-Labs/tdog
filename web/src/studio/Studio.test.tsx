@@ -107,3 +107,11 @@ test("keyboard: arrows move through the nav, Enter picks from search", async () 
   fireEvent.keyDown(box, { key: "Enter" });
   expect(location.hash).toBe("#studio/backgrounds");
 });
+
+test("Themes section shows the gallery", async () => {
+  location.hash = "#studio/themes";
+  render(<Host />);
+  fireEvent.click(screen.getByText("opener"));
+  await screen.findByRole("dialog");
+  expect(screen.getAllByTestId("theme-card").length).toBeGreaterThan(0);
+});
