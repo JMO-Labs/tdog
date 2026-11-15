@@ -153,8 +153,7 @@ describe("terminal report allowlist filter", () => {
     });
 
     it("blocks other control characters", () => {
-      expect(isBroadcastable("\x00")).toBe(false); // NULL
-      expect(isBroadcastable("\x1b")).toBe(false); // ESC alone at end
+      expect(isBroadcastable("\x0e\x1b")).toBe(false); // trailing ESC
       expect(isBroadcastable("text\x1b\x00text")).toBe(false); // ESC followed by null
     });
   });
@@ -191,5 +190,42 @@ describe("terminal report allowlist filter", () => {
       expect(isBroadcastable(str)).toBe(true);
       expect(filterTerminalReports(bytes).length).toBe(bytes.length);
     });
+  });
+});
+
+describe("allowlist edge cases", () => {
+  it("broadcasts the Esc key on its own (vim)", () => {
+    expect(isBroadcastable("\x1b")).toBe(true);
+  });
+  it("blocks a trailing ESC after other input (incomplete sequence)", () => {
+    expect(isBroadcastable("a\x1b")).toBe(false);
+  });
+  it("broadcasts Ctrl-\\ ] ^ _ and Ctrl-@", () => {
+    for (const c of ["\x1c", "\x1d", "\x1e", "\x1f", "\x00"])
+      expect(isBroadcastable(c)).toBe(true);
+  });
+  it("blocks C1 controls such as 8-bit CSI", () => {
+    expect(isBroadcastable("\u009b6n")).toBe(false);
+    expect(isBroadcastable("\u0090q")).toBe(false);
+  });
+  it("still broadcasts non-ASCII text", () => {
+    expect(isBroadcastable("héllo 🚀 ✓")).toBe(true);
+  });
+});
+
+describe("strict input shapes", () => {
+  it("blocks ESC string introducers and intermediates as Alt+key", () => {
+    for (const c of ["P", "X", "^", "_", "\\", "]", "(", ")", "#", "%", " "])
+      expect(isBroadcastable("\x1b" + c)).toBe(false);
+  });
+  it("broadcasts Alt+letter, Alt+digit and Alt+dot", () => {
+    for (const c of ["b", "f", "c", "1", "."])
+      expect(isBroadcastable("\x1b" + c)).toBe(true);
+  });
+  it("drops invalid UTF-8 instead of forwarding unchecked bytes", () => {
+    expect(filterTerminalReports(new Uint8Array([0x61, 0xc3]))).toHaveLength(0);
+    expect(
+      filterTerminalReports(new Uint8Array([0xc2, 0x9b, 0x36, 0x6e])),
+    ).toHaveLength(0);
   });
 });

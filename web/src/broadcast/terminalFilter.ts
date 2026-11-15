@@ -12,6 +12,8 @@
  * Check if input is entirely composed of allowed user input tokens.
  * Returns false if any token is disallowed (including terminal reports, partial sequences).
  */
+const ALT_KEY = /^[A-OQ-WYZa-z0-9.,;:'"`/?<>=+\-!@$&*|{}]$/;
+
 export function isBroadcastable(str: string): boolean {
   if (str.length === 0) return false;
 
@@ -37,8 +39,8 @@ export function isBroadcastable(str: string): boolean {
       continue;
     }
 
-    // Ctrl-A through Ctrl-Z (user modifiers)
-    if (ch >= 0x01 && ch <= 0x1a) {
+    // Ctrl-@ through Ctrl-Z, plus Ctrl-\ ] ^ _ (user keys; ESC 0x1b handled below)
+    if ((ch >= 0x00 && ch <= 0x1a) || (ch >= 0x1c && ch <= 0x1f)) {
       i++;
       continue;
     }
@@ -47,8 +49,9 @@ export function isBroadcastable(str: string): boolean {
     if (ch === 0x1b) {
       const next = str.charCodeAt(i + 1);
 
-      // Standalone ESC at end of string - incomplete, don't broadcast
-      if (i + 1 >= str.length) return false;
+      // The Esc key arrives as a chunk that is just ESC; anywhere else a trailing
+      // ESC is an incomplete sequence.
+      if (i + 1 >= str.length) return str.length === 1;
 
       // ESC [ 2 0 0 ~ - Start of bracketed paste (check BEFORE general CSI)
       if (str.slice(i, i + 6) === "\x1b[200~") {
@@ -108,18 +111,10 @@ export function isBroadcastable(str: string): boolean {
         return false;
       }
 
-      // ESC followed by printable char (Alt+key)
-      // But not: ESC] (OSC), ESC P (DCS), ESC _ (APC), ESC { (APC alt), ESC ~ (user-defined)
-      if (
-        next >= 0x20 &&
-        next <= 0x7e &&
-        next !== 0x5d && // ] - OSC
-        next !== 0x50 && // P - DCS
-        next !== 0x5f && // _ - APC
-        next !== 0x7b && // { - APC alternative
-        next !== 0x7e && // ~ - private use
-        next !== 0x7f // DEL
-      ) {
+      // Alt+key: ESC + one key a keyboard produces. Letters and digits except
+      // P/X (DCS/SOS introducers), plus plain punctuation; never intermediates
+      // (0x20-0x2F) or string introducers ] ^ _ \.
+      if (ALT_KEY.test(str[i + 1])) {
         i += 2;
         continue;
       }
@@ -128,8 +123,8 @@ export function isBroadcastable(str: string): boolean {
       return false;
     }
 
-    // UTF-8 multi-byte sequences (high bit set)
-    if (ch >= 0x80) {
+    // Non-ASCII text, but never C1 controls (U+0080–U+009F, e.g. 8-bit CSI 0x9B)
+    if (ch >= 0xa0) {
       i++;
       continue;
     }
@@ -147,6 +142,13 @@ export function isBroadcastable(str: string): boolean {
  * Returns the input if broadcastable, or empty bytes otherwise.
  */
 export function filterTerminalReports(data: Uint8Array): Uint8Array {
-  const str = new TextDecoder().decode(data);
+  // Strict decode: invalid UTF-8 would otherwise become U+FFFD and pass the
+  // check while different bytes get forwarded.
+  let str: string;
+  try {
+    str = new TextDecoder("utf-8", { fatal: true }).decode(data);
+  } catch {
+    return new Uint8Array(0);
+  }
   return isBroadcastable(str) ? data : new Uint8Array(0);
 }
