@@ -97,5 +97,45 @@
         }
       ]
     }
+  },
+  "light": {
+    "terminal": {
+      "palette": {
+        "fg": "#1c1230",
+        "bg": "#faf6ff",
+        "cursor": "#0a7a8c",
+        "selection": "#dccdf5",
+        "ansi": [
+          "#6a58a0",
+          "#c4115f",
+          "#0a7a3c",
+          "#7a6a00",
+          "#2a4fc4",
+          "#9a1fc4",
+          "#0a7a8c",
+          "#3a2a5a",
+          "#54448a",
+          "#a00d4c",
+          "#086230",
+          "#605400",
+          "#1c3a9e",
+          "#7a14a0",
+          "#07616e",
+          "#000000"
+        ]
+      }
+    },
+    "chrome": {
+      "tokens": {
+        "bg": "#f0e8fb",
+        "surface": "#ffffff",
+        "fg": "#1c1230",
+        "pink": "#d6246e",
+        "cyan": "#0a7a8c",
+        "yellow": "#a38a00",
+        "purple": "#9a1fc4",
+        "link": "#07616e"
+      }
+    }
   }
 }

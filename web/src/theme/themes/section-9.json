@@ -156,5 +156,52 @@
         }
       ]
     }
+  },
+  "light": {
+    "terminal": {
+      "palette": {
+        "fg": "#07122a",
+        "bg": "#e8f1f4",
+        "cursor": "#c4540a",
+        "selection": "#b8d8e4",
+        "ansi": [
+          "#4a6580",
+          "#c2361a",
+          "#0b7a68",
+          "#8a5200",
+          "#1f5ea8",
+          "#80309c",
+          "#0a6f7a",
+          "#1a2c4a",
+          "#35506a",
+          "#cf4426",
+          "#076a58",
+          "#7a4800",
+          "#174e94",
+          "#702088",
+          "#065e68",
+          "#000000"
+        ]
+      }
+    },
+    "chrome": {
+      "tokens": {
+        "bg": "#d6e4ea",
+        "surface": "#e8f1f4",
+        "surface-2": "#d9e8ee",
+        "fg": "#07122a",
+        "muted": "#3d5a74",
+        "line": "#07122a",
+        "shadow": "#c4540a",
+        "link": "#0b7a68",
+        "pink": "#c2361a",
+        "cyan": "#0a6f7a",
+        "yellow": "#8a5200",
+        "purple": "#80309c",
+        "term-bg": "#e8f1f4",
+        "term-fg": "#07122a",
+        "term-dim": "#4a6580"
+      }
+    }
   }
 }

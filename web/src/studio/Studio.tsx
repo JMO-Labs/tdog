@@ -4,6 +4,7 @@ import { Input } from "../components/ui/input";
 import { Modal } from "../overlays/Modal";
 import { SceneDesigner } from "./SceneDesigner";
 import { Cassette } from "./Cassette";
+import { TerminalDesigner } from "./TerminalDesigner";
 import { SECTIONS, filterSections, hashFor, sectionFromHash } from "./sections";
 import "./studio.css";
 
@@ -22,6 +23,15 @@ export function Studio({ open, onClose, onOpenScene }: Props) {
   const [query, setQuery] = useState("");
   const navRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const [dirty, setDirty] = useState(false);
+  const leave = () => !dirty || confirm("Discard unsaved changes?");
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    addEventListener("beforeunload", warn);
+    return () => removeEventListener("beforeunload", warn);
+  }, [dirty]);
 
   useEffect(() => {
     if (!open) return;
@@ -40,12 +50,18 @@ export function Studio({ open, onClose, onOpenScene }: Props) {
   }, []);
 
   const close = () => {
+    if (!leave()) return;
+    setDirty(false);
     setQuery("");
     if (sectionFromHash(location.hash))
       history.replaceState(null, "", location.pathname + location.search);
     onClose();
   };
   const pick = (id: string) => {
+    if (id !== current) {
+      if (!leave()) return;
+      setDirty(false);
+    }
     setCurrent(id);
     setQuery("");
     history.replaceState(null, "", hashFor(id));
@@ -136,6 +152,8 @@ export function Studio({ open, onClose, onOpenScene }: Props) {
             )
           ) : section.id === "scene" ? (
             <SceneDesigner onOpenScene={onOpenScene ?? (async () => {})} />
+          ) : section.id === "terminal" ? (
+            <TerminalDesigner onDirty={setDirty} />
           ) : (
             <section className="studio-empty">
               <h3>{section.label}</h3>

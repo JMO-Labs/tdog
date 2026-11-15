@@ -7,7 +7,7 @@ import { Slider } from "../components/ui/slider";
 import { Switch } from "../components/ui/switch";
 import { TEMPLATES, type TemplateId } from "../layout/templates";
 import {
-  getPreset,
+  getPresetToml,
   listPresets,
   putScenePreset,
   resolvePreset,
@@ -76,7 +76,7 @@ export function SceneDesigner({ onOpenScene }: Props) {
     setStatus("");
     setView("form");
     try {
-      setDraft({ ...parseDraft(await getPreset("scene", name)), name });
+      setDraft({ ...parseDraft(await getPresetToml("scene", name)), name });
     } catch (e) {
       setDraft(null);
       setError(errorMessage(e));
