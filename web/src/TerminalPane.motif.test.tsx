@@ -22,6 +22,7 @@ vi.mock("./terminal/xtermRenderer", () => ({
 }));
 vi.mock("./settings/prefs", () => ({
   useMotifOpacity: () => [h.pct, () => {}],
+  usePref: () => [false, () => {}],
 }));
 vi.mock("./theme/store", () => ({
   themeStore: {

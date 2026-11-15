@@ -55,6 +55,10 @@
   background: var(--term-bg);
   box-shadow: 6px 6px 0 var(--shadow);
 }
+/* a scene background shows through; the pane's own layer/theme tints it */
+.scene-view:has(> [data-scene-bg]) .pane {
+  background: transparent;
+}
 .pane[data-focused="true"] {
   border-color: var(--accent, #6cf);
   box-shadow:

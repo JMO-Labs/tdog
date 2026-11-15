@@ -39,3 +39,28 @@ export async function resolveSession(
   bound.delete(pane);
   return findSessionId(pane);
 }
+
+/** Scene tab -> scene preset it was opened from (drives its background layer). */
+const SCENE_KEY = "tdog.scenePresets";
+function readScenes(): Record<string, string> {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(SCENE_KEY) ?? "{}");
+    return v && typeof v === "object" && !Array.isArray(v)
+      ? (v as Record<string, string>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+export const scenePreset = (tab: string): string | undefined =>
+  readScenes()[tab];
+export function setScenePreset(tab: string, name: string): void {
+  try {
+    localStorage.setItem(
+      SCENE_KEY,
+      JSON.stringify({ ...readScenes(), [tab]: name }),
+    );
+  } catch {
+    /* storage unavailable: the scene just has no background */
+  }
+}

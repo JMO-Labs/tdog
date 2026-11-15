@@ -1,7 +1,11 @@
 import { afterEach, expect, test, vi } from "vitest";
+import { isKilled } from "./killed";
 import { findSessionId, killScene, sessionExists } from "./sessions";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  localStorage.clear();
+});
 
 const list = [
   { id: "x1", scene: "pa" },
@@ -26,31 +30,26 @@ test("findSessionId is undefined on network or http failure", async () => {
   expect(await findSessionId("pa")).toBeUndefined();
 });
 
-test("killScene POSTs the kill route for the matching session", async () => {
-  const f = vi
-    .fn()
-    .mockResolvedValueOnce(ok(list))
-    .mockResolvedValueOnce(new Response(null, { status: 204 }));
+test("killScene POSTs the scene kill route and returns the server count", async () => {
+  const f = vi.fn().mockResolvedValue(ok({ killed: 2 }));
   vi.stubGlobal("fetch", f);
+  expect(await killScene("pa")).toBe(2);
+  expect(f.mock.calls[0][0]).toBe("/api/scenes/pa/kill");
+  expect(f.mock.calls[0][1].method).toBe("POST");
+});
+
+test("killScene marks the pane killed only when something died", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok({ killed: 0 })));
+  expect(await killScene("pa")).toBe(0);
+  expect(isKilled("pa")).toBe(false);
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok({ killed: 1 })));
   await killScene("pa");
-  expect(f.mock.calls[1][0]).toBe("/api/sessions/x1/kill");
-  expect(f.mock.calls[1][1].method).toBe("POST");
+  expect(isKilled("pa")).toBe(true);
 });
 
-test("killScene does nothing when no session matches", async () => {
-  const f = vi.fn().mockResolvedValue(ok(list));
-  vi.stubGlobal("fetch", f);
-  await killScene("none");
-  expect(f).toHaveBeenCalledTimes(1);
-});
-
-test("killScene is false when the kill request fails", async () => {
-  const f = vi
-    .fn()
-    .mockResolvedValueOnce(ok(list))
-    .mockRejectedValueOnce(new Error("down"));
-  vi.stubGlobal("fetch", f);
-  expect(await killScene("pa")).toBe(false);
+test("killScene is 0 when the kill request fails", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
+  expect(await killScene("pa")).toBe(0);
 });
 
 test("sessionExists is true only when the server lists the id", async () => {
