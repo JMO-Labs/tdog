@@ -9,6 +9,7 @@ import (
 
 	"github.com/JMO-Labs/tdog/internal/auth"
 	"github.com/JMO-Labs/tdog/internal/config"
+	"github.com/JMO-Labs/tdog/internal/fonts"
 	"github.com/JMO-Labs/tdog/internal/term"
 	"github.com/JMO-Labs/tdog/web"
 )
@@ -58,6 +59,7 @@ func NewSecuredPresets(ui fs.FS, a *auth.Auth, store *config.Store) http.Handler
 	reg.RegisterKill(mux)
 	if store != nil {
 		store.Register(mux)
+		fonts.New(store.Dir(), nil).Register(mux)
 		scenes := term.NewScenes(tcfg)
 		scenes.Register(mux)
 		go scenes.Autostart() // after routes exist; sessions outlive any browser

@@ -36,6 +36,9 @@ type Store struct{ dir string }
 // NewStore returns a store rooted at dir ($TDOG_DATA).
 func NewStore(dir string) *Store { return &Store{dir: dir} }
 
+// Dir is the data directory the store is rooted at.
+func (s *Store) Dir() string { return s.dir }
+
 func (s *Store) path(kind, name string) (string, error) {
 	d, ok := kindDir[kind]
 	if !ok {

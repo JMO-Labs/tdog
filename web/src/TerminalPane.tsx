@@ -3,6 +3,7 @@ import { TerminalSession, type SessionState } from "./terminal/session";
 import type { TerminalRenderer, TerminalTheme } from "./terminal/renderer";
 import { themeStore } from "./theme/store";
 import { fontFamily, loadFont } from "./theme/fonts";
+import { whenFamilyReady } from "./theme/serverFonts";
 import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
@@ -38,6 +39,8 @@ function applyFont(r: TerminalRenderer | null, f: Resolved) {
   const f2 = typeof family === "string" ? family : undefined;
   const s2 = typeof size === "number" ? size : undefined;
   if (f2 || s2) r?.setFont?.(f2, s2);
+  // Server-installed families arrive via /api/fonts.css; refit once loaded.
+  if (f2 && r) void whenFamilyReady(f2).then(() => r.setFont?.(f2, s2));
 }
 
 function wsUrl(scene?: string, id?: string, preset?: string): string {
