@@ -10,10 +10,11 @@ import { EmptyPresets } from "../presets/EmptyPresets";
 import { preparePane } from "../presets/launch";
 import { Mascot } from "./Mascot";
 import { PaneSlot } from "./PaneSlot";
+import { clearScene } from "../broadcast/store";
 
 type SlotProps = Omit<
   ComponentProps<typeof PaneSlot>,
-  "id" | "settled" | "state"
+  "id" | "settled" | "state" | "sceneId"
 >;
 
 /** One scene's split tree. Stays mounted when inactive so shells keep flowing. */
@@ -53,6 +54,7 @@ export function SceneView({
         {layout.tree ? (
           <SplitView
             tree={layout.tree}
+            sceneId={scene}
             onSplit={layout.split}
             onClose={layout.close}
             onRatio={layout.ratio}
@@ -72,6 +74,7 @@ export function SceneView({
               >
                 <PaneSlot
                   id={id}
+                  sceneId={scene}
                   settled={settled}
                   visible={active}
                   state={paneOpen[id]}

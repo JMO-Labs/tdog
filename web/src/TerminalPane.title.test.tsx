@@ -39,7 +39,9 @@ vi.stubGlobal(
 import { TerminalPane } from "./TerminalPane";
 
 test("shell title and cwd land in the title store under the pane key", async () => {
-  const { unmount } = render(<TerminalPane sceneKey="pane-t" />);
+  const { unmount } = render(
+    <TerminalPane sceneKey="pane-t" sceneId="test-scene" />,
+  );
   await waitFor(() => expect(h.title).not.toBeNull());
   h.title!("vim");
   h.cwd!("/tmp");

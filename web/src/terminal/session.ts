@@ -40,6 +40,8 @@ export interface SessionHooks {
   onSize?: (cols: number, rows: number) => void;
   /** Round-trip time in ms from a ping/pong on the control channel. */
   onLatency?: (ms: number) => void;
+  /** Called when input is received (for broadcasting). */
+  onBroadcast?: (data: Uint8Array) => void;
 }
 
 export class TerminalSession {
@@ -57,7 +59,10 @@ export class TerminalSession {
     private onState: (s: SessionState) => void,
     private hooks: SessionHooks = {},
   ) {
-    r.onInput((d) => this.send(encodeInput(d)));
+    r.onInput((d) => {
+      this.send(encodeInput(d));
+      this.hooks.onBroadcast?.(d);
+    });
     r.onResize((c, rows) => {
       this.send(encodeResize(c, rows));
       this.hooks.onSize?.(c, rows);

@@ -26,10 +26,12 @@ import type { Dir, Node } from "./tree";
 import { PaneOpsContext } from "./paneOps";
 import { PaneMenu } from "./PaneMenu";
 import { TEMPLATES, type TemplateId } from "./templates";
+import { useBroadcast } from "../broadcast/useBroadcast";
 import "./layout.css";
 
 export interface SplitViewProps {
   tree: Node;
+  sceneId?: string;
   onSplit: (id: string, dir: Dir) => void;
   onClose: (id: string) => void;
   onSnap: (t: TemplateId, confirmed?: boolean) => string[];
@@ -102,6 +104,10 @@ function Pane({ id }: { id: string }) {
   const live = useRef(p);
   live.current = p;
   const isFocused = focus === id && p.active !== false;
+
+  // Every pane in the group shows the chip, focused or not.
+  const { isBroadcasting } = useBroadcast(p.sceneId, id);
+
   // ⌘K actions target the focused pane of the visible scene.
   useEffect(() => {
     if (!isFocused) return;
@@ -224,6 +230,7 @@ function Pane({ id }: { id: string }) {
         )}
         {/* Panes are always local PTYs for now (no remote targets in spec). */}
         <span className="chip">local</span>
+        {isBroadcasting && <span className="chip broadcast">Broadcasting</span>}
         <span className="spacer" />
         <button
           className="pane-btn pane-split icon-btn sm"

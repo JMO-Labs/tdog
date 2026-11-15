@@ -276,6 +276,24 @@
   background: var(--yellow);
   color: var(--ink);
 }
+.chip.broadcast {
+  border-color: var(--accent, #6cf);
+  color: var(--accent, #6cf);
+}
+.stop-broadcast {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  padding: 0 0 0 6px;
+  margin-left: 4px;
+  font-weight: 800;
+  font-size: 12px;
+  opacity: 0.6;
+}
+.stop-broadcast:hover {
+  opacity: 1;
+}
 .tabs-row {
   display: flex;
   align-items: center;
