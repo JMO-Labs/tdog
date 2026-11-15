@@ -70,16 +70,8 @@
       ]
     },
     "motif": {
-      "viewBox": [
-        0,
-        0,
-        48,
-        48
-      ],
-      "tile": [
-        48,
-        48
-      ],
+      "viewBox": [0, 0, 48, 48],
+      "tile": [48, 48],
       "shapes": [
         {
           "type": "circle",
