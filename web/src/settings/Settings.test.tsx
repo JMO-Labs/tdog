@@ -282,3 +282,17 @@ test("terminal motif slider persists opacity and applies immediately", async () 
   fireEvent.change(slider, { target: { value: "0" } });
   expect(getMotifOpacity()).toBe(0);
 });
+
+test("screen effects: master, intensity and per-effect toggles persist", async () => {
+  const { getFx } = await import("../effects/store");
+  await mount({ "GET /api/session": session(false) });
+  fireEvent.change(screen.getByRole("slider", { name: /intensity/i }), {
+    target: { value: "0.5" },
+  });
+  expect(getFx().intensity).toBe(0.5);
+  fireEvent.click(sw(/scanlines/i));
+  expect(getFx().on.scanlines).toBe(false);
+  fireEvent.click(sw(/all effects/i));
+  expect(getFx().master).toBe(false);
+  expect(sw(/scanlines/i).hasAttribute("disabled")).toBe(true);
+});
