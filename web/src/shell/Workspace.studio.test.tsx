@@ -4,6 +4,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
@@ -61,7 +62,7 @@ test("narrow More menu: Studio item opens Studio", () => {
   expect(studio()).not.toBeNull();
 });
 
-test("closing Studio returns to the workspace", () => {
+test("closing Studio returns to the workspace", async () => {
   render(<Workspace />);
   act(() => {
     getCommands()
@@ -69,5 +70,5 @@ test("closing Studio returns to the workspace", () => {
       .run();
   });
   fireEvent.click(screen.getByRole("button", { name: "Back to workspace" }));
-  expect(studio()).toBeNull();
+  await waitFor(() => expect(studio()).toBeNull());
 });
