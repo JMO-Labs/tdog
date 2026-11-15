@@ -41,3 +41,11 @@ test("?renderer=restty creates restty; fps ticks; unmount disposes", async () =>
   unmount();
   expect(h.disposed).toBe(1);
 });
+
+test("?fx=all draws effect overlays in four panes", async () => {
+  window.history.pushState({}, "", "/bench?renderer=restty&fx=all");
+  const { container } = render(<BenchPage />);
+  await waitFor(() => expect(h.made).toContain("restty"));
+  expect(container.querySelectorAll(".bench-pane").length).toBe(4);
+  expect(container.querySelectorAll(".fx-root").length).toBeGreaterThan(0);
+});
