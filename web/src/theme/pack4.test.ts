@@ -85,7 +85,8 @@ describe("theme flavour pack 4", () => {
   ] of SPEC) {
     it(`${id} fills every v2 field`, () => {
       const t = findTheme(id)!;
-      expect(validateTheme(t).ok).toBe(true);
+      const { id: _id, ...data } = t;
+      expect(validateTheme(data).ok).toBe(true);
       expect(t.terminal.cursor.shape).toBe(cur);
       expect(t.terminal.font).toBe(font);
       expect(t.chrome.boot).toBe(boot);
