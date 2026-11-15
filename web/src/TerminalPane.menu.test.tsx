@@ -37,6 +37,8 @@ vi.mock("./terminal/session", () => ({
 vi.mock("./overlays/toast", () => ({ useToast: () => m.toast }));
 
 import { TerminalPane } from "./TerminalPane";
+import { themeStore } from "./theme/store";
+import { THEMES } from "./theme/registry";
 
 async function mount() {
   render(<TerminalPane />);
@@ -113,4 +115,22 @@ test("denied paste explains in plain words", async () => {
     ),
   );
   expect(m.r.paste).not.toHaveBeenCalled();
+});
+
+test("picking a theme repaints the pane even when a theme prop is set", async () => {
+  const [a, b] = THEMES;
+  const spy = vi.spyOn(themeStore, "terminal");
+  render(<TerminalPane theme={a.id} />);
+  await vi.waitFor(() => expect(m.r).toBeTruthy());
+  await new Promise((r) => setTimeout(r, 0));
+  fireEvent.contextMenu(screen.getByTestId("terminal-pane"));
+  fireEvent.click(
+    screen.getByRole("menuitem", { name: /Theme for this terminal/ }),
+  );
+  m.r.setTheme.mockClear();
+  spy.mockClear();
+  fireEvent.click(screen.getByRole("menuitem", { name: b.name }));
+  await vi.waitFor(() => expect(m.r.setTheme).toHaveBeenCalled());
+  expect(spy).toHaveBeenCalledWith(b.id);
+  spy.mockRestore();
 });

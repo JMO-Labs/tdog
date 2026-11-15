@@ -161,3 +161,11 @@ test("title and OSC 7 cwd are reported", () => {
   expect(titles).toEqual(["vim"]);
   expect(cwds).toEqual(["/tmp/a b"]);
 });
+
+test("mouseReporting reflects xterm's mouse tracking mode", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  m.term.modes = { mouseTrackingMode: "none" };
+  expect(r.mouseReporting()).toBe(false);
+  m.term.modes = { mouseTrackingMode: "drag" };
+  expect(r.mouseReporting()).toBe(true);
+});

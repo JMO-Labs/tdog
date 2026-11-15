@@ -16,7 +16,8 @@ export interface TerminalMenuProps {
   onRename?: () => void;
   onKill: () => void;
   onClose: () => void;
-  onDismiss: () => void;
+  /** `refocus: false` leaves focus alone (the action takes it). */
+  onDismiss: (refocus?: boolean) => void;
 }
 
 const mac = typeof navigator !== "undefined" && /Mac/.test(navigator.platform);
@@ -44,20 +45,27 @@ export function TerminalMenu(p: TerminalMenuProps) {
     document.addEventListener("pointerdown", away);
     return () => document.removeEventListener("pointerdown", away);
   }, [p]);
-  const run = (f: () => void) => () => {
-    p.onDismiss();
-    f();
-  };
+  const run =
+    (f: () => void, refocus = true) =>
+    () => {
+      p.onDismiss(refocus);
+      f();
+    };
   const item = (
     label: string,
     f: () => void,
-    o: { key?: string; disabled?: boolean; danger?: boolean } = {},
+    o: {
+      key?: string;
+      disabled?: boolean;
+      danger?: boolean;
+      refocus?: boolean;
+    } = {},
   ) => (
     <button
       role="menuitem"
       disabled={o.disabled}
       className={o.danger ? "danger" : undefined}
-      onClick={run(f)}
+      onClick={run(f, o.refocus)}
     >
       <span>{label}</span>
       {o.key && <kbd className="menu-key">{o.key}</kbd>}
@@ -128,7 +136,7 @@ export function TerminalMenu(p: TerminalMenuProps) {
           ))}
         </div>
       )}
-      {p.onRename && item("Rename", p.onRename)}
+      {p.onRename && item("Rename", p.onRename, { refocus: false })}
       {item("Kill shell", p.onKill, { danger: true })}
       {item("Close pane", p.onClose, { danger: true })}
     </div>

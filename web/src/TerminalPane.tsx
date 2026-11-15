@@ -111,8 +111,10 @@ export function TerminalPane({
   const [resolved, setResolved] = useState<Resolved>({});
   const presetTheme = resolved.theme?.value;
   const [override, setOverride] = useState<string | undefined>();
-  theme ??=
-    override ?? (typeof presetTheme === "string" ? presetTheme : undefined);
+  theme =
+    override ??
+    theme ??
+    (typeof presetTheme === "string" ? presetTheme : undefined);
   const fontRef = useRef<Resolved>({});
   fontRef.current = resolved;
   const themeRef = useRef(theme);
@@ -314,9 +316,9 @@ export function TerminalPane({
   const ops = usePaneOps();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const openMenu = (x: number, y: number) => setMenu({ x, y });
-  const closeMenu = () => {
+  const closeMenu = (refocus = true) => {
     setMenu(null);
-    renderer.current?.focus?.();
+    if (refocus) renderer.current?.focus?.();
   };
   const paste = async () => {
     try {
