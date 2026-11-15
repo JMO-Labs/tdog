@@ -78,3 +78,21 @@ func TestPresetRoutesAuthenticated(t *testing.T) {
 		}
 	}
 }
+
+func TestFontRoutesAuthenticated(t *testing.T) {
+	a, err := auth.New(t.TempDir(), func(string, ...any) {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := NewSecuredPresets(fstest.MapFS{"index.html": {Data: []byte("x")}}, a, config.NewStore(t.TempDir()))
+	for _, c := range [][2]string{
+		{"GET", "/api/fonts"}, {"GET", "/api/fonts.css"}, {"GET", "/api/fonts/files/x.ttf"},
+		{"POST", "/api/fonts"}, {"DELETE", "/api/fonts/x"}, {"POST", "/api/fonts/nerd"}, {"POST", "/api/fonts/google"},
+	} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(c[0], c[1], nil))
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("%s %s: %d", c[0], c[1], rec.Code)
+		}
+	}
+}
