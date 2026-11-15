@@ -107,4 +107,17 @@ describe("ResttyRenderer", () => {
       "VT323, monospace",
     );
   });
+
+  it("tracks mouse reporting from DECSET/DECRST 1000/1002/1003", () => {
+    expect(r.mouseReporting()).toBe(false);
+    r.write(enc.encode("\x1b[?1000h\x1b[?1006h"));
+    expect(r.mouseReporting()).toBe(true);
+    r.write(enc.encode("\x1b[?1000l"));
+    expect(r.mouseReporting()).toBe(false);
+    r.write(enc.encode("\x1b[?1002;1006h"));
+    expect(r.mouseReporting()).toBe(true);
+    r.write(enc.encode("\x1b[?1002l"));
+    r.write(enc.encode("\x1b[?25h"));
+    expect(r.mouseReporting()).toBe(false);
+  });
 });
