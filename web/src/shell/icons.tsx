@@ -1,4 +1,5 @@
 // Nerd Font glyphs (Symbols Nerd Font Mono). Class names per the Nerd Fonts cheat sheet.
+// Font is subset to these codepoints; adding a glyph means re-running pyftsubset (see web/src/assets/fonts/README.md).
 export const GLYPHS = {
   brush: "\u{F00E3}", // nf-md-brush
   system: "", // nf-cod-color_mode

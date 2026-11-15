@@ -1,0 +1,5 @@
+Glyph sets used from Symbols Nerd Font Mono (see LICENSE-NerdFonts.txt for the Nerd Fonts patcher MIT licence):
+
+- Codicons (nf-cod-*): CC-BY 4.0, (c) Microsoft. https://github.com/microsoft/vscode-codicons
+- Material Design Icons (nf-md-*): Apache 2.0. https://github.com/Templarian/MaterialDesign
+- Font Awesome (nf-fa-bolt): SIL OFL 1.1 (font files). https://github.com/FortAwesome/Font-Awesome

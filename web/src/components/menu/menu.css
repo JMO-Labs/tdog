@@ -27,9 +27,8 @@
   background: var(--surface-2);
 }
 
-.menu-filter svg {
-  width: 14px;
-  height: 14px;
+.menu-filter .nf {
+  font-size: 14px;
   opacity: 0.6;
   flex-shrink: 0;
 }
@@ -73,10 +72,8 @@
   flex-shrink: 0;
 }
 
-.menu-icon-btn svg {
-  width: 16px;
-  height: 16px;
-  stroke-width: 1.7;
+.menu-icon-btn .nf {
+  font-size: 16px;
 }
 
 .menu-icon-btn:hover:not(:disabled) {
@@ -253,9 +250,8 @@
   margin-right: 8px;
   opacity: 0.8;
 }
-.menu-row-icon svg {
-  width: 15px;
-  height: 15px;
+.menu-row-icon .nf {
+  font-size: 15px;
 }
 .menu-label mark {
   background: none;

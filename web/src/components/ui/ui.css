@@ -81,14 +81,12 @@
   background: var(--pink);
   color: var(--ink);
 }
-.icon-btn svg {
-  width: 20px;
-  height: 20px;
+.icon-btn .nf {
+  font-size: 20px;
   display: block;
 }
-.icon-btn.sm svg {
-  width: 16px;
-  height: 16px;
+.icon-btn.sm .nf {
+  font-size: 16px;
 }
 
 .input {
