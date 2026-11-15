@@ -15,7 +15,7 @@ beforeEach(() => {
   vi.mocked(api.putTerminalPreset).mockResolvedValue();
 });
 
-const card = (name: string) => screen.getByRole("button", { name });
+const card = (name: string | RegExp) => screen.getByRole("button", { name });
 const cardFor = (id: string) =>
   card(new RegExp(`^${THEMES.find((t) => t.id === id)!.name}`));
 
