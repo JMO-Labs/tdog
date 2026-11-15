@@ -354,6 +354,8 @@ export function TerminalPane({
         if (e.key === "ContextMenu" || (e.key === "F10" && e.shiftKey)) {
           e.preventDefault();
           e.stopPropagation();
+          const c = renderer.current?.cursorRect?.();
+          if (c) return openMenu(c.x, c.y);
           const r = e.currentTarget.getBoundingClientRect();
           openMenu(r.left + 16, r.top + 16);
         }

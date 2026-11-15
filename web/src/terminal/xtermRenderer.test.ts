@@ -169,3 +169,19 @@ test("mouseReporting reflects xterm's mouse tracking mode", () => {
   m.term.modes = { mouseTrackingMode: "drag" };
   expect(r.mouseReporting()).toBe(true);
 });
+
+test("cursorRect maps the cursor cell to viewport coordinates", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  const screen = document.createElement("div");
+  screen.className = "xterm-screen";
+  screen.getBoundingClientRect = () =>
+    ({ left: 10, top: 20, width: 1000, height: 600 }) as DOMRect;
+  const el = document.createElement("div");
+  el.appendChild(screen);
+  m.term.element = el;
+  m.term.buffer = { active: { cursorX: 5, cursorY: 2 } };
+  // cell = 1000/100 x 600/30 = 10 x 20; bottom-left of cell (5,2)
+  expect(r.cursorRect()).toEqual({ x: 60, y: 80 });
+  m.term.element = undefined;
+  expect(r.cursorRect()).toBeNull();
+});

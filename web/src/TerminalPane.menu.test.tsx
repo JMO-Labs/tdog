@@ -25,6 +25,7 @@ vi.mock("./terminal/xtermRenderer", () => ({
     paste = vi.fn();
     getSelection = () => this.sel;
     mouseReporting = () => this.mouse;
+    cursorRect: any = undefined;
     constructor() {
       m.r = this;
     }
@@ -181,4 +182,13 @@ test("Clear clears this pane's scrollback", async () => {
   await mountWithOps();
   fireEvent.click(screen.getByRole("menuitem", { name: "Clear" }));
   expect(m.clear).toHaveBeenCalledWith("scene-1");
+});
+
+test("keyboard-opened menu appears at the renderer's cursor", async () => {
+  const pane = await mount();
+  m.r.cursorRect = () => ({ x: 123, y: 456 });
+  fireEvent.keyDown(pane, { key: "ContextMenu" });
+  const menu = screen.getByRole("menu", { name: "Terminal menu" });
+  expect(menu.style.left).toBe("123px");
+  expect(menu.style.top).toBe("456px");
 });

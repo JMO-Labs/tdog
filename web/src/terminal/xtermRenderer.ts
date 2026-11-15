@@ -85,6 +85,18 @@ export class XtermRenderer implements TerminalRenderer {
   focus(): void {
     this.term.focus();
   }
+  cursorRect(): { x: number; y: number } | null {
+    const screen = this.term.element?.querySelector(".xterm-screen");
+    if (!screen) return null;
+    const b = screen.getBoundingClientRect();
+    const { cols, rows } = this.term;
+    if (!cols || !rows) return null;
+    const { cursorX, cursorY } = this.term.buffer.active;
+    return {
+      x: b.left + (cursorX * b.width) / cols,
+      y: b.top + ((cursorY + 1) * b.height) / rows,
+    };
+  }
   mouseReporting(): boolean {
     return this.term.modes.mouseTrackingMode !== "none";
   }
