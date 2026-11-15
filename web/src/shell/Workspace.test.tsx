@@ -190,3 +190,24 @@ test("palette lists a Theme command per bundled theme and switches", async () =>
   const { themeStore } = await import("../theme/store");
   themeStore.select("memphis-pop");
 });
+
+test("⇧⌘K opens only the kill dialog; ⌘K opens only the palette", () => {
+  render(<Workspace />);
+  fireEvent.keyDown(document, { key: "K", metaKey: true, shiftKey: true });
+  expect(screen.getByText("Kill all shells?")).toBeTruthy();
+  expect(screen.queryByRole("dialog", { name: /command palette/i })).toBeNull();
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(screen.queryByText("Kill all shells?")).toBeNull();
+  fireEvent.keyDown(document, { key: "k", metaKey: true });
+  expect(screen.queryByText("Kill all shells?")).toBeNull();
+  expect(screen.getByRole("dialog", { name: /command palette/i })).toBeTruthy();
+});
+
+test("⇧⌘M toggles the main menu", () => {
+  render(<Workspace />);
+  expect(screen.queryByRole("menu", { name: "Main menu" })).toBeNull();
+  fireEvent.keyDown(document, { key: "M", metaKey: true, shiftKey: true });
+  expect(screen.getByRole("menu", { name: "Main menu" })).toBeTruthy();
+  fireEvent.keyDown(document, { key: "M", metaKey: true, shiftKey: true });
+  expect(screen.queryByRole("menu", { name: "Main menu" })).toBeNull();
+});
