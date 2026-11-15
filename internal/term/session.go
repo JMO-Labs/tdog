@@ -2,7 +2,6 @@ package term
 
 import (
 	"context"
-	"log"
 	"sync"
 	"time"
 
@@ -59,16 +58,9 @@ func (s *Session) setPane(p string) {
 	s.mu.Unlock()
 }
 
-// dropSynced deletes the pane's synced journal files (a user kill or close).
-func (s *Session) dropSynced() {
-	st, p := s.reg.store(), s.paneID()
-	if st == nil || p == "" {
-		return
-	}
-	if err := st.DeletePane(p); err != nil {
-		log.Printf("journal: delete %s: %v", p, err)
-	}
-}
+// dropSynced deletes the pane's synced journal files (a user kill or close)
+// and keeps later acks from recreating them.
+func (s *Session) dropSynced() { s.j.kill() }
 
 func (s *Session) info() Info {
 	s.mu.Lock()

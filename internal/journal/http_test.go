@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func put(h http.Handler, body string) *httptest.ResponseRecorder {
@@ -36,10 +38,10 @@ func TestSettingsValidation(t *testing.T) {
 
 func TestGetSinceFilters(t *testing.T) {
 	s, _ := newOn(t)
-	_ = s.Append("a", "s1", evs(1, 5)) // at 1001, 1005
+	_ = s.Append("a", "s1", evs(1, 5)) // base+1s, base+5s
 	_ = s.Append("b", "s2", evs(3))
 	rec := httptest.NewRecorder()
-	NewHandler(s).ServeHTTP(rec, httptest.NewRequest("GET", "/api/journal?since=1003", nil))
+	NewHandler(s).ServeHTTP(rec, httptest.NewRequest("GET", "/api/journal?since="+strconv.FormatInt(base.Add(3*time.Second).Unix(), 10), nil))
 	if ct := rec.Header().Get("Content-Type"); ct != "application/x-ndjson" {
 		t.Fatal(ct)
 	}

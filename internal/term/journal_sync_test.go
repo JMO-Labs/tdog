@@ -115,3 +115,57 @@ func TestReattachKeepsOriginalPane(t *testing.T) {
 		t.Fatalf("pane %q", got)
 	}
 }
+
+// setSent pretends everything buffered was streamed.
+func setSent(j *jrnl) {
+	evs := j.buf.Since(0)
+	j.mu.Lock()
+	j.sent = evs[len(evs)-1].Seq
+	j.mu.Unlock()
+}
+
+func TestAckRacingKillDoesNotResurrectFiles(t *testing.T) {
+	j, st := syncJrnl(t, "p1")
+	cmdRun(j, "one")
+	setSent(j)
+	done := make(chan struct{})
+	j.beforeAppend = func() { // kill lands between the ack's checks and its Append
+		go func() { j.kill(); close(done) }()
+		time.Sleep(50 * time.Millisecond)
+	}
+	j.control([]byte(`{"type":"jrnl-ack","seq":999999}`), nil)
+	<-done
+	if rows := st.Read(time.Unix(0, 0)); len(rows) != 0 {
+		t.Fatalf("files resurrected: %+v", rows)
+	}
+	j.beforeAppend = nil
+	cmdRun(j, "two")
+	setSent(j)
+	j.control([]byte(`{"type":"jrnl-ack","seq":999999}`), nil)
+	if rows := st.Read(time.Unix(0, 0)); len(rows) != 0 {
+		t.Fatalf("ack after kill synced: %+v", rows)
+	}
+}
+
+func TestAckRacingForgetDoesNotResurrectThenSyncsAgain(t *testing.T) {
+	j, st := syncJrnl(t, "p1")
+	cmdRun(j, "one")
+	setSent(j)
+	done := make(chan struct{})
+	j.beforeAppend = func() {
+		go func() { j.control([]byte(`{"type":"jrnl-forget"}`), nil); close(done) }()
+		time.Sleep(50 * time.Millisecond)
+	}
+	j.control([]byte(`{"type":"jrnl-ack","seq":999999}`), nil)
+	<-done
+	if rows := st.Read(time.Unix(0, 0)); len(rows) != 0 {
+		t.Fatalf("files resurrected: %+v", rows)
+	}
+	j.beforeAppend = nil
+	cmdRun(j, "two")
+	setSent(j)
+	j.control([]byte(`{"type":"jrnl-ack","seq":999999}`), nil)
+	if rows := st.Read(time.Unix(0, 0)); len(rows) == 0 {
+		t.Fatal("sync did not resume after forget")
+	}
+}

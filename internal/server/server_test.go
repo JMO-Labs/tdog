@@ -1,8 +1,11 @@
 package server
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -111,4 +114,61 @@ func TestJournalRoutesRequireSession(t *testing.T) {
 			t.Fatalf("%s %s: %d", c[0], c[1], rec.Code)
 		}
 	}
+}
+
+func TestJournalSettingsRejectsMissingCSRF(t *testing.T) {
+	var tok string
+	a, err := auth.New(t.TempDir(), func(f string, args ...any) {
+		if len(args) == 1 {
+			tok, _ = args[0].(string)
+		}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := NewSecuredPresets(fstest.MapFS{"index.html": {Data: []byte("x")}}, a, config.NewStore(t.TempDir()))
+	do := func(path, body string, mod func(*http.Request)) *httptest.ResponseRecorder {
+		r := httptest.NewRequest(http.MethodPost, "http://localhost"+path, strings.NewReader(body))
+		r.RemoteAddr = "203.0.113.5:1234"
+		r.Header.Set("Content-Type", "application/json")
+		if mod != nil {
+			mod(r)
+		}
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, r)
+		return rec
+	}
+	if c := do("/api/setup", `{"token":"`+tok+`","password":"correct horse battery"}`, nil).Code; c != 200 {
+		t.Fatalf("setup %d", c)
+	}
+	login := do("/api/login", `{"password":"correct horse battery"}`, nil)
+	var out struct{ CSRF string }
+	_ = json.Unmarshal(login.Body.Bytes(), &out)
+	ck := login.Result().Cookies()
+	if login.Code != 200 || len(ck) != 1 || out.CSRF == "" {
+		t.Fatalf("login %d", login.Code)
+	}
+	put := func(tok string) int {
+		return do("/api/journal/settings", `{"retentionHours":12}`, func(r *http.Request) {
+			r.Method = http.MethodPut
+			r.AddCookie(ck[0])
+			if tok != "" {
+				r.Header.Set("X-CSRF-Token", tok)
+			}
+		}).Code
+	}
+	if c := put(""); c != http.StatusForbidden {
+		t.Fatalf("no csrf: %d", c)
+	}
+	if c := put(out.CSRF); c != http.StatusNoContent {
+		t.Fatalf("with csrf: %d", c)
+	}
+}
+
+func TestMain(m *testing.M) {
+	ctx, cancel := context.WithCancel(context.Background())
+	journalCtx = ctx // stop every sweep goroutine the tests start
+	code := m.Run()
+	cancel()
+	os.Exit(code)
 }

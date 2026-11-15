@@ -1,6 +1,7 @@
 package journal
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,12 +27,19 @@ type Store struct {
 	dir string
 	mu  sync.Mutex
 	ret time.Duration
+	now func() time.Time // test seam
+
+	trimmed map[string]time.Time // last per-pane trim; guarded by mu
 }
+
+// trimEvery bounds how often an append rewrites a pane's file to drop rows
+// older than the retention window (Read filters them regardless).
+const trimEvery = time.Hour
 
 // NewStore opens (lazily creating) the store under dir/journal and loads the
 // persisted retention; any read problem leaves sync off.
 func NewStore(dir string) *Store {
-	s := &Store{dir: dir}
+	s := &Store{dir: dir, now: time.Now, trimmed: map[string]time.Time{}}
 	if b, err := os.ReadFile(filepath.Join(s.path(), "settings.json")); err == nil {
 		var v struct {
 			H int `json:"retentionHours"`
@@ -72,7 +80,56 @@ func (s *Store) SetRetention(h int) error {
 		return err
 	}
 	s.ret = time.Duration(h) * time.Hour
+	if h > 0 { // lowering must shorten what is already on disk; raising never extends
+		limit := s.now().Add(s.ret).Unix()
+		for _, p := range s.panes() {
+			if n, ok := s.expiry(p); ok && n > limit {
+				s.setExp(p, limit)
+			}
+		}
+	}
 	return nil
+}
+
+func (s *Store) setExp(pane string, unix int64) {
+	_ = os.WriteFile(filepath.Join(s.path(), pane+".exp"), []byte(strconv.FormatInt(unix, 10)), 0o600)
+}
+
+// expiry reads pane's expiry (unix); ok is false when missing or unreadable.
+func (s *Store) expiry(pane string) (int64, bool) {
+	b, err := os.ReadFile(filepath.Join(s.path(), pane+".exp"))
+	if err != nil {
+		return 0, false
+	}
+	n, err := strconv.ParseInt(strings.TrimSpace(string(b)), 10, 64)
+	return n, err == nil
+}
+
+// trim rewrites pane's file keeping rows inside the retention window; callers
+// hold s.mu. Failures leave the file as is (Read still filters).
+func (s *Store) trim(pane string) {
+	f := filepath.Join(s.path(), pane+".jsonl")
+	b, err := os.ReadFile(f)
+	if err != nil {
+		return
+	}
+	cut := s.now().Add(-s.ret)
+	var keep []byte
+	for _, ln := range strings.SplitAfter(string(b), "\n") {
+		var r struct {
+			Ev Event `json:"ev"`
+		}
+		if ln != "" && json.Unmarshal([]byte(ln), &r) == nil && !r.Ev.At.Before(cut) {
+			keep = append(keep, ln...)
+		}
+	}
+	if len(keep) == len(b) {
+		return
+	}
+	tmp := f + ".tmp"
+	if os.WriteFile(tmp, keep, 0o600) == nil {
+		_ = os.Rename(tmp, f)
+	}
 }
 
 // removeAll deletes every pane file (not settings); callers hold s.mu.
@@ -99,6 +156,10 @@ func (s *Store) Append(pane, sid string, evs []Event) error {
 	if err := os.MkdirAll(s.path(), 0o700); err != nil {
 		return err
 	}
+	if last, ok := s.trimmed[pane]; !ok || s.now().Sub(last) >= trimEvery {
+		s.trim(pane)
+		s.trimmed[pane] = s.now()
+	}
 	var buf []byte
 	for _, e := range evs {
 		b, err := json.Marshal(struct {
@@ -121,8 +182,8 @@ func (s *Store) Append(pane, sid string, evs []Event) error {
 	if werr != nil {
 		return werr
 	}
-	exp := strconv.FormatInt(time.Now().Add(s.ret).Unix(), 10)
-	return os.WriteFile(filepath.Join(s.path(), pane+".exp"), []byte(exp), 0o600)
+	s.setExp(pane, s.now().Add(s.ret).Unix())
+	return nil
 }
 
 // DeletePane removes pane's files at once.
@@ -132,6 +193,7 @@ func (s *Store) DeletePane(pane string) error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	delete(s.trimmed, pane)
 	for _, ext := range []string{".jsonl", ".exp"} {
 		if err := os.Remove(filepath.Join(s.path(), pane+ext)); err != nil && !os.IsNotExist(err) {
 			return err
@@ -143,12 +205,8 @@ func (s *Store) DeletePane(pane string) error {
 // expired reports whether pane's expiry is at or before now; a missing or
 // unreadable expiry counts as expired. Callers hold s.mu.
 func (s *Store) expired(pane string, now time.Time) bool {
-	b, err := os.ReadFile(filepath.Join(s.path(), pane+".exp"))
-	if err != nil {
-		return true
-	}
-	n, err := strconv.ParseInt(strings.TrimSpace(string(b)), 10, 64)
-	return err != nil || n <= now.Unix()
+	n, ok := s.expiry(pane)
+	return !ok || n <= now.Unix()
 }
 
 // panes lists pane ids that have a log file; callers hold s.mu.
@@ -172,17 +230,26 @@ func (s *Store) Sweep(now time.Time) {
 			for _, ext := range []string{".jsonl", ".exp"} {
 				_ = os.Remove(filepath.Join(s.path(), p+ext))
 			}
+			delete(s.trimmed, p)
+		}
+	}
+	es, _ := os.ReadDir(s.path()) // .exp files whose log is gone
+	for _, e := range es {
+		if p, ok := strings.CutSuffix(e.Name(), ".exp"); ok {
+			if _, err := os.Stat(filepath.Join(s.path(), p+".jsonl")); os.IsNotExist(err) {
+				_ = os.Remove(filepath.Join(s.path(), e.Name()))
+			}
 		}
 	}
 }
 
-// Run sweeps every interval until stop closes; start it from server wiring only.
-func (s *Store) Run(interval time.Duration, stop <-chan struct{}) {
+// Run sweeps every interval until ctx ends; start it from server wiring only.
+func (s *Store) Run(ctx context.Context, interval time.Duration) {
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
 		select {
-		case <-stop:
+		case <-ctx.Done():
 			return
 		case now := <-t.C:
 			s.Sweep(now)
@@ -202,7 +269,8 @@ func (s *Store) Read(since time.Time) []Line {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var out []Line
-	now := time.Now()
+	now := s.now()
+	since = laterOf(since, now.Add(-s.ret)) // the file may hold rows older than the window
 	for _, p := range s.panes() {
 		if s.expired(p, now) {
 			continue
@@ -223,4 +291,11 @@ func (s *Store) Read(since time.Time) []Line {
 		}
 	}
 	return out
+}
+
+func laterOf(a, b time.Time) time.Time {
+	if a.After(b) {
+		return a
+	}
+	return b
 }
