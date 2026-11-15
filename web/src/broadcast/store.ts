@@ -1,50 +1,28 @@
 /**
  * Broadcast store: manages which panes are in the broadcast group per scene.
- * Persists to localStorage, notifies subscribers on changes.
+ * In-memory only: reload clears all groups (safety: prevents unknowing input to all panes).
  */
-
-const key = (scene: string) => `tdog.broadcast.${scene}`;
 
 const groups: Map<string, Set<string>> = new Map();
 const listeners = new Set<() => void>();
 
-function load(scene: string): Set<string> {
+function getGroup(scene: string): Set<string> {
   if (!groups.has(scene)) {
-    try {
-      const raw = localStorage.getItem(key(scene));
-      const arr = raw ? JSON.parse(raw) : [];
-      groups.set(scene, new Set(arr));
-    } catch {
-      groups.set(scene, new Set());
-    }
+    groups.set(scene, new Set());
   }
   return groups.get(scene)!;
-}
-
-function save(scene: string): void {
-  try {
-    const arr = Array.from(load(scene));
-    if (arr.length === 0) {
-      localStorage.removeItem(key(scene));
-    } else {
-      localStorage.setItem(key(scene), JSON.stringify(arr));
-    }
-  } catch {
-    /* private mode / quota: state won't persist */
-  }
 }
 
 /**
  * Toggle a pane in/out of the broadcast group for a scene.
  */
 export function toggleBroadcast(scene: string, paneId: string): void {
-  const group = load(scene);
+  const group = getGroup(scene);
   if (group.has(paneId)) {
     group.delete(paneId);
   } else {
     group.add(paneId);
   }
-  save(scene);
   listeners.forEach((l) => l());
 }
 
@@ -52,10 +30,9 @@ export function toggleBroadcast(scene: string, paneId: string): void {
  * Remove a pane from the broadcast group (e.g., when pane closes).
  */
 export function clearPane(scene: string, paneId: string): void {
-  const group = load(scene);
+  const group = getGroup(scene);
   if (group.has(paneId)) {
     group.delete(paneId);
-    save(scene);
     listeners.forEach((l) => l());
   }
 }
@@ -66,7 +43,6 @@ export function clearPane(scene: string, paneId: string): void {
 export function clearScene(scene: string): void {
   if (groups.has(scene)) {
     groups.delete(scene);
-    localStorage.removeItem(key(scene));
     listeners.forEach((l) => l());
   }
 }
@@ -75,7 +51,7 @@ export function clearScene(scene: string): void {
  * Get the broadcast group for a scene (set of pane IDs).
  */
 export function getBroadcastGroup(scene: string): Set<string> {
-  return load(scene);
+  return getGroup(scene);
 }
 
 /**

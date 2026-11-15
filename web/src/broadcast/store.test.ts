@@ -10,13 +10,11 @@ import {
 
 describe("broadcast store", () => {
   beforeEach(() => {
-    localStorage.clear();
     __clearAllState();
     vi.clearAllMocks();
   });
 
   afterEach(() => {
-    localStorage.clear();
     __clearAllState();
   });
 
@@ -60,24 +58,6 @@ describe("broadcast store", () => {
     expect(getBroadcastGroup("scene1").size).toBe(0);
   });
 
-  it("persists to localStorage", () => {
-    toggleBroadcast("scene1", "pane1");
-    toggleBroadcast("scene1", "pane2");
-    const loaded = JSON.parse(
-      localStorage.getItem("tdog.broadcast.scene1") || "[]",
-    );
-    expect(loaded.sort()).toEqual(["pane1", "pane2"].sort());
-  });
-
-  it("loads from localStorage on startup", () => {
-    localStorage.setItem(
-      "tdog.broadcast.scene1",
-      JSON.stringify(["pane1", "pane2"]),
-    );
-    expect(getBroadcastGroup("scene1")).toContain("pane1");
-    expect(getBroadcastGroup("scene1")).toContain("pane2");
-  });
-
   it("notifies subscribers on changes", () => {
     const store = getBroadcastStore();
     const callback = vi.fn();
@@ -93,12 +73,5 @@ describe("broadcast store", () => {
     unsub();
     toggleBroadcast("scene1", "pane1");
     expect(callback).not.toHaveBeenCalled();
-  });
-
-  it("removes empty group from localStorage", () => {
-    toggleBroadcast("scene1", "pane1");
-    expect(localStorage.getItem("tdog.broadcast.scene1")).toBeTruthy();
-    toggleBroadcast("scene1", "pane1");
-    expect(localStorage.getItem("tdog.broadcast.scene1")).toBeNull();
   });
 });
