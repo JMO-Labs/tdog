@@ -70,7 +70,6 @@
   .status .spacer {
     min-width: 0;
   }
-  .status .pet-egg,
   .status .kbd-chip {
     flex: none;
   }

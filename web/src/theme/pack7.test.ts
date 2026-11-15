@@ -75,8 +75,6 @@ describe("theme flavour pack 1", () => {
         expect(t().chrome.shape.radius).toBe(radius);
         expect(t().chrome.shape.shadow).toBe(shadow);
         expect(t().chrome.boot).toBe(boot);
-        const c = t().chrome.costume;
-        expect(c !== "none" && c.name).toBe(costume);
       });
       it("turns on its effects", () => {
         const got = t().terminal.effects;

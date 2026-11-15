@@ -96,10 +96,6 @@
     },
     "pattern": "none",
     "boot": "rain",
-    "costume": {
-      "name": "tiny shades",
-      "rows": [".####....####.", "..##......##.."]
-    },
     "motif": {
       "viewBox": [0, 0, 32, 32],
       "tile": [32, 32],

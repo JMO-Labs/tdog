@@ -22,15 +22,6 @@ afterEach(() => {
   clearCommands();
 });
 
-test("serious hides the pet; off brings it back", () => {
-  render(<Workspace />);
-  expect(screen.getByTestId("pet")).toBeTruthy();
-  act(() => setPref("serious", true));
-  expect(screen.queryByTestId("pet")).toBeNull();
-  act(() => setPref("serious", false));
-  expect(screen.getByTestId("pet")).toBeTruthy();
-});
-
 test("menu toggle and ⌘K command switch serious live", () => {
   render(<Workspace />);
   const item = () => {

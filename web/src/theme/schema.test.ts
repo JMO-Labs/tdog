@@ -223,32 +223,8 @@ describe("theme format v2", () => {
       bad((t) => (t.terminal.effects = [{ id: "evil", intensity: 1 }])),
     ).toBe(false);
     expect(bad((t) => (t.chrome.boot = "evil"))).toBe(false);
-    expect(bad((t) => (t.chrome.costume = "evil"))).toBe(false);
-    expect(bad((t) => (t.chrome.costume = { name: "hat", rows: ["#x"] }))).toBe(
-      false,
-    );
-    expect(bad((t) => (t.chrome.costume = { name: "hat", rows: [] }))).toBe(
-      false,
-    );
-    expect(bad((t) => (t.chrome.costume = { name: "", rows: ["#"] }))).toBe(
-      false,
-    );
-    expect(
-      bad((t) => (t.chrome.costume = { name: "hat", rows: ["#"], x: 1 })),
-    ).toBe(false);
     expect(bad((t) => (t.chrome.shape.shadow = "url(x)"))).toBe(false);
     expect(bad((t) => (t.terminal.cursor.shape = "star"))).toBe(false);
-  });
-  it("accepts a costume", () => {
-    expect(
-      bad(
-        (t) =>
-          (t.chrome.costume = {
-            name: "safari hat",
-            rows: ["..##..", "######"],
-          }),
-      ),
-    ).toBe(true);
   });
   it("range-checks numbers", () => {
     expect(

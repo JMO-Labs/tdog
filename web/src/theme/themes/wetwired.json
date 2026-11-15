@@ -92,10 +92,6 @@
     },
     "pattern": "none",
     "boot": "rain",
-    "costume": {
-      "name": "vr visor",
-      "rows": ["..##########..", ".############.", ".##.######.##."]
-    },
     "motif": {
       "viewBox": [0, 0, 32, 32],
       "tile": [32, 32],

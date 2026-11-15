@@ -43,16 +43,7 @@
       "border": 1
     },
     "pattern": "confetti",
-    "boot": "drop",
-    "costume": {
-      "name": "backwards cap",
-      "rows": [
-        "...########...",
-        "..##########..",
-        ".############.",
-        "#####........."
-      ]
-    }
+    "boot": "drop"
   },
   "light": {
     "terminal": {

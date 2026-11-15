@@ -51,15 +51,6 @@
     },
     "pattern": "confetti",
     "boot": "rewind",
-    "costume": {
-      "name": "backwards cap",
-      "rows": [
-        "...########...",
-        "..##########..",
-        ".############.",
-        "#####........."
-      ]
-    },
     "motif": {
       "viewBox": [0, 0, 60, 60],
       "tile": [60, 60],

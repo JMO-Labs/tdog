@@ -118,10 +118,6 @@
     },
     "pattern": "zigzag",
     "boot": "dialup",
-    "costume": {
-      "name": "visor shades",
-      "rows": ["############", "#####..#####", ".####..####."]
-    },
     "motif": {
       "viewBox": [0, 0, 64, 64],
       "tile": [64, 64],

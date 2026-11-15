@@ -59,8 +59,7 @@
       "border": 1
     },
     "pattern": "none",
-    "boot": "drop",
-    "costume": "none"
+    "boot": "drop"
   },
   "light": {
     "terminal": {

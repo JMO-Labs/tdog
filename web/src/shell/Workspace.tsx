@@ -33,8 +33,6 @@ import {
   reorderScene,
   saveScenes,
 } from "./scenes";
-import { Pet, usePetAwake } from "./pet";
-import { usePetEngine } from "./usePetEngine";
 import { useKeyboardShortcuts } from "./useKeyboardShortcuts";
 import { Tabs } from "./Tabs";
 import { MainMenu } from "./MainMenu";
@@ -66,16 +64,12 @@ export function Workspace({
   const [latencies, setLatencies] = useState<Record<string, number>>({});
   const shellName = useShellName();
   const [focused, setFocused] = useState<string | null>(null);
-  const [stamp, setStamp] = useState(0);
-  const [petShown, setPetShown] = usePref("pet");
   const [serious, setSerious] = usePref("serious");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
   const [picker, setPicker] = useState(false);
   const [menu, setMenu] = useState(false);
   const [studio, setStudio] = useState(() => !!sectionFromHash(location.hash));
-  const awake = usePetAwake(stamp);
-  const engine = usePetEngine();
   const [sc, setSc] = useState(loadScenes);
   const [leafMap, setLeafMap] = useState<Record<string, string[]>>({});
   // Per-pane open state lives here: dockview remounts panes when splits collapse.
@@ -162,13 +156,6 @@ export function Workspace({
     (id: string, ms: number) => setLatencies((m) => ({ ...m, [id]: ms })),
     [],
   );
-  const onOutput = useCallback(
-    (data?: Uint8Array) => {
-      setStamp((n) => n + 1);
-      engine.feed(data);
-    },
-    [engine],
-  );
 
   // App owns sign-out: it sends the CSRF token and only celebrates on success.
   const signOut = useCallback(() => {
@@ -205,8 +192,6 @@ export function Workspace({
   const menuGroups = useMainMenuGroups({
     serious,
     setSerious,
-    petShown,
-    setPetShown,
     mode,
     setMode,
     flows,
@@ -278,7 +263,6 @@ export function Workspace({
             onOpenChange={onPaneOpen}
             onClosed={onClosed}
             onSize={onSize}
-            onOutput={onOutput}
             onLatency={onLatency}
           />
         ))}
@@ -321,13 +305,6 @@ export function Workspace({
             <Icon name={latency > SLOW_MS ? "modem" : "bolt"} />
             {latency} ms
           </span>
-        )}
-        {petShown && !serious && (
-          <Pet
-            awake={awake}
-            engine={engine.pet}
-            onHide={() => setPetShown(false)}
-          />
         )}
         <button
           className="chip kbd-chip"

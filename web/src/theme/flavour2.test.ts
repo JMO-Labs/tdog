@@ -95,8 +95,6 @@ describe("theme flavour pack 2", () => {
       expect(t.terminal.effects.map((e) => e.id).sort()).toEqual(
         [...fx].sort(),
       );
-      const c = t.chrome.costume;
-      expect(c === "none" ? c : c.name).toBe(cos);
       expect(t.terminal.cursor).toEqual({ shape: cur, blink });
       expect(t.terminal.font).toBe(font);
       expect(t.chrome.shape).toEqual({ radius, shadow, border });

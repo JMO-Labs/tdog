@@ -107,10 +107,6 @@
     },
     "pattern": "none",
     "boot": "post",
-    "costume": {
-      "name": "tiny shades",
-      "rows": ["##########", ".##....##."]
-    },
     "motif": {
       "viewBox": [0, 0, 64, 64],
       "tile": [64, 64],

@@ -25,7 +25,6 @@ export const GLYPHS = {
   copy: "", // nf-cod-copy
   paste: "", // nf-cod-clippy
   eraser: "\u{F01FE}", // nf-md-eraser
-  paw: "\u{F03E9}", // nf-md-paw (removed in Task 4)
 } as const;
 export type IconName = keyof typeof GLYPHS;
 

@@ -96,13 +96,10 @@ describe("theme flavour pack 4", () => {
       );
       expect(t.chrome.shape.radius).toBe(radius);
       expect(t.chrome.shape.shadow).toBe(shadow);
-      const c = t.chrome.costume;
-      expect(c).not.toBe("none");
-      if (c !== "none") expect(c.name).toBe(costume);
       expect(t.chrome.motif!.shapes.length).toBeGreaterThan(1);
     });
   }
-  it("themes stay original: no source names in costume/motif data", () => {
+  it("themes stay original: no source names in motif data", () => {
     for (const [id] of SPEC) {
       const s = JSON.stringify(findTheme(id)!.chrome);
       expect(s).not.toMatch(/apollo|doom|halo|zelda|mario/i);

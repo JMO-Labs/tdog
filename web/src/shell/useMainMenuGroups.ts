@@ -5,8 +5,6 @@ import type { MenuGroup } from "./MainMenu";
 export function useMainMenuGroups({
   serious,
   setSerious,
-  petShown,
-  setPetShown,
   mode,
   setMode,
   flows,
@@ -17,8 +15,6 @@ export function useMainMenuGroups({
 }: {
   serious: boolean;
   setSerious: (v: boolean) => void;
-  petShown: boolean;
-  setPetShown: (v: boolean) => void;
   mode: ThemeMode;
   setMode: (m: ThemeMode) => void;
   flows: {
@@ -57,16 +53,6 @@ export function useMainMenuGroups({
         hint: serious ? "On" : "Off",
         onSelect: () => setSerious(!serious),
       },
-      ...(serious
-        ? []
-        : [
-            {
-              label: "Dogbert",
-              icon: "paw" as const,
-              hint: petShown ? "Shown" : "Hidden",
-              onSelect: () => setPetShown(!petShown),
-            },
-          ]),
     ],
     [
       {

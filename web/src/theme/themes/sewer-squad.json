@@ -104,10 +104,6 @@
     },
     "pattern": "zigzag",
     "boot": "wipe",
-    "costume": {
-      "name": "bandana eye mask",
-      "rows": ["##############", "#...##..##...#"]
-    },
     "motif": {
       "viewBox": [0, 0, 32, 32],
       "tile": [32, 32],

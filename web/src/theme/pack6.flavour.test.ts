@@ -74,9 +74,6 @@ describe("theme flavour pack 6", () => {
     describe(id, () => {
       const t = findTheme(id)!;
       it("fills the v2 fields", () => {
-        expect(
-          t.chrome.costume === "none" ? "none" : t.chrome.costume.name,
-        ).toBe(costume);
         expect(t.terminal.cursor.shape).toBe(cur);
         expect(t.terminal.font).toBe(font);
         expect(t.terminal.effects.map((e) => e.id)).toEqual(fx);
@@ -106,11 +103,5 @@ describe("theme flavour pack 6", () => {
   });
   it("memphis pop keeps confetti", () => {
     expect(findTheme("memphis-pop")!.chrome.pattern).toBe("confetti");
-  });
-  it("costumes fit the head", () => {
-    for (const [id] of FLAVOUR) {
-      const c = findTheme(id)!.chrome.costume;
-      if (c !== "none") expect(c.rows.length).toBeLessThanOrEqual(6);
-    }
   });
 });

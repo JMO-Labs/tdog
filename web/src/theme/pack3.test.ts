@@ -66,7 +66,6 @@ describe("theme flavour pack 3", () => {
       expect(t.chrome.boot).toBe(boot);
       expect(t.terminal.effects.map((e) => e.id)).toEqual(fx);
       expect(t.terminal.effects.every((e) => e.intensity <= 0.5)).toBe(true);
-      expect(t.chrome.costume).toMatchObject({ name: costume });
       expect(t.chrome.motif!.shapes.length).toBeGreaterThan(1);
     });
   }

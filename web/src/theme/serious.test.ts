@@ -11,10 +11,9 @@ beforeEach(() => {
 
 const plain = () => themeStore.terminal("plain");
 
-it("bundles a valid Plain theme with no pattern, effects, costume or motif", () => {
+it("bundles a valid Plain theme with no pattern, effects or motif", () => {
   const t = findTheme("plain")!;
   expect(t.chrome.pattern).toBe("none");
-  expect(t.chrome.costume).toBe("none");
   expect(t.chrome.shape.shadow).toBe("none");
   expect(t.terminal.effects).toEqual([]);
   expect(t.light).toBeTruthy();

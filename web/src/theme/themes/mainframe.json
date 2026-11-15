@@ -100,10 +100,6 @@
     },
     "pattern": "none",
     "boot": "tracker",
-    "costume": {
-      "name": "visor ring",
-      "rows": ["..##########..", ".#..........#.", ".#..........#."]
-    },
     "motif": {
       "viewBox": [0, 0, 32, 32],
       "tile": [32, 32],
