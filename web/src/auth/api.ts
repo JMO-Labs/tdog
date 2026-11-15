@@ -68,12 +68,16 @@ export async function apiPost(
   return r;
 }
 
-/** CSRF-aware PUT of a text body (preset files). */
-export async function apiPut(path: string, body: string): Promise<Response> {
+/** CSRF-aware PUT (or POST) of a text body (preset files). */
+export async function apiPut(
+  path: string,
+  body: string,
+  method: "PUT" | "POST" = "PUT",
+): Promise<Response> {
   const headers: Record<string, string> = { "Content-Type": "text/plain" };
   if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
   const r = await fetch(path, {
-    method: "PUT",
+    method,
     credentials: "same-origin",
     headers,
     body,
@@ -94,6 +98,19 @@ export async function apiUpload(
     credentials: "same-origin",
     headers,
     body,
+  });
+  if (r.status === 401) onUnauthorized?.();
+  return r;
+}
+
+/** CSRF-aware DELETE for authenticated calls. */
+export async function apiDelete(path: string): Promise<Response> {
+  const headers: Record<string, string> = {};
+  if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+  const r = await fetch(path, {
+    method: "DELETE",
+    credentials: "same-origin",
+    headers,
   });
   if (r.status === 401) onUnauthorized?.();
   return r;

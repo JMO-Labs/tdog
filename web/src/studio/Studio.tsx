@@ -5,6 +5,7 @@ import { Modal } from "../overlays/Modal";
 import { BackgroundPicker } from "../backgrounds/BackgroundPicker";
 import type { BgSpec } from "../backgrounds/spec";
 import { Cassette } from "./Cassette";
+import { TerminalDesigner } from "./TerminalDesigner";
 import { SECTIONS, filterSections, hashFor, sectionFromHash } from "./sections";
 import "./studio.css";
 
@@ -24,6 +25,15 @@ export function Studio({ open, onClose }: Props) {
   });
   const navRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const [dirty, setDirty] = useState(false);
+  const leave = () => !dirty || confirm("Discard unsaved changes?");
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    addEventListener("beforeunload", warn);
+    return () => removeEventListener("beforeunload", warn);
+  }, [dirty]);
 
   useEffect(() => {
     if (!open) return;
@@ -42,12 +52,18 @@ export function Studio({ open, onClose }: Props) {
   }, []);
 
   const close = () => {
+    if (!leave()) return;
+    setDirty(false);
     setQuery("");
     if (sectionFromHash(location.hash))
       history.replaceState(null, "", location.pathname + location.search);
     onClose();
   };
   const pick = (id: string) => {
+    if (id !== current) {
+      if (!leave()) return;
+      setDirty(false);
+    }
     setCurrent(id);
     setQuery("");
     history.replaceState(null, "", hashFor(id));
@@ -141,6 +157,8 @@ export function Studio({ open, onClose }: Props) {
               <h3>{section.label}</h3>
               <BackgroundPicker value={bg} onChange={setBg} />
             </section>
+          ) : section.id === "terminal" ? (
+            <TerminalDesigner onDirty={setDirty} />
           ) : (
             <section className="studio-empty">
               <h3>{section.label}</h3>
