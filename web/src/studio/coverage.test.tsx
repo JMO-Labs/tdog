@@ -6,6 +6,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+vi.mock("./TerminalPreview", () => ({ TerminalPreview: () => null }));
 import { json, mockFetch } from "../auth/testutil";
 import { checkTerminal } from "./schemaCheck";
 import { TerminalDesigner } from "./TerminalDesigner";

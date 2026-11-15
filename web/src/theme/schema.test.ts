@@ -165,6 +165,10 @@ describe("bundled themes", () => {
     ])
       expect(THEMES.find((t) => t.id === id)?.light, id).toBeDefined();
   });
+  it("every bundled theme ships both appearances", () => {
+    const missing = THEMES.filter((t) => !t.light).map((t) => t.id);
+    expect(missing).toEqual([]);
+  });
   for (const t of THEMES) {
     describe(t.id, () => {
       it("is schema valid", () => {

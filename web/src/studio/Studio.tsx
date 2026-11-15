@@ -9,10 +9,15 @@ import { TerminalDesigner } from "./TerminalDesigner";
 import { SECTIONS, filterSections, hashFor, sectionFromHash } from "./sections";
 import "./studio.css";
 
-type Props = { open: boolean; onClose: () => void };
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  /** Open a saved terminal preset as a pane (closes the Studio). */
+  onTry?: (preset: string) => void;
+};
 
 /** Full-screen Studio: nav + settings search (sections are placeholders). */
-export function Studio({ open, onClose }: Props) {
+export function Studio({ open, onClose, onTry }: Props) {
   const [current, setCurrent] = useState(
     () => sectionFromHash(location.hash) ?? SECTIONS[0].id,
   );
@@ -162,7 +167,22 @@ export function Studio({ open, onClose }: Props) {
               <ThemeGallery />
             </>
           ) : section.id === "terminal" ? (
-            <TerminalDesigner onDirty={setDirty} />
+            <TerminalDesigner
+              onDirty={setDirty}
+              onTry={
+                onTry &&
+                ((n) => {
+                  setDirty(false);
+                  setQuery("");
+                  history.replaceState(
+                    null,
+                    "",
+                    location.pathname + location.search,
+                  );
+                  onTry(n);
+                })
+              }
+            />
           ) : (
             <section className="studio-empty">
               <h3>{section.label}</h3>
