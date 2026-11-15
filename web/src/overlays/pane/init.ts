@@ -11,6 +11,7 @@ import {
   hintsCopyHashOverlay,
   hintsInsertWordOverlay,
 } from "./hints/HintsOverlay";
+import { RecordOverlay } from "../../journal/RecordOverlay";
 import { DiffOverlay } from "./diff/DiffOverlay";
 
 export function initPaneOverlays() {
@@ -121,6 +122,12 @@ export function initPaneOverlays() {
     run: () => {
       openFocusedPaneOverlay("hints-insert-word");
     },
+  });
+
+  registerPaneOverlay({
+    id: "journal-record",
+    title: "Command record",
+    render: RecordOverlay,
   });
 
   // Diff overlay

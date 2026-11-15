@@ -9,6 +9,7 @@ import { cwdFromOsc7 } from "./titles";
 import type {
   CellGeometry,
   CursorStyle,
+  PaneMarker,
   ScreenLine,
   TerminalRenderer,
   TerminalTheme,
@@ -121,6 +122,15 @@ export class XtermRenderer implements TerminalRenderer {
   }
   focus(): void {
     this.term.focus();
+  }
+  markLine(): PaneMarker | null {
+    return this.term.registerMarker(0) ?? null;
+  }
+  scrollToMarker(m: PaneMarker): void {
+    if (m.isDisposed) return;
+    this.term.scrollToLine(m.line);
+    this.term.selectLines(m.line, m.line); // brief highlight
+    setTimeout(() => !m.isDisposed && this.term.clearSelection(), 1500);
   }
   cursorRect(): { x: number; y: number } | null {
     const screen = this.term.element?.querySelector(".xterm-screen");

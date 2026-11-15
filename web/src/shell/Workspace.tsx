@@ -17,6 +17,8 @@ import { useShellName } from "../terminal/shellName";
 import { useCloseKill } from "./useCloseKill";
 import { useWorkspaceCommands } from "./useWorkspaceCommands";
 import { useMainMenuGroups } from "./useMainMenuGroups";
+import { SearchPanel } from "../journal/SearchPanel";
+import { setSceneSwitcher } from "../journal/jump";
 import { Studio } from "../studio/Studio";
 import { sectionFromHash } from "../studio/sections";
 import { Icon } from "./icons";
@@ -69,6 +71,7 @@ export function Workspace({
   const [palette, setPalette] = useState(false);
   const [picker, setPicker] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [search, setSearch] = useState(false);
   const [studio, setStudio] = useState(() => !!sectionFromHash(location.hash));
   const [sc, setSc] = useState(loadScenes);
   const [leafMap, setLeafMap] = useState<Record<string, string[]>>({});
@@ -172,6 +175,7 @@ export function Workspace({
     setMenu,
     setKill,
     () => toggleSceneBroadcast(sc.active, leafMap[sc.active] ?? []),
+    setSearch,
   );
 
   useWorkspaceCommands({
@@ -187,7 +191,16 @@ export function Workspace({
     setPicker,
     setSettings,
     setStudio,
+    setSearch,
   });
+  // Search hits can be in any scene: let a jump activate the pane's scene.
+  useEffect(() => {
+    setSceneSwitcher((pane) => {
+      const id = Object.keys(leafMap).find((k) => leafMap[k].includes(pane));
+      if (id) select(id);
+    });
+    return () => setSceneSwitcher(null);
+  }, [leafMap, select]);
 
   const menuGroups = useMainMenuGroups({
     serious,
@@ -364,6 +377,12 @@ export function Workspace({
             if (id) addLeaf(sc.active, id);
           });
         }}
+      />
+      <SearchPanel
+        open={search}
+        onClose={() => setSearch(false)}
+        scenes={sc.scenes}
+        leafMap={leafMap}
       />
       <CommandPalette open={palette} onOpenChange={setPalette} />
       <ThemePicker

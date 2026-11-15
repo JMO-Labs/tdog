@@ -50,6 +50,13 @@ export interface PaneOverlayContext {
   cwd?: string;
 }
 
+/** A buffer line that follows its content as the terminal scrolls. */
+export interface PaneMarker {
+  line: number;
+  isDisposed: boolean;
+  dispose(): void;
+}
+
 export interface TerminalRenderer {
   /** Write bytes; `cb` fires once the renderer has processed them (flow control). */
   write(data: Uint8Array, cb?: () => void): void;
@@ -86,5 +93,9 @@ export interface TerminalRenderer {
   cellGeometry?(): CellGeometry | null;
   /** Enable/disable inline images (sixel/iTerm2). Optional: renderers may not support it. */
   setInlineImages?(enabled: boolean): void;
+  /** Marker at the cursor's line, or null when unsupported/unavailable. */
+  markLine?(): PaneMarker | null;
+  /** Scroll a marker's line into view and briefly highlight it. */
+  scrollToMarker?(m: PaneMarker): void;
   dispose(): void;
 }

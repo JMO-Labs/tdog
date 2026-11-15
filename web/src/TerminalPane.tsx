@@ -32,6 +32,7 @@ import {
   subscribeKilled,
 } from "./terminal/killed";
 import { PaneMenu } from "./terminal/PaneMenu";
+import { useJournalMarkers } from "./journal/useJournalMarkers";
 import { usePaneCommands } from "./terminal/usePaneCommands";
 import { usePaneOps } from "./layout/paneOps";
 import { killScene } from "./terminal/sessions";
@@ -297,6 +298,7 @@ export function TerminalPane({
     if (refocus) renderer.current?.focus?.();
   };
   const { hostRef, openOverlay } = usePaneOverlayHost();
+  useJournalMarkers(paneId, renderer, openOverlay);
   const paste = async () => {
     try {
       renderer.current?.paste?.(await navigator.clipboard.readText());
