@@ -82,7 +82,10 @@
             "none",
             "color",
             "image",
-            "shader"
+            "shader",
+            "gradient",
+            "pattern",
+            "video"
           ]
         },
         "ref": {
