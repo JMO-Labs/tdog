@@ -38,9 +38,9 @@ type jrnl struct {
 	sid     string
 	pane    func() string
 	prevAck uint64 // highest seq already appended to the store; guarded by mu
-	dropped bool   // synced files were just deleted (kill/forget): acks must not recreate them; guarded by mu
 
-	beforeAppend func() // test seam: runs in ack just before Append, under mu
+	beforeAppend      func() // test seam: runs in ack just before Append
+	afterForgetDelete func() // test seam: runs in forget between delete and reopen
 
 	streamMu   sync.Mutex // serializes stream's Since+write with forget's wipe+reply
 	afterSince func()     // test seam: runs in stream between Since and write
@@ -125,8 +125,7 @@ func (j *jrnl) control(p []byte, reply func([]byte) error) {
 		j.streamMu.Lock()
 		defer j.streamMu.Unlock()
 		j.buf.Wipe()
-		j.dropSynced()
-		defer j.undrop()
+		defer j.forgetSynced()()
 		// The socket is ordered: the client drops journal frames until this
 		// arrives, so none sent before the wipe can re-add rows afterwards.
 		if reply != nil {
@@ -148,6 +147,35 @@ func (j *jrnl) control(p []byte, reply func([]byte) error) {
 	}
 }
 
+// kill drops the synced files for good: the store refuses this session's
+// appends from now on, so a racing ack cannot recreate them.
+func (j *jrnl) kill() {
+	if j == nil {
+		return
+	}
+	if p := j.syncPane(); p != "" {
+		if err := j.store.KillPane(p, j.sid); err != nil {
+			log.Printf("journal: delete %s: %v", p, err)
+		}
+	}
+}
+
+// forgetSynced deletes the pane's synced files; acks are refused until the
+// returned func reopens it (a kill that lands meanwhile stays final).
+func (j *jrnl) forgetSynced() (reopen func()) {
+	p := j.syncPane()
+	if p == "" {
+		return func() {}
+	}
+	if err := j.store.DeletePane(p); err != nil {
+		log.Printf("journal: forget %s: %v", p, err)
+	}
+	if j.afterForgetDelete != nil {
+		j.afterForgetDelete()
+	}
+	return func() { j.store.Reopen(p) }
+}
+
 // syncPane is the pane to sync under, or "" when sync is off or unavailable.
 func (j *jrnl) syncPane() string {
 	if j.store == nil || j.pane == nil {
@@ -156,56 +184,33 @@ func (j *jrnl) syncPane() string {
 	return j.pane()
 }
 
-// dropSynced deletes the pane's synced files and blocks ack's Append until
-// undrop (forget); kill never undrops. The flag is set under mu, which
-// ack holds across its check and Append, so no append lands after the delete.
-func (j *jrnl) dropSynced() {
-	j.mu.Lock()
-	j.dropped = true
-	j.mu.Unlock()
-	if p := j.syncPane(); p != "" {
-		if err := j.store.DeletePane(p); err != nil {
-			log.Printf("journal: delete %s: %v", p, err)
-		}
-	}
-}
-
-// undrop lets acks sync again once a forget has finished.
-func (j *jrnl) undrop() {
-	j.mu.Lock()
-	j.dropped = false
-	j.mu.Unlock()
-}
-
-// kill drops the synced files for good: the session is gone.
-func (j *jrnl) kill() {
-	if j != nil {
-		j.dropSynced()
-	}
-}
-
 // ack frees events up to seq (clamped to what was sent). With sync on, the
-// newly acked events are appended to the store first; a store error is logged
-// and the ack still goes through, so the browser copy stays authoritative.
+// newly acked events are appended to the store first, outside j.mu so a slow
+// disk never stalls feed; the store serializes that against kill/forget. A
+// store error is logged and the ack still goes through, so the browser copy
+// stays authoritative.
 func (j *jrnl) ack(want uint64) {
 	j.mu.Lock()
 	seq := min(want, j.sent) // a bogus ack must not free unsent events
 	prev := j.prevAck
 	j.prevAck = max(prev, seq)
-	// mu stays held through Append so a kill/forget cannot delete between the
-	// dropped check and the write (feed waits on it for one small file write).
-	defer j.mu.Unlock()
-	if p := j.syncPane(); p != "" && !j.dropped && seq > prev && j.store.Enabled() {
-		if j.beforeAppend != nil {
-			j.beforeAppend()
-		}
-		var evs []journal.Event
+	var evs []journal.Event
+	var gen uint64
+	p := j.syncPane()
+	if p != "" && seq > prev && j.store.Enabled() {
+		gen = j.store.Gen(p) // a delete after this makes the append a no-op
 		for _, e := range j.buf.Since(prev) {
 			if e.Seq <= seq {
 				evs = append(evs, e)
 			}
 		}
-		if err := j.store.Append(p, j.sid, evs); err != nil {
+	}
+	j.mu.Unlock()
+	if len(evs) > 0 {
+		if j.beforeAppend != nil {
+			j.beforeAppend()
+		}
+		if err := j.store.AppendAt(p, j.sid, evs, gen); err != nil {
 			log.Printf("journal: sync %s: %v", p, err)
 		}
 	}
@@ -248,12 +253,16 @@ func (j *jrnl) flush(sent *uint64, write func([]byte) error) bool {
 	if len(evs) == 0 {
 		return true
 	}
+	// Record sent before writing: the client may ack as soon as the frame
+	// lands, and an ack racing this update would be clamped away. A failed
+	// write only overstates sent for a dead stream; the clamp is for bogus acks.
+	last := evs[len(evs)-1].Seq
+	j.mu.Lock()
+	j.sent = max(j.sent, last)
+	j.mu.Unlock()
 	if write(frame.EncodeJournal(evs)) != nil {
 		return false
 	}
-	*sent = evs[len(evs)-1].Seq
-	j.mu.Lock()
-	j.sent = max(j.sent, *sent)
-	j.mu.Unlock()
+	*sent = last
 	return true
 }

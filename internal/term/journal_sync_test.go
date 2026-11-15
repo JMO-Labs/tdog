@@ -169,3 +169,37 @@ func TestAckRacingForgetDoesNotResurrectThenSyncsAgain(t *testing.T) {
 		t.Fatal("sync did not resume after forget")
 	}
 }
+
+func TestKillDuringForgetStaysKilled(t *testing.T) {
+	j, st := syncJrnl(t, "p1")
+	cmdRun(j, "one")
+	setSent(j)
+	j.afterForgetDelete = func() { j.kill() } // kill lands mid-forget
+	j.control([]byte(`{"type":"jrnl-forget"}`), nil)
+	cmdRun(j, "two")
+	setSent(j)
+	j.control([]byte(`{"type":"jrnl-ack","seq":999999}`), nil)
+	if rows := st.Read(time.Unix(0, 0)); len(rows) != 0 {
+		t.Fatalf("killed pane resumed syncing: %+v", rows)
+	}
+}
+
+func TestBlockedAppendDoesNotBlockFeed(t *testing.T) {
+	j, _ := syncJrnl(t, "p1")
+	cmdRun(j, "one")
+	setSent(j)
+	in, release := make(chan struct{}), make(chan struct{})
+	j.beforeAppend = func() { close(in); <-release }
+	acked := make(chan struct{})
+	go func() { j.control([]byte(`{"type":"jrnl-ack","seq":999999}`), nil); close(acked) }()
+	<-in // ack is now stuck where Append would be
+	fed := make(chan struct{})
+	go func() { cmdRun(j, "two"); close(fed) }()
+	select {
+	case <-fed:
+	case <-time.After(2 * time.Second):
+		t.Fatal("feed blocked behind a slow Append")
+	}
+	close(release)
+	<-acked
+}

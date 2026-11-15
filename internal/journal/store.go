@@ -30,6 +30,13 @@ type Store struct {
 	now func() time.Time // test seam
 
 	trimmed map[string]time.Time // last per-pane trim; guarded by mu
+
+	// Append guards, so a delete can never be undone by a late ack. closed is a
+	// pane between a forget's delete and its Reopen; killed holds sessions that
+	// were killed (keyed by sid so a later session on the same pane still syncs)
+	// and is never reopened.
+	closed, killed map[string]bool
+	gen            map[string]uint64 // bumped by every delete: refuses appends of events read before it
 }
 
 // trimEvery bounds how often an append rewrites a pane's file to drop rows
@@ -39,7 +46,7 @@ const trimEvery = time.Hour
 // NewStore opens (lazily creating) the store under dir/journal and loads the
 // persisted retention; any read problem leaves sync off.
 func NewStore(dir string) *Store {
-	s := &Store{dir: dir, now: time.Now, trimmed: map[string]time.Time{}}
+	s := &Store{dir: dir, now: time.Now, trimmed: map[string]time.Time{}, closed: map[string]bool{}, killed: map[string]bool{}, gen: map[string]uint64{}}
 	if b, err := os.ReadFile(filepath.Join(s.path(), "settings.json")); err == nil {
 		var v struct {
 			H int `json:"retentionHours"`
@@ -145,12 +152,28 @@ func (s *Store) removeAll() {
 // Append adds evs for session sid to pane's file and pushes its expiry to now
 // plus retention. It is a no-op while sync is off.
 func (s *Store) Append(pane, sid string, evs []Event) error {
+	return s.AppendAt(pane, sid, evs, s.Gen(pane))
+}
+
+// Gen is pane's delete generation. Read it before taking events, then pass it
+// to AppendAt: a delete in between makes the append a no-op.
+func (s *Store) Gen(pane string) uint64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.gen[pane]
+}
+
+// AppendAt is Append that is dropped if pane was deleted since gen was read.
+func (s *Store) AppendAt(pane, sid string, evs []Event, gen uint64) error {
 	if !ValidPane(pane) {
 		return errors.New("journal: invalid pane id")
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.ret == 0 || len(evs) == 0 {
+	if s.gen[pane] != gen {
+		return nil
+	}
+	if s.ret == 0 || len(evs) == 0 || s.closed[pane] || s.killed[sid] {
 		return nil
 	}
 	if err := os.MkdirAll(s.path(), 0o700); err != nil {
@@ -186,13 +209,37 @@ func (s *Store) Append(pane, sid string, evs []Event) error {
 	return nil
 }
 
-// DeletePane removes pane's files at once.
+// DeletePane removes pane's files at once and refuses appends to it until
+// Reopen (a forget: recording continues afterwards).
 func (s *Store) DeletePane(pane string) error {
+	return s.drop(pane, "")
+}
+
+// KillPane is DeletePane for a killed session sid: appends from that session
+// are refused for good, whatever a concurrent Reopen does.
+func (s *Store) KillPane(pane, sid string) error {
+	return s.drop(pane, sid)
+}
+
+// Reopen lets appends to pane resume after a forget; killed sessions stay out.
+func (s *Store) Reopen(pane string) {
+	s.mu.Lock()
+	delete(s.closed, pane)
+	s.mu.Unlock()
+}
+
+func (s *Store) drop(pane, killSid string) error {
 	if !ValidPane(pane) {
 		return errors.New("journal: invalid pane id")
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if killSid != "" {
+		s.killed[killSid] = true
+	} else {
+		s.closed[pane] = true
+	}
+	s.gen[pane]++
 	delete(s.trimmed, pane)
 	for _, ext := range []string{".jsonl", ".exp"} {
 		if err := os.Remove(filepath.Join(s.path(), pane+ext)); err != nil && !os.IsNotExist(err) {

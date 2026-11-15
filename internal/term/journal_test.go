@@ -114,6 +114,17 @@ func TestJournalReconnectResendsOnlyUnacked(t *testing.T) {
 		return true
 	})
 	mark(t, r, c, "tw''o")
+	// Reattaching tears down c's input pump, so wait until the shell has run
+	// the command (its event is buffered) or the input frame can be dropped
+	// before the server reads it.
+	jWait(t, "two buffered", func() bool {
+		for _, e := range jrnlOf(t, r, id).buf.Since(n) {
+			if strings.Contains(e.Text, "two") {
+				return true
+			}
+		}
+		return false
+	})
 	c2, err := r.dial("id=" + id)
 	if err != nil {
 		t.Fatal(err)

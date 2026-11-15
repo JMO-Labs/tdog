@@ -216,3 +216,32 @@ func TestSweepRemovesOrphanExp(t *testing.T) {
 		t.Fatal("orphan .exp left")
 	}
 }
+
+func TestClosedPaneRefusesAppendUntilReopen(t *testing.T) {
+	s, _ := newOn(t)
+	_ = s.DeletePane("p")
+	_ = s.Append("p", "s", evs(1))
+	if len(s.Read(time.Unix(0, 0))) != 0 {
+		t.Fatal("append to closed pane")
+	}
+	s.Reopen("p")
+	_ = s.Append("p", "s", evs(1))
+	if len(s.Read(time.Unix(0, 0))) != 1 {
+		t.Fatal("no sync after reopen")
+	}
+}
+
+func TestKilledSessionStaysOutAfterReopen(t *testing.T) {
+	s, _ := newOn(t)
+	_ = s.DeletePane("p")
+	_ = s.KillPane("p", "dead")
+	s.Reopen("p")
+	_ = s.Append("p", "dead", evs(1))
+	if len(s.Read(time.Unix(0, 0))) != 0 {
+		t.Fatal("killed session synced")
+	}
+	_ = s.Append("p", "newer", evs(1)) // a later session on the same pane syncs
+	if len(s.Read(time.Unix(0, 0))) != 1 {
+		t.Fatal("new session blocked")
+	}
+}
