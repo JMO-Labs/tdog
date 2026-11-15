@@ -31,8 +31,66 @@
       "shape": "block",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "share-tech-mono",
+    "effects": [
+      {
+        "id": "glow",
+        "intensity": 0.4
+      },
+      {
+        "id": "glyph-rain",
+        "intensity": 0.25
+      }
+    ],
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 12 H20 L28 20 H64",
+          "stroke": "cyan"
+        },
+        {
+          "type": "path",
+          "d": "M0 40 H12 L20 48 V64",
+          "stroke": "pink"
+        },
+        {
+          "type": "path",
+          "d": "M36 0 V24 L44 32 H64",
+          "stroke": "link"
+        },
+        {
+          "type": "rect",
+          "x": 18,
+          "y": 10,
+          "width": 4,
+          "height": 4,
+          "fill": "cyan"
+        },
+        {
+          "type": "rect",
+          "x": 62,
+          "y": 30,
+          "width": 4,
+          "height": 4,
+          "fill": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 56,
+          "r": 3,
+          "stroke": "pink"
+        },
+        {
+          "type": "path",
+          "d": "M-8 58 H4 M-4 54 H6 M-6 62 H2",
+          "stroke": "pink"
+        }
+      ]
+    }
   },
   "chrome": {
     "tokens": {
@@ -53,12 +111,64 @@
       "term-dim": "#7a9a88"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
+      "radius": 2,
+      "shadow": "glow",
       "border": 1
     },
     "pattern": "zigzag",
-    "boot": "drop",
-    "costume": "none"
+    "boot": "dialup",
+    "costume": {
+      "name": "visor shades",
+      "rows": ["############", "#####..#####", ".####..####."]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 12 H20 L28 20 H64",
+          "stroke": "cyan"
+        },
+        {
+          "type": "path",
+          "d": "M0 40 H12 L20 48 V64",
+          "stroke": "pink"
+        },
+        {
+          "type": "path",
+          "d": "M36 0 V24 L44 32 H64",
+          "stroke": "link"
+        },
+        {
+          "type": "rect",
+          "x": 18,
+          "y": 10,
+          "width": 4,
+          "height": 4,
+          "fill": "cyan"
+        },
+        {
+          "type": "rect",
+          "x": 62,
+          "y": 30,
+          "width": 4,
+          "height": 4,
+          "fill": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 56,
+          "r": 3,
+          "stroke": "pink"
+        },
+        {
+          "type": "path",
+          "d": "M-8 58 H4 M-4 54 H6 M-6 62 H2",
+          "stroke": "pink"
+        }
+      ]
+    }
   }
 }

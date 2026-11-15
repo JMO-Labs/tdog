@@ -28,11 +28,62 @@
       ]
     },
     "cursor": {
-      "shape": "block",
+      "shape": "bar",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "share-tech-mono",
+    "effects": [
+      {
+        "id": "glow",
+        "intensity": 0.2
+      }
+    ],
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 6,
+          "stroke": "fg"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 13,
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 20,
+          "stroke": "fg"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 27,
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 2,
+          "fill": "fg"
+        },
+        {
+          "type": "path",
+          "d": "M4 60 Q16 52 28 60 T52 60",
+          "stroke": "muted"
+        }
+      ]
+    }
   },
   "chrome": {
     "tokens": {
@@ -49,12 +100,61 @@
       "term-dim": "#8d9ba9"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
+      "radius": 3,
+      "shadow": "bevel",
       "border": 1
     },
     "pattern": "none",
-    "boot": "drop",
-    "costume": "none"
+    "boot": "post",
+    "costume": {
+      "name": "tiny shades",
+      "rows": ["##########", ".##....##."]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 6,
+          "stroke": "fg"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 13,
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 20,
+          "stroke": "fg"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 27,
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 2,
+          "fill": "fg"
+        },
+        {
+          "type": "path",
+          "d": "M4 60 Q16 52 28 60 T52 60",
+          "stroke": "muted"
+        }
+      ]
+    }
   }
 }
