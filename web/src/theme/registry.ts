@@ -30,10 +30,13 @@ import liquidMetal from "./themes/liquid-metal.json";
 import ninetyFive from "./themes/ninety-five.json";
 import hackThePlanet from "./themes/hack-the-planet.json";
 import islaNublar from "./themes/isla-nublar.json";
+import plain from "./themes/plain.json";
 import { validateTheme, type ThemeData } from "./schema";
 
 export type Theme = ThemeData & { id: string };
 export const DEFAULT_THEME_ID = "memphis-pop";
+/** Neutral theme forced everywhere by serious mode. */
+export const PLAIN_THEME_ID = "plain";
 
 /** Bundled themes; the default comes first. Invalid data fails loudly at load. */
 export const THEMES: Theme[] = Object.entries({
@@ -69,6 +72,7 @@ export const THEMES: Theme[] = Object.entries({
   "ninety-five": ninetyFive,
   "hack-the-planet": hackThePlanet,
   "isla-nublar": islaNublar,
+  plain: plain,
 }).map(([id, raw]) => {
   const r = validateTheme(raw);
   if (!r.ok) throw new Error(`theme ${id}: ${r.error}`);
