@@ -12,7 +12,7 @@ const groups = (): MenuGroup[] => [
       icon: "light",
       submenu: [
         { label: "System", onSelect: vi.fn(), checked: true },
-        { label: "Dark", onSelect: vi.fn() },
+        { label: "Dark", onSelect: vi.fn(), checked: false },
       ],
     },
   ],
