@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import { apiFetch, apiPost } from "../auth/api";
 import { Button } from "../components/ui/button";
+import { useCopy } from "../copy/copy";
 import { useToast } from "../overlays/toast";
 import { Dialog } from "../overlays/Dialog";
 import { Appearance } from "./Appearance";
 import { Switch } from "./Switch";
 import { TwoFactor } from "./TwoFactor";
+import { Plugins } from "./Plugins";
 import { EFFECT_IDS, FX_LABELS } from "../effects/resolve";
 import { setFx, setFxOn, useFx } from "../effects/store";
-import { useMotifOpacity, usePref } from "./prefs";
+import { setPref, useMotifOpacity, usePref } from "./prefs";
 import "./settings.css";
 
 /** Body of the settings sheet. Uses only existing /api endpoints. */
 export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   const toast = useToast();
+  const c = useCopy();
   const [totp, setTotp] = useState(false);
   const [serious, setSerious] = usePref("serious");
   const [pet, setPet] = usePref("pet");
@@ -22,6 +25,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   const [dress, setDress] = usePref("dress");
   const fx = useFx();
   const [boot, setBoot] = usePref("boot");
+  const [perf, setPerf] = usePref("perf");
 
   useEffect(() => {
     let live = true;
@@ -45,7 +49,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
       toast("fail", "Couldn't sign out other sessions. Try again.");
       return;
     }
-    toast("success", "Signed out everywhere.");
+    toast("success", c("settings.signedOutAll"));
     onSignedOut();
   };
 
@@ -73,7 +77,9 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
       <div className="row">
         <div>
           <b id="sw-serious">Serious mode</b>
-          <p className="muted">Drops the slang from messages.</p>
+          <p className="muted">
+            Plain light/dark look, no mascot or effects, no slang.
+          </p>
         </div>
         <Switch
           labelledBy="sw-serious"
@@ -101,6 +107,31 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
           <p className="muted">Short intro, once per session. Any key skips.</p>
         </div>
         <Switch labelledBy="sw-boot" checked={boot} onChange={setBoot} />
+      </div>
+      <h3>Performance</h3>
+      <div className="row">
+        <div>
+          <b id="sw-perf">Performance mode</b>
+          <p className="muted">
+            Turns off backgrounds, blur and screen effects at once.
+          </p>
+        </div>
+        <Switch labelledBy="sw-perf" checked={perf} onChange={setPerf} />
+      </div>
+      <h3>Rendering</h3>
+      <div className="row">
+        <div>
+          <b id="sw-images">Inline images</b>
+          <p className="muted">
+            Enable sixel and iTerm2 inline image protocol. Tools like chafa,
+            img2sixel, and kitten icat will display images.
+          </p>
+        </div>
+        <Switch
+          labelledBy="sw-images"
+          checked={usePref("images")[0]}
+          onChange={(v) => setPref("images", v)}
+        />
       </div>
       <h3>Screen effects</h3>
       <div className="row">
@@ -135,6 +166,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
           />
         </div>
       ))}
+      <Plugins />
       <h3>Sessions</h3>
       <div className="row actions">
         <Button onClick={() => dispatchEvent(new Event("tdog:signout"))}>

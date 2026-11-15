@@ -31,7 +31,7 @@
       "shape": "block",
       "blink": true
     },
-    "font": "press-start-2p",
+    "font": "jetbrains-mono",
     "effects": [
       {
         "id": "scanlines",

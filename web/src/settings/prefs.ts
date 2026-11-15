@@ -1,22 +1,31 @@
 import { useSyncExternalStore } from "react";
 
-export type PrefName = "serious" | "pet" | "dress" | "boot";
+export type PrefName = "serious" | "pet" | "dress" | "boot" | "perf" | "images";
 const KEY: Record<PrefName, string> = {
   serious: "tdog.serious",
   pet: "tdog.pet",
   dress: "tdog.dress",
   boot: "tdog.boot",
+  perf: "tdog.perf",
+  images: "tdog.images",
 };
 const DEFAULT: Record<PrefName, boolean> = {
   serious: false,
   pet: true,
   dress: true,
   boot: true,
+  perf: false,
+  images: true,
 };
 const listeners = new Set<() => void>();
 
 export function getPref(name: PrefName): boolean {
-  const v = localStorage.getItem(KEY[name]);
+  let v: string | null = null;
+  try {
+    v = localStorage.getItem(KEY[name]);
+  } catch {
+    /* storage unavailable: use the default */
+  }
   return v === null ? DEFAULT[name] : v === "1";
 }
 
@@ -25,14 +34,14 @@ export function setPref(name: PrefName, on: boolean): void {
   listeners.forEach((l) => l());
 }
 
-const subscribe = (l: () => void) => (
+export const subscribePrefs = (l: () => void) => (
   listeners.add(l),
   () => void listeners.delete(l)
 );
 
 /** Persisted boolean preference; updates every subscriber immediately. */
 export function usePref(name: PrefName): [boolean, (on: boolean) => void] {
-  const v = useSyncExternalStore(subscribe, () => getPref(name));
+  const v = useSyncExternalStore(subscribePrefs, () => getPref(name));
   return [v, (on) => setPref(name, on)];
 }
 
@@ -51,6 +60,6 @@ export function setMotifOpacity(pct: number): void {
 }
 
 export function useMotifOpacity(): [number, (pct: number) => void] {
-  const v = useSyncExternalStore(subscribe, getMotifOpacity);
+  const v = useSyncExternalStore(subscribePrefs, getMotifOpacity);
   return [v, setMotifOpacity];
 }

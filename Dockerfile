@@ -3,6 +3,8 @@ WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 COPY web/ ./
+# Bundled plugins are imported by the web build as ?raw sources.
+COPY plugins/ /src/plugins/
 RUN npm run build
 
 FROM golang:1.26 AS go

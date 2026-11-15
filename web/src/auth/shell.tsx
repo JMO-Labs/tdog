@@ -11,7 +11,7 @@ import { getPref } from "../settings/prefs";
 import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
 import { IconButton } from "../components/ui/button";
-import { prefersReducedMotion } from "../motion/confetti";
+import { prefersReducedMotion } from "../motion/reducedMotion";
 
 const LETTERS = ["t", "d", "o", "g"];
 const ICON = { system: "◐", light: "☀", dark: "☾" } as const;
@@ -19,7 +19,7 @@ const ICON = { system: "◐", light: "☀", dark: "☾" } as const;
 /** Confetti backdrop, extruded wordmark (letters drop in once per session), theme toggle. */
 export function AuthShell({ children }: { children: ReactNode }) {
   const [variant, setVariant] = useState(() =>
-    getPref("boot") && takeBoot()
+    getPref("boot") && !getPref("serious") && takeBoot()
       ? bootFor(themeStore.get().id, prefersReducedMotion())
       : null,
   );
@@ -76,13 +76,16 @@ export function AuthShell({ children }: { children: ReactNode }) {
         {ICON[mode]}
       </IconButton>
       <div className="auth-stack">
-        <h1 className="wordmark big" aria-label="tdog" ref={mark}>
-          {LETTERS.map((l) => (
-            <span key={l} aria-hidden="true">
-              {l}
-            </span>
-          ))}
-        </h1>
+        <div className="brand">
+          <span className="logo-mark big" aria-hidden="true" />
+          <h1 className="wordmark big" aria-label="tdog" ref={mark}>
+            {LETTERS.map((l) => (
+              <span key={l} aria-hidden="true">
+                {l}
+              </span>
+            ))}
+          </h1>
+        </div>
         <div ref={card}>{children}</div>
       </div>
     </main>

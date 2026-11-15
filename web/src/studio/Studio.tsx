@@ -1,0 +1,209 @@
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Modal } from "../overlays/Modal";
+import { BackgroundPicker } from "../backgrounds/BackgroundPicker";
+import type { BgSpec } from "../backgrounds/spec";
+import { FontsSection } from "./FontsSection";
+import { SceneDesigner } from "./SceneDesigner";
+import { Cassette } from "./Cassette";
+import { ThemeGallery } from "./ThemeGallery";
+import { TerminalDesigner } from "./TerminalDesigner";
+import { SECTIONS, filterSections, hashFor, sectionFromHash } from "./sections";
+import "./studio.css";
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  /** Launch a saved scene preset in a new scene tab. */
+  onOpenScene?: (name: string) => Promise<void>;
+  /** Open a saved terminal preset as a pane (closes the Studio). */
+  onTry?: (preset: string) => void;
+};
+
+/** Full-screen Studio: nav + settings search (sections are placeholders). */
+export function Studio({ open, onClose, onOpenScene, onTry }: Props) {
+  const [current, setCurrent] = useState(
+    () => sectionFromHash(location.hash) ?? SECTIONS[0].id,
+  );
+  const [query, setQuery] = useState("");
+  const navRef = useRef<HTMLElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  // Library view: a scratch picker; saving happens in the designers.
+  const [bg, setBg] = useState<BgSpec>({
+    kind: "color",
+    ref: "",
+    opacity: 1,
+    blur: 0,
+  });
+  const [dirty, setDirty] = useState(false);
+  const leave = () => !dirty || confirm("Discard unsaved changes?");
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    addEventListener("beforeunload", warn);
+    return () => removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  useEffect(() => {
+    if (!open) return;
+    const fromHash = sectionFromHash(location.hash);
+    if (fromHash) setCurrent(fromHash);
+    else history.replaceState(null, "", hashFor(current));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+  useEffect(() => {
+    const onHash = () => {
+      const id = sectionFromHash(location.hash);
+      if (id) setCurrent(id);
+    };
+    addEventListener("hashchange", onHash);
+    return () => removeEventListener("hashchange", onHash);
+  }, []);
+
+  const close = () => {
+    if (!leave()) return;
+    setDirty(false);
+    setQuery("");
+    if (sectionFromHash(location.hash))
+      history.replaceState(null, "", location.pathname + location.search);
+    onClose();
+  };
+  const pick = (id: string) => {
+    if (id !== current) {
+      if (!leave()) return;
+      setDirty(false);
+    }
+    setCurrent(id);
+    setQuery("");
+    history.replaceState(null, "", hashFor(id));
+  };
+
+  const shown = filterSections(query);
+  const section = SECTIONS.find((s) => s.id === current) ?? SECTIONS[0];
+  const navButtons = () =>
+    Array.from(navRef.current?.querySelectorAll("button") ?? []);
+
+  const onNavKey = (e: KeyboardEvent) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const btns = navButtons();
+    const i = btns.indexOf(document.activeElement as HTMLButtonElement);
+    const next = i + (e.key === "ArrowDown" ? 1 : -1);
+    if (next < 0) searchRef.current?.focus();
+    else btns[Math.min(next, btns.length - 1)]?.focus();
+  };
+  const onSearchKey = (e: KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      navButtons()[0]?.focus();
+    } else if (e.key === "Enter" && shown[0]) {
+      e.preventDefault();
+      pick(shown[0].section.id);
+    }
+  };
+
+  return (
+    <Modal
+      open={open}
+      title="Studio"
+      onClose={close}
+      className="studio"
+      hideTitle
+    >
+      <header className="studio-head">
+        <Button onClick={close}>Back to workspace</Button>
+        <h2 className="studio-title">Studio</h2>
+        <Input
+          ref={searchRef}
+          type="search"
+          aria-label="Search settings"
+          placeholder="Search settings"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={onSearchKey}
+        />
+      </header>
+      <div className="studio-body">
+        <nav
+          ref={navRef}
+          aria-label="Studio"
+          className="studio-nav"
+          onKeyDown={onNavKey}
+        >
+          {shown.map(({ section: s }) => (
+            <button
+              key={s.id}
+              type="button"
+              className="studio-nav-item"
+              aria-current={s.id === current ? "page" : undefined}
+              onClick={() => pick(s.id)}
+            >
+              {s.label}
+            </button>
+          ))}
+        </nav>
+        <main className="studio-main">
+          {query.trim() ? (
+            shown.length ? (
+              <ul aria-label="Matching settings" className="studio-results">
+                {shown.flatMap(({ section: s, fields }) =>
+                  (fields.length ? fields : [{ id: "", label: s.label }]).map(
+                    (x) => (
+                      <li key={`${s.id}/${x.id}`}>
+                        <button type="button" onClick={() => pick(s.id)}>
+                          {x.id ? `${s.label}: ${x.label}` : x.label}
+                        </button>
+                      </li>
+                    ),
+                  ),
+                )}
+              </ul>
+            ) : (
+              <p className="studio-none">No settings match “{query.trim()}”.</p>
+            )
+          ) : current === "backgrounds" ? (
+            <section className="studio-bg">
+              <h3>{section.label}</h3>
+              <BackgroundPicker value={bg} onChange={setBg} />
+            </section>
+          ) : section.id === "scene" ? (
+            <SceneDesigner onOpenScene={onOpenScene ?? (async () => {})} />
+          ) : section.id === "fonts" ? (
+            <FontsSection />
+          ) : section.id === "themes" ? (
+            <>
+              <h3 className="studio-h">{section.label}</h3>
+              <ThemeGallery />
+            </>
+          ) : section.id === "terminal" ? (
+            <TerminalDesigner
+              onDirty={setDirty}
+              onTry={
+                onTry &&
+                ((n) => {
+                  setDirty(false);
+                  setQuery("");
+                  history.replaceState(
+                    null,
+                    "",
+                    location.pathname + location.search,
+                  );
+                  onTry(n);
+                })
+              }
+            />
+          ) : (
+            <section className="studio-empty">
+              <h3>{section.label}</h3>
+              <Cassette />
+              <p className="studio-empty-big">Coming in v0.4</p>
+              <p className="muted">This section is still being built.</p>
+            </section>
+          )}
+        </main>
+      </div>
+    </Modal>
+  );
+}

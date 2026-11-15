@@ -27,6 +27,29 @@ export interface CursorStyle {
   blink: boolean;
 }
 
+export interface ScreenLine {
+  row: number;
+  text: string;
+}
+
+export interface CellGeometry {
+  cellWidth: number;
+  cellHeight: number;
+  offsetX: number;
+  offsetY: number;
+}
+
+export interface PaneOverlayContext {
+  screen: ScreenLine[];
+  cellGeometry: CellGeometry;
+  insert(text: string): void;
+  copy(text: string): void;
+  open(url: string): void;
+  close(): void;
+  sessionId?: string;
+  cwd?: string;
+}
+
 export interface TerminalRenderer {
   /** Write bytes; `cb` fires once the renderer has processed them (flow control). */
   write(data: Uint8Array, cb?: () => void): void;
@@ -43,5 +66,25 @@ export interface TerminalRenderer {
   setCursor(c: CursorStyle): void;
   /** Set font family and/or size, then refit. Unset values keep the current one. */
   setFont?(family?: string, size?: number): void;
+  /** Zoom steps (1px each) on top of the font size; 0 = none. */
+  setZoom?(steps: number): void;
+  /** Selected text, or "" when nothing is selected. */
+  getSelection?(): string;
+  selectAll?(): void;
+  /** Send text as a paste (bracketed when the app asked for it). */
+  paste?(text: string): void;
+  focus?(): void;
+  /** Viewport x/y just below the cursor cell, or null when unknown. */
+  cursorRect?(): { x: number; y: number } | null;
+  /** True while the running app has asked for mouse events (vim, htop). */
+  mouseReporting?(): boolean;
+  /** Visible screen lines with row numbers from the viewport. Optional: for overlays. */
+  screenLines?(): ScreenLine[];
+  /** Text of the cursor's logical line (wrapped rows joined), prompt included. */
+  cursorLine?(): string;
+  /** Cell geometry: dimensions and offsets for layout. Optional: for overlays. */
+  cellGeometry?(): CellGeometry | null;
+  /** Enable/disable inline images (sixel/iTerm2). Optional: renderers may not support it. */
+  setInlineImages?(enabled: boolean): void;
   dispose(): void;
 }

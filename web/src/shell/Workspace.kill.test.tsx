@@ -8,7 +8,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-const killScene = vi.fn(async (_s: string) => true);
+const killScene = vi.fn(async (_s: string) => 1);
 vi.mock("../terminal/sessions", () => ({
   killScene: (s: string) => killScene(s),
   findSessionId: vi.fn(),
@@ -25,6 +25,13 @@ vi.mock("../TerminalPane", () => ({
 }));
 const toast = vi.fn();
 vi.mock("../overlays/toast", () => ({ useToast: () => toast }));
+const killedPanes: Set<string> = new Set();
+vi.mock("../terminal/killed", () => ({
+  isKilled: (p: string) => killedPanes.has(p),
+  markKilled: vi.fn((p: string) => killedPanes.add(p)),
+  clearKilled: vi.fn((p: string) => killedPanes.delete(p)),
+  subscribeKilled: vi.fn(() => () => {}),
+}));
 
 import { Workspace } from "./Workspace";
 import { clearCommands } from "../overlays/commands";
@@ -33,6 +40,7 @@ beforeEach(() => {
   localStorage.clear();
   killScene.mockClear();
   toast.mockClear();
+  killedPanes.clear();
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
 });
 afterEach(() => {
@@ -100,13 +108,18 @@ test("cancel closes the kill dialog without killing", async () => {
   expect(killScene).not.toHaveBeenCalled();
 });
 
-test("scene tab menu closes on mouse leave and on blur", () => {
+test("scene tab menu closes on an outside click and when focus leaves it", async () => {
   render(<Workspace />);
   const tab = () => screen.getByRole("tab", { name: "scene 1" });
   fireEvent.contextMenu(tab());
-  fireEvent.mouseLeave(screen.getByRole("menu"));
+  fireEvent.pointerDown(document.body);
   expect(screen.queryByRole("menu")).toBeNull();
   fireEvent.contextMenu(tab());
-  fireEvent.blur(screen.getByRole("menuitem", { name: "Kill scene" }));
+  const item = screen.getByRole("menuitem", { name: "Kill scene" });
+  act(() => tab().focus()); // e.g. Tab away
+  fireEvent.blur(item);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1);
+  });
   expect(screen.queryByRole("menu")).toBeNull();
 });

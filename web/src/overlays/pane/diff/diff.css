@@ -1,0 +1,185 @@
+.diff-overlay-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  max-height: 80vh;
+  overflow-y: auto;
+  font-family: monospace;
+  width: min(520px, 90vw);
+}
+
+.diff-overlay-container h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.diff-cwd {
+  margin: 8px 0;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.diff-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.diff-form-group label {
+  font-weight: 500;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.diff-error {
+  color: var(--pink);
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.diff-form-group input {
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+  background: var(--term-bg);
+  color: var(--term-fg);
+}
+
+.diff-form-group input:focus {
+  outline: none;
+  border-color: var(--cyan);
+}
+
+.diff-form-actions,
+.diff-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.diff-form-actions button,
+.diff-actions button {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--term-fg);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.diff-form-actions button:hover,
+.diff-actions button:hover {
+  background: var(--surface);
+}
+
+.diff-form-actions button:active,
+.diff-actions button:active {
+  opacity: 0.8;
+}
+
+.diff-form-actions button:disabled,
+.diff-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.diff-header {
+  margin-bottom: 8px;
+}
+
+.diff-files {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.diff-file-a {
+  color: var(--pink);
+}
+
+.diff-file-b {
+  color: var(--cyan);
+}
+
+.diff-hunk-info {
+  padding: 4px 8px;
+  background: var(--term-bg);
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.diff-hunk {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: auto;
+  max-height: 40vh;
+  background: var(--term-bg);
+}
+
+.diff-hunk-header {
+  padding: 4px 8px;
+  background: var(--surface-2);
+  color: var(--yellow);
+  font-size: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.diff-line {
+  display: flex;
+  gap: 8px;
+  padding: 2px 8px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diff-line-op {
+  min-width: 12px;
+  display: inline-block;
+}
+
+.diff-line-context {
+  color: var(--term-fg);
+}
+
+.diff-line-add {
+  background: rgba(85, 255, 85, 0.1);
+  color: var(--cyan);
+}
+
+.diff-line-remove {
+  background: rgba(255, 85, 85, 0.1);
+  color: var(--pink);
+}
+
+.diff-nav {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.diff-nav button {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--term-fg);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.diff-nav button:hover:not(:disabled) {
+  background: var(--surface);
+}
+
+.diff-nav button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -59,6 +59,15 @@ describe("TerminalSession", () => {
     expect([...sock.sent[0]]).toEqual([FrameType.Resize, 0, 80, 0, 24]);
   });
 
+  test("drops frames until the socket is open (send throws while CONNECTING)", () => {
+    const { sock, r } = setup();
+    r.resized!(100, 30);
+    r.input!(new Uint8Array([65]));
+    expect(sock.sent).toEqual([]);
+    sock.onopen!();
+    expect([...sock.sent[0]]).toEqual([FrameType.Resize, 0, 80, 0, 24]);
+  });
+
   test("forwards input as input frames", () => {
     const { sock, r } = setup();
     sock.onopen!();
@@ -110,6 +119,20 @@ describe("TerminalSession", () => {
     });
     sock.onclose!();
     expect(onState).toHaveBeenLastCalledWith({ status: "closed", exitCode: 7 });
+  });
+
+  test("killed frame then close reports killed state", () => {
+    const { sock, onState } = setup();
+    sock.onopen!();
+    const body = new TextEncoder().encode('{"type":"killed"}');
+    sock.onmessage!({
+      data: new Uint8Array([FrameType.Control, ...body]).buffer,
+    });
+    sock.onclose!();
+    expect(onState).toHaveBeenLastCalledWith({
+      status: "closed",
+      killed: true,
+    });
   });
 
   test("close without exit has undefined code; reconnect opens new socket", () => {

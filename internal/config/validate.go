@@ -10,7 +10,6 @@ import (
 
 var (
 	targets    = map[string]bool{"ssh-host": true, "container": true, "nsenter": true}
-	bgKinds    = map[string]bool{"none": true, "color": true, "image": true, "shader": true}
 	hookFields = map[string]bool{"pre_exec": true, "post_exec": true, "on_close": true}
 	newValue   = map[string]func() any{
 		KindGlobal:   func() any { return new(Global) },
@@ -78,7 +77,10 @@ func (b *Background) validate(path string) *ValidationError {
 		return nil
 	}
 	if b.Kind != "" && !bgKinds[b.Kind] {
-		return verr(path+".kind", "must be one of none, color, image, shader")
+		return verr(path+".kind", "must be one of none, color, image, shader, gradient, pattern, video")
+	}
+	if b.Ref != "" && !validRef(b.Kind, b.Ref) {
+		return verr(path+".ref", "must be an asset id, built-in id or allowed gradient")
 	}
 	if b.Opacity != nil && (*b.Opacity < 0 || *b.Opacity > 1) {
 		return verr(path+".opacity", "must be between 0 and 1")
@@ -131,6 +133,12 @@ func (t *Terminal) validate(prefix string) *ValidationError {
 }
 
 func (s *Scene) validate() *ValidationError {
+	if s.Gap != nil && (*s.Gap < 0 || *s.Gap > 64) {
+		return verr("gap", "must be between 0 and 64")
+	}
+	if s.PaneOpacity != nil && (*s.PaneOpacity < 0 || *s.PaneOpacity > 1) {
+		return verr("pane_opacity", "must be between 0 and 1")
+	}
 	if e := s.Background.validate("background"); e != nil {
 		return e
 	}

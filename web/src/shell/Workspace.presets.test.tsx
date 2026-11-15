@@ -139,7 +139,7 @@ test("start errors toast the server message", async () => {
   expect(screen.getAllByRole("tab")).toHaveLength(1);
 });
 
-test("Save scene as preset… writes layout and pane presets", async () => {
+test("Save scene as… writes layout and pane presets", async () => {
   localStorage.setItem(
     "tdog.layout.scene 1",
     JSON.stringify({ t: "leaf", id: "p1" }),
@@ -148,7 +148,8 @@ test("Save scene as preset… writes layout and pane presets", async () => {
   routes["PUT /api/presets/scene/mine"] = () =>
     new Response(null, { status: 204 });
   mount();
-  await runCommand("Save scene as preset…");
+  routes["GET /api/presets/scene"] = () => json([]);
+  await runCommand("Save scene as…");
   fireEvent.change(screen.getByLabelText("Preset name"), {
     target: { value: "mine" },
   });
@@ -165,7 +166,8 @@ test("save validation errors toast the server message", async () => {
   routes["PUT /api/presets/scene/bad"] = () =>
     json({ error: "layout.ratio: must be between 0.1 and 0.9" }, 400);
   mount();
-  await runCommand("Save scene as preset…");
+  routes["GET /api/presets/scene"] = () => json([]);
+  await runCommand("Save scene as…");
   fireEvent.change(screen.getByLabelText("Preset name"), {
     target: { value: "bad" },
   });
@@ -175,19 +177,4 @@ test("save validation errors toast the server message", async () => {
   expect(
     await screen.findByText("layout.ratio: must be between 0.1 and 0.9"),
   ).toBeTruthy();
-});
-
-test("empty-pane state lists terminal presets; picking one opens a pane", async () => {
-  localStorage.setItem("tdog.layout.scene 1", "null");
-  routes["GET /api/presets/terminal"] = () => json(["app-dev"]);
-  routes["GET /api/presets/resolve?terminal=app-dev"] = () => json({});
-  mount();
-  expect(screen.getByTestId("empty-panes")).toBeTruthy();
-  const btn = await screen.findByRole("button", { name: "app-dev" });
-  await act(async () => {
-    fireEvent.click(btn);
-  });
-  await waitFor(() => expect(panes()).toHaveLength(1));
-  const map = JSON.parse(localStorage.getItem("tdog.panePresets") ?? "{}");
-  expect(Object.values(map)).toEqual(["app-dev"]);
 });

@@ -1,0 +1,95 @@
+import { expect, test } from "vitest";
+import {
+  draftToToml,
+  newDraft,
+  parseDraft,
+  resizeSlots,
+  type Draft,
+} from "./sceneModel";
+
+const draft: Draft = {
+  ...newDraft("dev"),
+  autostart: true,
+  template: "1+2",
+  ratio: 0.6,
+  gap: 8,
+  opacity: 0.85,
+  bg: "#223344",
+  slots: [
+    { preset: "app" },
+    { preset: "logs", fontSize: 12 },
+    { preset: "app" },
+  ],
+};
+
+test("3-slot scene from two presets round-trips through TOML", () => {
+  const toml = draftToToml(draft);
+  expect(toml).toContain('name = "dev"');
+  expect(toml).toContain("autostart = true");
+  expect(toml).toContain("gap = 8");
+  expect(toml).toContain("pane_opacity = 0.85");
+  expect(toml).toContain('[background]\nkind = "color"\nref = "#223344"');
+  expect(toml).toContain('preset = "logs"');
+  expect(parseDraft(toml)).toEqual(draft);
+});
+
+test("single-slot and empty slots round-trip", () => {
+  const d: Draft = {
+    ...newDraft("x"),
+    template: "single",
+    slots: resizeSlots([], "single"),
+  };
+  expect(parseDraft(draftToToml(d))).toEqual(d);
+});
+
+test("layouts outside the snap set are rejected with a message", () => {
+  const toml = [
+    'name = "x"',
+    "[layout]",
+    'type = "split"',
+    'dir = "col"',
+    "ratio = 0.5",
+    "[layout.a]",
+    'type = "pane"',
+    'pane = "a"',
+    "[layout.b]",
+    'type = "pane"',
+    'pane = "b"',
+  ].join("\n");
+  expect(() => parseDraft(toml)).toThrow(/snap layout/);
+});
+
+test("bad syntax names the line", () => {
+  expect(() => parseDraft("name = \n")).toThrow(/line 1/);
+});
+
+const base = (extra: string) =>
+  `name = "x"\n${extra}\n[layout]\ntype = "pane"\npane = "s1"\n\n[[panes]]\nid = "s1"\n`;
+
+test.each([
+  ['theme = "nord"', "theme"],
+  ["foo = 1", "foo"],
+])("parseDraft refuses scene key it can't round-trip: %s", (line, key) => {
+  expect(() => parseDraft(base(line))).toThrow(new RegExp(key));
+});
+
+test("parseDraft refuses non-colour background, extra pane keys and overrides", () => {
+  expect(() =>
+    parseDraft(base('[background]\nkind = "image"\nref = "a.png"\n')),
+  ).toThrow(/background/);
+  expect(() =>
+    parseDraft(base('[background]\nkind = "color"\nref = "#fff"\nblur = 4\n')),
+  ).toThrow(/background/);
+  expect(() => parseDraft(base("").trimEnd() + '\ncwd = "/x"\n')).toThrow(
+    /cwd/,
+  );
+  expect(() =>
+    parseDraft(base("").trimEnd() + '\n[panes.override]\ntheme = "nord"\n'),
+  ).toThrow(/override/);
+});
+
+test("a value that isn't valid reports its line", () => {
+  expect(() => parseDraft('name = "x"\ngap = nope')).toThrow(
+    "Can't read the value on line 2.",
+  );
+});

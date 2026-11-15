@@ -43,7 +43,16 @@ const PACK: Row[] = [
     ["glow", "flicker"],
   ],
   ["multipass", "hair tuft", "bar", "space-mono", "hard", 1.5, "drop", []],
-  ["bug-hunt", "combat helmet", "block", "vt323", "hard", 0, "post", ["grain"]],
+  [
+    "bug-hunt",
+    "combat helmet",
+    "block",
+    "ibm-plex-mono",
+    "hard",
+    0,
+    "post",
+    ["grain"],
+  ],
 ];
 
 describe("theme flavour pack 3", () => {

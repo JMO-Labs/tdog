@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { roving } from "./roving";
+import { useRef, useState } from "react";
+import { ActionMenu, type MenuItem } from "../components/menu/ActionMenu";
+import { TEMPLATES, type TemplateId } from "./templates";
 
 export interface PaneMenuProps {
   id: string;
@@ -10,6 +11,9 @@ export interface PaneMenuProps {
   onDuplicate?: (id: string) => void;
   onClear?: (id: string) => void;
   onClose?: (id: string) => void;
+  onSplit?: (id: string, dir: "row" | "col") => void;
+  /** Returns surplus pane ids when confirmation is needed (nothing applied). */
+  onSnap?: (t: TemplateId, confirmed?: boolean) => string[];
 }
 
 /** Everything you can do to one pane, reachable without dragging. */
@@ -22,122 +26,186 @@ export function PaneMenu({
   onDuplicate,
   onClear,
   onClose,
+  onSplit,
+  onSnap,
 }: PaneMenuProps) {
   const [open, setOpen] = useState(false);
-  const [sub, setSub] = useState(false);
-  const menu = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) setSub(false);
-    if (open)
-      menu.current?.querySelector<HTMLElement>("[role=menuitem]")?.focus();
-  }, [open]);
-  const run = (f: () => void) => () => {
-    setOpen(false);
-    f();
+  const [confirmation, setConfirmation] = useState<{
+    t: TemplateId;
+    n: number;
+  } | null>(null);
+  const btn = useRef<HTMLButtonElement>(null);
+
+  const handleSnap = (t: TemplateId, confirmed?: boolean) => {
+    const surplus = (confirmed ? onSnap?.(t, true) : onSnap?.(t)) ?? [];
+    if (surplus.length && !confirmed) {
+      setConfirmation({ t, n: surplus.length });
+    } else {
+      setOpen(false);
+    }
   };
-  return (
-    <span
-      className="snap-wrap"
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
-      }}
-      onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
-    >
+
+  const layoutItems: MenuItem[] = confirmation
+    ? [
+        {
+          label: `Close ${confirmation.n} pane${confirmation.n > 1 ? "s" : ""} and apply`,
+          danger: true,
+          keepOpen: true,
+          onSelect: () => {
+            handleSnap(confirmation.t, true);
+            setConfirmation(null);
+          },
+        },
+        {
+          label: "Cancel",
+          keepOpen: true,
+          onSelect: () => setConfirmation(null),
+        },
+      ]
+    : TEMPLATES.map((t) => ({
+        label: t.label,
+        // Stays open: a template may first ask to confirm closing panes.
+        keepOpen: true,
+        onSelect: () => handleSnap(t.id),
+      }));
+
+  const groups: MenuItem[][] = [
+    ...(onSnap
+      ? [
+          [
+            {
+              label: "Layouts",
+              submenu: layoutItems,
+            },
+          ],
+        ]
+      : []),
+    ...(onSplit
+      ? [
+          [
+            {
+              label: "Split right",
+              onSelect: () => onSplit(id, "row"),
+            },
+            {
+              label: "Split down",
+              onSelect: () => onSplit(id, "col"),
+            },
+          ],
+        ]
+      : []),
+    ...(onRename
+      ? [
+          [
+            {
+              label: "Rename pane",
+              onSelect: onRename,
+            },
+          ],
+        ]
+      : []),
+    [
+      {
+        label: "Move to scene",
+        disabled: scenes.length === 0,
+        submenu: scenes.map((s) => ({
+          label: s.name,
+          onSelect: () => onMoveToScene(id, s.id),
+        })),
+      },
+    ],
+    ...(onDuplicate || onClear
+      ? [
+          [
+            ...(onDuplicate
+              ? [
+                  {
+                    label: "Duplicate pane",
+                    onSelect: () => onDuplicate(id),
+                  },
+                ]
+              : []),
+            ...(onClear
+              ? [
+                  {
+                    label: "Clear scrollback",
+                    onSelect: () => onClear(id),
+                  },
+                ]
+              : []),
+          ],
+        ]
+      : []),
+    [
+      {
+        label: "Swap with previous",
+        onSelect: () => onSwap(id, -1),
+      },
+      {
+        label: "Swap with next",
+        onSelect: () => onSwap(id, 1),
+      },
+    ],
+    ...(onClose
+      ? [
+          [
+            {
+              label: "Close pane",
+              danger: true,
+              onSelect: () => onClose(id),
+            },
+          ],
+        ]
+      : []),
+  ];
+
+  if (!open) {
+    return (
       <button
+        ref={btn}
         className="pane-btn icon-btn sm"
         aria-label="Pane menu"
         title="Pane menu"
         aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(true)}
       >
         ⋯
       </button>
-      {open && (
-        <div
-          ref={menu}
-          className="pane-menu pop-card"
-          role="menu"
-          aria-label="Pane actions"
-          onKeyDown={(e) =>
-            roving(
-              e,
-              "[role=menuitem]",
-              { ArrowDown: 1, ArrowUp: -1, Home: "home", End: "end" },
-              true,
-            )
-          }
-        >
-          <h3 className="pop-title" role="presentation">
-            Pane actions
-          </h3>
-          {onRename && (
-            <button role="menuitem" onClick={run(onRename)}>
-              Rename pane
-            </button>
-          )}
-          <button
-            role="menuitem"
-            aria-haspopup="menu"
-            aria-expanded={sub}
-            disabled={scenes.length === 0}
-            onClick={() => setSub((v) => !v)}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowRight") setSub(true);
-            }}
-          >
-            Move to scene
-          </button>
-          {sub && (
-            <div
-              role="menu"
-              aria-label="Move to scene"
-              className="pane-submenu"
-              onKeyDown={(e) => {
-                if (e.key === "Escape" || e.key === "ArrowLeft") {
-                  e.stopPropagation();
-                  setSub(false);
-                }
-              }}
-            >
-              {scenes.map((s) => (
-                <button
-                  key={s.id}
-                  role="menuitem"
-                  onClick={run(() => onMoveToScene(id, s.id))}
-                >
-                  {s.name}
-                </button>
-              ))}
-            </div>
-          )}
-          {onDuplicate && (
-            <button role="menuitem" onClick={run(() => onDuplicate(id))}>
-              Duplicate pane
-            </button>
-          )}
-          {onClear && (
-            <button role="menuitem" onClick={run(() => onClear(id))}>
-              Clear scrollback
-            </button>
-          )}
-          <button role="menuitem" onClick={run(() => onSwap(id, -1))}>
-            Swap with previous
-          </button>
-          <button role="menuitem" onClick={run(() => onSwap(id, 1))}>
-            Swap with next
-          </button>
-          {onClose && (
-            <button
-              role="menuitem"
-              className="danger"
-              onClick={run(() => onClose(id))}
-            >
-              Close pane
-            </button>
-          )}
-        </div>
-      )}
-    </span>
+    );
+  }
+
+  const rect = btn.current?.getBoundingClientRect();
+  const x = rect ? rect.left : 0;
+  const y = rect ? rect.bottom + 4 : 0;
+
+  return (
+    <>
+      <button
+        ref={btn}
+        className="pane-btn icon-btn sm"
+        aria-label="Pane menu"
+        title="Pane menu"
+        aria-haspopup="menu"
+        aria-expanded
+        onClick={() => setOpen(false)}
+      >
+        ⋯
+      </button>
+      <ActionMenu
+        x={x}
+        y={y}
+        groups={groups}
+        onDismiss={(refocus) => {
+          setOpen(false);
+          setConfirmation(null);
+          // Back on the ⋯ button (it re-renders), like any closed menu.
+          if (refocus) setTimeout(() => btn.current?.focus());
+        }}
+        onSubmenuChange={(label) => {
+          if (label !== "Layouts") setConfirmation(null);
+        }}
+        ariaLabel="Pane actions"
+      />
+    </>
   );
 }

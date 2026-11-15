@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { dragPane, draggedPane } from "../layout/dnd";
+import { ActionMenu, type MenuItem } from "../components/menu/ActionMenu";
 import type { Scene } from "./scenes";
 
 type Props = {
@@ -13,6 +14,15 @@ type Props = {
   /** A pane header was dropped on this scene tab. */
   onDropPane?: (paneId: string, scene: string) => void;
   onKill: (id: string) => void;
+  /** Scene ids with unsaved changes against their saved preset. */
+  dirty?: Set<string>;
+  onSave?: (id: string) => void;
+  onSaveAs?: (id: string) => void;
+  /** Offer the saved scenes to open in a new tab. */
+  onOpenSaved?: () => void;
+  /** Scene-wide broadcast toggle and its checked state. */
+  onBroadcastAll?: (id: string) => void;
+  broadcastAll?: (id: string) => boolean;
 };
 
 /** Scene tab strip: sliding pill, inline rename, drag reorder, close, add. */
@@ -108,41 +118,93 @@ export function Tabs(p: Props) {
                 }}
               >
                 {s.name}
+                {p.dirty?.has(s.id) && (
+                  <span
+                    className="tab-dot"
+                    role="img"
+                    aria-label="Unsaved changes"
+                    title="Unsaved changes"
+                  />
+                )}
               </button>
             )}
-            {p.scenes.length > 1 && (
-              <button
-                className="tab-x"
-                aria-label={`Close scene ${s.name}`}
-                onClick={() => p.onClose(s.id)}
-              >
-                ×
-              </button>
-            )}
+            <button
+              className="tab-x"
+              aria-label={`Close scene ${s.name}`}
+              data-active={s.id === p.active || undefined}
+              onClick={() => p.onClose(s.id)}
+            >
+              ×
+            </button>
           </div>
         ))}
       </nav>
-      {menu && (
-        <div
-          className="tab-menu"
-          role="menu"
-          style={{ left: menu.x, top: menu.y }}
-          onMouseLeave={() => setMenu(null)}
-        >
-          <button
-            role="menuitem"
-            className="btn danger"
-            autoFocus
-            onBlur={() => setMenu(null)}
-            onClick={() => {
-              p.onKill(menu.id);
-              setMenu(null);
-            }}
-          >
-            Kill scene
-          </button>
-        </div>
-      )}
+      {menu &&
+        (() => {
+          const groups: MenuItem[][] = [
+            [
+              ...(p.onSave
+                ? [
+                    {
+                      label: "Save",
+                      onSelect: () => p.onSave?.(menu.id),
+                    },
+                  ]
+                : []),
+              ...(p.onSaveAs
+                ? [
+                    {
+                      label: "Save as…",
+                      onSelect: () => p.onSaveAs?.(menu.id),
+                    },
+                  ]
+                : []),
+            ],
+            ...(p.onOpenSaved
+              ? [
+                  [
+                    {
+                      label: "New scene from saved…",
+                      onSelect: () => p.onOpenSaved?.(),
+                    },
+                  ],
+                ]
+              : []),
+            ...(p.onBroadcastAll
+              ? [
+                  [
+                    {
+                      label: "Broadcast to all panes",
+                      isRadio: true,
+                      checked: p.broadcastAll?.(menu.id) ?? false,
+                      shortcut: "⇧⌘B",
+                      onSelect: () => p.onBroadcastAll?.(menu.id),
+                    },
+                  ],
+                ]
+              : []),
+            [
+              {
+                label: "Close scene",
+                onSelect: () => p.onClose(menu.id),
+              },
+              {
+                label: "Kill scene",
+                danger: true,
+                onSelect: () => p.onKill(menu.id),
+              },
+            ],
+          ];
+          return (
+            <ActionMenu
+              x={menu.x}
+              y={menu.y}
+              groups={groups}
+              onDismiss={() => setMenu(null)}
+              ariaLabel="Scene actions"
+            />
+          );
+        })()}
       <button
         className="tab-add"
         aria-label="New scene"

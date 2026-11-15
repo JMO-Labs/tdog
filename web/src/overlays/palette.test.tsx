@@ -112,6 +112,52 @@ describe("palette rendering", () => {
   });
 });
 
+describe("palette menu look", () => {
+  it("renders icon slot, search field, shortcut chip and help footer", () => {
+    registerCommand({
+      id: "s",
+      title: "Open settings",
+      group: "Panes",
+      icon: "gear",
+      shortcut: "⌘,",
+      run: vi.fn(),
+    });
+    render(<CommandPalette defaultOpen />);
+    const opt = screen.getByRole("option");
+    expect(opt.querySelector('svg[data-icon="gear"]')).toBeTruthy();
+    expect(opt.querySelector("kbd")?.textContent).toBe("⌘,");
+    expect(document.querySelector(".cmdk-filter svg")).toBeTruthy();
+    expect(screen.getByText("↑↓ move · ↵ run")).toBeTruthy();
+    expect(screen.getByRole("combobox").getAttribute("aria-controls")).toBe(
+      "cmdk-list",
+    );
+  });
+});
+
+describe("palette rows", () => {
+  it("keeps label text intact when highlighted, in one inline span", () => {
+    registerCommand({ id: "h", title: "Hints: open URL", run: vi.fn() });
+    render(<CommandPalette defaultOpen />);
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "spl" },
+    });
+    const label = screen.getByRole("option").querySelector(".cmdk-label")!;
+    expect(label.textContent).toBe("Hints: open URL");
+    expect(label.querySelectorAll("mark").length).toBe(3);
+  });
+  it("reserves the icon slot on every row and marks danger rows", () => {
+    registerCommand({ id: "a", title: "Alpha", icon: "gear", run: vi.fn() });
+    registerCommand({ id: "b", title: "Beta", danger: true, run: vi.fn() });
+    render(<CommandPalette defaultOpen />);
+    const [a, b] = screen.getAllByRole("option");
+    expect(a.querySelector(".cmdk-icon svg")).toBeTruthy();
+    expect(b.querySelector(".cmdk-icon")).toBeTruthy();
+    expect(b.querySelector(".cmdk-icon svg")).toBeNull();
+    expect(b.className).toBe("danger");
+    expect(a.className).toBe("");
+  });
+});
+
 describe("fuzzyMatch", () => {
   it("matches subsequences case-insensitively", () => {
     expect(fuzzyMatch("nt", "New Terminal")).toBe(true);

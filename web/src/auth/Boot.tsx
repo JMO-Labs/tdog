@@ -1,23 +1,17 @@
 import { useEffect, useRef } from "react";
+import { useCopy } from "../copy/copy";
 import { BOOT_MS, type BootId } from "./boot";
 import "./boot.css";
 
 const GLYPHS = "01ｱｲｳｴｵｶｷｸ<>/=+*";
-const POST = [
-  "tdog bios 1.0",
-  "memory ........ ok",
-  "pty bus ....... ok",
-  "socket ........ ok",
-  "storage ....... ok",
-  "starting shell",
-];
 const col = (i: number) =>
   Array.from(
     { length: 12 },
     (_, j) => GLYPHS[(i * 7 + j * 3) % GLYPHS.length],
   ).join("\n");
 
-function Scene({ v }: { v: Exclude<BootId, "drop"> }) {
+export function Scene({ v }: { v: Exclude<BootId, "drop"> }) {
+  const c = useCopy();
   switch (v) {
     case "tracker":
       return (
@@ -44,11 +38,13 @@ function Scene({ v }: { v: Exclude<BootId, "drop"> }) {
     case "post":
       return (
         <pre className="b-post">
-          {POST.map((l, i) => (
-            <span key={l} style={{ animationDelay: `${i * 0.3}s` }}>
-              {l + "\n"}
-            </span>
-          ))}
+          {c("boot.post")
+            .split("\n")
+            .map((l, i) => (
+              <span key={l} style={{ animationDelay: `${i * 0.3}s` }}>
+                {l + "\n"}
+              </span>
+            ))}
         </pre>
       );
     case "dialup":
@@ -63,8 +59,8 @@ function Scene({ v }: { v: Exclude<BootId, "drop"> }) {
       return (
         <>
           <div className="b-vhs">
-            <span className="b-rew">◀◀ rew</span>
-            <span className="b-play">▶ play</span>
+            <span className="b-rew">{c("boot.rew")}</span>
+            <span className="b-play">{c("boot.play")}</span>
           </div>
           <i className="b-noise" />
         </>

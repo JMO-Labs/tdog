@@ -1,29 +1,33 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCopy } from "../copy/copy";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
+import { ThemePicker } from "../overlays/ThemePicker";
 import { Sheet } from "../overlays/Sheet";
 import { registerCommand } from "../overlays/commands";
 import { SettingsPanel } from "../settings/SettingsPanel";
-import { usePref } from "../settings/prefs";
-import { THEMES } from "../theme/registry";
-import { themeStore } from "../theme/store";
-import { useThemeMode } from "../theme/useThemeMode";
+import { getPref, usePref } from "../settings/prefs";
+import { MODES, useThemeMode } from "../theme/useThemeMode";
 import { Dialog } from "../overlays/Dialog";
 import { useToast } from "../overlays/toast";
 import { KillDialog } from "./KillDialog";
-import { clearLayout } from "../layout/store";
-import { moveToScene } from "../layout/transfer";
+import { addLeaf, moveToScene } from "../layout/transfer";
+import { preparePane } from "../presets/launch";
 import { newId } from "../layout/tree";
 import { useShellName } from "../terminal/shellName";
 import { killScene } from "../terminal/sessions";
+import { useSceneKill } from "./useSceneKill";
+import { Studio } from "../studio/Studio";
+import { sectionFromHash } from "../studio/sections";
 import { Icon } from "./icons";
 import { type PaneOpen } from "./PaneSlot";
 import { SceneView } from "./SceneView";
+import { openScenePreset } from "../presets/openScene";
 import { usePresetFlows } from "../presets/usePresetFlows";
+import { useDirtyScenes } from "../presets/useDirtyScenes";
 import {
   addNamedScene,
   addScene,
-  closeScene,
   loadScenes,
   renameScene,
   reorderScene,
@@ -31,14 +35,23 @@ import {
 } from "./scenes";
 import { Pet, usePetAwake } from "./pet";
 import { usePetEngine } from "./usePetEngine";
+import { useKeyboardShortcuts } from "./useKeyboardShortcuts";
 import { Tabs } from "./Tabs";
-import { OverflowMenu } from "./OverflowMenu";
-import { useMaxWidth } from "./useBreakpoint";
+import { MainMenu, type MenuGroup } from "./MainMenu";
+import {
+  toggleBroadcast,
+  toggleSceneBroadcast,
+  isSceneBroadcasting,
+  clearScene,
+  getBroadcastGroup,
+  getBroadcastStore,
+} from "../broadcast/store";
+import { startPlugins } from "../plugins/runtime";
 import "./shell.css";
 import "./narrow.css";
+import "./menu.css";
 
 type Size = { cols: number; rows: number };
-const noop = () => {};
 /** Latency above this gets the dial-up icon. */
 const SLOW_MS = 150;
 
@@ -49,23 +62,53 @@ export function Workspace({
   onClosed?: () => void;
   onSignedOut?: () => void;
 }) {
-  const { mode, cycle } = useThemeMode();
+  const { mode, cycle, set: setMode } = useThemeMode();
   const [sizes, setSizes] = useState<Record<string, Size>>({});
   const [latencies, setLatencies] = useState<Record<string, number>>({});
   const shellName = useShellName();
   const [focused, setFocused] = useState<string | null>(null);
   const [stamp, setStamp] = useState(0);
   const [petShown, setPetShown] = usePref("pet");
+  const [serious, setSerious] = usePref("serious");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [picker, setPicker] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const [studio, setStudio] = useState(() => !!sectionFromHash(location.hash));
   const awake = usePetAwake(stamp);
   const engine = usePetEngine();
   const [sc, setSc] = useState(loadScenes);
   const [leafMap, setLeafMap] = useState<Record<string, string[]>>({});
   const [closing, setClosing] = useState<string | null>(null);
   const [kill, setKill] = useState<string | null>(null); // "all" or scene id
+  // Per-pane open state lives here: dockview remounts panes when splits collapse.
+  const [paneOpen, setPaneOpen] = useState<Record<string, PaneOpen>>({});
+  const onPaneOpen = useCallback(
+    (id: string, open: boolean) =>
+      setPaneOpen((m) => ({
+        ...m,
+        [id]: { open, everOpen: open || (m[id]?.everOpen ?? false) },
+      })),
+    [],
+  );
   const toast = useToast();
+  const c = useCopy();
+  const [broadcastCount, setBroadcastCount] = useState(0);
+  // Enabled plugins run for as long as the signed-in workspace is open.
+  useEffect(
+    () =>
+      startPlugins((plugin, reason) =>
+        toast("fail", `Plugin ${plugin} was stopped: it ${reason}.`),
+      ),
+    [toast],
+  );
+
   useEffect(() => saveScenes(sc), [sc]);
+  useEffect(() => {
+    return getBroadcastStore().subscribe(() => {
+      setBroadcastCount(getBroadcastGroup(sc.active).size);
+    });
+  }, [sc.active]);
   const onLeaves = useCallback(
     (scene: string, ids: string[]) =>
       setLeafMap((m) => ({ ...m, [scene]: ids })),
@@ -76,22 +119,28 @@ export function Workspace({
     [],
   );
   const add = useCallback(() => setSc((s) => addScene(s, newId("sc"))), []);
-  const presetDialogs = usePresetFlows({
+  const openSceneTab = (id: string, name: string) =>
+    setSc((s) => addNamedScene(s, id, name));
+  const flows = usePresetFlows({
     scene: sc.active,
-    openTab: (id, name) => setSc((s) => addNamedScene(s, id, name)),
+    openTab: openSceneTab,
   });
+  const dirty = useDirtyScenes(sc.scenes.map((x) => x.id));
+  const { removeSceneCleanup, runKill: runKillImpl } = useSceneKill(
+    leafMap,
+    sc.scenes,
+    setSc,
+    setLeafMap,
+    toast,
+    c,
+  );
+
   const finishClose = useCallback(
     (id: string) => {
       (leafMap[id] ?? []).forEach((p) => void killScene(p));
-      clearLayout(id);
-      setLeafMap((m) => {
-        const rest = { ...m };
-        delete rest[id];
-        return rest;
-      });
-      setSc((s) => closeScene(s, id));
+      removeSceneCleanup(id);
     },
-    [leafMap],
+    [leafMap, removeSceneCleanup],
   );
   const moveScene = useCallback(
     (id: string, from: string, to: string) => void moveToScene(id, from, to),
@@ -107,17 +156,25 @@ export function Workspace({
     else finishClose(id);
   };
 
+  const closeActive = useRef<() => void>(() => {});
+  closeActive.current = () => requestClose(sc.active);
+
   const killTargets = (scope: string | null) =>
     (scope === "all"
       ? Object.values(leafMap).flat()
       : (leafMap[scope ?? ""] ?? [])
     ).filter((p) => paneOpen[p]?.open);
+  const closingName = sc.scenes.find((x) => x.id === closing)?.name ?? "";
+  const closingCount = closing
+    ? (leafMap[closing] ?? []).filter((p) => paneOpen[p]?.open).length
+    : 0;
+
   const runKill = async () => {
     const targets = killTargets(kill);
     setKill(null);
-    const done = await Promise.all(targets.map((p) => killScene(p)));
-    const n = done.filter(Boolean).length;
-    toast("success", `Killed ${n} shell${n === 1 ? "" : "s"}.`);
+    // Nothing running (all disconnected): just remove the scene.
+    if (!targets.length && kill && kill !== "all") return finishClose(kill);
+    void runKillImpl(targets);
   };
 
   const onSize = useCallback(
@@ -127,16 +184,6 @@ export function Workspace({
   );
   const onLatency = useCallback(
     (id: string, ms: number) => setLatencies((m) => ({ ...m, [id]: ms })),
-    [],
-  );
-  // Per-pane open state lives here: dockview remounts panes when splits collapse.
-  const [paneOpen, setPaneOpen] = useState<Record<string, PaneOpen>>({});
-  const onPaneOpen = useCallback(
-    (id: string, open: boolean) =>
-      setPaneOpen((m) => ({
-        ...m,
-        [id]: { open, everOpen: open || (m[id]?.everOpen ?? false) },
-      })),
     [],
   );
   const onOutput = useCallback(
@@ -152,91 +199,197 @@ export function Workspace({
     dispatchEvent(new Event("tdog:signout"));
   }, []);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey)) return;
-      if (e.key === ",") {
-        e.preventDefault();
-        setSettings(true);
-      } else if (e.key === "t" && !e.shiftKey && !e.altKey) {
-        e.preventDefault();
-        add();
-      } else if (/^[1-9]$/.test(e.key) && !e.shiftKey && !e.altKey) {
-        const target = sc.scenes[Number(e.key) - 1];
-        if (target) {
-          e.preventDefault();
-          select(target.id);
-        }
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [add, select, sc.scenes]);
+  useKeyboardShortcuts(
+    add,
+    select,
+    sc.scenes.map((x) => x.id),
+    flows,
+    setSettings,
+    setStudio,
+    setMenu,
+    setKill,
+    () => toggleSceneBroadcast(sc.active, leafMap[sc.active] ?? []),
+  );
 
   useEffect(() => {
     const offs = [
       registerCommand({
         id: "theme",
+        icon: "brush",
         title: "Cycle theme",
         group: "Themes",
         shortcut: "⇧⌘L",
         run: cycle,
       }),
-      ...THEMES.map((t) =>
-        registerCommand({
-          id: `theme:${t.id}`,
-          title: `Theme: ${t.name}`,
-          group: "Themes",
-          swatch: [
-            t.terminal.palette.bg,
-            t.terminal.palette.ansi[1],
-            t.terminal.palette.ansi[2],
-            t.terminal.palette.ansi[4],
-            t.terminal.palette.fg,
-          ],
-          run: () => themeStore.select(t.id),
-          preview: () => themeStore.preview(t.id),
-          revert: () => themeStore.preview(null),
-        }),
-      ),
+      // Serious mode forces Plain, so theme choice is hidden.
+      ...(serious
+        ? []
+        : [
+            registerCommand({
+              id: "theme:pick",
+              icon: "brush",
+              title: "Theme…",
+              group: "Themes",
+              run: () => setPicker(true),
+            }),
+          ]),
+      registerCommand({
+        id: "serious",
+        icon: "system",
+        title: "Serious mode",
+        group: "Themes",
+        run: () => setSerious(!getPref("serious")),
+      }),
       registerCommand({
         id: "settings",
+        icon: "gear",
         title: "Open settings",
         group: "Panes",
         shortcut: "⌘,",
         run: () => setSettings(true),
       }),
       registerCommand({
+        id: "studio",
+        icon: "layout",
+        title: "Open Studio",
+        group: "Panes",
+        shortcut: "⌘.",
+        run: () => setStudio(true),
+      }),
+      registerCommand({
         id: "scene:new",
+        icon: "plus",
         title: "New scene",
         group: "Scenes",
         shortcut: "⌘T",
         run: add,
       }),
       registerCommand({
+        id: "scene:close",
+        icon: "close",
+        danger: true,
+        title: "Close scene",
+        group: "Scenes",
+        run: () => closeActive.current(),
+      }),
+      registerCommand({
         id: "signout",
+        icon: "signout",
         title: "Sign out",
         group: "Account",
         run: signOut,
       }),
+      registerCommand({
+        id: "broadcast:toggle",
+        icon: "bolt",
+        title: "Broadcast this pane",
+        group: "Panes",
+        run: () => {
+          if (focused) toggleBroadcast(sc.active, focused);
+        },
+      }),
+      registerCommand({
+        id: "broadcast:all",
+        title: "Broadcast to all panes",
+        group: "Panes",
+        shortcut: "⇧⌘B",
+        run: () => toggleSceneBroadcast(sc.active, leafMap[sc.active] ?? []),
+      }),
+      registerCommand({
+        id: "broadcast:stop",
+        title: "Stop broadcasting",
+        group: "Panes",
+        run: () => {
+          if (focused && getBroadcastGroup(sc.active).has(focused)) {
+            toggleBroadcast(sc.active, focused);
+          }
+        },
+      }),
     ];
     return () => offs.forEach((f) => f());
-  }, [cycle, signOut, add]);
+  }, [cycle, signOut, add, serious, setSerious, focused, sc.active, leafMap]);
 
-  const themeLabel = `Theme: ${mode[0].toUpperCase()}${mode.slice(1)}`;
+  const menuGroups: MenuGroup[] = [
+    [
+      // Serious mode forces Plain, so theme choice is hidden.
+      ...(serious
+        ? []
+        : [
+            {
+              label: "Theme…",
+              icon: "system" as const,
+              onSelect: () => setPicker(true),
+            },
+          ]),
+      {
+        label: "Appearance",
+        icon: "light",
+        submenu: MODES.map((m) => ({
+          label: `${m[0].toUpperCase()}${m.slice(1)}`,
+          checked: m === mode,
+          onSelect: () => setMode(m),
+        })),
+      },
+      {
+        label: "Serious mode",
+        icon: "briefcase",
+        hint: serious ? "On" : "Off",
+        onSelect: () => setSerious(!serious),
+      },
+      ...(serious
+        ? []
+        : [
+            {
+              label: "Dogbert",
+              icon: "paw" as const,
+              hint: petShown ? "Shown" : "Hidden",
+              onSelect: () => setPetShown(!petShown),
+            },
+          ]),
+    ],
+    [
+      {
+        label: "Save scene",
+        icon: "server",
+        shortcut: "⌘S",
+        onSelect: () => void flows.save(),
+      },
+      {
+        label: "Save scene as…",
+        icon: "server",
+        onSelect: () => void flows.saveAs(),
+      },
+    ],
+    [
+      {
+        label: "Studio",
+        icon: "brush",
+        shortcut: "⌘.",
+        onSelect: () => setStudio(true),
+      },
+      {
+        label: "Settings",
+        icon: "gear",
+        shortcut: "⌘,",
+        onSelect: () => setSettings(true),
+      },
+    ],
+    [{ label: "Sign out", icon: "signout", onSelect: signOut }],
+  ];
   // Status bar follows the focused pane, else the first one.
   const ids = leafMap[sc.active] ?? [];
   const shown = focused && ids.includes(focused) ? focused : ids[0];
   const size = shown ? sizes[shown] : undefined;
   const latency = shown !== undefined ? (latencies[shown] ?? null) : null;
 
-  const narrow = useMaxWidth(639);
-
   return (
     <div className="ws">
       <header className="ws-head">
-        <span className="wordmark small" aria-label="tdog">
-          tdog
+        <span className="brand" aria-label="tdog">
+          <span className="logo-mark small" aria-hidden="true" />
+          <span className="wordmark small" aria-hidden="true">
+            tdog
+          </span>
         </span>
         <Tabs
           scenes={sc.scenes}
@@ -246,65 +399,30 @@ export function Workspace({
           onRename={(id, n) => setSc((s) => renameScene(s, id, n))}
           onClose={requestClose}
           onKill={setKill}
+          dirty={dirty}
+          onSave={(id) => void flows.save(id)}
+          onSaveAs={(id) => void flows.saveAs(id)}
+          onOpenSaved={() => void flows.openSaved()}
           onReorder={(id, to) => setSc((s) => reorderScene(s, id, to))}
           onDropPane={dropOnTab}
+          onBroadcastAll={(id) => toggleSceneBroadcast(id, leafMap[id] ?? [])}
+          broadcastAll={(id) => isSceneBroadcasting(id, leafMap[id] ?? [])}
         />
         <div className="spacer" />
-        {narrow ? (
-          <OverflowMenu
-            items={[
-              {
-                label: "Studio",
-                icon: "brush",
-                hint: "Coming in v0.4",
-                disabled: true,
-                onSelect: noop,
-              },
-              { label: "Theme", icon: mode, onSelect: cycle },
-              {
-                label: "Kill all shells",
-                icon: "power",
-                danger: true,
-                onSelect: () => setKill("all"),
-              },
-            ]}
-          />
-        ) : (
-          <>
-            <IconButton
-              label="Studio"
-              tip="Coming in v0.4"
-              aria-disabled="true"
-              onClick={noop}
-            >
-              <Icon name="brush" />
-            </IconButton>
-            <IconButton
-              label="Theme"
-              tip={themeLabel}
-              shortcut="⇧⌘L"
-              onClick={cycle}
-            >
-              <Icon name={mode} />
-            </IconButton>
-          </>
-        )}
+        <MainMenu
+          groups={menuGroups}
+          open={menu}
+          onOpenChange={setMenu}
+          shortcut="⇧⌘M"
+        />
         <IconButton
-          label="Settings"
-          shortcut="⌘,"
-          onClick={() => setSettings(true)}
+          label="Kill all shells"
+          shortcut="⇧⌘K"
+          variant="danger"
+          onClick={() => setKill("all")}
         >
-          <Icon name="gear" />
+          <Icon name="power" />
         </IconButton>
-        {!narrow && (
-          <IconButton
-            label="Kill all shells"
-            variant="danger"
-            onClick={() => setKill("all")}
-          >
-            <Icon name="power" />
-          </IconButton>
-        )}
       </header>
 
       <main className="panes">
@@ -338,22 +456,34 @@ export function Workspace({
             {size.cols}×{size.rows}
           </span>
         )}
+        {broadcastCount > 0 && (
+          <span className="chip broadcast">
+            Broadcasting to {broadcastCount} pane
+            {broadcastCount === 1 ? "" : "s"}
+            <button
+              className="stop-broadcast"
+              aria-label="Stop broadcasting"
+              title="Stop broadcasting"
+              onClick={() => {
+                clearScene(sc.active);
+              }}
+            >
+              ✕
+            </button>
+          </span>
+        )}
         <div className="spacer" />
         {latency !== null && (
           <span
             data-testid="latency"
             className={`chip num hide-xs${latency > SLOW_MS ? " slow" : ""}`}
-            title={
-              latency > SLOW_MS
-                ? "Dial-up speeds. Typing may feel sluggish."
-                : undefined
-            }
+            title={latency > SLOW_MS ? c("conn.slow") : undefined}
           >
             <Icon name={latency > SLOW_MS ? "modem" : "bolt"} />
             {latency} ms
           </span>
         )}
-        {petShown && (
+        {petShown && !serious && (
           <Pet
             awake={awake}
             engine={engine.pet}
@@ -371,10 +501,13 @@ export function Workspace({
 
       <Dialog
         open={closing !== null}
-        title="Close scene?"
+        title={`Close ${closingName}?`}
         onClose={() => setClosing(null)}
       >
-        <p>This scene has running shells. Closing it hangs them up.</p>
+        <p>
+          Ends {closingCount} shell{closingCount === 1 ? "" : "s"} in it.
+          Unsaved work in them is gone.
+        </p>
         <div className="dialog-actions">
           <button className="btn" onClick={() => setClosing(null)}>
             Keep
@@ -401,8 +534,27 @@ export function Workspace({
         onClose={() => setKill(null)}
         onConfirm={() => void runKill()}
       />
-      {presetDialogs}
+      {flows.dialogs}
+      <Studio
+        open={studio}
+        onClose={() => setStudio(false)}
+        onOpenScene={async (name) => {
+          await openScenePreset(name, openSceneTab, toast, c);
+          setStudio(false);
+        }}
+        onTry={(name) => {
+          setStudio(false);
+          void preparePane(name, toast).then((id) => {
+            if (id) addLeaf(sc.active, id);
+          });
+        }}
+      />
       <CommandPalette open={palette} onOpenChange={setPalette} />
+      <ThemePicker
+        open={picker}
+        pane={shown}
+        onClose={() => setPicker(false)}
+      />
       <Sheet
         open={settings}
         title="Settings"

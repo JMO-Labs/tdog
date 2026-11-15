@@ -5,6 +5,7 @@ const m = vi.hoisted(() => ({
   glFail: false,
   gl: null as any,
   fit: vi.fn(),
+  lines: [] as any[],
 }));
 
 vi.mock("@xterm/xterm/css/xterm.css", () => ({}));
@@ -19,6 +20,9 @@ vi.mock("@xterm/xterm", () => ({
     write = vi.fn();
     dispose = vi.fn();
     open = vi.fn();
+    buffer = { active: { viewportY: 0, cursorX: 0, cursorY: 0, length: 0 } };
+    element: HTMLElement | undefined;
+    modes = { mouseTrackingMode: "none" };
     loadAddon(a: unknown) {
       this.loaded.push(a);
     }
@@ -39,6 +43,10 @@ vi.mock("@xterm/xterm", () => ({
     onBinary(cb: any) {
       this.handlers.binary = cb;
     }
+    getSelection = vi.fn(() => "");
+    selectAll = vi.fn();
+    paste = vi.fn();
+    focus = vi.fn();
     constructor() {
       m.term = this;
     }
@@ -160,4 +168,125 @@ test("title and OSC 7 cwd are reported", () => {
   expect(m.term.handlers.osc7("file://h/tmp/a%20b")).toBe(true);
   expect(titles).toEqual(["vim"]);
   expect(cwds).toEqual(["/tmp/a b"]);
+});
+
+test("mouseReporting reflects xterm's mouse tracking mode", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  m.term.modes = { mouseTrackingMode: "none" };
+  expect(r.mouseReporting()).toBe(false);
+  m.term.modes = { mouseTrackingMode: "drag" };
+  expect(r.mouseReporting()).toBe(true);
+});
+
+test("cursorRect maps the cursor cell to viewport coordinates", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  const screen = document.createElement("div");
+  screen.className = "xterm-screen";
+  screen.getBoundingClientRect = () =>
+    ({ left: 10, top: 20, width: 1000, height: 600 }) as DOMRect;
+  const el = document.createElement("div");
+  el.appendChild(screen);
+  m.term.element = el;
+  m.term.buffer = {
+    active: { cursorX: 5, cursorY: 2, viewportY: 0, length: 100 },
+  };
+  // cell = 1000/100 x 600/30 = 10 x 20; bottom-left of cell (5,2)
+  expect(r.cursorRect()).toEqual({ x: 60, y: 80 });
+  m.term.element = undefined;
+  expect(r.cursorRect()).toBeNull();
+});
+
+test("screenLines returns visible buffer lines with row numbers", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  m.term.buffer = {
+    active: {
+      viewportY: 5,
+      length: 100,
+      getLine: (y: number) => ({
+        translateToString: () => `line ${y}`,
+      }),
+    },
+  };
+  m.term.rows = 3;
+
+  const lines = r.screenLines();
+  expect(lines).toHaveLength(3);
+  expect(lines[0]).toEqual({ row: 0, text: "line 5" });
+  expect(lines[1]).toEqual({ row: 1, text: "line 6" });
+  expect(lines[2]).toEqual({ row: 2, text: "line 7" });
+});
+
+test("screenLines clamps rows to buffer length", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  m.term.buffer = {
+    active: {
+      viewportY: 98,
+      length: 100,
+      getLine: (y: number) => ({
+        translateToString: () => `line ${y}`,
+      }),
+    },
+  };
+  m.term.rows = 5; // would be lines 98-102, but buffer ends at 99
+
+  const lines = r.screenLines();
+  expect(lines).toHaveLength(2);
+  expect(lines[0]).toEqual({ row: 0, text: "line 98" });
+  expect(lines[1]).toEqual({ row: 1, text: "line 99" });
+});
+
+test("cellGeometry returns calculated cell dimensions and offsets", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  const screen = document.createElement("div");
+  screen.className = "xterm-screen";
+  screen.getBoundingClientRect = () =>
+    ({ left: 10, top: 20, width: 1000, height: 600 }) as DOMRect;
+  const el = document.createElement("div");
+  el.appendChild(screen);
+  m.term.element = el;
+  m.term.cols = 100;
+  m.term.rows = 30;
+
+  const geom = r.cellGeometry();
+  expect(geom).toEqual({
+    cellWidth: 10, // 1000 / 100
+    cellHeight: 20, // 600 / 30
+    offsetX: 10,
+    offsetY: 20,
+  });
+});
+
+test("cellGeometry returns null when screen not found", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  m.term.element = undefined;
+
+  expect(r.cellGeometry()).toBeNull();
+});
+
+test("cellGeometry returns null when cols or rows is zero", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  const screen = document.createElement("div");
+  screen.className = "xterm-screen";
+  screen.getBoundingClientRect = () =>
+    ({ left: 0, top: 0, width: 800, height: 600 }) as DOMRect;
+  const el = document.createElement("div");
+  el.appendChild(screen);
+  m.term.element = el;
+  m.term.cols = 0;
+  m.term.rows = 30;
+
+  expect(r.cellGeometry()).toBeNull();
+});
+
+test("zoom adds steps to the font size and survives font changes", async () => {
+  const { XtermRenderer, zoomed } = await import("./xtermRenderer");
+  expect([zoomed(14, 2), zoomed(14, -20), zoomed(14, 99)]).toEqual([16, 6, 40]);
+  const r = new XtermRenderer(document.createElement("div"));
+  r.setFont(undefined, 14);
+  r.setZoom(3);
+  expect(m.term.options.fontSize).toBe(17);
+  r.setFont(undefined, 12);
+  expect(m.term.options.fontSize).toBe(15);
+  r.setZoom(0);
+  expect(m.term.options.fontSize).toBe(12);
 });

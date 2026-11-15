@@ -31,7 +31,7 @@
       "shape": "block",
       "blink": true
     },
-    "font": "vt323",
+    "font": "space-mono",
     "effects": [
       {
         "id": "grain",
@@ -122,6 +122,48 @@
           "fill": "#7a5434"
         }
       ]
+    }
+  },
+  "light": {
+    "terminal": {
+      "palette": {
+        "fg": "#2a1710",
+        "bg": "#efe0d0",
+        "cursor": "#c01800",
+        "selection": "#e8b8a8",
+        "ansi": [
+          "#6a5548",
+          "#b81e08",
+          "#2a7a14",
+          "#8a5a00",
+          "#2f55a0",
+          "#9a2f62",
+          "#0f7060",
+          "#2a1710",
+          "#4a382d",
+          "#c4240c",
+          "#1f6a0c",
+          "#7a4e00",
+          "#25488f",
+          "#8a2255",
+          "#0a6050",
+          "#000000"
+        ]
+      }
+    },
+    "chrome": {
+      "tokens": {
+        "bg": "#e0cdb8",
+        "surface": "#f2e4d4",
+        "fg": "#2a1710",
+        "muted": "#5a4638",
+        "link": "#2a7a14",
+        "line": "#7a5434",
+        "shadow": "#b8a088",
+        "term-bg": "#efe0d0",
+        "term-fg": "#2a1710",
+        "term-dim": "#6a5548"
+      }
     }
   }
 }

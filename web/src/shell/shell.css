@@ -14,11 +14,11 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px max(16px, env(safe-area-inset-right, 0px)) 12px
-    max(16px, env(safe-area-inset-left, 0px));
+  gap: 10px;
+  height: 40px;
+  padding: 0 max(12px, env(safe-area-inset-right, 0px)) 4px
+    max(12px, env(safe-area-inset-left, 0px));
   background: var(--surface);
-  overflow-x: auto;
 }
 /* Quiet header: the theme only shows as a 4px accent strip, the wordmark shadow and the active tab. */
 .ws-head::after {
@@ -67,16 +67,39 @@
 .wordmark.small {
   font-size: 30px;
 }
+.ws-head .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ws-head .logo-mark.small {
+  display: inline-block;
+  height: 26px;
+  aspect-ratio: 208 / 256;
+  filter: drop-shadow(2px 2px 0 var(--pink));
+}
+.ws-head .logo-mark.small::before {
+  content: "";
+  display: block;
+  height: 100%;
+  background: var(--fg);
+  -webkit-mask: url(/logo-mark.png) center / contain no-repeat;
+  mask: url(/logo-mark.png) center / contain no-repeat;
+}
 .ws-head .wordmark.small {
-  font-size: 24px;
+  font-size: 20px;
   color: var(--fg);
   background: none;
-  -webkit-text-stroke: 0;
+  /* Same ink outline as the sign-in wordmark. */
+  -webkit-text-stroke: 0.06em var(--ink);
+  paint-order: stroke fill;
   filter: none;
   animation: none;
   text-shadow: 2px 2px 0 var(--pink);
 }
 .ws-head .icon-btn {
+  width: 30px;
+  height: 30px;
   border-color: transparent;
   background: none;
   box-shadow: none;
@@ -106,7 +129,7 @@
   z-index: 1;
   border: 0;
   background: none;
-  padding: 5px 12px;
+  padding: 3px 12px;
   border-radius: calc(9px * var(--radius-scale));
   font-weight: 600;
   cursor: pointer;
@@ -255,6 +278,24 @@
   background: var(--yellow);
   color: var(--ink);
 }
+.chip.broadcast {
+  border-color: var(--accent, #6cf);
+  color: var(--accent, #6cf);
+}
+.stop-broadcast {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  padding: 0 0 0 6px;
+  margin-left: 4px;
+  font-weight: 800;
+  font-size: 12px;
+  opacity: 0.6;
+}
+.stop-broadcast:hover {
+  opacity: 1;
+}
 .tabs-row {
   display: flex;
   align-items: center;
@@ -280,8 +321,13 @@
   margin-left: -8px;
   opacity: 0.5;
 }
-.tab-x:hover {
+.tab-x:hover,
+.tab-x:focus-visible,
+.tab-x[data-active] {
   opacity: 1;
+}
+.tab-wrap:not(:hover):not(:focus-within) .tab-x:not([data-active]) {
+  opacity: 0;
 }
 .tab-edit {
   font: inherit;
@@ -314,6 +360,11 @@
 .scene-view[data-active="false"] {
   visibility: hidden;
   pointer-events: none;
+  /* Descendants (dockview views, xterm) can set visibility/pointer-events back;
+     an ancestor's opacity and clip-path cannot be undone, so hidden scenes never
+     paint over the active one or take clicks. */
+  opacity: 0;
+  clip-path: inset(50%);
 }
 .dialog-actions {
   display: flex;
@@ -402,4 +453,19 @@
 }
 .preset-list-wrap .preset-list {
   justify-content: center;
+}
+
+.tab-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--accent, #6cf);
+  vertical-align: middle;
+}
+.tab-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }

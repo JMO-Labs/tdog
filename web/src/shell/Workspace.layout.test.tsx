@@ -36,7 +36,7 @@ test("split right adds a pane with its own session key", () => {
   expect(new Set(s).size).toBe(2);
 });
 
-test("closing panes kills shells; last close shows the empty mascot state", () => {
+test("closing panes kills shells; closing the last one replaces the scene", () => {
   render(<Workspace />);
   fireEvent.click(screen.getByRole("button", { name: "Split down" }));
   const [first, second] = scenes();
@@ -45,9 +45,9 @@ test("closing panes kills shells; last close shows the empty mascot state", () =
   expect(scenes()).toEqual([second]);
   fireEvent.click(screen.getByRole("button", { name: "Close pane" }));
   expect(killScene).toHaveBeenCalledWith(second);
-  expect(screen.getByTestId("empty-panes")).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "New pane" }));
+  // The emptied scene is removed; a fresh one with one pane takes its place.
   expect(scenes()).toHaveLength(1);
+  expect(scenes()[0]).not.toBe(second);
 });
 
 test("layout and pane keys are restored after a reload", () => {

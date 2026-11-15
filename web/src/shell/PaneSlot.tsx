@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import { TerminalPane } from "../TerminalPane";
+import { useCopy } from "../copy/copy";
 import { Mascot } from "./Mascot";
 
 /** Open state of one pane; owned by Workspace so it survives remounts. */
@@ -8,6 +9,7 @@ export type PaneOpen = { open: boolean; everOpen: boolean };
 /** One pane's terminal plus its closed overlay and reconnect handle. */
 export function PaneSlot({
   id,
+  sceneId,
   settled,
   visible,
   state,
@@ -19,6 +21,7 @@ export function PaneSlot({
   theme,
 }: {
   id: string;
+  sceneId: string;
   /** Terminal theme id; defaults to the page theme. */
   theme?: string;
   settled: boolean;
@@ -31,6 +34,7 @@ export function PaneSlot({
   onOutput: (data?: Uint8Array) => void;
   onLatency: (id: string, ms: number) => void;
 }) {
+  const c = useCopy();
   const { open, everOpen } = state ?? { open: false, everOpen: false };
   const reconnectRef = useRef<(() => void) | null>(null);
   const onOpen = useCallback(
@@ -46,6 +50,7 @@ export function PaneSlot({
     <div style={{ position: "relative", height: "100%" }}>
       <TerminalPane
         sceneKey={id}
+        sceneId={sceneId}
         theme={theme}
         settled={settled}
         visible={visible}
@@ -59,15 +64,16 @@ export function PaneSlot({
       {everOpen && !open && (
         <div className="empty">
           <Mascot />
-          <p className="empty-big">Nothing playing.</p>
+          <p className="empty-big">{c("empty.offline")}</p>
           <p className="muted">
-            Reconnect, or press <kbd>⌘K</kbd> for commands.
+            {c("empty.offlineHint")} <kbd>⌘K</kbd>
+            {c("empty.offlineHint2")}
           </p>
           <button
             className="btn reconnect"
             onClick={() => reconnectRef.current?.()}
           >
-            Reconnect
+            {c("conn.reconnect")}
           </button>
         </div>
       )}

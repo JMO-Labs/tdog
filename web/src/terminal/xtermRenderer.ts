@@ -3,8 +3,16 @@ import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
+import "./xterm-overrides.css";
+import type { ImageAddon } from "@xterm/addon-image";
 import { cwdFromOsc7 } from "./titles";
-import type { CursorStyle, TerminalRenderer, TerminalTheme } from "./renderer";
+import type {
+  CellGeometry,
+  CursorStyle,
+  ScreenLine,
+  TerminalRenderer,
+  TerminalTheme,
+} from "./renderer";
 
 const enc = new TextEncoder();
 
@@ -17,6 +25,7 @@ export class XtermRenderer implements TerminalRenderer {
   });
   private fit = new FitAddon();
   private resizeCb: ((c: number, r: number) => void) | null = null;
+  private imageAddon: ImageAddon | null = null;
 
   constructor(el: HTMLElement) {
     const t = this.term;
@@ -33,6 +42,24 @@ export class XtermRenderer implements TerminalRenderer {
     }
     t.onResize(({ cols, rows }) => this.resizeCb?.(cols, rows));
     this.fit.fit();
+  }
+
+  async setInlineImages(enabled: boolean): Promise<void> {
+    const t = this.term;
+    if (enabled && !this.imageAddon) {
+      try {
+        const { ImageAddon } = await import("@xterm/addon-image");
+        // storageLimit is in MB (default 128); lower it since tdog runs many panes.
+        const img = new ImageAddon({ storageLimit: 32 });
+        t.loadAddon(img);
+        this.imageAddon = img;
+      } catch (e) {
+        console.warn("Failed to load image addon:", e);
+      }
+    } else if (!enabled && this.imageAddon) {
+      this.imageAddon.dispose();
+      this.imageAddon = null;
+    }
   }
 
   write(data: Uint8Array, cb?: () => void): void {
@@ -68,12 +95,98 @@ export class XtermRenderer implements TerminalRenderer {
     this.term.options.cursorStyle = c.shape;
     this.term.options.cursorBlink = c.blink;
   }
+  /** Size before zoom; zoom is added on top so font changes keep it. */
+  private baseSize = 0;
+  private zoom = 0;
   setFont(family?: string, size?: number): void {
     if (family) this.term.options.fontFamily = family;
-    if (size) this.term.options.fontSize = size;
+    if (size) this.baseSize = size;
+    if (size) this.term.options.fontSize = zoomed(size, this.zoom);
     if (family || size) this.fit.fit();
   }
+  setZoom(steps: number): void {
+    this.baseSize ||= this.term.options.fontSize ?? 15;
+    this.zoom = steps;
+    this.term.options.fontSize = zoomed(this.baseSize, steps);
+    this.fit.fit();
+  }
+  getSelection(): string {
+    return this.term.getSelection();
+  }
+  selectAll(): void {
+    this.term.selectAll();
+  }
+  paste(text: string): void {
+    this.term.paste(text);
+  }
+  focus(): void {
+    this.term.focus();
+  }
+  cursorRect(): { x: number; y: number } | null {
+    const screen = this.term.element?.querySelector(".xterm-screen");
+    if (!screen) return null;
+    const b = screen.getBoundingClientRect();
+    const { cols, rows } = this.term;
+    if (!cols || !rows) return null;
+    const { cursorX, cursorY } = this.term.buffer.active;
+    return {
+      x: b.left + (cursorX * b.width) / cols,
+      y: b.top + ((cursorY + 1) * b.height) / rows,
+    };
+  }
+  mouseReporting(): boolean {
+    return this.term.modes.mouseTrackingMode !== "none";
+  }
+  cursorLine(): string {
+    const b = this.term.buffer.active;
+    let y = b.baseY + b.cursorY;
+    let line = b.getLine(y);
+    let text = line?.translateToString(true) ?? "";
+    while (line?.isWrapped && y > 0) {
+      line = b.getLine(--y);
+      text = (line?.translateToString(true) ?? "") + text;
+    }
+    return text;
+  }
+  screenLines(): ScreenLine[] {
+    const lines: ScreenLine[] = [];
+    const buffer = this.term.buffer.active;
+    const startRow = buffer.viewportY;
+    const endRow = Math.min(startRow + this.term.rows, buffer.length);
+    for (let y = startRow; y < endRow; y++) {
+      const line = buffer.getLine(y);
+      if (line) {
+        const text = line.translateToString(true);
+        lines.push({ row: y - startRow, text });
+      }
+    }
+    return lines;
+  }
+  cellGeometry(): CellGeometry | null {
+    const screen = this.term.element?.querySelector(".xterm-screen");
+    if (!screen) return null;
+    const { cols, rows } = this.term;
+    if (!cols || !rows) return null;
+    const b = screen.getBoundingClientRect();
+    return {
+      cellWidth: b.width / cols,
+      cellHeight: b.height / rows,
+      offsetX: b.left,
+      offsetY: b.top,
+    };
+  }
   dispose(): void {
+    if (this.imageAddon) {
+      try {
+        this.imageAddon.dispose();
+      } catch {
+        /* Addon already disposed */
+      }
+    }
     this.term.dispose();
   }
 }
+
+/** Font size with zoom steps applied, kept readable (6..40 px). */
+export const zoomed = (base: number, steps: number): number =>
+  Math.min(40, Math.max(6, base + steps));

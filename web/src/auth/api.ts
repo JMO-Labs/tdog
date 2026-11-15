@@ -57,26 +57,61 @@ export async function apiPost(
 ): Promise<Response> {
   const headers: Record<string, string> = {};
   if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const form = body instanceof FormData;
+  if (body !== undefined && !form) headers["Content-Type"] = "application/json";
   const r = await fetch(path, {
     method: "POST",
     credentials: "same-origin",
     headers,
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    ...(body === undefined ? {} : { body: form ? body : JSON.stringify(body) }),
   });
   if (r.status === 401 && !opts.keep401) onUnauthorized?.();
   return r;
 }
 
-/** CSRF-aware PUT of a text body (preset files). */
-export async function apiPut(path: string, body: string): Promise<Response> {
+/** CSRF-aware PUT (or POST) of a text body (preset files). */
+export async function apiPut(
+  path: string,
+  body: string,
+  method: "PUT" | "POST" = "PUT",
+): Promise<Response> {
   const headers: Record<string, string> = { "Content-Type": "text/plain" };
   if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
   const r = await fetch(path, {
-    method: "PUT",
+    method,
     credentials: "same-origin",
     headers,
     body,
+  });
+  if (r.status === 401) onUnauthorized?.();
+  return r;
+}
+
+/** CSRF-aware multipart POST (asset upload); the browser sets the boundary. */
+export async function apiUpload(
+  path: string,
+  body: FormData,
+): Promise<Response> {
+  const headers: Record<string, string> = {};
+  if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+  const r = await fetch(path, {
+    method: "POST",
+    credentials: "same-origin",
+    headers,
+    body,
+  });
+  if (r.status === 401) onUnauthorized?.();
+  return r;
+}
+
+/** CSRF-aware DELETE for authenticated calls. */
+export async function apiDelete(path: string): Promise<Response> {
+  const headers: Record<string, string> = {};
+  if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+  const r = await fetch(path, {
+    method: "DELETE",
+    credentials: "same-origin",
+    headers,
   });
   if (r.status === 401) onUnauthorized?.();
   return r;

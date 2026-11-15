@@ -39,3 +39,76 @@ export async function resolveSession(
   bound.delete(pane);
   return findSessionId(pane);
 }
+
+/** Scene tab -> scene preset it was opened from (drives its background layer). */
+const SCENE_KEY = "tdog.scenePresets";
+function readScenes(): Record<string, string> {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(SCENE_KEY) ?? "{}");
+    return v && typeof v === "object" && !Array.isArray(v)
+      ? (v as Record<string, string>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+export const scenePreset = (tab: string): string | undefined =>
+  readScenes()[tab];
+export function setScenePreset(tab: string, name: string): void {
+  try {
+    localStorage.setItem(
+      SCENE_KEY,
+      JSON.stringify({ ...readScenes(), [tab]: name }),
+    );
+  } catch {
+    /* storage unavailable: the scene just has no background */
+  }
+}
+
+/** Per-pane terminal theme restored from a saved scene (beats the preset's). */
+const THEME_KEY = "tdog.paneThemes";
+function readThemes(): Record<string, string> {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(THEME_KEY) ?? "{}");
+    return v && typeof v === "object" && !Array.isArray(v)
+      ? (v as Record<string, string>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+export const paneTheme = (pane: string): string | undefined =>
+  readThemes()[pane];
+export function setPaneTheme(pane: string, theme: string): void {
+  try {
+    localStorage.setItem(
+      THEME_KEY,
+      JSON.stringify({ ...readThemes(), [pane]: theme }),
+    );
+  } catch {
+    /* storage unavailable: the pane keeps its preset theme */
+  }
+}
+
+/** Per-pane zoom steps (1px each), kept across reloads. */
+const ZOOM_KEY = "tdog.paneZoom";
+export function paneZoom(pane: string): number {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(ZOOM_KEY) ?? "{}")?.[
+      pane
+    ];
+    return typeof v === "number" ? v : 0;
+  } catch {
+    return 0;
+  }
+}
+export function setPaneZoom(pane: string, steps: number): void {
+  try {
+    const all = JSON.parse(localStorage.getItem(ZOOM_KEY) ?? "{}");
+    if (steps) all[pane] = steps;
+    else delete all[pane];
+    localStorage.setItem(ZOOM_KEY, JSON.stringify(all));
+  } catch {
+    /* storage unavailable: zoom lasts until reload */
+  }
+}

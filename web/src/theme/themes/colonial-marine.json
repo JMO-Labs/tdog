@@ -31,7 +31,7 @@
       "shape": "block",
       "blink": true
     },
-    "font": "vt323",
+    "font": "share-tech-mono",
     "effects": [
       {
         "id": "scanlines",
@@ -189,6 +189,49 @@
           "fill": "link"
         }
       ]
+    }
+  },
+  "light": {
+    "terminal": {
+      "palette": {
+        "fg": "#3a2600",
+        "bg": "#f3e6c4",
+        "cursor": "#b07800",
+        "selection": "#dcc88c",
+        "ansi": [
+          "#6a5010",
+          "#b02a00",
+          "#0a6a2a",
+          "#7a5200",
+          "#6a4a0a",
+          "#7a4a10",
+          "#0a6a4a",
+          "#3a2600",
+          "#5a4208",
+          "#a82400",
+          "#08602a",
+          "#6a4600",
+          "#5a3e08",
+          "#6a3e08",
+          "#085a3e",
+          "#1a1000"
+        ]
+      }
+    },
+    "chrome": {
+      "tokens": {
+        "bg": "#e6d6a8",
+        "surface": "#f3e6c4",
+        "surface-2": "#ead9b0",
+        "fg": "#3a2600",
+        "muted": "#6a5010",
+        "line": "#000000",
+        "shadow": "#0a6a2a",
+        "link": "#0a6a2a",
+        "term-bg": "#f3e6c4",
+        "term-fg": "#3a2600",
+        "term-dim": "#6a5010"
+      }
     }
   }
 }

@@ -1,0 +1,11 @@
+@keyframes tdog-bg-drift {
+  to {
+    background-position: 48px 48px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-testid="bg-layer"],
+  .bgp-thumb {
+    animation: none !important;
+  }
+}

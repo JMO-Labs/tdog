@@ -5,6 +5,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { Icon } from "../shell/icons";
 import { Modal } from "./Modal";
 import {
   getCommands,
@@ -67,7 +68,11 @@ export function CommandPalette({
   };
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        !e.shiftKey &&
+        e.key.toLowerCase() === "k"
+      ) {
         e.preventDefault();
         setOpen((o) => !o);
       }
@@ -95,33 +100,36 @@ export function CommandPalette({
       onClose={close}
       className="dialog cmdk"
     >
-      <input
-        className="input"
-        role="combobox"
-        aria-expanded="true"
-        aria-controls="cmdk-list"
-        aria-activedescendant={list[sel] ? `cmdk-${list[sel].id}` : undefined}
-        placeholder="Type a command…"
-        autoFocus
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setSel(0);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            setSel((s) => Math.min(list.length - 1, s + 1));
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            setSel((s) => Math.max(0, s - 1));
-          } else if (e.key === "Enter") {
-            e.preventDefault();
-            run(sel);
-          }
-        }}
-      />
-      <ul id="cmdk-list" role="listbox">
+      <label className="cmdk-filter">
+        <Icon name="search" />
+        <input
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="cmdk-list"
+          aria-activedescendant={list[sel] ? `cmdk-${list[sel].id}` : undefined}
+          placeholder="Type a command…"
+          autoFocus
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setSel(0);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setSel((s) => Math.min(list.length - 1, s + 1));
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setSel((s) => Math.max(0, s - 1));
+            } else if (e.key === "Enter") {
+              e.preventDefault();
+              run(sel);
+            }
+          }}
+        />
+        <span className="cmdk-hint">Esc</span>
+      </label>
+      <ul id="cmdk-list" role="listbox" className="cmdk-list">
         {sections.map((sec) => (
           <li key={sec.heading} role="presentation" className="cmdk-group">
             <div className="cmdk-heading">{sec.heading}</div>
@@ -135,18 +143,25 @@ export function CommandPalette({
                     role="option"
                     aria-label={c.title}
                     aria-selected={i === sel}
+                    className={c.danger ? "danger" : undefined}
                     onMouseMove={() => setSel(i)}
                     onClick={() => run(i)}
                   >
                     <span className="cmdk-title">
+                      <span className="cmdk-icon">
+                        {c.icon && <Icon name={c.icon} />}
+                      </span>
                       {c.swatch && (
                         <span className="swatch" aria-hidden="true">
+                          {c.icon && <Icon name={c.icon} />}
                           {c.swatch.map((col, k) => (
                             <i key={k} style={{ background: col }} />
                           ))}
                         </span>
                       )}
-                      <Highlight text={c.title} query={query} />
+                      <span className="cmdk-label">
+                        <Highlight text={c.title} query={query} />
+                      </span>
                     </span>
                     {c.shortcut && <kbd>{c.shortcut}</kbd>}
                   </li>
@@ -161,6 +176,10 @@ export function CommandPalette({
           </li>
         )}
       </ul>
+      <div className="cmdk-help">
+        <span>↑↓ move · ↵ run</span>
+        <span>Esc close</span>
+      </div>
     </Modal>
   );
 }

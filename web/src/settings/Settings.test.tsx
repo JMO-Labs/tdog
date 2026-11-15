@@ -296,3 +296,23 @@ test("screen effects: master, intensity and per-effect toggles persist", async (
   expect(getFx().master).toBe(false);
   expect(sw(/scanlines/i).hasAttribute("disabled")).toBe(true);
 });
+
+test("serious mode disables the theme picker with a note", async () => {
+  await mount({ "GET /api/session": () => session(false) });
+  const card = () => screen.getByRole("button", { name: /Memphis Pop/ });
+  expect(card().hasAttribute("disabled")).toBe(false);
+  act(() => setPref("serious", true));
+  expect(card().hasAttribute("disabled")).toBe(true);
+  expect(screen.getByText(/Serious mode is on/)).toBeTruthy();
+  act(() => setPref("serious", false));
+  expect(card().hasAttribute("disabled")).toBe(false);
+  expect(screen.queryByText(/Serious mode is on/)).toBeNull();
+});
+
+test("performance mode toggle defaults off and persists", async () => {
+  await mount({ "GET /api/session": session(false) });
+  expect(sw(/performance mode/i).getAttribute("aria-checked")).toBe("false");
+  fireEvent.click(sw(/performance mode/i));
+  expect(localStorage.getItem("tdog.perf")).toBe("1");
+  expect(getPref("perf")).toBe(true);
+});

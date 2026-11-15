@@ -20,16 +20,18 @@ import { Icon } from "../shell/icons";
 import { PANE_MIME, dragPane, draggedPane, dropZone, type Zone } from "./dnd";
 import { leaves, paneTitle, titles } from "./tree";
 import { clearScrollback } from "../terminal/paneActions";
-import { registerCommand } from "../overlays/commands";
+import { registerCommand, type Command } from "../overlays/commands";
 import { mountSplit, orientation } from "./dock";
 import type { Dir, Node } from "./tree";
+import { PaneOpsContext } from "./paneOps";
 import { PaneMenu } from "./PaneMenu";
-import { SnapPicker } from "./SnapPicker";
-import type { TemplateId } from "./templates";
+import { TEMPLATES, type TemplateId } from "./templates";
+import { useBroadcast } from "../broadcast/useBroadcast";
 import "./layout.css";
 
 export interface SplitViewProps {
   tree: Node;
+  sceneId?: string;
   onSplit: (id: string, dir: Dir) => void;
   onClose: (id: string) => void;
   onSnap: (t: TemplateId, confirmed?: boolean) => string[];
@@ -101,25 +103,62 @@ function Pane({ id }: { id: string }) {
   const clear = useCallback(() => void clearScrollback(id), [id]);
   const live = useRef(p);
   live.current = p;
-  const isFocused = focus === id && p.active !== false;
+  // Last focused pane, else the first: ⌘K targets it even before any click.
+  const current = focus && order.includes(focus) ? focus : order[0];
+  const isFocused = current === id && p.active !== false;
+
+  // Every pane in the group shows the chip, focused or not.
+  const { isBroadcasting } = useBroadcast(p.sceneId, id);
+
   // ⌘K actions target the focused pane of the visible scene.
   useEffect(() => {
     if (!isFocused) return;
-    const cmd = (key: string, title: string, run: () => void) =>
-      registerCommand({ id: `pane:${key}`, title: `Pane: ${title}`, run });
+    const cmd = (
+      key: string,
+      title: string,
+      run: () => void,
+      extra: Partial<Command> = {},
+    ) =>
+      registerCommand({
+        id: `pane:${key}`,
+        title,
+        group: "This pane",
+        run,
+        ...extra,
+      });
     const offs = [
-      cmd("rename", "Rename", () => setRenaming(true)),
-      cmd("duplicate", "Duplicate", () => live.current.onDuplicate?.(id)),
-      cmd("clear", "Clear scrollback", clear),
+      cmd("rename", "Rename pane", () => setRenaming(true)),
+      cmd("duplicate", "Duplicate pane", () => live.current.onDuplicate?.(id)),
+      cmd("clear", "Clear scrollback", clear, { icon: "eraser" }),
       cmd("swap-prev", "Swap with previous", () =>
         live.current.onSwap?.(id, -1),
       ),
       cmd("swap-next", "Swap with next", () => live.current.onSwap?.(id, 1)),
-      cmd("close", "Close", () => live.current.onClose(id)),
+      cmd("close", "Close pane", () => live.current.onClose(id), {
+        icon: "close",
+        danger: true,
+      }),
+      cmd("split-right", "Split right", () => live.current.onSplit(id, "row"), {
+        icon: "splitRight",
+      }),
+      cmd("split-down", "Split down", () => live.current.onSplit(id, "col"), {
+        icon: "splitDown",
+      }),
+      ...TEMPLATES.map((t) =>
+        cmd(`layout:${t.id}`, `Layout ${t.label}`, () => {
+          const n = live.current.onSnap(t.id).length;
+          if (
+            n &&
+            window.confirm(`Close ${n} pane${n > 1 ? "s" : ""} and apply?`)
+          )
+            live.current.onSnap(t.id, true);
+        }),
+      ),
       ...(live.current.scenes ?? []).map((s) =>
         registerCommand({
           id: `pane:move:${s.id}`,
-          title: `Pane: Move to scene ${s.name}`,
+          title: `Move to scene ${s.name}`,
+          group: "This pane",
           run: () => live.current.onMoveToScene?.(id, s.id),
         }),
       ),
@@ -212,8 +251,24 @@ function Pane({ id }: { id: string }) {
         )}
         {/* Panes are always local PTYs for now (no remote targets in spec). */}
         <span className="chip">local</span>
+        {isBroadcasting && <span className="chip broadcast">Broadcasting</span>}
         <span className="spacer" />
-        <SnapPicker onSnap={p.onSnap} />
+        <button
+          className="pane-btn pane-split icon-btn sm"
+          aria-label="Split right"
+          title="Split right"
+          onClick={() => p.onSplit(id, "row")}
+        >
+          <Icon name="splitRight" />
+        </button>
+        <button
+          className="pane-btn pane-split icon-btn sm"
+          aria-label="Split down"
+          title="Split down"
+          onClick={() => p.onSplit(id, "col")}
+        >
+          <Icon name="splitDown" />
+        </button>
         {p.onSwap && p.onMoveToScene && (
           <PaneMenu
             id={id}
@@ -224,24 +279,10 @@ function Pane({ id }: { id: string }) {
             onDuplicate={p.onDuplicate}
             onClear={clear}
             onClose={p.onClose}
+            onSplit={p.onSplit}
+            onSnap={p.onSnap}
           />
         )}
-        <button
-          className="pane-btn icon-btn sm"
-          aria-label="Split right"
-          title="Split right"
-          onClick={() => p.onSplit(id, "row")}
-        >
-          <Icon name="splitRight" />
-        </button>
-        <button
-          className="pane-btn icon-btn sm"
-          aria-label="Split down"
-          title="Split down"
-          onClick={() => p.onSplit(id, "col")}
-        >
-          <Icon name="splitDown" />
-        </button>
         <button
           className="pane-btn icon-btn sm danger"
           aria-label="Close pane"
@@ -252,7 +293,16 @@ function Pane({ id }: { id: string }) {
         </button>
       </header>
       <div className="pane-body">
-        {p.renderPane(id, settled)}
+        <PaneOpsContext.Provider
+          value={{
+            split: (d) => p.onSplit(id, d),
+            rename: p.onRename && (() => setRenaming(true)),
+            close: () => p.onClose(id),
+            focused: isFocused,
+          }}
+        >
+          {p.renderPane(id, settled)}
+        </PaneOpsContext.Provider>
         {zone && (
           <div
             className="drop-zone"

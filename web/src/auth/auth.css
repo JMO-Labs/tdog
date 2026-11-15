@@ -107,6 +107,34 @@
     drop-shadow(0.05em 0.05em 0 var(--purple))
     drop-shadow(0.02em 0.02em 0 var(--ink));
 }
+/* Dog mark: one mask image, painted with the theme's colours. */
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12em;
+}
+.logo-mark {
+  display: inline-block;
+  flex: none;
+  aspect-ratio: 208 / 256;
+}
+/* Mask on the pseudo-element: filter runs before mask, so a shadow on the
+   masked element itself would be cut away. */
+.logo-mark::before {
+  content: "";
+  display: block;
+  height: 100%;
+  background: var(--mark);
+  -webkit-mask: url(/logo-mark.png) center / contain no-repeat;
+  mask: url(/logo-mark.png) center / contain no-repeat;
+}
+.logo-mark.big {
+  height: clamp(64px, 15vw, 128px);
+  transform: rotate(-8deg);
+  --mark: linear-gradient(180deg, var(--pink) 10%, var(--yellow) 90%);
+  filter: drop-shadow(2px 2px 0 var(--ink)) drop-shadow(3px 3px 0 var(--purple));
+}
 .wordmark.big {
   font-size: clamp(72px, 18vw, 150px);
   transform: rotate(-4deg);
@@ -262,44 +290,18 @@
     opacity: 0;
   }
 }
-.dialup-card {
-  width: min(400px, 100%);
-  display: grid;
-  gap: 14px;
-  margin-top: 110px;
+.load-bar {
+  width: min(320px, 80vw);
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(var(--yellow), var(--yellow)) left / 0 100%
+    no-repeat var(--surface-2);
+  animation: load-fill linear forwards;
 }
-.dialup-card .mascot {
-  width: 160px;
-  margin-top: -110px;
-  filter: drop-shadow(5px 5px 0 var(--ink));
-}
-.steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 10px;
-}
-.steps li {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  font-weight: 600;
-  opacity: 0.35;
-  transition: opacity 0.3s;
-}
-.steps li.on {
-  opacity: 1;
-}
-.step-ico {
-  width: 34px;
-  height: 34px;
-  border: calc(2px * var(--border-width)) solid var(--line);
-  border-radius: calc(10px * var(--radius-scale));
-  background: var(--surface-2);
-}
-.steps li.on .step-ico {
-  background: var(--yellow);
+@keyframes load-fill {
+  to {
+    background-size: 100% 100%;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .mascot .m-arm,

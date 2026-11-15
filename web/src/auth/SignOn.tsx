@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { useCopy } from "../copy/copy";
 import { Mascot } from "./Mascot";
-import { initial, label, lit, next, STEPS, timing, type Phase } from "./signon";
-import { prefersReducedMotion } from "../motion/confetti";
+import { timing } from "./signon";
 
 /** Wrong-password CRT: shown ~2.4 s, then calls onDone. */
 export function NoNo({
@@ -11,6 +11,7 @@ export function NoNo({
   detail: string;
   onDone: () => void;
 }) {
+  const c = useCopy();
   const done = useRef(onDone);
   done.current = onDone;
   useEffect(() => {
@@ -20,42 +21,28 @@ export function NoNo({
   return (
     <div className="crt" role="alert">
       <Mascot pose="nono" />
-      <p className="crt-big">Ah ah ah!</p>
+      <p className="crt-big">{c("signon.denied")}</p>
       <p className="crt-small">{detail}</p>
     </div>
   );
 }
 
-/** Dial-up overlay; calls onDone after Connected! has been shown. */
-export function DialUp({ onDone }: { onDone: () => void }) {
-  const [phase, setPhase] = useState<Phase>(initial);
+/** Short loading bar after a good password; calls onDone when full. */
+export function Loading({ onDone }: { onDone: () => void }) {
   const done = useRef(onDone);
   done.current = onDone;
   useEffect(() => {
-    if (phase === "done") return done.current();
-    const ms =
-      phase === "connected"
-        ? timing.hold
-        : prefersReducedMotion()
-          ? timing.reducedStep
-          : timing.step;
-    const t = setTimeout(() => setPhase(next(phase)), ms);
+    const t = setTimeout(() => done.current(), timing.load);
     return () => clearTimeout(t);
-  }, [phase]);
+  }, []);
   return (
-    <div className="overlay dim" role="status" aria-label="Signing on">
-      <div className="card dialup-card">
-        {phase === "connected" && <Mascot pose="wave" />}
-        <h2 className="card-title">Signing on</h2>
-        <ol className="steps">
-          {STEPS.map((s) => (
-            <li key={s} className={lit(phase, s) ? "on" : undefined}>
-              <span className="step-ico" aria-hidden="true" />
-              {label(s)}
-            </li>
-          ))}
-        </ol>
-      </div>
+    <div className="overlay dim" role="status" aria-label="Signing in">
+      <div
+        className="load-bar"
+        role="progressbar"
+        aria-label="Signing in"
+        style={{ animationDuration: `${timing.load}ms` }}
+      />
     </div>
   );
 }

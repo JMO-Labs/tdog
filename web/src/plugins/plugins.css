@@ -1,0 +1,50 @@
+/* Plugin confirm prompt and plugin overlays: drawn by tdog, theme tokens only. */
+.gate-confirm {
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: min(440px, calc(100% - 32px));
+  padding: 14px 16px;
+  background: var(--surface);
+  color: var(--fg);
+  border: calc(2px * var(--border-width)) solid var(--line);
+  border-radius: calc(12px * var(--radius-scale));
+  box-shadow:
+    var(--shadow-sm),
+    0 12px 28px rgb(8 4 24 / 0.45);
+}
+.gate-confirm-title {
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+.gate-confirm-reason {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+.gate-confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.plugin-overlay {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 480px;
+}
+.plugin-overlay-from {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.plugin-overlay h3,
+.plugin-overlay p,
+.plugin-overlay ul {
+  margin: 0;
+}
+.plugin-overlay-field {
+  display: grid;
+  gap: 4px;
+}

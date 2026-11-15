@@ -7,11 +7,11 @@ import {
   type Ref,
 } from "react";
 import * as api from "./api";
+import { useCopy } from "../copy/copy";
 import { MIN_PASSWORD } from "./constants";
 import { OtpBoxes } from "./otp";
 import { AuthShell } from "./shell";
-import { DialUp, NoNo } from "./SignOn";
-import { celebrate } from "./celebrate";
+import { Loading, NoNo } from "./SignOn";
 import { useToast } from "../overlays/toast";
 import { tape } from "./tape";
 import { Button } from "../components/ui/button";
@@ -60,6 +60,7 @@ export function LoginScreen(props: {
   const [dialing, setDialing] = useState(false);
   const [nono, setNono] = useState(false);
   const toast = useToast();
+  const c = useCopy();
   const input = useRef<HTMLInputElement>(null);
   const recoveryInput = useRef<HTMLInputElement>(null);
   useEffect(() => input.current?.focus(), []);
@@ -94,7 +95,7 @@ export function LoginScreen(props: {
     <>
       {nono && (
         <NoNo
-          detail="Wrong password. Give it another go."
+          detail={c("auth.wrongPassword")}
           onDone={() => {
             setNono(false);
             input.current?.select();
@@ -102,13 +103,9 @@ export function LoginScreen(props: {
         />
       )}
       {dialing && (
-        <DialUp
+        <Loading
           onDone={() => {
-            celebrate();
-            toast(
-              "success",
-              "Signed in. Your shells are right where you left them.",
-            );
+            toast("success", c("auth.signedIn"));
             props.onDone();
           }}
         />
@@ -208,6 +205,7 @@ export function SetupScreen(props: { onDone: (signedIn: boolean) => void }) {
   const [busy, setBusy] = useState(false);
   const [dialing, setDialing] = useState(false);
   const toast = useToast();
+  const c = useCopy();
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => input.current?.focus(), []);
   const meter = tape(pw.length);
@@ -216,7 +214,7 @@ export function SetupScreen(props: { onDone: (signedIn: boolean) => void }) {
   async function signIn() {
     const r = await api.login(pw).catch(() => ({ ok: false }) as const);
     if (r.ok) return setDialing(true);
-    toast("info", "Account created. Sign in with your new password.");
+    toast("info", c("auth.createdSignIn"));
     props.onDone(false);
   }
 
@@ -269,7 +267,7 @@ export function SetupScreen(props: { onDone: (signedIn: boolean) => void }) {
           <i style={{ width: `${meter.pct}%` }} />
         </div>
         <p className="tape-label muted" role="status">
-          {meter.label}
+          {c(meter.key, meter.vars)}
         </p>
         <Field label="Confirm password">
           <Input
@@ -290,10 +288,9 @@ export function SetupScreen(props: { onDone: (signedIn: boolean) => void }) {
         </Button>
       </form>
       {dialing && (
-        <DialUp
+        <Loading
           onDone={() => {
-            celebrate();
-            toast("success", "Account created. You're in.");
+            toast("success", c("auth.created"));
             props.onDone(true);
           }}
         />

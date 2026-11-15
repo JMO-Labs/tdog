@@ -1,0 +1,277 @@
+.action-menu {
+  position: fixed;
+  z-index: 60;
+  max-height: calc(100vh - 16px);
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--fg);
+  border: 2px solid var(--line);
+  border-radius: calc(12px * var(--radius-scale));
+  /* Sticker shadow plus a soft drop so it lifts off dark terminals too. */
+  box-shadow:
+    var(--shadow-sm),
+    0 12px 28px rgb(8 4 24 / 0.45);
+}
+
+/* Filter input at top */
+.menu-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  background: var(--surface-2);
+}
+
+.menu-filter svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.menu-filter input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+}
+
+.menu-filter-hint {
+  font-size: 10px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* Quick action strip */
+.menu-strip {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.menu-icon-btn {
+  all: unset;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 34px;
+  padding: 0;
+  border-radius: calc(7px * var(--radius-scale));
+  border: 2px solid transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.menu-icon-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.7;
+}
+
+.menu-icon-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.menu-icon-btn:focus-visible {
+  outline: 2px solid var(--accent, #6cf);
+  outline-offset: 2px;
+}
+
+.menu-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.menu-icon-btn.active {
+  background: var(--yellow);
+  border-color: var(--line);
+}
+
+/* Menu separators */
+.menu-sep {
+  width: 100%;
+  height: 1px;
+  border: none;
+  background: var(--line);
+  margin: 4px 0;
+  opacity: 0.2;
+  flex-shrink: 0;
+}
+
+/* Menu items container */
+.menu-items {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.menu-item {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: calc(7px * var(--radius-scale));
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+
+.menu-item:hover:not(:disabled),
+.menu-item:focus-visible:not(:disabled) {
+  background: var(--surface-2);
+  outline: none;
+}
+
+.menu-item:focus-visible {
+  outline: 2px solid var(--accent, #6cf);
+  outline-offset: -2px;
+}
+
+.menu-item:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.menu-item.danger {
+  color: var(--danger, #c2185b);
+}
+
+.menu-label {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.menu-shortcut {
+  font-size: 10px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.menu-check,
+.menu-arrow {
+  font-size: 12px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* Highlighted match text in filter */
+.match {
+  color: var(--cyan);
+}
+
+/* Help text footer */
+.menu-help {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--line);
+  font-size: 10px;
+  opacity: 0.6;
+  flex-shrink: 0;
+  background: var(--surface-2);
+}
+
+/* Submenu */
+.menu-item-with-sub {
+  position: relative;
+}
+
+.menu-submenu {
+  position: fixed;
+  min-width: 160px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--surface);
+  color: var(--fg);
+  border: 2px solid var(--line);
+  border-radius: calc(10px * var(--radius-scale));
+  box-shadow: var(--shadow-sm);
+  z-index: 70;
+}
+
+.menu-submenu .menu-item {
+  padding: 0 10px;
+}
+
+.menu-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.menu-dot svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.menu-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  flex: none;
+  margin-right: 8px;
+}
+
+.menu-row-icon {
+  display: inline-flex;
+  width: 16px;
+  margin-right: 8px;
+  opacity: 0.8;
+}
+.menu-row-icon svg {
+  width: 15px;
+  height: 15px;
+}
+.menu-label mark {
+  background: none;
+  color: var(--pink);
+  font-weight: 700;
+}
+.menu-empty {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.menu-hint {
+  margin-left: auto;
+  padding-left: 12px;
+  font-size: 11px;
+  color: var(--muted);
+}

@@ -31,7 +31,7 @@
       "shape": "block",
       "blink": false
     },
-    "font": "press-start-2p",
+    "font": "space-mono",
     "effects": []
   },
   "chrome": {
@@ -146,6 +146,53 @@
           "stroke": "line"
         }
       ]
+    }
+  },
+  "light": {
+    "terminal": {
+      "palette": {
+        "fg": "#1c1c20",
+        "bg": "#f4f4f8",
+        "cursor": "#a88a00",
+        "selection": "#c8c8dc",
+        "ansi": [
+          "#5c5c6a",
+          "#d01818",
+          "#12781f",
+          "#7a6200",
+          "#1f55c8",
+          "#7a2ac0",
+          "#0a6c78",
+          "#1c1c20",
+          "#484856",
+          "#c42020",
+          "#0e6a1a",
+          "#6a5400",
+          "#1a4ab8",
+          "#6a20b0",
+          "#0a5e6a",
+          "#000000"
+        ]
+      }
+    },
+    "chrome": {
+      "tokens": {
+        "bg": "#e4e4ec",
+        "surface": "#f4f4f8",
+        "surface-2": "#e8e8f0",
+        "fg": "#1c1c20",
+        "muted": "#4a4a58",
+        "line": "#000000",
+        "shadow": "#d01818",
+        "link": "#1f55c8",
+        "pink": "#d01818",
+        "cyan": "#1f55c8",
+        "yellow": "#ffd400",
+        "purple": "#12781f",
+        "term-bg": "#f4f4f8",
+        "term-fg": "#1c1c20",
+        "term-dim": "#5c5c6a"
+      }
     }
   }
 }
