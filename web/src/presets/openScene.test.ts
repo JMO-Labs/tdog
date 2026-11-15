@@ -1,7 +1,10 @@
 import { beforeEach, expect, test, vi } from "vitest";
 
 const m = vi.hoisted(() => ({ startScene: vi.fn() }));
-vi.mock("./api", () => ({ startScene: m.startScene }));
+vi.mock("./api", async (orig) => ({
+  ...(await orig<typeof import("./api")>()),
+  startScene: m.startScene,
+}));
 
 import { openScenePreset } from "./openScene";
 
