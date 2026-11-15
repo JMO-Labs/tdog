@@ -97,7 +97,7 @@
       "term-dim": "#8fa88a"
     },
     "shape": {
-      "radius": 12,
+      "radius": 1.5,
       "shadow": "hard",
       "border": 3
     },
