@@ -73,7 +73,9 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
       <div className="row">
         <div>
           <b id="sw-serious">Serious mode</b>
-          <p className="muted">Drops the slang from messages.</p>
+          <p className="muted">
+            Plain light/dark look, no mascot or effects, no slang.
+          </p>
         </div>
         <Switch
           labelledBy="sw-serious"

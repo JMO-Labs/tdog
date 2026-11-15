@@ -25,14 +25,14 @@ export function setPref(name: PrefName, on: boolean): void {
   listeners.forEach((l) => l());
 }
 
-const subscribe = (l: () => void) => (
+export const subscribePrefs = (l: () => void) => (
   listeners.add(l),
   () => void listeners.delete(l)
 );
 
 /** Persisted boolean preference; updates every subscriber immediately. */
 export function usePref(name: PrefName): [boolean, (on: boolean) => void] {
-  const v = useSyncExternalStore(subscribe, () => getPref(name));
+  const v = useSyncExternalStore(subscribePrefs, () => getPref(name));
   return [v, (on) => setPref(name, on)];
 }
 
@@ -51,6 +51,6 @@ export function setMotifOpacity(pct: number): void {
 }
 
 export function useMotifOpacity(): [number, (pct: number) => void] {
-  const v = useSyncExternalStore(subscribe, getMotifOpacity);
+  const v = useSyncExternalStore(subscribePrefs, getMotifOpacity);
   return [v, setMotifOpacity];
 }

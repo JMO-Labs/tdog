@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { usePref } from "./prefs";
 import { THEMES } from "../theme/registry";
 import { themeStore } from "../theme/store";
 import { MODES, useThemeMode, type ThemeMode } from "../theme/useThemeMode";
@@ -12,6 +13,7 @@ const LABEL: Record<ThemeMode, string> = {
 /** Color mode segmented control and a theme grid with swatches and hover preview. */
 export function Appearance() {
   const { mode, set } = useThemeMode();
+  const [serious] = usePref("serious");
   const active = useSyncExternalStore(themeStore.subscribe, () => {
     // select() clears any preview, so compare against the persisted choice.
     return localStorage.getItem("tdog.theme.id") ?? THEMES[0].id;
@@ -31,12 +33,18 @@ export function Appearance() {
           </button>
         ))}
       </div>
-      <div className="theme-grid">
+      {serious && (
+        <p className="muted">
+          Serious mode is on: themes are off until you turn it off.
+        </p>
+      )}
+      <div className="theme-grid" aria-disabled={serious || undefined}>
         {THEMES.map((t) => (
           <button
             key={t.id}
             type="button"
             className="theme-card"
+            disabled={serious}
             aria-pressed={active === t.id}
             title={t.description}
             onMouseEnter={() => themeStore.preview(t.id)}

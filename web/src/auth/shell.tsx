@@ -19,7 +19,7 @@ const ICON = { system: "◐", light: "☀", dark: "☾" } as const;
 /** Confetti backdrop, extruded wordmark (letters drop in once per session), theme toggle. */
 export function AuthShell({ children }: { children: ReactNode }) {
   const [variant, setVariant] = useState(() =>
-    getPref("boot") && takeBoot()
+    getPref("boot") && !getPref("serious") && takeBoot()
       ? bootFor(themeStore.get().id, prefersReducedMotion())
       : null,
   );
