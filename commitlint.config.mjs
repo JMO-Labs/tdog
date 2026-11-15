@@ -1,5 +1,6 @@
 export default {
   extends: ["@commitlint/config-conventional"],
+  // Squash bodies repeat sub-commit headers, so body lines follow the header limit, not 100.
   // Subjects often start with acronyms (PTY, WS, TOTP); case is not worth failing CI over.
   // Squash-merge bodies embed PR commit subjects (bullets > 100 chars), so body line length is not enforced.
   rules: {
