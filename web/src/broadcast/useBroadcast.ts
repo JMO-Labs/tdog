@@ -4,7 +4,10 @@ import {
   clearPane,
   getBroadcastGroup,
   getBroadcastStore,
+  isSceneBroadcasting,
+  toggleSceneBroadcast,
 } from "./store";
+import { getScenePanes } from "./sessionRegistry";
 
 /**
  * Hook for managing broadcast state and cleanup for a pane.
@@ -14,10 +17,15 @@ export function useBroadcast(sceneId?: string, paneId?: string) {
   const has = () =>
     !!sceneId && !!paneId && getBroadcastGroup(sceneId).has(paneId);
   const [isBroadcasting, setIsBroadcasting] = useState(has);
+  const [, bump] = useState(0);
+  const ids = () => (sceneId ? Object.keys(getScenePanes(sceneId)) : []);
 
   useEffect(() => {
     setIsBroadcasting(has());
-    return getBroadcastStore().subscribe(() => setIsBroadcasting(has()));
+    return getBroadcastStore().subscribe(() => {
+      setIsBroadcasting(has());
+      bump((n) => n + 1);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sceneId, paneId]);
 
@@ -31,6 +39,10 @@ export function useBroadcast(sceneId?: string, paneId?: string) {
 
   return {
     isBroadcasting,
+    allBroadcasting: !!sceneId && isSceneBroadcasting(sceneId, ids()),
+    toggleAll: () => {
+      if (sceneId) toggleSceneBroadcast(sceneId, ids());
+    },
     toggle: () => {
       if (sceneId && paneId) toggleBroadcast(sceneId, paneId);
     },

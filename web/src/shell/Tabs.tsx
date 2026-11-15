@@ -20,6 +20,9 @@ type Props = {
   onSaveAs?: (id: string) => void;
   /** Offer the saved scenes to open in a new tab. */
   onOpenSaved?: () => void;
+  /** Scene-wide broadcast toggle and its checked state. */
+  onBroadcastAll?: (id: string) => void;
+  broadcastAll?: (id: string) => boolean;
 };
 
 /** Scene tab strip: sliding pill, inline rename, drag reorder, close, add. */
@@ -163,6 +166,19 @@ export function Tabs(p: Props) {
                     {
                       label: "New scene from saved…",
                       onSelect: () => p.onOpenSaved?.(),
+                    },
+                  ],
+                ]
+              : []),
+            ...(p.onBroadcastAll
+              ? [
+                  [
+                    {
+                      label: "Broadcast to all panes",
+                      isRadio: true,
+                      checked: p.broadcastAll?.(menu.id) ?? false,
+                      shortcut: "⇧⌘B",
+                      onSelect: () => p.onBroadcastAll?.(menu.id),
                     },
                   ],
                 ]
