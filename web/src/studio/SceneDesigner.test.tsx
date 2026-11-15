@@ -125,6 +125,26 @@ test("TOML toggle shows source and applies edits back to the form", async () => 
   ).toBe("20");
 });
 
+test("Start with server switch works in TOML view, even without the line", async () => {
+  setup();
+  render(<SceneDesigner onOpenScene={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "dev" }));
+  const sw = await screen.findByRole("switch", { name: "Start with server" });
+  fireEvent.click(screen.getByRole("radio", { name: "TOML" }));
+  const box = screen.getByLabelText("Scene TOML") as HTMLTextAreaElement;
+  expect(sw.getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(sw);
+  expect(sw.getAttribute("aria-checked")).toBe("false");
+  expect(box.value).toContain("autostart = false");
+  fireEvent.change(box, {
+    target: { value: box.value.replace(/^autostart = .*\n/m, "") },
+  });
+  expect(sw.getAttribute("aria-checked")).toBe("false");
+  fireEvent.click(sw);
+  expect(sw.getAttribute("aria-checked")).toBe("true");
+  expect(box.value).toContain("autostart = true");
+});
+
 test("Open scene saves, then launches in a new tab", async () => {
   setup({
     "PUT /api/presets/scene/dev": () => new Response(null, { status: 204 }),

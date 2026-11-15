@@ -180,15 +180,24 @@ export function SceneDesigner({ onOpenScene }: Props) {
               <label className="scene-switch">
                 <Switch
                   aria-label="Start with server"
-                  checked={draft.autostart}
+                  checked={
+                    view === "form"
+                      ? draft.autostart
+                      : /^autostart = true/m.test(source)
+                  }
                   onCheckedChange={(autostart) =>
                     view === "form"
                       ? edit({ autostart })
                       : setSource((s) =>
-                          s.replace(
-                            /^autostart = .*$/m,
-                            `autostart = ${autostart}`,
-                          ),
+                          /^autostart = .*$/m.test(s)
+                            ? s.replace(
+                                /^autostart = .*$/m,
+                                `autostart = ${autostart}`,
+                              )
+                            : s.replace(
+                                /^(?=\[)|(?![\s\S])/m,
+                                `autostart = ${autostart}\n`,
+                              ),
                         )
                   }
                 />
