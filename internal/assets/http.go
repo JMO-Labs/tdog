@@ -7,17 +7,15 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/netip"
 	"net/url"
 	"os"
 	"path/filepath"
-	"syscall"
 	"time"
+
+	"github.com/JMO-Labs/tdog/internal/netguard"
 )
 
 const fetchTimeout = 30 * time.Second
-
-var errBlocked = errors.New("target address not allowed")
 
 // Register mounts the asset routes; they must sit behind the auth middleware.
 func (s *Store) Register(mux *http.ServeMux) {
@@ -117,7 +115,7 @@ func (s *Store) fromURL(w http.ResponseWriter, r *http.Request) {
 	hr, _ := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	resp, err := s.client().Do(hr)
 	if err != nil {
-		if errors.Is(err, errBlocked) {
+		if errors.Is(err, netguard.ErrBlocked) {
 			jerr(w, 403, "target address not allowed")
 		} else {
 			jerr(w, 502, "download failed")
@@ -141,28 +139,17 @@ func (s *Store) fromURL(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 201, a)
 }
 
-// dialControl rejects any resolved address that is not an IP allowed by allow.
-func dialControl(allow func(net.IP) bool) func(string, string, syscall.RawConn) error {
-	return func(_, addr string, _ syscall.RawConn) error {
-		host, _, err := net.SplitHostPort(addr)
-		if err != nil {
-			return errBlocked
-		}
-		if ip := net.ParseIP(host); ip == nil || !allow(ip) {
-			return errBlocked
-		}
-		return nil
-	}
-}
-
 // client dials only addresses that pass the policy; the check runs on the
 // resolved IP of every connection, so redirects and DNS tricks are covered.
 func (s *Store) client() *http.Client {
 	allow := s.allowIP
 	if allow == nil {
-		allow = publicIP
+		allow = netguard.PublicIP
 	}
-	d := &net.Dialer{Timeout: 10 * time.Second, Control: dialControl(allow)}
+	d := &net.Dialer{
+		Timeout: 10 * time.Second,
+		Control: netguard.DialControl(allow),
+	}
 	return &http.Client{
 		Timeout:   fetchTimeout,
 		Transport: &http.Transport{DialContext: d.DialContext, Proxy: nil},
@@ -173,18 +160,6 @@ func (s *Store) client() *http.Client {
 			return nil
 		},
 	}
-}
-
-var cgnat = netip.MustParsePrefix("100.64.0.0/10")
-
-// publicIP reports whether ip is a globally routable unicast address.
-func publicIP(ip net.IP) bool {
-	a, ok := netip.AddrFromSlice(ip)
-	if !ok {
-		return false
-	}
-	a = a.Unmap()
-	return a.IsGlobalUnicast() && !a.IsPrivate() && !a.IsLoopback() && !a.IsLinkLocalUnicast() && !cgnat.Contains(a)
 }
 
 func (s *Store) serve(w http.ResponseWriter, r *http.Request) {

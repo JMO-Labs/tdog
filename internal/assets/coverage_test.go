@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/JMO-Labs/tdog/internal/netguard"
 )
 
 type readerFunc func([]byte) (int, error)
@@ -188,7 +190,7 @@ func TestFetchRedirects(t *testing.T) {
 }
 
 func TestPublicIPInvalid(t *testing.T) {
-	if publicIP(net.IP{1, 2, 3}) {
+	if netguard.PublicIP(net.IP{1, 2, 3}) {
 		t.Fatal("malformed ip allowed")
 	}
 }
@@ -241,14 +243,14 @@ func TestIngestRenameFails(t *testing.T) {
 }
 
 func TestDialControl(t *testing.T) {
-	c := dialControl(func(ip net.IP) bool { return ip.IsLoopback() })
-	if err := c("tcp", "nohostport", nil); !errors.Is(err, errBlocked) {
+	c := netguard.DialControl(func(ip net.IP) bool { return ip.IsLoopback() })
+	if err := c("tcp", "nohostport", nil); !errors.Is(err, netguard.ErrBlocked) {
 		t.Errorf("bad addr: %v", err)
 	}
-	if err := c("tcp", "example.com:80", nil); !errors.Is(err, errBlocked) {
+	if err := c("tcp", "example.com:80", nil); !errors.Is(err, netguard.ErrBlocked) {
 		t.Errorf("non-ip: %v", err)
 	}
-	if err := c("tcp", "8.8.8.8:80", nil); !errors.Is(err, errBlocked) {
+	if err := c("tcp", "8.8.8.8:80", nil); !errors.Is(err, netguard.ErrBlocked) {
 		t.Errorf("disallowed: %v", err)
 	}
 	if err := c("tcp", "127.0.0.1:80", nil); err != nil {

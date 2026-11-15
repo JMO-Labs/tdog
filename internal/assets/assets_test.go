@@ -11,6 +11,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/JMO-Labs/tdog/internal/netguard"
 )
 
 func pngBytes(t *testing.T) []byte {
@@ -188,7 +190,7 @@ func TestFetchBlocksPrivate(t *testing.T) {
 func TestPublicIP(t *testing.T) {
 	for ip, want := range map[string]bool{"8.8.8.8": true, "127.0.0.1": false, "10.0.0.1": false, "172.16.0.1": false,
 		"192.168.1.1": false, "169.254.1.1": false, "0.0.0.0": false, "::1": false, "fc00::1": false, "100.64.0.1": false} {
-		if got := publicIP(net.ParseIP(ip)); got != want {
+		if got := netguard.PublicIP(net.ParseIP(ip)); got != want {
 			t.Errorf("%s: %v", ip, got)
 		}
 	}
