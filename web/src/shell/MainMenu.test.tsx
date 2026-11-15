@@ -19,14 +19,17 @@ const groups = (): MenuGroup[] => [
   [{ label: "Sign out", icon: "close", onSelect: vi.fn() }],
 ];
 
-const open = () =>
+const open = async () => {
   fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+  // wait for menu to render
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+};
 
-test("opens grouped menu and runs an item, closing after", () => {
+test("opens grouped menu and runs an item, closing after", async () => {
   const g = groups();
   render(<MainMenu groups={g} />);
   expect(screen.queryByRole("menu")).toBeNull();
-  open();
+  await open();
   expect(screen.getAllByRole("separator")).toHaveLength(1);
   fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
   expect(
@@ -35,9 +38,9 @@ test("opens grouped menu and runs an item, closing after", () => {
   expect(screen.queryByRole("menu")).toBeNull();
 });
 
-test("arrow keys move focus; ArrowRight opens submenu, ArrowLeft closes it", () => {
+test("arrow keys move focus; ArrowRight opens submenu, ArrowLeft closes it", async () => {
   render(<MainMenu groups={groups()} />);
-  open();
+  await open();
   const theme = screen.getByRole("menuitem", { name: "Theme…" });
   expect(document.activeElement).toBe(theme);
   fireEvent.keyDown(theme, { key: "ArrowDown" });
@@ -60,9 +63,9 @@ test("arrow keys move focus; ArrowRight opens submenu, ArrowLeft closes it", () 
   expect(document.activeElement).toBe(app);
 });
 
-test("Escape closes every level and refocuses the button", () => {
+test("Escape closes every level and refocuses the button", async () => {
   render(<MainMenu groups={groups()} />);
-  open();
+  await open();
   const app = screen.getByRole("menuitem", { name: "Appearance" });
   fireEvent.click(app);
   expect(screen.getAllByRole("menu")).toHaveLength(2);
@@ -73,16 +76,33 @@ test("Escape closes every level and refocuses the button", () => {
   );
 });
 
-test("outside press closes; disabled items do not run", () => {
+test("outside press closes; disabled items do not run", async () => {
   const onSelect = vi.fn();
   render(
     <MainMenu
       groups={[[{ label: "Studio", icon: "brush", disabled: true, onSelect }]]}
     />,
   );
-  open();
+  await open();
   fireEvent.click(screen.getByRole("menuitem", { name: /Studio/ }));
   expect(onSelect).not.toHaveBeenCalled();
   fireEvent.pointerDown(document.body);
   expect(screen.queryByRole("menu")).toBeNull();
+});
+
+test("typing to filter shows matching items", async () => {
+  render(<MainMenu groups={groups()} />);
+  await open();
+  const menu = screen.getByRole("menu", { name: "Main menu" });
+  fireEvent.keyDown(menu, { key: "a" });
+  const filterInput = screen.getByPlaceholderText(
+    "Filter actions",
+  ) as HTMLInputElement;
+  expect(filterInput.value).toBe("a");
+  const items = screen.getAllByRole("menuitem");
+  // Should show items containing "a": Appearance, Sign out, Theme…
+  for (const item of items) {
+    const text = item.textContent || "";
+    expect(/a/i.test(text)).toBe(true);
+  }
 });

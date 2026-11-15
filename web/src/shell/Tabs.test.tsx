@@ -26,66 +26,62 @@ const mount = (extra: Partial<Parameters<typeof Tabs>[0]> = {}) => {
   render(<Tabs {...p} />);
   return p;
 };
-const openMenu = (name: string) =>
+const openMenu = (name: string) => {
   fireEvent.contextMenu(screen.getByRole("tab", { name: new RegExp(name) }));
+  // wait for menu to render
+  return new Promise<void>((resolve) => setTimeout(resolve, 0));
+};
 
-test("context menu Kill scene kills that scene and closes the menu", () => {
+test("context menu Kill scene kills that scene and closes the menu", async () => {
   const p = mount();
-  openMenu("beta");
+  await openMenu("beta");
   fireEvent.click(screen.getByRole("menuitem", { name: "Kill scene" }));
   expect(p.onKill).toHaveBeenCalledWith("b");
   expect(p.onClose).not.toHaveBeenCalled();
   expect(screen.queryByRole("menu")).toBeNull();
 });
 
-test("context menu Close scene closes that scene and the menu", () => {
+test("context menu Close scene closes that scene and the menu", async () => {
   const p = mount();
-  openMenu("alpha");
+  await openMenu("alpha");
   fireEvent.click(screen.getByRole("menuitem", { name: "Close scene" }));
   expect(p.onClose).toHaveBeenCalledWith("a");
   expect(p.onKill).not.toHaveBeenCalled();
   expect(screen.queryByRole("menu")).toBeNull();
 });
 
-test("Close item blur keeps the menu open when focus moves inside it", () => {
+test("outside click dismisses the menu", async () => {
   mount();
-  openMenu("alpha");
-  const closeItem = screen.getByRole("menuitem", { name: "Close scene" });
-  const killItem = screen.getByRole("menuitem", { name: "Kill scene" });
-  fireEvent.blur(closeItem, { relatedTarget: killItem });
+  await openMenu("alpha");
   expect(screen.getByRole("menu")).toBeTruthy();
-});
-
-test("Close item blur dismisses the menu when focus leaves it", () => {
-  mount();
-  openMenu("alpha");
-  const closeItem = screen.getByRole("menuitem", { name: "Close scene" });
-  fireEvent.blur(closeItem, { relatedTarget: null });
+  fireEvent.pointerDown(document.body);
   expect(screen.queryByRole("menu")).toBeNull();
 });
 
-test("context menu Save calls onSave with the tab id", () => {
+test("context menu Save calls onSave with the tab id", async () => {
   const p = mount();
-  openMenu("beta");
+  await openMenu("beta");
   fireEvent.click(screen.getByRole("menuitem", { name: "Save" }));
   expect(p.onSave).toHaveBeenCalledWith("b");
   expect(screen.queryByRole("menu")).toBeNull();
 });
 
-test("context menu Save as… calls onSaveAs with the tab id", () => {
+test("context menu Save as… calls onSaveAs with the tab id", async () => {
   const p = mount();
-  openMenu("beta");
+  await openMenu("beta");
   fireEvent.click(screen.getByRole("menuitem", { name: "Save as…" }));
   expect(p.onSaveAs).toHaveBeenCalledWith("b");
+  expect(screen.queryByRole("menu")).toBeNull();
 });
 
-test("context menu 'New scene from saved…' calls onOpenSaved", () => {
+test("context menu 'New scene from saved…' calls onOpenSaved", async () => {
   const p = mount();
-  openMenu("alpha");
+  await openMenu("alpha");
   fireEvent.click(
     screen.getByRole("menuitem", { name: "New scene from saved…" }),
   );
   expect(p.onOpenSaved).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole("menu")).toBeNull();
 });
 
 test("the dot marks only dirty tabs", () => {
@@ -95,4 +91,19 @@ test("the dot marks only dirty tabs", () => {
   expect(screen.getByRole("tab", { name: /beta/ }).contains(dots[0])).toBe(
     true,
   );
+});
+
+test("typing to filter shows matching scene actions", async () => {
+  mount();
+  await openMenu("alpha");
+  const menu = screen.getByRole("menu", { name: "Scene actions" });
+  fireEvent.keyDown(menu, { key: "k" });
+  const filterInput = screen.getByPlaceholderText(
+    "Filter actions",
+  ) as HTMLInputElement;
+  expect(filterInput.value).toBe("k");
+  const items = screen.getAllByRole("menuitem");
+  // Should only show Kill scene
+  expect(items).toHaveLength(1);
+  expect(items[0].textContent).toContain("Kill scene");
 });
