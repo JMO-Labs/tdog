@@ -3,6 +3,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Modal } from "../overlays/Modal";
 import { FontsSection } from "./FontsSection";
+import { SceneDesigner } from "./SceneDesigner";
 import { Cassette } from "./Cassette";
 import { ThemeGallery } from "./ThemeGallery";
 import { TerminalDesigner } from "./TerminalDesigner";
@@ -12,12 +13,14 @@ import "./studio.css";
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** Launch a saved scene preset in a new scene tab. */
+  onOpenScene?: (name: string) => Promise<void>;
   /** Open a saved terminal preset as a pane (closes the Studio). */
   onTry?: (preset: string) => void;
 };
 
 /** Full-screen Studio: nav + settings search (sections are placeholders). */
-export function Studio({ open, onClose, onTry }: Props) {
+export function Studio({ open, onClose, onOpenScene, onTry }: Props) {
   const [current, setCurrent] = useState(
     () => sectionFromHash(location.hash) ?? SECTIONS[0].id,
   );
@@ -151,6 +154,8 @@ export function Studio({ open, onClose, onTry }: Props) {
             ) : (
               <p className="studio-none">No settings match “{query.trim()}”.</p>
             )
+          ) : section.id === "scene" ? (
+            <SceneDesigner onOpenScene={onOpenScene ?? (async () => {})} />
           ) : section.id === "fonts" ? (
             <FontsSection />
           ) : section.id === "themes" ? (

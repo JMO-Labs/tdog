@@ -112,3 +112,22 @@ test("cards of motif themes paint the motif, not the pattern", () => {
   const v = (card(t.id) as HTMLElement).style.getPropertyValue("--c-pattern");
   expect(v.startsWith("url(")).toBe(true);
 });
+
+test("pointer leave clears the hover preview", () => {
+  open();
+  const spy = vi.spyOn(themeStore, "previewPane");
+  fireEvent.pointerEnter(card("black-box"));
+  act(() => void vi.advanceTimersByTime(150));
+  expect(spy).toHaveBeenCalledWith("p1", "black-box");
+  fireEvent.pointerLeave(card("black-box"));
+  act(() => void vi.advanceTimersByTime(150));
+  expect(spy).not.toHaveBeenLastCalledWith("p1", "black-box");
+});
+
+test("clicking a card applies that theme and closes", () => {
+  const onClose = vi.fn();
+  render(<ThemePicker open pane="p1" onClose={onClose} />);
+  fireEvent.click(card("black-box"));
+  expect(localStorage.getItem("tdog.theme.id")).toBe("black-box");
+  expect(onClose).toHaveBeenCalled();
+});

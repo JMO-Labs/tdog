@@ -67,6 +67,25 @@
 .wordmark.small {
   font-size: 30px;
 }
+.ws-head .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ws-head .logo-mark.small {
+  display: inline-block;
+  height: 26px;
+  aspect-ratio: 208 / 256;
+  filter: drop-shadow(2px 2px 0 var(--pink));
+}
+.ws-head .logo-mark.small::before {
+  content: "";
+  display: block;
+  height: 100%;
+  background: var(--fg);
+  -webkit-mask: url(/logo-mark.png) center / contain no-repeat;
+  mask: url(/logo-mark.png) center / contain no-repeat;
+}
 .ws-head .wordmark.small {
   font-size: 20px;
   color: var(--fg);

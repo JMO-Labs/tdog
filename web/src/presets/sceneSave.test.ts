@@ -100,3 +100,10 @@ test("validName follows the server slug rule", () => {
   expect(validName("My Scene")).toBe(false);
   expect(validName("-x")).toBe(false);
 });
+
+test("getSave is undefined for corrupt or non-object storage", () => {
+  localStorage.setItem("tdog.sceneSaves", "{not json");
+  expect(getSave("x")).toBeUndefined();
+  localStorage.setItem("tdog.sceneSaves", "[1]");
+  expect(getSave("x")).toBeUndefined();
+});

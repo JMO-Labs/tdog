@@ -133,6 +133,12 @@ func (t *Terminal) validate(prefix string) *ValidationError {
 }
 
 func (s *Scene) validate() *ValidationError {
+	if s.Gap != nil && (*s.Gap < 0 || *s.Gap > 64) {
+		return verr("gap", "must be between 0 and 64")
+	}
+	if s.PaneOpacity != nil && (*s.PaneOpacity < 0 || *s.PaneOpacity > 1) {
+		return verr("pane_opacity", "must be between 0 and 1")
+	}
 	if e := s.Background.validate("background"); e != nil {
 		return e
 	}

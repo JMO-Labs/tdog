@@ -220,3 +220,22 @@ test("save as, reload, open the saved scene restores layout, cwd and themes", as
   expect(scenePreset(tab)).toBe("mine");
   expect(toml).toContain('cwd = "/srv/api"'); // the server restarts the shell there
 });
+
+test("Save as still opens the dialog when listing presets fails", async () => {
+  m.listPresets.mockRejectedValue(new Error("boom"));
+  render(<Host />);
+  await act(async () => {
+    await flows.saveAs("s1");
+  });
+  expect(screen.getByRole("textbox")).toBeTruthy();
+});
+
+test("openSaved lists the saved scenes in the picker", async () => {
+  m.listPresets.mockResolvedValue(["dev"]);
+  render(<Host />);
+  await act(async () => {
+    await flows.openSaved();
+  });
+  expect(m.listPresets).toHaveBeenCalledWith("scene");
+  expect(screen.getByText("dev")).toBeTruthy();
+});
