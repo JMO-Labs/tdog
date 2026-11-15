@@ -179,17 +179,12 @@ test("latency chip shows ms, and a dial-up icon above 150 ms", () => {
   ).toBeTruthy();
 });
 
-test("palette lists a Theme command per bundled theme and switches", async () => {
+test("palette has one Theme… entry that opens the picker", () => {
   render(<Workspace />);
   fireEvent.click(screen.getByRole("button", { name: "Command palette" }));
-  const input = screen.getByRole("combobox");
-  fireEvent.change(input, { target: { value: "Theme: Night" } });
-  const opt = screen.getByRole("option", { name: /Theme: Night Market/ });
-  expect(opt).toBeTruthy();
-  fireEvent.click(opt);
-  expect(localStorage.getItem("tdog.theme.id")).toBe("night-market");
-  const { themeStore } = await import("../theme/store");
-  themeStore.select("memphis-pop");
+  expect(screen.queryByText(/^Theme: /)).toBeNull();
+  fireEvent.click(screen.getByRole("option", { name: /Theme…/ }));
+  expect(screen.getByRole("dialog", { name: "Theme" })).toBeTruthy();
 });
 
 test("⇧⌘K opens only the kill dialog", () => {
