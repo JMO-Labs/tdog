@@ -100,7 +100,7 @@
       "term-dim": "#8d9ba9"
     },
     "shape": {
-      "radius": 3,
+      "radius": 0.2,
       "shadow": "bevel",
       "border": 1
     },
