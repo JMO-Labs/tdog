@@ -169,10 +169,12 @@ test("tab context menu Save as… opens the name dialog", async () => {
 });
 
 test("tab context menu 'New scene from saved…' opens the picker", async () => {
-  (fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string) => {
-    if (url === "/api/presets/scene") return json(["dev"]);
-    throw new Error(`unmocked ${url}`);
-  });
+  (fetch as ReturnType<typeof vi.fn>).mockImplementation(
+    async (url: string) => {
+      if (url === "/api/presets/scene") return json(["dev"]);
+      throw new Error(`unmocked ${url}`);
+    },
+  );
   saveLayout("scene 1", split(0.5));
   mount();
   await act(async () => {
