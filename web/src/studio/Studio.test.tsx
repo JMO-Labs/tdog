@@ -58,9 +58,9 @@ test("nav lists sections, switching updates hash and empty state", async () => {
     "Backgrounds",
     "Fonts",
   ]);
-  fireEvent.click(nav().getByRole("button", { name: "Themes" }));
-  expect(location.hash).toBe("#studio/themes");
-  expect(screen.getByRole("heading", { name: "Themes" })).toBeTruthy();
+  fireEvent.click(nav().getByRole("button", { name: "Backgrounds" }));
+  expect(location.hash).toBe("#studio/backgrounds");
+  expect(screen.getByRole("heading", { name: "Backgrounds" })).toBeTruthy();
   expect(screen.getByRole("img", { name: "Cassette" })).toBeTruthy();
   expect(screen.getByText("Coming in v0.4")).toBeTruthy();
   fireEvent.click(nav().getByRole("button", { name: "Fonts" }));
@@ -119,6 +119,14 @@ test("keyboard: arrows move through the nav, Enter picks from search", async () 
   fireEvent.change(box, { target: { value: "backg" } });
   fireEvent.keyDown(box, { key: "Enter" });
   expect(location.hash).toBe("#studio/backgrounds");
+});
+
+test("Themes section shows the gallery", async () => {
+  location.hash = "#studio/themes";
+  render(<Host />);
+  fireEvent.click(screen.getByText("opener"));
+  await screen.findByRole("dialog");
+  expect(screen.getAllByTestId("theme-card").length).toBeGreaterThan(0);
 });
 
 test("terminal section hosts the designer and guards unsaved edits", async () => {
