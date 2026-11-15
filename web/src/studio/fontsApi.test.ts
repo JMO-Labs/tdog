@@ -23,7 +23,7 @@ test("search matches name case-insensitively and filters by source", () => {
 });
 
 function mockFetch(status: number, body = "") {
-  const f = vi.fn(async () => new Response(body, { status }));
+  const f = vi.fn(async () => new Response(body || null, { status }));
   vi.stubGlobal("fetch", f);
   return f;
 }
