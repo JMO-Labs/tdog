@@ -105,7 +105,9 @@ test("main menu Save scene / Save scene as… (narrow)", async () => {
   mount();
   fireEvent.click(screen.getByRole("button", { name: "Menu" }));
   await act(async () => {
-    fireEvent.click(screen.getByRole("menuitem", { name: /^Save scene(?! as)/ }));
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: /^Save scene(?! as)/ }),
+    );
   });
   expect(puts()).toHaveLength(1);
   fireEvent.click(screen.getByRole("button", { name: "Menu" }));
