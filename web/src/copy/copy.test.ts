@@ -12,6 +12,8 @@ describe("copy module", () => {
     expect(v.plain).not.toContain("!");
     for (const w of SLANG_WORDS) expect(v.plain.toLowerCase()).not.toContain(w);
     expect(v.plain[0]).toBe(v.plain[0].toUpperCase());
+    expect(v.plain).not.toMatch(/[?!.…]!|!\?|\?!/);
+    expect(v.plain).not.toMatch(/\b[A-Z]{3,}\b/);
   });
   it("text picks variant and fills vars", () => {
     expect(text("kill.done", true, { n: 2 })).toBe("Killed 2 shells.");

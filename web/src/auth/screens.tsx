@@ -216,7 +216,7 @@ export function SetupScreen(props: { onDone: (signedIn: boolean) => void }) {
   async function signIn() {
     const r = await api.login(pw).catch(() => ({ ok: false }) as const);
     if (r.ok) return setDialing(true);
-    toast("info", "Account created. Sign in with your new password.");
+    toast("info", c("auth.createdSignIn"));
     props.onDone(false);
   }
 

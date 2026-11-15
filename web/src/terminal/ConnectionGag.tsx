@@ -46,11 +46,11 @@ export function ConnectionGag({
   const tracking = phase === "tracking";
   return (
     <div className={`vhs${still}${tracking ? "" : " rew"}`} role="status">
-      <span className="play">{tracking ? "▶ PLAY" : "◀◀ REW"}</span>
+      <span className="play">{c(tracking ? "conn.play" : "conn.rew")}</span>
       {c(tracking ? "conn.tracking" : "conn.rewinding")}
       {tracking && (
         <button className="btn sticker" onClick={onReconnect}>
-          Reconnect
+          {c("conn.reconnect")}
         </button>
       )}
     </div>

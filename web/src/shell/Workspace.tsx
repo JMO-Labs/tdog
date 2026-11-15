@@ -367,11 +367,7 @@ export function Workspace({
           <span
             data-testid="latency"
             className={`chip num hide-xs${latency > SLOW_MS ? " slow" : ""}`}
-            title={
-              latency > SLOW_MS
-                ? "Dial-up speeds. Typing may feel sluggish."
-                : undefined
-            }
+            title={latency > SLOW_MS ? c("conn.slow") : undefined}
           >
             <Icon name={latency > SLOW_MS ? "modem" : "bolt"} />
             {latency} ms
