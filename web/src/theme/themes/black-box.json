@@ -28,11 +28,16 @@
       ]
     },
     "cursor": {
-      "shape": "block",
+      "shape": "underline",
       "blink": true
     },
     "font": "courier-prime",
-    "effects": []
+    "effects": [
+      {
+        "id": "vignette",
+        "intensity": 0.4
+      }
+    ]
   },
   "chrome": {
     "tokens": {
@@ -48,12 +53,81 @@
       "term-fg": "#c9d8bd"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
+      "radius": 0.7,
+      "shadow": "soft",
       "border": 1
     },
     "pattern": "none",
-    "boot": "drop",
-    "costume": "none"
+    "boot": "post",
+    "costume": {
+      "name": "fedora",
+      "rows": [
+        "....######....",
+        "...#......#...",
+        "...########...",
+        "##############",
+        "..##########.."
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 40, 40],
+      "tile": [40, 40],
+      "shapes": [
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 10,
+          "r": 6,
+          "fill": "surface-2"
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 10,
+          "r": 2,
+          "fill": "bg"
+        },
+        {
+          "type": "circle",
+          "cx": 30,
+          "cy": 10,
+          "r": 6,
+          "fill": "surface-2"
+        },
+        {
+          "type": "circle",
+          "cx": 30,
+          "cy": 10,
+          "r": 2,
+          "fill": "bg"
+        },
+        {
+          "type": "path",
+          "d": "M4 28 H16 V34 H26 V24 H36",
+          "stroke": "surface-2"
+        },
+        {
+          "type": "circle",
+          "cx": 16,
+          "cy": 34,
+          "r": 1.5,
+          "fill": "surface-2"
+        },
+        {
+          "type": "circle",
+          "cx": 26,
+          "cy": 24,
+          "r": 1.5,
+          "fill": "surface-2"
+        },
+        {
+          "type": "circle",
+          "cx": 36,
+          "cy": 24,
+          "r": 1.5,
+          "fill": "surface-2"
+        }
+      ]
+    }
   }
 }

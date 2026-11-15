@@ -31,8 +31,13 @@
       "shape": "block",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "press-start-2p",
+    "effects": [
+      {
+        "id": "scanlines",
+        "intensity": 0.5
+      }
+    ]
   },
   "chrome": {
     "tokens": {
@@ -45,13 +50,172 @@
       "link": "#9bbc0f"
     },
     "shape": {
-      "radius": 1,
+      "radius": 0,
       "shadow": "hard",
       "border": 1
     },
     "pattern": "none",
-    "boot": "drop",
-    "costume": "none"
+    "boot": "cartridge",
+    "costume": {
+      "name": "pixel cap",
+      "rows": [
+        "....######....",
+        "...########...",
+        "..##########..",
+        "##############",
+        "####.........."
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 32],
+      "tile": [64, 32],
+      "shapes": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 0,
+          "width": 16,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 16,
+          "y": 0,
+          "width": 16,
+          "height": 8,
+          "fill": "#8bac0f"
+        },
+        {
+          "type": "rect",
+          "x": 32,
+          "y": 0,
+          "width": 16,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 48,
+          "y": 0,
+          "width": 16,
+          "height": 8,
+          "fill": "#9bbc0f"
+        },
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 8,
+          "width": 8,
+          "height": 8,
+          "fill": "#8bac0f"
+        },
+        {
+          "type": "rect",
+          "x": 8,
+          "y": 8,
+          "width": 16,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 24,
+          "y": 8,
+          "width": 16,
+          "height": 8,
+          "fill": "#9bbc0f"
+        },
+        {
+          "type": "rect",
+          "x": 40,
+          "y": 8,
+          "width": 16,
+          "height": 8,
+          "fill": "#8bac0f"
+        },
+        {
+          "type": "rect",
+          "x": 56,
+          "y": 8,
+          "width": 8,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 16,
+          "width": 16,
+          "height": 8,
+          "fill": "#9bbc0f"
+        },
+        {
+          "type": "rect",
+          "x": 16,
+          "y": 16,
+          "width": 16,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 32,
+          "y": 16,
+          "width": 16,
+          "height": 8,
+          "fill": "#8bac0f"
+        },
+        {
+          "type": "rect",
+          "x": 48,
+          "y": 16,
+          "width": 16,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 24,
+          "width": 8,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 8,
+          "y": 24,
+          "width": 16,
+          "height": 8,
+          "fill": "#8bac0f"
+        },
+        {
+          "type": "rect",
+          "x": 24,
+          "y": 24,
+          "width": 16,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 40,
+          "y": 24,
+          "width": 16,
+          "height": 8,
+          "fill": "#9bbc0f"
+        },
+        {
+          "type": "rect",
+          "x": 56,
+          "y": 24,
+          "width": 8,
+          "height": 8,
+          "fill": "#8bac0f"
+        }
+      ]
+    }
   },
   "light": {
     "terminal": {

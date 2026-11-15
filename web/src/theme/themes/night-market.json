@@ -32,7 +32,12 @@
       "blink": true
     },
     "font": "jetbrains-mono",
-    "effects": []
+    "effects": [
+      {
+        "id": "glow",
+        "intensity": 0.25
+      }
+    ]
   },
   "chrome": {
     "tokens": {
@@ -50,11 +55,89 @@
     },
     "shape": {
       "radius": 1,
-      "shadow": "hard",
+      "shadow": "soft",
       "border": 1
     },
     "pattern": "zigzag",
     "boot": "drop",
-    "costume": "none"
+    "costume": "none",
+    "motif": {
+      "viewBox": [0, 0, 60, 60],
+      "tile": [60, 60],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 6 L60 6",
+          "stroke": "#b08968"
+        },
+        {
+          "type": "rect",
+          "x": 12,
+          "y": 6,
+          "width": 1,
+          "height": 6,
+          "fill": "#b08968"
+        },
+        {
+          "type": "circle",
+          "cx": 12.5,
+          "cy": 20,
+          "r": 8,
+          "fill": "#ff7a45"
+        },
+        {
+          "type": "rect",
+          "x": 9,
+          "y": 11,
+          "width": 7,
+          "height": 2,
+          "fill": "#8a3b1e"
+        },
+        {
+          "type": "rect",
+          "x": 9,
+          "y": 27,
+          "width": 7,
+          "height": 2,
+          "fill": "#8a3b1e"
+        },
+        {
+          "type": "rect",
+          "x": 42,
+          "y": 6,
+          "width": 1,
+          "height": 10,
+          "fill": "#b08968"
+        },
+        {
+          "type": "circle",
+          "cx": 42.5,
+          "cy": 28,
+          "r": 8,
+          "fill": "#ffc857"
+        },
+        {
+          "type": "rect",
+          "x": 39,
+          "y": 19,
+          "width": 7,
+          "height": 2,
+          "fill": "#8a3b1e"
+        },
+        {
+          "type": "rect",
+          "x": 39,
+          "y": 35,
+          "width": 7,
+          "height": 2,
+          "fill": "#8a3b1e"
+        },
+        {
+          "type": "path",
+          "d": "M12 29 L12 38 M43 36 L43 46",
+          "stroke": "#ff7a45"
+        }
+      ]
+    }
   }
 }

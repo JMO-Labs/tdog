@@ -201,6 +201,17 @@ describe("theme format v2", () => {
     expect(bad((t) => (t.pattern = "none"))).toBe(false);
     expect(bad((t) => (t.terminal.motif = "<svg onload=x>"))).toBe(false);
   });
+  it("accepts fill/stroke none on motif shapes", () => {
+    const motif = {
+      viewBox: [0, 0, 20, 20],
+      tile: [20, 20],
+      shapes: [
+        { type: "circle", cx: 5, cy: 5, r: 3, fill: "none", stroke: "#fff" },
+      ],
+    };
+    expect(bad((t) => (t.chrome.motif = motif))).toBe(true);
+  });
+
   it("accepts a structured motif and rejects bad shapes", () => {
     const motif = {
       viewBox: [0, 0, 20, 20],
