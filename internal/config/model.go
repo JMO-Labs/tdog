@@ -62,14 +62,14 @@ type Pane struct {
 	Override *Terminal `toml:"override,omitempty"`
 }
 
-// Scene is a scene preset. Layout is the opaque layout tree.
+// Scene is a scene preset. Layout is the renderer-agnostic layout tree.
 type Scene struct {
-	Name       string         `toml:"name,omitempty"`
-	Autostart  bool           `toml:"autostart,omitempty"`
-	Theme      string         `toml:"theme,omitempty"`
-	Background *Background    `toml:"background,omitempty"`
-	Layout     map[string]any `toml:"layout,omitempty"`
-	Panes      []Pane         `toml:"panes,omitempty"`
+	Name       string      `toml:"name,omitempty"`
+	Autostart  bool        `toml:"autostart,omitempty"`
+	Theme      string      `toml:"theme,omitempty"`
+	Background *Background `toml:"background,omitempty"`
+	Layout     *Layout     `toml:"layout,omitempty"`
+	Panes      []Pane      `toml:"panes,omitempty"`
 }
 
 // Global is config.toml: the root of the inheritance chain.

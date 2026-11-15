@@ -35,5 +35,7 @@ export interface TerminalRenderer {
   /** Shell cwd reports (OSC 7), already decoded to a path. */
   onCwd?(cb: (cwd: string) => void): void;
   setTheme(theme: TerminalTheme): void;
+  /** Optional: per-terminal font from a preset. Unset values keep the default. */
+  setFont?(family?: string, size?: number): void;
   dispose(): void;
 }

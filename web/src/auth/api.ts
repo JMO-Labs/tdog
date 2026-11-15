@@ -68,6 +68,20 @@ export async function apiPost(
   return r;
 }
 
+/** CSRF-aware PUT of a text body (preset files). */
+export async function apiPut(path: string, body: string): Promise<Response> {
+  const headers: Record<string, string> = { "Content-Type": "text/plain" };
+  if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+  const r = await fetch(path, {
+    method: "PUT",
+    credentials: "same-origin",
+    headers,
+    body,
+  });
+  if (r.status === 401) onUnauthorized?.();
+  return r;
+}
+
 async function post(path: string, body: unknown): Promise<Response> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

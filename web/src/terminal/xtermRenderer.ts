@@ -64,6 +64,11 @@ export class XtermRenderer implements TerminalRenderer {
   setTheme(theme: TerminalTheme): void {
     this.term.options.theme = theme;
   }
+  setFont(family?: string, size?: number): void {
+    if (family) this.term.options.fontFamily = family;
+    if (size) this.term.options.fontSize = size;
+    if (family || size) this.fit.fit();
+  }
   dispose(): void {
     this.term.dispose();
   }

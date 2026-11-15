@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { apiFetch, apiPost } from "../auth/api";
 import { Button } from "../components/ui/button";
 import { useToast } from "../overlays/toast";
+import { Dialog } from "../overlays/Dialog";
+import { Appearance } from "./Appearance";
 import { Switch } from "./Switch";
 import { TwoFactor } from "./TwoFactor";
 import { useMotifOpacity, usePref } from "./prefs";
@@ -13,6 +15,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   const [totp, setTotp] = useState(false);
   const [serious, setSerious] = usePref("serious");
   const [pet, setPet] = usePref("pet");
+  const [confirm, setConfirm] = useState(false);
   const [motif, setMotif] = useMotifOpacity();
   const [dress, setDress] = usePref("dress");
   const [boot, setBoot] = usePref("boot");
@@ -31,6 +34,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   }, []);
 
   const revokeAll = async () => {
+    setConfirm(false);
     try {
       const r = await apiPost("/api/sessions/revoke-all");
       if (!r.ok) throw new Error();
@@ -46,6 +50,22 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
     <div className="settings">
       <h3>Account</h3>
       <TwoFactor enabled={totp} onChange={setTotp} />
+      <h3>Appearance</h3>
+      <Appearance />
+      <div className="row">
+        <div>
+          <b id="sl-motif">Terminal motif</b>
+          <p className="muted">Theme pattern behind text. 0 turns it off.</p>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={30}
+          aria-labelledby="sl-motif"
+          value={motif}
+          onChange={(e) => setMotif(Number(e.target.value))}
+        />
+      </div>
       <h3>Personality</h3>
       <div className="row">
         <div>
@@ -65,21 +85,6 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
         </div>
         <Switch labelledBy="sw-pet" checked={pet} onChange={setPet} />
       </div>
-      <h3>Appearance</h3>
-      <div className="row">
-        <div>
-          <b id="sl-motif">Terminal motif</b>
-          <p className="muted">Theme pattern behind text. 0 turns it off.</p>
-        </div>
-        <input
-          type="range"
-          min={0}
-          max={30}
-          aria-labelledby="sl-motif"
-          value={motif}
-          onChange={(e) => setMotif(Number(e.target.value))}
-        />
-      </div>
       <div className="row">
         <div>
           <b id="sw-dress">Dress up Dogbert</b>
@@ -95,13 +100,27 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
         <Switch labelledBy="sw-boot" checked={boot} onChange={setBoot} />
       </div>
       <h3>Sessions</h3>
-      <Button
-        variant="danger"
-        className="wide"
-        onClick={() => void revokeAll()}
+      <div className="row actions">
+        <Button onClick={() => dispatchEvent(new Event("tdog:signout"))}>
+          Sign out
+        </Button>
+        <Button variant="danger-quiet" onClick={() => setConfirm(true)}>
+          Sign out everywhere
+        </Button>
+      </div>
+      <Dialog
+        open={confirm}
+        title="Sign out everywhere?"
+        onClose={() => setConfirm(false)}
       >
-        Sign out everywhere
-      </Button>
+        <p>This ends every session, including this one.</p>
+        <div className="dialog-actions">
+          <Button onClick={() => setConfirm(false)}>Cancel</Button>
+          <Button variant="danger-quiet" onClick={() => void revokeAll()}>
+            Sign out
+          </Button>
+        </div>
+      </Dialog>
     </div>
   );
 }

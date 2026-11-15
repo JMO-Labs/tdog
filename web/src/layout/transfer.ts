@@ -31,3 +31,16 @@ export function moveToScene(id: string, from: string, to: string): boolean {
   notify(to);
   return true;
 }
+
+/** Add a new pane `id` to scene `scene` (beside the existing tree, if any). */
+export function addLeaf(scene: string, id: string): void {
+  const cur = loadLayout(scene) ?? null;
+  const leaf: Node = { t: "leaf", id };
+  saveLayout(
+    scene,
+    cur
+      ? { t: "split", id: newId("s"), dir: "row", ratio: 0.5, a: cur, b: leaf }
+      : leaf,
+  );
+  notify(scene);
+}
