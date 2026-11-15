@@ -4,7 +4,7 @@ import { CommandPalette } from "../overlays/CommandPalette";
 import { Sheet } from "../overlays/Sheet";
 import { registerCommand } from "../overlays/commands";
 import { SettingsPanel } from "../settings/SettingsPanel";
-import { usePref } from "../settings/prefs";
+import { getPref, usePref } from "../settings/prefs";
 import { THEMES } from "../theme/registry";
 import { themeStore } from "../theme/store";
 import { MODES, useThemeMode } from "../theme/useThemeMode";
@@ -57,6 +57,7 @@ export function Workspace({
   const [focused, setFocused] = useState<string | null>(null);
   const [stamp, setStamp] = useState(0);
   const [petShown, setPetShown] = usePref("pet");
+  const [serious, setSerious] = usePref("serious");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -201,7 +202,13 @@ export function Workspace({
         shortcut: "⇧⌘L",
         run: cycle,
       }),
-      ...THEMES.map((t) =>
+      registerCommand({
+        id: "serious",
+        title: "Serious mode",
+        group: "Themes",
+        run: () => setSerious(!getPref("serious")),
+      }),
+      ...(serious ? [] : THEMES).map((t) =>
         registerCommand({
           id: `theme:${t.id}`,
           title: `Theme: ${t.name}`,
@@ -253,7 +260,7 @@ export function Workspace({
       }),
     ];
     return () => offs.forEach((f) => f());
-  }, [cycle, signOut, add]);
+  }, [cycle, signOut, add, serious, setSerious]);
 
   const menuGroups: MenuGroup[] = [
     [
@@ -271,6 +278,12 @@ export function Workspace({
           checked: m === mode,
           onSelect: () => setMode(m),
         })),
+      },
+      {
+        label: "Serious mode",
+        icon: "briefcase",
+        hint: serious ? "On" : "Off",
+        onSelect: () => setSerious(!serious),
       },
     ],
     [
@@ -375,7 +388,7 @@ export function Workspace({
             {latency} ms
           </span>
         )}
-        {petShown && (
+        {petShown && !serious && (
           <Pet
             awake={awake}
             engine={engine.pet}
