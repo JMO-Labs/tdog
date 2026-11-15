@@ -110,15 +110,14 @@ export function Tabs(p: Props) {
                 {s.name}
               </button>
             )}
-            {p.scenes.length > 1 && (
-              <button
-                className="tab-x"
-                aria-label={`Close scene ${s.name}`}
-                onClick={() => p.onClose(s.id)}
-              >
-                ×
-              </button>
-            )}
+            <button
+              className="tab-x"
+              aria-label={`Close scene ${s.name}`}
+              data-active={s.id === p.active || undefined}
+              onClick={() => p.onClose(s.id)}
+            >
+              ×
+            </button>
           </div>
         ))}
       </nav>
@@ -131,8 +130,22 @@ export function Tabs(p: Props) {
         >
           <button
             role="menuitem"
-            className="btn danger"
+            className="btn"
             autoFocus
+            onBlur={(e) => {
+              if (!e.currentTarget.parentElement?.contains(e.relatedTarget))
+                setMenu(null);
+            }}
+            onClick={() => {
+              p.onClose(menu.id);
+              setMenu(null);
+            }}
+          >
+            Close scene
+          </button>
+          <button
+            role="menuitem"
+            className="btn danger"
             onBlur={() => setMenu(null)}
             onClick={() => {
               p.onKill(menu.id);
