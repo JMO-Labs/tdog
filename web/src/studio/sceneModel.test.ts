@@ -62,3 +62,28 @@ test("layouts outside the snap set are rejected with a message", () => {
 test("bad syntax names the line", () => {
   expect(() => parseDraft("name = \n")).toThrow(/line 1/);
 });
+
+const base = (extra: string) =>
+  `name = "x"\n${extra}\n[layout]\ntype = "pane"\npane = "s1"\n\n[[panes]]\nid = "s1"\n`;
+
+test.each([
+  ['theme = "nord"', "theme"],
+  ["foo = 1", "foo"],
+])("parseDraft refuses scene key it can't round-trip: %s", (line, key) => {
+  expect(() => parseDraft(base(line))).toThrow(new RegExp(key));
+});
+
+test("parseDraft refuses non-colour background, extra pane keys and overrides", () => {
+  expect(() =>
+    parseDraft(base('[background]\nkind = "image"\nref = "a.png"\n')),
+  ).toThrow(/background/);
+  expect(() =>
+    parseDraft(base('[background]\nkind = "color"\nref = "#fff"\nblur = 4\n')),
+  ).toThrow(/background/);
+  expect(() => parseDraft(base("").trimEnd() + '\ncwd = "/x"\n')).toThrow(
+    /cwd/,
+  );
+  expect(() =>
+    parseDraft(base("").trimEnd() + '\n[panes.override]\ntheme = "nord"\n'),
+  ).toThrow(/override/);
+});

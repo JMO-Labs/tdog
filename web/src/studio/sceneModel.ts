@@ -139,9 +139,41 @@ function toNode(o: Obj | undefined): Node {
 const sig = (n: Node): string =>
   n.t === "leaf" ? "p" : `${n.dir}(${sig(n.a)},${sig(n.b)})`;
 
+const TOP_KEYS = ["name", "autostart", "gap", "pane_opacity", "background"];
+
+/** Refuse (rather than silently drop) anything the designer can't write back. */
+function assertRoundTrips(o: Obj): void {
+  const fail = (what: string): never => {
+    throw new Error(
+      `This scene uses ${what}, which the designer can't keep yet. Edit it as TOML in the file instead.`,
+    );
+  };
+  for (const k of Object.keys(o))
+    if (k !== "layout" && k !== "panes" && !TOP_KEYS.includes(k))
+      fail(`"${k}"`);
+  const bg = o.background as Obj | undefined;
+  if (bg) {
+    const keys = Object.keys(bg).filter((k) => k !== "ref");
+    if (bg.kind !== "color" || keys.length !== 1) fail("this background");
+  }
+  for (const p of (o.panes as Obj[] | undefined) ?? []) {
+    for (const k of Object.keys(p))
+      if (k !== "id" && k !== "preset" && k !== "override")
+        fail(`the pane setting "${k}"`);
+    const ov = p.override as Obj | undefined;
+    if (!ov) continue;
+    const font = ov.font as Obj | undefined;
+    const ok =
+      Object.keys(ov).every((k) => k === "font") &&
+      (!font || Object.keys(font).every((k) => k === "size"));
+    if (!ok) fail("pane overrides");
+  }
+}
+
 /** Parse scene TOML into a draft; throws a plain-text message on failure. */
 export function parseDraft(src: string): Draft {
   const o = parseToml(src);
+  assertRoundTrips(o);
   const tree = toNode(o.layout as Obj | undefined);
   const template = TEMPLATES.find(
     (t) => sig(buildTree(t.id)) === sig(tree),
