@@ -152,7 +152,7 @@
   min-height: 0;
   position: relative;
   box-sizing: border-box;
-  padding: 8px;
+  padding: 0; /* gutter lives inside the terminal so its own bg fills it */
   border-radius: 0;
   overflow: hidden;
 }

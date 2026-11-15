@@ -342,7 +342,13 @@ export function TerminalPane({
           openMenu(r.left + 16, r.top + 16);
         }
       }}
-      style={{ position: "relative", height: "100%", background: bg }}
+      style={{
+        position: "relative",
+        height: "100%",
+        boxSizing: "border-box",
+        padding: 8,
+        background: bg,
+      }}
     >
       <BackgroundLayer spec={paneBg} />
       {motifUrl && (

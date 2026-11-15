@@ -78,8 +78,12 @@
   box-shadow: var(--shadow-sm);
 }
 .icon-btn.danger {
-  background: var(--pink);
-  color: var(--ink);
+  background: transparent;
+  color: var(--muted);
+}
+.icon-btn.danger:hover {
+  background: color-mix(in srgb, var(--danger, #c0392b) 12%, transparent);
+  color: var(--danger, #c0392b);
 }
 .icon-btn .nf {
   font-size: 20px;

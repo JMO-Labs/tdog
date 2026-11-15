@@ -69,10 +69,6 @@ html[data-serious] .ws-head .wordmark.small {
   color: var(--fg);
   box-shadow: none;
 }
-.ws-head .icon-btn.danger:hover {
-  background: var(--surface-2);
-  color: var(--accent);
-}
 .tabs {
   display: flex;
   gap: 2px;
