@@ -32,7 +32,7 @@ export interface SocketLike {
 export type SessionState =
   | { status: "connecting" }
   | { status: "open" }
-  | { status: "closed"; exitCode?: number };
+  | { status: "closed"; exitCode?: number; killed?: true };
 
 export interface SessionHooks {
   /** Raw output bytes of one frame. */
@@ -46,6 +46,7 @@ export class TerminalSession {
   private sock: SocketLike | null = null;
   private pending = 0;
   private exitCode: number | undefined;
+  private killed = false;
   private pinger: ReturnType<typeof setInterval> | undefined;
 
   constructor(
@@ -65,6 +66,7 @@ export class TerminalSession {
     this.stopPing();
     this.pending = 0;
     this.exitCode = undefined;
+    this.killed = false;
     this.onState({ status: "connecting" });
     const s = this.open();
     this.sock = s;
@@ -83,7 +85,11 @@ export class TerminalSession {
         this.sock = null;
         this.stopPing();
       }
-      this.onState({ status: "closed", exitCode: this.exitCode });
+      this.onState(
+        this.killed
+          ? { status: "closed", killed: true }
+          : { status: "closed", exitCode: this.exitCode },
+      );
     };
   }
 
@@ -115,6 +121,8 @@ export class TerminalSession {
     const f = decodeFrame(buf);
     if (f.kind === "exit") {
       this.exitCode = f.code;
+    } else if (f.kind === "killed") {
+      this.killed = true;
     } else if (f.kind === "pong") {
       this.hooks.onLatency?.(Math.round(performance.now() - f.t));
     } else if (f.kind === "output") {

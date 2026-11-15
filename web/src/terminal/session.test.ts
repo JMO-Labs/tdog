@@ -112,6 +112,20 @@ describe("TerminalSession", () => {
     expect(onState).toHaveBeenLastCalledWith({ status: "closed", exitCode: 7 });
   });
 
+  test("killed frame then close reports killed state", () => {
+    const { sock, onState } = setup();
+    sock.onopen!();
+    const body = new TextEncoder().encode('{"type":"killed"}');
+    sock.onmessage!({
+      data: new Uint8Array([FrameType.Control, ...body]).buffer,
+    });
+    sock.onclose!();
+    expect(onState).toHaveBeenLastCalledWith({
+      status: "closed",
+      killed: true,
+    });
+  });
+
   test("close without exit has undefined code; reconnect opens new socket", () => {
     const socks: FakeSocket[] = [];
     const s = new TerminalSession(
