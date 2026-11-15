@@ -65,3 +65,11 @@ test("glyph-rain behind the text makes the renderer transparent without a motif"
     expect(h.themes.at(-1)).toMatchObject({ background: "rgba(0,0,0,0)" }),
   );
 });
+
+test("without the scene opt-in rain does not clear the renderer background", async () => {
+  h.themes.length = 0;
+  render(<TerminalPane />);
+  await waitFor(() =>
+    expect(h.themes.at(-1)).toMatchObject({ background: "#123456" }),
+  );
+});

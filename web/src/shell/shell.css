@@ -130,8 +130,7 @@ html[data-serious] .ws-head .wordmark.small {
   gap: 8px;
   text-align: center;
   padding: 24px;
-  background: var(--pattern) var(--surface-2);
-  background-size: 180px;
+  background: var(--surface-2);
 }
 .empty .reconnect {
   pointer-events: auto;

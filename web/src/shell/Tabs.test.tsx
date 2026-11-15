@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { Tabs } from "./Tabs";
+import { sceneArt } from "../presets/panes";
+import { setPref } from "../settings/prefs";
 
 afterEach(cleanup);
 
@@ -129,4 +131,26 @@ test("active tab is marked with aria-selected and the underline class", () => {
   expect(a.classList.contains("on")).toBe(true);
   expect(b.getAttribute("aria-selected")).toBe("false");
   expect(b.classList.contains("on")).toBe(false);
+});
+
+test("Theme art in this scene is unchecked by default, toggles and persists", async () => {
+  localStorage.clear();
+  mount();
+  await openMenu("beta");
+  const item = () =>
+    screen.getByRole("menuitemradio", { name: /Theme art in this scene/ });
+  expect(item().getAttribute("aria-checked")).toBe("false");
+  fireEvent.click(item());
+  expect(sceneArt("b")).toBe(true);
+  await openMenu("beta");
+  expect(item().getAttribute("aria-checked")).toBe("true");
+  localStorage.clear();
+});
+
+test("Theme art item is absent in serious mode", async () => {
+  setPref("serious", true);
+  mount();
+  await openMenu("beta");
+  expect(screen.queryByText(/Theme art in this scene/)).toBeNull();
+  setPref("serious", false);
 });
