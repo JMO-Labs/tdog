@@ -137,10 +137,7 @@ test("terminal section hosts the designer and guards unsaved edits", async () =>
 
 test("Backgrounds section mounts the library without a stray picker state", async () => {
   location.hash = "#studio/backgrounds";
-  vi.stubGlobal(
-    "fetch",
-    mockFetch({ "GET /api/assets": json([]) }),
-  );
+  vi.stubGlobal("fetch", mockFetch({ "GET /api/assets": json([]) }));
   render(<Host />);
   fireEvent.click(screen.getByText("opener"));
   await screen.findByRole("dialog", { name: "Studio" });
