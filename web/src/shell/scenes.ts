@@ -34,10 +34,21 @@ export function renameScene(
   };
 }
 
-/** Remove a scene; the last one never closes. Neighbour takes over if active. */
-export function closeScene(s: SceneState, id: string): SceneState {
+/**
+ * Remove a scene; neighbour takes over if active. Closing the last one leaves
+ * a fresh empty scene (`freshId`) so the workspace is never tab-less.
+ */
+export function closeScene(
+  s: SceneState,
+  id: string,
+  freshId = "scene 1",
+): SceneState {
   const i = s.scenes.findIndex((x) => x.id === id);
-  if (i < 0 || s.scenes.length < 2) return s;
+  if (i < 0) return s;
+  if (s.scenes.length < 2) {
+    const scene = { id: freshId, name: "scene 1" };
+    return { scenes: [scene], active: freshId };
+  }
   const scenes = s.scenes.filter((x) => x.id !== id);
   const active =
     s.active === id ? scenes[Math.min(i, scenes.length - 1)].id : s.active;

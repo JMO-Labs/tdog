@@ -49,7 +49,6 @@ test("390px: Menu lists Studio, Settings, Sign out", () => {
   render(<Workspace />);
   fireEvent.click(screen.getByRole("button", { name: "Menu" }));
   const studio = screen.getByRole("menuitem", { name: /Studio/ });
-  expect(studio.getAttribute("aria-disabled")).toBe("true");
-  expect(studio.textContent).toContain("Coming in v0.4");
+  expect(studio.getAttribute("aria-disabled")).toBeNull();
   expect(screen.getByRole("menuitem", { name: /Sign out/ })).toBeTruthy();
 });

@@ -296,3 +296,11 @@ test("screen effects: master, intensity and per-effect toggles persist", async (
   expect(getFx().master).toBe(false);
   expect(sw(/scanlines/i).hasAttribute("disabled")).toBe(true);
 });
+
+test("performance mode toggle defaults off and persists", async () => {
+  await mount({ "GET /api/session": session(false) });
+  expect(sw(/performance mode/i).getAttribute("aria-checked")).toBe("false");
+  fireEvent.click(sw(/performance mode/i));
+  expect(localStorage.getItem("tdog.perf")).toBe("1");
+  expect(getPref("perf")).toBe(true);
+});

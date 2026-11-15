@@ -72,7 +72,7 @@ test("main menu lists grouped items; Appearance submenu sets the mode", () => {
     screen
       .getByRole("menuitem", { name: /Studio/ })
       .getAttribute("aria-disabled"),
-  ).toBe("true");
+  ).toBeNull();
   fireEvent.click(screen.getByRole("menuitem", { name: "Appearance" }));
   fireEvent.click(screen.getByRole("menuitemradio", { name: "Dark" }));
   expect(localStorage.getItem("tdog.theme")).toBe("dark");
@@ -210,4 +210,19 @@ test("⇧⌘M toggles the main menu", () => {
   expect(screen.getByRole("menu", { name: "Main menu" })).toBeTruthy();
   fireEvent.keyDown(document, { key: "M", metaKey: true, shiftKey: true });
   expect(screen.queryByRole("menu", { name: "Main menu" })).toBeNull();
+});
+
+// findBy* awaits a setTimeout that vitest fake timers never fire; the
+// dialog mounts synchronously inside fireEvent's act(), so query directly.
+test("Studio opens from the main menu", () => {
+  render(<Workspace />);
+  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: /Studio/ }));
+  expect(screen.getByRole("dialog", { name: "Studio" })).toBeTruthy();
+});
+
+test("⌘. opens Studio", () => {
+  render(<Workspace />);
+  fireEvent.keyDown(document, { key: ".", metaKey: true });
+  expect(screen.getByRole("dialog", { name: "Studio" })).toBeTruthy();
 });

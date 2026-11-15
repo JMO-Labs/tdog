@@ -1,17 +1,19 @@
 import { useSyncExternalStore } from "react";
 
-export type PrefName = "serious" | "pet" | "dress" | "boot";
+export type PrefName = "serious" | "pet" | "dress" | "boot" | "perf";
 const KEY: Record<PrefName, string> = {
   serious: "tdog.serious",
   pet: "tdog.pet",
   dress: "tdog.dress",
   boot: "tdog.boot",
+  perf: "tdog.perf",
 };
 const DEFAULT: Record<PrefName, boolean> = {
   serious: false,
   pet: true,
   dress: true,
   boot: true,
+  perf: false,
 };
 const listeners = new Set<() => void>();
 

@@ -40,3 +40,16 @@ test("whenFamilyReady waits for the stylesheet, then the face", async () => {
   await p;
   expect(load).toHaveBeenCalledWith('16px "Fira Code", monospace');
 });
+
+test("whenFamilyReady swallows a failing font load", async () => {
+  const load = vi.fn().mockRejectedValue(new Error("nope"));
+  Object.defineProperty(document, "fonts", {
+    value: { load },
+    configurable: true,
+  });
+  const { whenFamilyReady } = await import("./serverFonts");
+  const p = whenFamilyReady("Broken");
+  links()[0].dispatchEvent(new Event("load"));
+  await expect(p).resolves.toBeUndefined();
+  expect(load).toHaveBeenCalledWith("16px Broken");
+});

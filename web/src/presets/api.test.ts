@@ -5,6 +5,7 @@ import {
   listPresets,
   putScenePreset,
   resolvePreset,
+  resolveScene,
   startScene,
 } from "./api";
 
@@ -50,4 +51,16 @@ test("putScenePreset PUTs the toml", async () => {
   expect(url).toBe("/api/presets/scene/dev");
   expect(init.method).toBe("PUT");
   expect(init.body).toBe('name = "dev"');
+});
+
+test("resolveScene queries by scene name", async () => {
+  const body = { theme: { value: "dark", origin: "scene" } };
+  const f = stub(json(body));
+  expect(await resolveScene("dev&x")).toEqual(body);
+  expect(f.mock.calls[0][0]).toBe("/api/presets/resolve?scene=dev%26x");
+});
+
+test("resolveScene surfaces server errors", async () => {
+  stub(json({ error: "scene not found" }, 404));
+  await expect(resolveScene("nope")).rejects.toThrow("scene not found");
 });

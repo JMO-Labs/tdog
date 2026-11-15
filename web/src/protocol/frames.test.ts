@@ -76,3 +76,9 @@ describe("ping/pong", () => {
     expect(decodeFrame(buf).kind).toBe("unknown");
   });
 });
+
+test("decodes the killed control frame", () => {
+  const p = new TextEncoder().encode(JSON.stringify({ type: "killed" }));
+  const b = new Uint8Array([FrameType.Control, ...p]);
+  expect(decodeFrame(b.buffer)).toEqual({ kind: "killed" });
+});
