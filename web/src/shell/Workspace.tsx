@@ -64,6 +64,16 @@ export function Workspace({
   const [leafMap, setLeafMap] = useState<Record<string, string[]>>({});
   const [closing, setClosing] = useState<string | null>(null);
   const [kill, setKill] = useState<string | null>(null); // "all" or scene id
+  // Per-pane open state lives here: dockview remounts panes when splits collapse.
+  const [paneOpen, setPaneOpen] = useState<Record<string, PaneOpen>>({});
+  const onPaneOpen = useCallback(
+    (id: string, open: boolean) =>
+      setPaneOpen((m) => ({
+        ...m,
+        [id]: { open, everOpen: open || (m[id]?.everOpen ?? false) },
+      })),
+    [],
+  );
   const toast = useToast();
   useEffect(() => saveScenes(sc), [sc]);
   const onLeaves = useCallback(
@@ -134,16 +144,6 @@ export function Workspace({
   );
   const onLatency = useCallback(
     (id: string, ms: number) => setLatencies((m) => ({ ...m, [id]: ms })),
-    [],
-  );
-  // Per-pane open state lives here: dockview remounts panes when splits collapse.
-  const [paneOpen, setPaneOpen] = useState<Record<string, PaneOpen>>({});
-  const onPaneOpen = useCallback(
-    (id: string, open: boolean) =>
-      setPaneOpen((m) => ({
-        ...m,
-        [id]: { open, everOpen: open || (m[id]?.everOpen ?? false) },
-      })),
     [],
   );
   const onOutput = useCallback(
