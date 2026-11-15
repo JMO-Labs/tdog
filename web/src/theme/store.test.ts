@@ -76,6 +76,46 @@ describe("themeStore", () => {
     themeStore.setScheme("system");
     expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
   });
+  it("toggle swaps terminal bg/fg for dark-first and light-first themes", () => {
+    for (const appearance of ["dark", "light"] as const) {
+      const t = THEMES.find((x) => x.appearance === appearance)!;
+      themeStore.select(t.id);
+      themeStore.setScheme("dark");
+      const dark = themeStore.terminal();
+      themeStore.setScheme("light");
+      const light = themeStore.terminal();
+      const [d, l] = appearance === "dark" ? [t, t.light!] : [t.light!, t];
+      expect(dark.background, t.id).toBe(d.terminal.palette.bg);
+      expect(dark.foreground, t.id).toBe(d.terminal.palette.fg);
+      expect(light.background, t.id).toBe(l.terminal.palette.bg);
+      expect(light.foreground, t.id).toBe(l.terminal.palette.fg);
+      expect(light.background).not.toBe(dark.background);
+    }
+  });
+  it("system follows prefers-color-scheme changes live", () => {
+    let matches = false;
+    let fire: () => void = () => {};
+    vi.stubGlobal("matchMedia", () => ({
+      get matches() {
+        return matches;
+      },
+      addEventListener: (_: string, cb: () => void) => (fire = cb),
+      removeEventListener: () => {},
+    }));
+    try {
+      themeStore.reset();
+      themeStore.select("memphis-pop");
+      const before = themeStore.terminal().background;
+      matches = true;
+      fire();
+      expect(themeStore.terminal().background).toBe(
+        THEMES[0].light!.terminal.palette.bg,
+      );
+      expect(themeStore.terminal().background).not.toBe(before);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it("preview applies live and revert restores, without persisting", () => {
     themeStore.preview("night-market");
     expect(themeStore.get().id).toBe("night-market");

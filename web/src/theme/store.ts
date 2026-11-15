@@ -181,9 +181,23 @@ export const themeStore = {
     id = read();
     previewId = null;
     scheme = "system";
+    watchScheme();
     apply();
   },
 };
+
+// System scheme follows the OS live; explicit light/dark ignore it.
+const watched = new WeakSet<object>();
+function watchScheme() {
+  if (typeof matchMedia !== "function") return;
+  const mq = matchMedia("(prefers-color-scheme: light)");
+  if (!mq || watched.has(mq)) return;
+  watched.add(mq);
+  mq.addEventListener?.("change", () => {
+    if (scheme === "system") apply();
+  });
+}
+watchScheme();
 
 // Serious mode flips live: re-apply whenever the pref changes.
 subscribePrefs(() => {
