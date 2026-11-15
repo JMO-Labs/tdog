@@ -3,6 +3,7 @@ package term
 
 import (
 	"bytes"
+	"slices"
 )
 
 // DiffLine represents a single line in a diff with its operation and content.
@@ -152,7 +153,9 @@ func computeHunks(old, new []string, context int) []DiffHunk {
 	return hunks
 }
 
-const maxLCSTableCells = 25_000_000
+// maxLCSTableCells caps the LCS table at 16 MB (int32 cells) per diff after
+// trimming the common prefix/suffix; bigger rewrites get a 413.
+const maxLCSTableCells = 4_000_000
 
 // diffOps produces a sequence of operations using LCS.
 // Returns slice where -1=delete, 0=match, 1=insert.
@@ -186,18 +189,16 @@ func diffOps(old, new []string) ([]int, int) {
 		return nil, 413 // files differ too much
 	}
 
-	// Build LCS table for middle part only
-	lcs := make([][]int, m+1)
-	for i := range lcs {
-		lcs[i] = make([]int, n+1)
-	}
-
+	// Build LCS table for middle part only (flat, int32: see maxLCSTableCells).
+	w := n + 1
+	lcs := make([]int32, (m+1)*w)
+	at := func(i, j int) int32 { return lcs[i*w+j] }
 	for i := 1; i <= m; i++ {
 		for j := 1; j <= n; j++ {
 			if oldMid[i-1] == newMid[j-1] {
-				lcs[i][j] = lcs[i-1][j-1] + 1
+				lcs[i*w+j] = at(i-1, j-1) + 1
 			} else {
-				lcs[i][j] = max(lcs[i-1][j], lcs[i][j-1])
+				lcs[i*w+j] = max(at(i-1, j), at(i, j-1))
 			}
 		}
 	}
@@ -207,17 +208,19 @@ func diffOps(old, new []string) ([]int, int) {
 	i, j := m, n
 	for i > 0 || j > 0 {
 		if i > 0 && j > 0 && oldMid[i-1] == newMid[j-1] {
-			ops = append([]int{0}, ops...)
+			ops = append(ops, 0)
 			i--
 			j--
-		} else if j > 0 && (i == 0 || lcs[i][j-1] >= lcs[i-1][j]) {
-			ops = append([]int{1}, ops...)
+		} else if j > 0 && (i == 0 || at(i, j-1) >= at(i-1, j)) {
+			ops = append(ops, 1)
 			j--
 		} else {
-			ops = append([]int{-1}, ops...)
+			ops = append(ops, -1)
 			i--
 		}
 	}
+
+	slices.Reverse(ops) // built backwards; append+reverse avoids O(n²) prepends
 
 	// Rebuild full operations: prefix matches, middle ops, suffix matches
 	fullOps := make([]int, prefixLen)                    // prefix: all matches (0)

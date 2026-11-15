@@ -731,3 +731,46 @@ func TestIsValidPath(t *testing.T) {
 		})
 	}
 }
+
+// diffRig builds a handler with one container session and returns a request helper.
+func diffRig(t *testing.T) func(a, b string) *httptest.ResponseRecorder {
+	t.Helper()
+	l := audit.New(filepath.Join(t.TempDir(), "audit.log"))
+	reg := NewRegistry(l, 0)
+	sess := &Session{id: "s", target: "container", s: &session{pid: 1}, reg: reg}
+	reg.mu.Lock()
+	reg.sessions[sess.id] = sess
+	reg.mu.Unlock()
+	h := NewDiffHandler(DiffHandlerConfig{Registry: reg, Audit: l})
+	return func(a, b string) *httptest.ResponseRecorder {
+		body, _ := json.Marshal(DiffRequest{Session: "s", PathA: a, PathB: b})
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("POST", "/api/diff", bytes.NewReader(body)))
+		return rec
+	}
+}
+
+func TestDiffHandlerRejectsNonRegularFile(t *testing.T) {
+	a := filepath.Join(t.TempDir(), "a.txt")
+	if err := os.WriteFile(a, []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// /dev/zero reports size 0 and never ends; it must not be read.
+	if rec := diffRig(t)(a, "/dev/zero"); rec.Code == http.StatusOK {
+		t.Fatalf("expected an error for /dev/zero, got 200")
+	}
+}
+
+func TestDiffHandlerBusyWhenSlotsFull(t *testing.T) {
+	for range cap(diffSlots) {
+		diffSlots <- struct{}{}
+	}
+	defer func() {
+		for range cap(diffSlots) {
+			<-diffSlots
+		}
+	}()
+	if rec := diffRig(t)("/a", "/b"); rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429 when all diff slots are busy, got %d", rec.Code)
+	}
+}

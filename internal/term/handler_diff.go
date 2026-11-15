@@ -39,6 +39,10 @@ type DiffHandlerConfig struct {
 
 // NewDiffHandler returns an HTTP handler for POST /api/diff.
 // Callers must wrap it with authentication and CSRF checks.
+//
+// diffSlots bounds concurrent diffs so memory stays capped.
+var diffSlots = make(chan struct{}, 2)
+
 func NewDiffHandler(cfg DiffHandlerConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -53,13 +57,7 @@ func NewDiffHandler(cfg DiffHandlerConfig) http.Handler {
 		}
 
 		// Validate and clamp context to 0..20
-		contextLines := req.Context
-		if contextLines < 0 {
-			contextLines = 0
-		}
-		if contextLines > 20 {
-			contextLines = 20
-		}
+		contextLines := min(max(req.Context, 0), 20)
 
 		// Look up session
 		sess := cfg.Registry.get(req.Session)
@@ -68,8 +66,17 @@ func NewDiffHandler(cfg DiffHandlerConfig) http.Handler {
 			return
 		}
 
-		// Create timeout context
-		diffCtx, cancel := context.WithTimeout(context.Background(), diffTimeout)
+		// ponytail: global cap of 2 concurrent diffs (≤16 MB LCS each); per-user slots if many users.
+		select {
+		case diffSlots <- struct{}{}:
+			defer func() { <-diffSlots }()
+		default:
+			http.Error(w, "busy: another diff is running, try again", http.StatusTooManyRequests)
+			return
+		}
+
+		// Timeout, also cancelled when the client goes away.
+		diffCtx, cancel := context.WithTimeout(r.Context(), diffTimeout)
 		defer cancel()
 
 		// Resolve paths and read files
@@ -241,11 +248,18 @@ func readFileContainer(path string) ([]byte, int64, error) {
 		return nil, 0, err
 	}
 
+	if !fi.Mode().IsRegular() { // /dev/zero, FIFOs etc. report size 0 and never end
+		return nil, 0, fmt.Errorf("not a regular file")
+	}
 	if fi.Size() > maxFileSize {
 		return nil, fi.Size(), fmt.Errorf("file too large")
 	}
 
-	content, err := io.ReadAll(f)
+	// The file can grow after Stat: never read more than the cap.
+	content, err := io.ReadAll(io.LimitReader(f, maxFileSize+1))
+	if err == nil && len(content) > maxFileSize {
+		return nil, int64(len(content)), fmt.Errorf("file too large")
+	}
 	return content, int64(len(content)), err
 }
 
