@@ -181,7 +181,7 @@ func extractFromZip(zr *zip.Reader) (*Manifest, []byte, error) {
 			if err != nil {
 				return nil, nil, fmt.Errorf("open manifest: %w", err)
 			}
-			defer rc.Close()
+			defer func() { _ = rc.Close() }()
 			b, err := io.ReadAll(io.LimitReader(rc, 1<<20))
 			if err != nil {
 				return nil, nil, fmt.Errorf("read manifest: %w", err)
@@ -202,7 +202,7 @@ func extractFromZip(zr *zip.Reader) (*Manifest, []byte, error) {
 				if err != nil {
 					return nil, nil, fmt.Errorf("open entry: %w", err)
 				}
-				defer rc.Close()
+				defer func() { _ = rc.Close() }()
 				b, err := io.ReadAll(io.LimitReader(rc, 1<<20))
 				if err != nil {
 					return nil, nil, fmt.Errorf("read entry: %w", err)

@@ -170,11 +170,10 @@ func (h *HTTPHandler) inspectMultipart(w http.ResponseWriter, r *http.Request) {
 	// Create a minimal zip for consistency
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
-	zmf, _ := zw.Create("tdog-plugin.json")
-	zmf.Write(manifestBytes)
-	zwf, _ := zw.Create(manifest.Entry)
-	zwf.Write(jsBytes)
-	zw.Close()
+	if err := zipFiles(zw, map[string][]byte{"tdog-plugin.json": manifestBytes, manifest.Entry: jsBytes}); err != nil {
+		jerr(w, 500, "could not stage plugin")
+		return
+	}
 
 	raw := buf.Bytes()
 	sm, _, err := h.store.Inspect(raw)
@@ -288,8 +287,9 @@ func (h *HTTPHandler) handleEntry(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/javascript")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Access-Control-Allow-Origin", "null")
-	w.Write(content)
+	// No CORS header: the app fetches this with credentials and injects it into
+	// the sandboxed iframe itself (ADR-0005), so no other origin needs to read it.
+	_, _ = w.Write(content)
 }
 
 // fetchClient returns an HTTP client that only fetches from public IPs.
@@ -323,4 +323,18 @@ func clientIP(r *http.Request) string {
 		return r.RemoteAddr
 	}
 	return h
+}
+
+// zipFiles writes each file into zw and closes it.
+func zipFiles(zw *zip.Writer, files map[string][]byte) error {
+	for name, b := range files {
+		f, err := zw.Create(name)
+		if err != nil {
+			return err
+		}
+		if _, err := f.Write(b); err != nil {
+			return err
+		}
+	}
+	return zw.Close()
 }

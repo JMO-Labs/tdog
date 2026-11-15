@@ -49,8 +49,8 @@ func TestValidZip(t *testing.T) {
 func TestZipSafetyRejectsZipSlip(t *testing.T) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
-	zw.Create("../../../etc/passwd")
-	zw.Close()
+	_, _ = zw.Create("../../../etc/passwd")
+	_ = zw.Close()
 
 	store := New(t.TempDir())
 	_, _, err := store.Inspect(buf.Bytes())
@@ -62,8 +62,8 @@ func TestZipSafetyRejectsZipSlip(t *testing.T) {
 func TestZipSafetyRejectsNestedDirs(t *testing.T) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
-	zw.Create("subdir/tdog-plugin.json")
-	zw.Close()
+	_, _ = zw.Create("subdir/tdog-plugin.json")
+	_ = zw.Close()
 
 	store := New(t.TempDir())
 	_, _, err := store.Inspect(buf.Bytes())
@@ -76,9 +76,9 @@ func TestZipSafetyRejectsTooMany(t *testing.T) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
 	for i := 0; i < 25; i++ {
-		zw.Create("file" + string(rune(i)) + ".txt")
+		_, _ = zw.Create("file" + string(rune(i)) + ".txt")
 	}
-	zw.Close()
+	_ = zw.Close()
 
 	store := New(t.TempDir())
 	_, _, err := store.Inspect(buf.Bytes())
@@ -136,7 +136,7 @@ func TestListPlugins(t *testing.T) {
 	}
 	raw := buildZip(t, &m, []byte("code"))
 	_, token, _ := store.Inspect(raw)
-	store.Install(token, m.Permissions)
+	_ = store.Install(token, m.Permissions)
 
 	list, err := store.List()
 	if err != nil {
@@ -167,7 +167,7 @@ func TestSetEnabled(t *testing.T) {
 	}
 	raw := buildZip(t, &m, []byte("code"))
 	_, token, _ := store.Inspect(raw)
-	store.Install(token, m.Permissions)
+	_ = store.Install(token, m.Permissions)
 
 	if err := store.SetEnabled("test-plugin", false); err != nil {
 		t.Fatalf("SetEnabled: %v", err)
@@ -206,7 +206,7 @@ func TestHTTPHandlerList(t *testing.T) {
 	}
 
 	var list []PluginInfo
-	json.NewDecoder(w.Body).Decode(&list)
+	_ = json.NewDecoder(w.Body).Decode(&list)
 	if list == nil {
 		t.Error("list should not be nil")
 	}
@@ -235,7 +235,7 @@ func TestHTTPHandlerInspectURL(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/zip")
-		w.Write(raw)
+		_, _ = w.Write(raw)
 	}))
 	defer ts.Close()
 
@@ -274,12 +274,12 @@ func TestHTTPHandlerInspectMultipart(t *testing.T) {
 
 	mp, _ := mw.CreateFormField("manifest")
 	mjson, _ := json.Marshal(m)
-	mp.Write(mjson)
+	_, _ = mp.Write(mjson)
 
 	ep, _ := mw.CreateFormField("entry")
-	ep.Write([]byte("code"))
+	_, _ = ep.Write([]byte("code"))
 
-	mw.Close()
+	_ = mw.Close()
 
 	mux := http.NewServeMux()
 	handler.Register(mux)
@@ -307,12 +307,12 @@ func buildZip(t *testing.T, m *Manifest, jsContent []byte) []byte {
 
 	mf, _ := zw.Create("tdog-plugin.json")
 	mjson, _ := json.Marshal(m)
-	mf.Write(mjson)
+	_, _ = mf.Write(mjson)
 
 	ef, _ := zw.Create(m.Entry)
-	ef.Write(jsContent)
+	_, _ = ef.Write(jsContent)
 
-	zw.Close()
+	_ = zw.Close()
 	return buf.Bytes()
 }
 
