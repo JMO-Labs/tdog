@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/JMO-Labs/tdog/internal/audit"
+	"github.com/JMO-Labs/tdog/internal/config"
 	"github.com/JMO-Labs/tdog/internal/frame"
 	"github.com/coder/websocket"
 	"github.com/creack/pty"
@@ -29,12 +30,13 @@ const (
 
 // Config selects and parameterises the shell targets.
 type Config struct {
-	Shell string        // container target shell; "" means $SHELL, then /bin/sh
+	Shell string        // container target shell; "" means $SHELL, bash, then /bin/sh
 	SSH   SSHConfig     // ssh-host target
 	Audit *audit.Logger // nil = off
 
-	Registry   *Registry // shared session registry; nil = private one
-	Scrollback int       // per-session scrollback bytes when Registry is nil; 0 = 1 MiB
+	Presets    *config.Store // preset store for ?preset=; nil = presets off
+	Registry   *Registry     // shared session registry; nil = private one
+	Scrollback int           // per-session scrollback bytes when Registry is nil; 0 = 1 MiB
 }
 
 // Handler returns the /ws/term handler with SSH settings from the environment.
@@ -49,28 +51,14 @@ func HandlerAudit(shell string, l *audit.Logger) http.Handler {
 // NewHandler serves /ws/term; ?target=ssh-host|container picks the target
 // (default container). Callers must wrap it with authentication.
 func NewHandler(cfg Config) http.Handler {
-	shell := cfg.Shell
-	if shell == "" {
-		shell = os.Getenv("SHELL")
-	}
-	if shell == "" {
-		shell = "/bin/sh"
-	}
-	reg := cfg.Registry
-	if reg == nil {
-		reg = NewRegistry(cfg.Audit, cfg.Scrollback)
-	}
-	run := sshRunner(cfg.SSH)
+	l := newLauncher(cfg)
+	reg := l.reg
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		target := q.Get("target")
 		persistent := q.Get("persistent") == "1"
-		if persistent && target != "ssh-host" {
-			http.Error(w, "persistent requires the ssh-host target", http.StatusBadRequest)
-			return
-		}
-		if target != "" && target != "ssh-host" && target != "container" {
-			http.Error(w, "unknown target", http.StatusBadRequest)
+		if msg := checkTarget(target, persistent); msg != "" {
+			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
 		scene := q.Get("scene")
@@ -85,6 +73,26 @@ func NewHandler(cfg Config) http.Handler {
 				return
 			}
 		}
+		spec, line := Spec{Target: target, Persistent: persistent}, ""
+		if name := q.Get("preset"); name != "" && existing == nil {
+			var err error
+			if spec, err = loadSpec(cfg.Presets, name, q.Get("override")); err == nil {
+				if msg := checkTarget(spec.Target, spec.Persistent); msg != "" {
+					err = errors.New(msg)
+				}
+			}
+			if err == nil {
+				line, err = BuildLine(spec.Pre, spec.Command, spec.Post)
+			}
+			if err != nil {
+				code := http.StatusBadRequest
+				if errors.Is(err, config.ErrNotFound) {
+					code = http.StatusNotFound
+				}
+				http.Error(w, err.Error(), code)
+				return
+			}
+		}
 		c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 			CompressionMode: websocket.CompressionDisabled,
 		})
@@ -94,30 +102,59 @@ func NewHandler(cfg Config) http.Handler {
 		defer func() { _ = c.CloseNow() }()
 		sess := existing
 		if sess == nil {
-			if target == "" {
-				target = "container"
-			}
-			id := newID()
-			spawn := func() (*session, error) { return spawnPTY(shell) }
-			if target == "ssh-host" {
-				spawn = func() (*session, error) { return spawnSSH(cfg.SSH) }
-				if persistent {
-					spawn = func() (*session, error) { return spawnTmux(cfg.SSH, run, id) }
-				}
-			}
-			s, err := spawn()
-			if err != nil {
-				if target == "ssh-host" {
+			var err error
+			if sess, err = l.start(scene, spec, line); err != nil {
+				if spec.Target == "ssh-host" {
 					sshFail(c, err.Error())
 				} else {
 					_ = c.Close(websocket.StatusInternalError, err.Error())
 				}
 				return
 			}
-			sess = reg.addID(id, target, scene, s)
 		}
 		sess.serve(c)
 	})
+}
+
+// launcher starts shells for the handler and for scene starts.
+type launcher struct {
+	shell string
+	ssh   SSHConfig
+	run   CmdRunner
+	reg   *Registry
+}
+
+func newLauncher(cfg Config) *launcher {
+	shell := pickShell(cfg.Shell, os.Getenv("SHELL"), lookPath)
+	reg := cfg.Registry
+	if reg == nil {
+		reg = NewRegistry(cfg.Audit, cfg.Scrollback)
+	}
+	return &launcher{shell: shell, ssh: cfg.SSH, run: sshRunner(cfg.SSH), reg: reg}
+}
+
+// start spawns sp's shell, types line into it and registers it under scene.
+func (l *launcher) start(scene string, sp Spec, line string) (*Session, error) {
+	target := sp.Target
+	if target == "" {
+		target = "container"
+	}
+	id := newID()
+	spawn := func() (*session, error) { return spawnPTYIn(l.shell, expandHome(sp.Cwd), sp.Env) }
+	if target == "ssh-host" {
+		spawn = func() (*session, error) { return spawnSSHCmd(l.ssh, sp.shellCmd()) }
+		if sp.Persistent {
+			spawn = func() (*session, error) { return spawnTmuxCmd(l.ssh, l.run, id, sp.tmuxCmd(id)) }
+		}
+	}
+	s, err := spawn()
+	if err != nil {
+		return nil, err
+	}
+	if line != "" { // typed like a keyboard would; the pty buffers it until the shell reads
+		_, _ = s.w.Write([]byte(line + "\r"))
+	}
+	return l.reg.add(id, target, scene, s, l.reg.onCloseFn(sp, l.shell, l.ssh, id, target)), nil
 }
 
 // session is a running shell, whatever its target.
@@ -144,9 +181,26 @@ func (w *waiter) finish(code int) {
 	close(w.done)
 }
 
-func spawnPTY(shell string) (*session, error) {
-	cmd := exec.Command(shell)
-	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
+// checkTarget returns why (target, persistent) is invalid, or "".
+func checkTarget(target string, persistent bool) string {
+	switch {
+	case persistent && target != "ssh-host":
+		return "persistent requires the ssh-host target"
+	case target != "" && target != "ssh-host" && target != "container":
+		return "unknown target"
+	}
+	return ""
+}
+
+// spawnPTYIn starts shell in dir ("" = inherit) with env added. Preset env
+// is applied after the bash prompt cleanup, so an explicit PS1 still wins.
+func spawnPTYIn(shell, dir string, env map[string]string) (*session, error) {
+	cmd := exec.Command(shell, shellArgs(shell)...)
+	cmd.Dir = dir
+	cmd.Env = shellEnv(shell, os.Environ())
+	for k, v := range env {
+		cmd.Env = append(cmd.Env, k+"="+v)
+	}
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Rows: 24, Cols: 80})
 	if err != nil {
 		log.Printf("term: start %s: %v", shell, err)

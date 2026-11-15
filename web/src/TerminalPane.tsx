@@ -8,8 +8,11 @@ import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
 import { EffectsOverlay } from "./effects/EffectsOverlay";
 import { useActiveEffects } from "./effects/useActiveEffects";
+import { titleStore } from "./terminal/titles";
 import { useMotifOpacity } from "./settings/prefs";
-import { findSessionId } from "./terminal/sessions";
+import { registerClear } from "./terminal/paneActions";
+import { resolvePreset, type Resolved } from "./presets/api";
+import { panePreset, resolveSession } from "./presets/panes";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -28,11 +31,21 @@ function terminalPaint(t: TerminalTheme, clear: boolean): TerminalTheme {
   return clear ? { ...t, background: "rgba(0,0,0,0)" } : t;
 }
 
-function wsUrl(scene?: string, id?: string): string {
+function applyFont(r: TerminalRenderer | null, f: Resolved) {
+  const family = f["font.family"]?.value;
+  const size = f["font.size"]?.value;
+  r?.setFont?.(
+    typeof family === "string" ? family : undefined,
+    typeof size === "number" ? size : undefined,
+  );
+}
+
+function wsUrl(scene?: string, id?: string, preset?: string): string {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const q = new URLSearchParams();
   if (scene) q.set("scene", scene);
   if (id) q.set("id", id);
+  if (preset) q.set("preset", preset);
   const qs = q.toString();
   return `${proto}://${location.host}/ws/term${qs ? `?${qs}` : ""}`;
 }
@@ -65,6 +78,13 @@ export function TerminalPane({
   reconnectRef?: { current: (() => void) | null };
 } = {}) {
   const settledRef = useRef(settled);
+  // A terminal preset's theme and font apply to this pane only.
+  const preset = sceneKey ? panePreset(sceneKey) : undefined;
+  const [resolved, setResolved] = useState<Resolved>({});
+  const presetTheme = resolved.theme?.value;
+  theme ??= typeof presetTheme === "string" ? presetTheme : undefined;
+  const fontRef = useRef<Resolved>({});
+  fontRef.current = resolved;
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const renderer = useRef<TerminalRenderer | null>(null);
@@ -76,11 +96,20 @@ export function TerminalPane({
   const connect = useCallback(() => {
     const key = keyRef.current;
     if (!key) return session.current?.connect();
-    void findSessionId(key).then((id) => {
+    void resolveSession(key).then((id) => {
       idRef.current = id;
       session.current?.connect();
     });
   }, []);
+  useEffect(() => {
+    if (!preset) return;
+    let live = true;
+    resolvePreset(preset).then(
+      (r) => live && setResolved(r),
+      () => {}, // validation errors were toasted when the pane was opened
+    );
+    return () => void (live = false);
+  }, [preset]);
   const [state, setState] = useState<SessionState>({ status: "connecting" });
 
   const toast = useToast();
@@ -120,6 +149,9 @@ export function TerminalPane({
     renderer.current?.setTheme(paintTheme());
   }, [theme, clear, paintTheme]);
   useEffect(() => {
+    applyFont(renderer.current, resolved);
+  }, [resolved]);
+  useEffect(() => {
     if (!dropped) return;
     const id = setTimeout(connect, RETRY_MS);
     return () => clearTimeout(id);
@@ -152,7 +184,7 @@ export function TerminalPane({
       if (cancelled) return r.dispose();
       const s = new TerminalSession(
         r,
-        () => new WebSocket(wsUrl(keyRef.current, idRef.current)),
+        () => new WebSocket(wsUrl(keyRef.current, idRef.current, preset)),
         setState,
         {
           onSize: (c, r2) => hooks.current.onSize?.(c, r2),
@@ -165,7 +197,20 @@ export function TerminalPane({
       );
       session.current = s;
       renderer.current = r;
+      r.onTitle?.((title) => {
+        if (keyRef.current) titleStore.set(keyRef.current, { title });
+      });
+      r.onCwd?.((cwd) => {
+        if (keyRef.current) titleStore.set(keyRef.current, { cwd });
+      });
+      // ED 3: erase scrollback only; works the same in both renderers.
+      const offClear = sceneKey
+        ? registerClear(sceneKey, () =>
+            r.write(new TextEncoder().encode("\x1b[3J")),
+          )
+        : () => {};
       r.setTheme(paintTheme());
+      applyFont(r, fontRef.current);
       const offTheme = themeStore.subscribe(() => r.setTheme(paintTheme()));
       connect();
       const ro = new ResizeObserver(() => {
@@ -173,6 +218,7 @@ export function TerminalPane({
       });
       ro.observe(el);
       cleanup = () => {
+        offClear();
         offTheme();
         ro.disconnect();
         session.current = null;
@@ -182,8 +228,9 @@ export function TerminalPane({
     return () => {
       cancelled = true;
       cleanup();
+      if (keyRef.current) titleStore.remove(keyRef.current);
     };
-  }, [connect, paintTheme]);
+  }, [connect, sceneKey, paintTheme, preset]);
 
   const bg = themeStore.terminal(theme).background;
   return (

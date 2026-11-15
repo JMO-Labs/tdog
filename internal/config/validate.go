@@ -134,6 +134,17 @@ func (s *Scene) validate() *ValidationError {
 	if e := s.Background.validate("background"); e != nil {
 		return e
 	}
+	slots := map[string]bool{}
+	for _, p := range s.Panes {
+		if p.ID != "" {
+			slots[p.ID] = true
+		}
+	}
+	if s.Layout != nil {
+		if e := s.Layout.validate("layout", slots, map[string]bool{}); e != nil {
+			return e
+		}
+	}
 	for i, p := range s.Panes {
 		pre := fmt.Sprintf("panes[%d]", i)
 		if p.Preset != "" && !validName(p.Preset) {

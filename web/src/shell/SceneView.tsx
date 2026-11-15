@@ -3,6 +3,9 @@ import { SplitView } from "../layout/SplitView";
 import { leaves } from "../layout/tree";
 import { useLayout } from "../layout/useLayout";
 import type { Scene } from "./scenes";
+import { useToast } from "../overlays/toast";
+import { EmptyPresets } from "../presets/EmptyPresets";
+import { preparePane } from "../presets/launch";
 import { Mascot } from "./Mascot";
 import { PaneSlot } from "./PaneSlot";
 
@@ -31,6 +34,11 @@ export function SceneView({
   onMoveScene: (id: string, from: string, to: string) => void;
 }) {
   const layout = useLayout(scene);
+  const toast = useToast();
+  const fromPreset = async (name: string) => {
+    const id = await preparePane(name, toast);
+    if (id) layout.open(id);
+  };
   const ids = layout.tree ? leaves(layout.tree).join(",") : "";
   useEffect(
     () => onLeaves(scene, ids ? ids.split(",") : []),
@@ -47,6 +55,9 @@ export function SceneView({
           onSnap={layout.snap}
           onMove={layout.move}
           onSwap={layout.swap}
+          onRename={layout.rename}
+          onDuplicate={layout.duplicate}
+          active={active}
           scenes={scenes.filter((x) => x.id !== scene)}
           onMoveToScene={(id, to) => onMoveScene(id, scene, to)}
           renderPane={(id, settled) => (
@@ -72,6 +83,7 @@ export function SceneView({
           <button className="btn reconnect" onClick={layout.reset}>
             New pane
           </button>
+          <EmptyPresets onPick={(n) => void fromPreset(n)} />
         </div>
       )}
     </div>

@@ -12,6 +12,15 @@ export function addScene(s: SceneState, id: string): SceneState {
   return { scenes: [...s.scenes, scene], active: id };
 }
 
+/** Append a scene tab with a given name and activate it. */
+export function addNamedScene(
+  s: SceneState,
+  id: string,
+  name: string,
+): SceneState {
+  return { scenes: [...s.scenes, { id, name }], active: id };
+}
+
 export function renameScene(
   s: SceneState,
   id: string,

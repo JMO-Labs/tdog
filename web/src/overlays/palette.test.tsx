@@ -1,9 +1,116 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CommandPalette } from "./CommandPalette";
-import { clearCommands, fuzzyMatch, registerCommand } from "./commands";
+import {
+  clearCommands,
+  fuzzyMatch,
+  groupCommands,
+  matchIndices,
+  recordRecent,
+  getRecents,
+  registerCommand,
+  type Command,
+} from "./commands";
 
-beforeEach(() => clearCommands());
+beforeEach(() => {
+  clearCommands();
+  localStorage.clear();
+});
+
+const cmd = (id: string, title: string, group?: string): Command => ({
+  id,
+  title,
+  group,
+  run: () => {},
+});
+
+describe("matchIndices", () => {
+  it("returns matched positions or null", () => {
+    expect(matchIndices("nt", "New Terminal")).toEqual([0, 4]);
+    expect(matchIndices("", "abc")).toEqual([]);
+    expect(matchIndices("zz", "abc")).toBeNull();
+  });
+});
+
+describe("groupCommands", () => {
+  const all = [
+    cmd("a", "New scene", "Scenes"),
+    cmd("b", "Theme: Dark", "Themes"),
+    cmd("c", "Sign out", "Account"),
+    cmd("d", "Split pane", "Panes"),
+    cmd("e", "Other"),
+  ];
+  it("groups in fixed order with sentence-case headings", () => {
+    const g = groupCommands(all, "", []);
+    expect(g.map((x) => x.heading)).toEqual([
+      "Scenes",
+      "Panes",
+      "Themes",
+      "Account",
+      "Other",
+    ]);
+  });
+  it("shows recents first when the query is empty", () => {
+    const g = groupCommands(all, "", ["c", "a", "gone"]);
+    expect(g[0].heading).toBe("Recent");
+    expect(g[0].items.map((c) => c.id)).toEqual(["c", "a"]);
+  });
+  it("filters by query and has no recents section", () => {
+    const g = groupCommands(all, "sc", ["c"]);
+    expect(g.map((x) => x.heading)).toEqual(["Scenes"]);
+  });
+});
+
+describe("recents", () => {
+  it("records most recent first, deduped and capped", () => {
+    for (const id of ["1", "2", "3", "4", "5", "6", "2"]) recordRecent(id);
+    expect(getRecents()).toEqual(["2", "6", "5", "4", "3"]);
+  });
+  it("returns [] when stored recents are corrupt JSON", () => {
+    localStorage.setItem("tdog.recentCommands", "{not json");
+    expect(getRecents()).toEqual([]);
+  });
+});
+
+describe("palette rendering", () => {
+  it("shows headings, shortcuts, swatches, highlights and empty state", () => {
+    registerCommand({
+      id: "t",
+      title: "Theme: Dark",
+      group: "Themes",
+      swatch: ["#111", "#222", "#333", "#444", "#555"],
+      run: vi.fn(),
+    });
+    registerCommand({
+      id: "s",
+      title: "Open settings",
+      group: "Panes",
+      shortcut: "⌘,",
+      run: vi.fn(),
+    });
+    render(<CommandPalette defaultOpen />);
+    expect(screen.getByText("Themes")).toBeTruthy();
+    expect(screen.getByText("⌘,")).toBeTruthy();
+    expect(document.querySelectorAll(".swatch i")).toHaveLength(5);
+    const input = screen.getByRole("combobox");
+    fireEvent.change(input, { target: { value: "set" } });
+    expect(document.querySelectorAll("mark").length).toBe(3);
+    fireEvent.change(input, { target: { value: "qqq" } });
+    expect(screen.getByText("No commands match ‘qqq’.")).toBeTruthy();
+  });
+  it("lists recently run commands first and records on run", async () => {
+    registerCommand({ id: "a", title: "Alpha", run: vi.fn() });
+    registerCommand({ id: "b", title: "Beta", run: vi.fn() });
+    const { unmount } = render(<CommandPalette defaultOpen />);
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("option")[1]);
+    });
+    unmount();
+    render(<CommandPalette defaultOpen />);
+    expect(screen.getByText("Recent")).toBeTruthy();
+    expect(screen.getAllByRole("option")[0].textContent).toContain("Beta");
+  });
+});
 
 describe("fuzzyMatch", () => {
   it("matches subsequences case-insensitively", () => {

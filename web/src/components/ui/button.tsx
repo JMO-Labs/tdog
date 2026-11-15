@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from "react";
 import { Tooltip } from "../../overlays/Tooltip";
 import { cn } from "../../lib/utils";
 
-type Variant = "default" | "primary" | "danger" | "ghost";
+type Variant = "default" | "primary" | "danger" | "ghost" | "danger-quiet";
 type Size = "md" | "sm";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

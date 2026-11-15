@@ -24,6 +24,16 @@
   margin: 0 0 10px;
   font: 400 26px/1.1 var(--display);
 }
+.overlay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.overlay-head .overlay-title {
+  margin: 0;
+}
 .dialog.sheet {
   position: fixed;
   top: 0;
@@ -58,6 +68,51 @@
   border: 2px solid transparent;
   cursor: pointer;
   font-weight: 600;
+}
+.cmdk-group {
+  display: block;
+  padding: 0;
+  border: 0;
+  cursor: default;
+  font-weight: inherit;
+}
+.cmdk-group ul {
+  max-height: none;
+  overflow: visible;
+}
+.cmdk-heading {
+  padding: 6px 12px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.65;
+}
+.cmdk-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cmdk mark {
+  background: none;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+.cmdk .swatch {
+  display: inline-flex;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.cmdk .swatch i {
+  width: 10px;
+  height: 14px;
+}
+.cmdk-empty {
+  display: block;
+  padding: 9px 12px;
+  cursor: default;
+  font-weight: 400;
+  opacity: 0.7;
 }
 .cmdk li[aria-selected="true"] {
   background: var(--yellow);

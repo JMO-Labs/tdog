@@ -14,11 +14,14 @@ import { KillDialog } from "./KillDialog";
 import { clearLayout } from "../layout/store";
 import { moveToScene } from "../layout/transfer";
 import { newId } from "../layout/tree";
+import { useShellName } from "../terminal/shellName";
 import { killScene } from "../terminal/sessions";
 import { Icon } from "./icons";
 import { type PaneOpen } from "./PaneSlot";
 import { SceneView } from "./SceneView";
+import { usePresetFlows } from "../presets/usePresetFlows";
 import {
+  addNamedScene,
   addScene,
   closeScene,
   loadScenes,
@@ -49,6 +52,7 @@ export function Workspace({
   const { mode, cycle } = useThemeMode();
   const [sizes, setSizes] = useState<Record<string, Size>>({});
   const [latencies, setLatencies] = useState<Record<string, number>>({});
+  const shellName = useShellName();
   const [focused, setFocused] = useState<string | null>(null);
   const [stamp, setStamp] = useState(0);
   const [petShown, setPetShown] = usePref("pet");
@@ -72,6 +76,10 @@ export function Workspace({
     [],
   );
   const add = useCallback(() => setSc((s) => addScene(s, newId("sc"))), []);
+  const presetDialogs = usePresetFlows({
+    scene: sc.active,
+    openTab: (id, name) => setSc((s) => addNamedScene(s, id, name)),
+  });
   const finishClose = useCallback(
     (id: string) => {
       (leafMap[id] ?? []).forEach((p) => void killScene(p));
@@ -170,6 +178,7 @@ export function Workspace({
       registerCommand({
         id: "theme",
         title: "Cycle theme",
+        group: "Themes",
         shortcut: "⇧⌘L",
         run: cycle,
       }),
@@ -177,6 +186,14 @@ export function Workspace({
         registerCommand({
           id: `theme:${t.id}`,
           title: `Theme: ${t.name}`,
+          group: "Themes",
+          swatch: [
+            t.terminal.palette.bg,
+            t.terminal.palette.ansi[1],
+            t.terminal.palette.ansi[2],
+            t.terminal.palette.ansi[4],
+            t.terminal.palette.fg,
+          ],
           run: () => themeStore.select(t.id),
           preview: () => themeStore.preview(t.id),
           revert: () => themeStore.preview(null),
@@ -184,19 +201,22 @@ export function Workspace({
       ),
       registerCommand({
         id: "settings",
-        title: "Open Settings",
+        title: "Open settings",
+        group: "Panes",
         shortcut: "⌘,",
         run: () => setSettings(true),
       }),
       registerCommand({
         id: "scene:new",
         title: "New scene",
+        group: "Scenes",
         shortcut: "⌘T",
         run: add,
       }),
       registerCommand({
         id: "signout",
         title: "Sign out",
+        group: "Account",
         run: signOut,
       }),
     ];
@@ -312,7 +332,7 @@ export function Workspace({
           <Icon name="server" />
           container
         </span>
-        <span className="chip">shell</span>
+        <span className="chip">{shellName}</span>
         {size && (
           <span className="chip num hide-xs">
             {size.cols}×{size.rows}
@@ -381,6 +401,7 @@ export function Workspace({
         onClose={() => setKill(null)}
         onConfirm={() => void runKill()}
       />
+      {presetDialogs}
       <CommandPalette open={palette} onOpenChange={setPalette} />
       <Sheet
         open={settings}

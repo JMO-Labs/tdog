@@ -22,6 +22,8 @@ type Session struct {
 	att    *attachment
 	exited bool
 	killed bool // ended by a kill request; clients get a "killed" control
+
+	onClose func() // preset on_close hook; nil when none
 }
 
 // attachment is one socket's live view of a session.
@@ -62,6 +64,9 @@ func (s *Session) pump() {
 	// Log before removal: once the session is gone from the registry, its end is on record.
 	s.reg.audit.Log(audit.Entry{Event: "term_end", Target: s.target, PID: s.s.pid, Session: s.id})
 	s.reg.remove(s.id)
+	if s.onClose != nil {
+		go s.onClose()
+	}
 }
 
 // feed records b and forwards it to the attached socket. A client too slow to
