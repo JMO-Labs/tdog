@@ -22,6 +22,7 @@ vi.mock("./theme/store", () => ({
     terminalMotif: () => null,
     effects: () => [],
     subscribe: () => () => {},
+    paneTheme: (_p?: string, fallback?: string) => fallback,
     scope: () => ({ cursor: { shape: "block", blink: true }, font: "vt323" }),
   },
 }));

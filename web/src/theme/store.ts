@@ -68,6 +68,7 @@ const findTheme = (tid: string | null | undefined) =>
 
 let id = read();
 let previewId: string | null = null;
+let panePreview: { pane: string; theme: string } | null = null;
 let scheme: Scheme = "system";
 let applied: string[] = [];
 const listeners = new Set<() => void>();
@@ -152,6 +153,24 @@ export const themeStore = {
     const tokens = variant(t).chrome.tokens as Record<string, string>;
     return `url("${motifSvg(m, resolveTokens(tokens))}")`;
   },
+  /** Page-chrome backdrop for a theme card: its motif url, else its pattern. */
+  backdrop(themeId: string): string {
+    const t = findTheme(themeId);
+    if (!t) return "none";
+    const { pattern, motif } = t.chrome;
+    if (motif)
+      return `url("${motifSvg(motif, resolveTokens(variant(t).chrome.tokens))}")`;
+    return pattern === "none" ? "none" : `var(--pat-${pattern})`;
+  },
+  /** Theme id a pane should show: its previewed theme, else `fallback`. */
+  paneTheme: (pane: string | undefined, fallback: string | undefined) =>
+    panePreview && panePreview.pane === pane ? panePreview.theme : fallback,
+  /** Preview a terminal theme on one pane only; page chrome is untouched. */
+  previewPane(pane: string | null, themeId: string | null) {
+    panePreview =
+      pane && themeId && findTheme(themeId) ? { pane, theme: themeId } : null;
+    listeners.forEach((l) => l());
+  },
   subscribe(l: () => void) {
     listeners.add(l);
     return () => void listeners.delete(l);
@@ -181,6 +200,7 @@ export const themeStore = {
     serious = getPref("serious");
     id = read();
     previewId = null;
+    panePreview = null;
     scheme = "system";
     watchScheme();
     apply();
