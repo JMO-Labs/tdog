@@ -30,6 +30,7 @@ vi.mock("./theme/store", () => ({
     terminalMotif: () => 'url("data:image/svg+xml,x")',
     effects: () => [],
     subscribe: () => () => {},
+    paneTheme: (_p?: string, fallback?: string) => fallback,
     scope: () => ({
       cursor: { shape: "block", blink: true },
       font: "jetbrains-mono",

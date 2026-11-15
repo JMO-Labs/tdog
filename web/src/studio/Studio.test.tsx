@@ -1,16 +1,22 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { json, mockFetch } from "../auth/testutil";
 vi.mock("./TerminalPreview", () => ({ TerminalPreview: () => null }));
 import { Studio } from "./Studio";
 
-function Host() {
+function Host({ onTry }: { onTry?: (n: string) => void }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button onClick={() => setOpen(true)}>opener</button>
-      <Studio open={open} onClose={() => setOpen(false)} />
+      <Studio open={open} onClose={() => setOpen(false)} onTry={onTry} />
     </>
   );
 }
@@ -156,4 +162,19 @@ test("Backgrounds section mounts the library without a stray picker state", asyn
   await screen.findByRole("dialog", { name: "Studio" });
   expect(screen.getByRole("heading", { name: "Backgrounds" })).toBeTruthy();
   expect(screen.getByText(/Look fields/)).toBeTruthy();
+});
+
+test("Try it clears the dirty guard and search, then hands the preset on", async () => {
+  const onTry = vi.fn();
+  const ask = vi.fn(() => false);
+  vi.stubGlobal("confirm", ask);
+  render(<Host onTry={onTry} />);
+  fireEvent.click(screen.getByText("opener"));
+  await screen.findByLabelText("Name");
+  fireEvent.click(screen.getByRole("button", { name: "Try it" }));
+  await waitFor(() => expect(onTry).toHaveBeenCalledWith("a"));
+  // Not dirty: switching sections must not ask for confirmation.
+  fireEvent.click(nav().getByRole("button", { name: "Fonts" }));
+  expect(ask).not.toHaveBeenCalled();
+  expect(location.hash).toBe("#studio/fonts");
 });

@@ -104,3 +104,18 @@ test("Try it on an unchanged preset opens it without saving", async () => {
   await waitFor(() => expect(onTry).toHaveBeenCalledWith("api"));
   expect(f.mock.calls.some((c) => c[1]?.method === "PUT")).toBe(false);
 });
+
+test("Save refuses while the TOML has errors", async () => {
+  const f = routes();
+  render(<TerminalDesigner onDirty={() => {}} />);
+  fireEvent.change(await screen.findByLabelText("Working directory"), {
+    target: { value: "/tmp" },
+  });
+  toToml();
+  fireEvent.change(editor(), { target: { value: "cwd = = oops\n" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(screen.getByRole("status").textContent).toBe(
+    "Fix the TOML errors first",
+  );
+  expect(f.mock.calls.filter((c) => c[1]?.method === "PUT")).toHaveLength(0);
+});

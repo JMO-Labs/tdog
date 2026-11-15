@@ -50,5 +50,5 @@ test("menu toggle and ⌘K command switch serious live", () => {
       .run(),
   );
   expect(getPref("serious")).toBe(false);
-  expect(getCommands().some((c) => c.id === "theme:plain")).toBe(true);
+  expect(getCommands().some((c) => c.id === "theme:pick")).toBe(true);
 });
