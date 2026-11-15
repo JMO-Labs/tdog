@@ -12,7 +12,8 @@ import { Dialog } from "../overlays/Dialog";
 import { useToast } from "../overlays/toast";
 import { KillDialog } from "./KillDialog";
 import { clearLayout } from "../layout/store";
-import { moveToScene } from "../layout/transfer";
+import { addLeaf, moveToScene } from "../layout/transfer";
+import { preparePane } from "../presets/launch";
 import { newId } from "../layout/tree";
 import { useShellName } from "../terminal/shellName";
 import { killScene } from "../terminal/sessions";
@@ -427,7 +428,16 @@ export function Workspace({
         onConfirm={() => void runKill()}
       />
       {presetDialogs}
-      <Studio open={studio} onClose={() => setStudio(false)} />
+      <Studio
+        open={studio}
+        onClose={() => setStudio(false)}
+        onTry={(name) => {
+          setStudio(false);
+          void preparePane(name, toast).then((id) => {
+            if (id) addLeaf(sc.active, id);
+          });
+        }}
+      />
       <CommandPalette open={palette} onOpenChange={setPalette} />
       <Sheet
         open={settings}
