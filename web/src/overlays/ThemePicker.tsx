@@ -29,8 +29,7 @@ function Card({
     "--c-fg": palette.fg,
     "--c-cursor": palette.cursor,
     "--c-font": fontFamily(font),
-    "--c-pattern":
-      t.chrome.pattern === "none" ? "none" : `var(--pat-${t.chrome.pattern})`,
+    "--c-pattern": themeStore.backdrop(t.id),
   };
   palette.ansi.forEach((c, i) => (style[`--c-ansi-${i}`] = c));
   return (
@@ -74,9 +73,12 @@ function Card({
 
 export function ThemePicker({
   open,
+  pane,
   onClose,
 }: {
   open: boolean;
+  /** Focused pane that previews; none means no live preview. */
+  pane?: string | null;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -102,23 +104,27 @@ export function ThemePicker({
 
   // Preview the hovered/focused theme once 150 ms pass with no scrolling.
   useEffect(() => {
-    if (!open || !target) return;
-    const t = setTimeout(() => themeStore.preview(target), PREVIEW_DELAY);
+    if (!open || !target || !pane) return;
+    const t = setTimeout(
+      () => themeStore.previewPane(pane, target),
+      PREVIEW_DELAY,
+    );
     return () => clearTimeout(t);
-  }, [open, target, scrolls]);
+  }, [open, target, scrolls, pane]);
   // Closing (or unmounting) always drops the preview.
   useEffect(() => {
     if (!open) return;
-    return () => themeStore.preview(null);
+    return () => themeStore.previewPane(null, null);
   }, [open]);
 
   const close = () => {
-    themeStore.preview(null);
+    themeStore.previewPane(null, null);
     setQuery("");
     setHover(null);
     onClose();
   };
   const pick = (id: string) => {
+    themeStore.previewPane(null, null);
     themeStore.select(id);
     close();
   };
@@ -133,14 +139,14 @@ export function ThemePicker({
     );
   };
   const cols = () => {
-    const tpl = gridRef.current
-      ? getComputedStyle(gridRef.current.querySelector(".tp-grid")!)
-          .gridTemplateColumns
-      : "";
+    const grid = gridRef.current?.querySelector(".tp-grid");
+    if (!grid) return FALLBACK_COLS;
+    const tpl = getComputedStyle(grid).gridTemplateColumns;
     const n = tpl.split(" ").filter(Boolean).length;
     return n > 1 ? n : FALLBACK_COLS;
   };
   const onKeyDown = (e: React.KeyboardEvent) => {
+    if (!flat.length) return;
     const i = flat.findIndex((t) => t.id === cur);
     const inInput = (e.target as HTMLElement).tagName === "INPUT";
     const step: Record<string, number> = {

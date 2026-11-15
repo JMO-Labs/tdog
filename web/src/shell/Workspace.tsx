@@ -390,7 +390,11 @@ export function Workspace({
       />
       {presetDialogs}
       <CommandPalette open={palette} onOpenChange={setPalette} />
-      <ThemePicker open={picker} onClose={() => setPicker(false)} />
+      <ThemePicker
+        open={picker}
+        pane={shown}
+        onClose={() => setPicker(false)}
+      />
       <Sheet
         open={settings}
         title="Settings"

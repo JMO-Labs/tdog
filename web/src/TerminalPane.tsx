@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { TerminalSession, type SessionState } from "./terminal/session";
 import type { TerminalRenderer, TerminalTheme } from "./terminal/renderer";
 import { themeStore } from "./theme/store";
@@ -97,6 +97,10 @@ export function TerminalPane({
   const [resolved, setResolved] = useState<Resolved>({});
   const presetTheme = resolved.theme?.value;
   theme ??= typeof presetTheme === "string" ? presetTheme : undefined;
+  // The theme picker previews on the focused pane only.
+  const [, bump] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => themeStore.subscribe(bump), []);
+  theme = themeStore.paneTheme(sceneKey, theme);
   const fontRef = useRef<Resolved>({});
   fontRef.current = resolved;
   const themeRef = useRef(theme);

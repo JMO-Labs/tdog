@@ -206,3 +206,19 @@ describe("motif fallbacks and terminal motif", () => {
     }
   });
 });
+
+it("previewPane scopes a theme to one pane without touching the page", () => {
+  themeStore.reset();
+  const style = document.documentElement.getAttribute("style");
+  const other = THEMES.find((t) => t.id !== themeStore.get().id)!.id;
+  const fn = vi.fn();
+  const off = themeStore.subscribe(fn);
+  themeStore.previewPane("p1", other);
+  expect(themeStore.paneTheme("p1", undefined)).toBe(other);
+  expect(themeStore.paneTheme("p2", "x")).toBe("x");
+  expect(fn).toHaveBeenCalled();
+  expect(document.documentElement.getAttribute("style")).toBe(style);
+  themeStore.previewPane(null, null);
+  expect(themeStore.paneTheme("p1", undefined)).toBeUndefined();
+  off();
+});
