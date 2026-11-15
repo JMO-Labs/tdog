@@ -121,6 +121,7 @@ test("Enter waits for plugins that are still loading", async () => {
   const syncing = m.sync();
   expect(m.hasGate()).toBe(true); // unknown yet: hold Enter
   const verdict = m.gate("rm -rf ~");
+  await new Promise((res) => setTimeout(res, 0)); // load() has asked for the list
   release();
   await syncing;
   await new Promise((res) => setTimeout(res, 0)); // gate() resumes and asks
@@ -134,4 +135,13 @@ test("Enter waits for plugins that are still loading", async () => {
     data: { type: "verdict", id: 1, verdict: "confirm", reason: "home" },
   });
   await expect(verdict).resolves.toMatchObject({ verdict: "confirm" });
+});
+
+test("overlapping syncs start a plugin only once", async () => {
+  const r = rig([info("a", true)]);
+  await Promise.all([r.m.sync(), r.m.sync(), r.m.sync()]);
+  expect(r.started).toEqual(["a"]);
+  r.state.list = [info("a", false)];
+  await Promise.all([r.m.sync(), r.m.sync()]);
+  expect(r.disposed).toEqual(["a"]);
 });

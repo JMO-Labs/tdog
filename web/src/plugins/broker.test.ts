@@ -157,3 +157,9 @@ describe("broker", () => {
     await expect(p).resolves.toMatchObject({ verdict: "allow" });
   });
 });
+
+test("insert text is stripped of Enter and escapes", () => {
+  expect(
+    parsePluginMessage({ type: "insert", text: "ls\r\x1b[2Jrm -rf ~\n" }),
+  ).toEqual({ type: "insert", text: "ls[2Jrm -rf ~" });
+});

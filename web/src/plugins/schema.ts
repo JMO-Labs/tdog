@@ -118,8 +118,13 @@ export function parsePluginMessage(raw: unknown): PluginToHost | null {
         ? { type: "overlay", nodes: m.nodes as OverlayNode[] }
         : null;
     case "insert":
+      // Plain text only: no Enter, escapes or other controls, so an insert
+      // can never run or edit a command by itself.
       return keys(m, ["type", "text"]) && str(m.text, 4096)
-        ? { type: "insert", text: m.text as string }
+        ? {
+            type: "insert",
+            text: (m.text as string).replace(/[\x00-\x1f\x7f-\x9f]/g, ""),
+          }
         : null;
     case "error":
       return keys(m, ["type", "error"]) && str(m.error)

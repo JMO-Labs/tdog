@@ -28,7 +28,9 @@ export class PluginManager {
 
   /** Start every enabled plugin and stop the rest (call after any change). */
   async sync(): Promise<void> {
-    const run = this.load();
+    // One sync at a time: overlapping ones could start a plugin twice and
+    // leave a copy running after it was disabled.
+    const run = (this.loading ?? Promise.resolve()).then(() => this.load());
     this.loading = run;
     try {
       await run;
