@@ -57,6 +57,10 @@
   /* inset only: shadows and rings must never paint onto neighbours */
   box-shadow: inset -4px -4px 0 var(--shadow);
 }
+/* a scene background shows through; the pane's own layer/theme tints it */
+.scene-view:has(> [data-scene-bg]) .pane {
+  background: transparent;
+}
 .pane[data-focused="true"] {
   border-color: var(--accent, #6cf);
   box-shadow:

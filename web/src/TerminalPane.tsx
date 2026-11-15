@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { TerminalSession, type SessionState } from "./terminal/session";
 import type { TerminalRenderer, TerminalTheme } from "./terminal/renderer";
 import { themeStore } from "./theme/store";
@@ -8,12 +8,22 @@ import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
+import { BackgroundLayer } from "./backgrounds/BackgroundLayer";
+import { SceneBgContext } from "./backgrounds/SceneBackground";
+import { bgSpec } from "./backgrounds/spec";
 import { EffectsOverlay } from "./effects/EffectsOverlay";
 import { useActiveEffects } from "./effects/useActiveEffects";
 import { titleStore } from "./terminal/titles";
-import { useMotifOpacity } from "./settings/prefs";
+import { useMotifOpacity, usePref } from "./settings/prefs";
 import { registerClear } from "./terminal/paneActions";
 import { resolvePreset, type Resolved } from "./presets/api";
+import { EndedPanel } from "./terminal/EndedPanel";
+import {
+  clearKilled,
+  isKilled,
+  markKilled,
+  subscribeKilled,
+} from "./terminal/killed";
 import { panePreset, resolveSession } from "./presets/panes";
 
 /** Retry cadence while a dropped socket is being re-established. */
@@ -109,6 +119,7 @@ export function TerminalPane({
   /** (Re)connect; with a sceneKey, re-resolves the live session id first. */
   const connect = useCallback(() => {
     const key = keyRef.current;
+    if (key && isKilled(key)) return; // only the "Start a new shell" button revives it
     if (!key) return session.current?.connect();
     void resolveSession(key).then((id) => {
       idRef.current = id;
@@ -125,6 +136,26 @@ export function TerminalPane({
     return () => void (live = false);
   }, [preset]);
   const [state, setState] = useState<SessionState>({ status: "connecting" });
+  const [storeKilled, setStoreKilled] = useState(
+    () => !!sceneKey && isKilled(sceneKey),
+  );
+  useEffect(() => {
+    const sync = () =>
+      setStoreKilled(!!keyRef.current && isKilled(keyRef.current));
+    sync();
+    return subscribeKilled(sync);
+  }, []);
+  const killed =
+    storeKilled || (state.status === "closed" && state.killed === true);
+  useEffect(() => {
+    if (state.status === "closed" && state.killed && keyRef.current)
+      markKilled(keyRef.current);
+  }, [state]);
+  const startNew = useCallback(() => {
+    if (keyRef.current) clearKilled(keyRef.current);
+    setStoreKilled(false);
+    connect();
+  }, [connect]);
 
   const toast = useToast();
   const { phase, noteOutput } = useConnectionPhase(state, () =>
@@ -148,7 +179,11 @@ export function TerminalPane({
   const motifUrl = motifPct > 0 ? themeStore.terminalMotif(theme) : null;
   const motifOn = motifUrl !== null;
   /** Something paints behind the text: the renderer must be transparent. */
-  const clear = motifOn || rainBehind;
+  const sceneBg = useContext(SceneBgContext);
+  const [perf] = usePref("perf");
+  const paneBg = bgSpec(resolved);
+  const hasBg = !perf && paneBg !== null;
+  const clear = motifOn || rainBehind || hasBg || (sceneBg && !perf);
   const clearRef = useRef(clear);
   clearRef.current = clear;
   /** Renderer colours; transparent background while a motif or rain shows through. */
@@ -158,7 +193,8 @@ export function TerminalPane({
     [],
   );
 
-  const dropped = state.status === "closed" && state.exitCode === undefined;
+  const dropped =
+    state.status === "closed" && state.exitCode === undefined && !killed;
   const scopeFontRef = useRef<string | null>(null);
   /** Cursor now; theme font once loaded, unless a preset sets the family. */
   const applyScope = useCallback((r: TerminalRenderer) => {
@@ -269,12 +305,14 @@ export function TerminalPane({
     };
   }, [connect, applyScope, sceneKey, paintTheme, preset]);
 
-  const bg = themeStore.terminal(theme).background;
+  const bg =
+    sceneBg && !perf ? "transparent" : themeStore.terminal(theme).background;
   return (
     <div
       data-testid="terminal-pane"
       style={{ position: "relative", height: "100%", background: bg }}
     >
+      <BackgroundLayer spec={paneBg} />
       {motifUrl && (
         <div
           data-testid="terminal-motif"
@@ -295,20 +333,13 @@ export function TerminalPane({
       />
       <EffectsOverlay effects={effects} />
       <ConnectionGag phase={phase} onReconnect={connect} />
-      {state.status === "closed" && state.exitCode !== undefined && (
-        <div
-          style={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            color: "#eee",
-            background: "#000c",
-            padding: 8,
-          }}
-        >
-          {`Shell exited with code ${state.exitCode}`}{" "}
-          <button onClick={connect}>Reconnect</button>
-        </div>
+      {(killed ||
+        (state.status === "closed" && state.exitCode !== undefined)) && (
+        <EndedPanel
+          killed={killed}
+          exitCode={state.status === "closed" ? state.exitCode : undefined}
+          onStart={killed ? startNew : connect}
+        />
       )}
     </div>
   );

@@ -1,3 +1,4 @@
+import { markKilled } from "./killed";
 import { apiFetch, apiPost } from "../auth/api";
 
 /** Server session id for a pane's `scene` key, if its shell is still alive. */
@@ -14,15 +15,19 @@ export async function findSessionId(
   }
 }
 
-/** Hang up the shell behind a pane (best effort). True if a kill went out. */
-export async function killScene(scene: string): Promise<boolean> {
-  const id = await findSessionId(scene);
-  if (!id) return false;
+/**
+ * Kill every shell behind a pane's `scene` key. Returns the server's real
+ * count (0 on failure) and marks the pane killed so reload does not respawn.
+ */
+export async function killScene(scene: string): Promise<number> {
   try {
-    await apiPost(`/api/sessions/${id}/kill`);
-    return true;
+    const r = await apiPost(`/api/scenes/${encodeURIComponent(scene)}/kill`);
+    if (!r.ok) return 0;
+    const n = Number(((await r.json()) as { killed?: number }).killed ?? 0);
+    if (n > 0) markKilled(scene);
+    return n;
   } catch {
-    return false;
+    return 0;
   }
 }
 
