@@ -187,6 +187,7 @@ function Pane({ id }: { id: string }) {
       className="pane"
       data-pane={id}
       data-focused={focus === id}
+      data-active={current === id}
       onFocusCapture={() => setFocus(id)}
       onPointerDownCapture={() => setFocus(id)}
       onDragOver={over}
@@ -253,44 +254,46 @@ function Pane({ id }: { id: string }) {
         <span className="chip">local</span>
         {isBroadcasting && <span className="chip broadcast">Broadcasting</span>}
         <span className="spacer" />
-        <button
-          className="pane-btn pane-split icon-btn sm"
-          aria-label="Split right"
-          title="Split right"
-          onClick={() => p.onSplit(id, "row")}
-        >
-          <Icon name="splitRight" />
-        </button>
-        <button
-          className="pane-btn pane-split icon-btn sm"
-          aria-label="Split down"
-          title="Split down"
-          onClick={() => p.onSplit(id, "col")}
-        >
-          <Icon name="splitDown" />
-        </button>
-        {p.onSwap && p.onMoveToScene && (
-          <PaneMenu
-            id={id}
-            scenes={p.scenes ?? []}
-            onSwap={p.onSwap}
-            onMoveToScene={p.onMoveToScene}
-            onRename={p.onRename && (() => setRenaming(true))}
-            onDuplicate={p.onDuplicate}
-            onClear={clear}
-            onClose={p.onClose}
-            onSplit={p.onSplit}
-            onSnap={p.onSnap}
-          />
-        )}
-        <button
-          className="pane-btn icon-btn sm danger"
-          aria-label="Close pane"
-          title="Close pane (kills the shell)"
-          onClick={() => p.onClose(id)}
-        >
-          <Icon name="close" />
-        </button>
+        <div className="pane-actions">
+          <button
+            className="pane-btn pane-split icon-btn sm"
+            aria-label="Split right"
+            title="Split right"
+            onClick={() => p.onSplit(id, "row")}
+          >
+            <Icon name="splitRight" />
+          </button>
+          <button
+            className="pane-btn pane-split icon-btn sm"
+            aria-label="Split down"
+            title="Split down"
+            onClick={() => p.onSplit(id, "col")}
+          >
+            <Icon name="splitDown" />
+          </button>
+          {p.onSwap && p.onMoveToScene && (
+            <PaneMenu
+              id={id}
+              scenes={p.scenes ?? []}
+              onSwap={p.onSwap}
+              onMoveToScene={p.onMoveToScene}
+              onRename={p.onRename && (() => setRenaming(true))}
+              onDuplicate={p.onDuplicate}
+              onClear={clear}
+              onClose={p.onClose}
+              onSplit={p.onSplit}
+              onSnap={p.onSnap}
+            />
+          )}
+          <button
+            className="pane-btn icon-btn sm danger"
+            aria-label="Close pane"
+            title="Close pane (kills the shell)"
+            onClick={() => p.onClose(id)}
+          >
+            <Icon name="close" />
+          </button>
+        </div>
       </header>
       <div className="pane-body">
         <PaneOpsContext.Provider

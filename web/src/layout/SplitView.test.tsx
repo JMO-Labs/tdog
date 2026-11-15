@@ -231,3 +231,20 @@ test("palette layout asks to confirm when panes would close", () => {
   expect(p.onSnap).toHaveBeenCalledWith("single", true);
   confirm.mockRestore();
 });
+
+test("pane actions stay in the tab order", () => {
+  const { r } = setup(two);
+  const acts = r.container.querySelectorAll(
+    '[data-pane="b"] .pane-actions button',
+  );
+  expect(acts.length).toBeGreaterThanOrEqual(3);
+  acts.forEach((b) => expect((b as HTMLElement).tabIndex).not.toBe(-1));
+});
+
+test("only the active pane is marked", () => {
+  const { r } = setup(two);
+  fireEvent.pointerDown(screen.getByTestId("pane-b"));
+  const on = r.container.querySelectorAll('[data-active="true"]');
+  expect(on).toHaveLength(1);
+  expect(on[0].getAttribute("data-pane")).toBe("b");
+});

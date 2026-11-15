@@ -8,12 +8,11 @@
   position: absolute;
   inset: 0;
   display: flex;
-  padding: 6px; /* + 6px pane margin = 12px outer gap */
   box-sizing: border-box;
   /* dockview sashes: invisible until hover/drag, then an accent handle */
   --dv-sash-color: transparent;
   --dv-active-sash-color: var(--accent, #6cf);
-  --dv-separator-border: transparent;
+  --dv-separator-border: var(--line); /* 1px hairline between panes */
 }
 .split-root > .pane,
 .split-root > .split {
@@ -46,11 +45,11 @@
 .pane {
   display: flex;
   flex-direction: column;
-  height: calc(100% - 12px);
-  margin: 6px; /* two neighbours = 12px gap */
+  height: 100%;
+  margin: 0;
   box-sizing: border-box;
-  border: 2px solid var(--line);
-  border-radius: calc(14px * var(--radius-scale));
+  border: 0;
+  border-radius: 0;
   /* not clipped: popovers in the head must stay visible */
   background: var(--term-bg);
   isolation: isolate; /* effects/z-index stay inside this pane */
@@ -58,59 +57,41 @@
 }
 /* inset only: shadows and rings must never paint onto neighbours; drawn on
    a pseudo-element so they sit above the opaque head and body */
-.pane::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: inset -4px -4px 0 var(--shadow);
-}
 /* a scene background shows through; the pane's own layer/theme tints it */
 .scene-view:has(> [data-scene-bg]) .pane {
   background: transparent;
-}
-.pane[data-focused="true"] {
-  border-color: var(--accent, #6cf);
-}
-.pane[data-focused="true"]::after {
-  box-shadow:
-    inset 0 0 0 3px var(--accent, #6cf),
-    inset -4px -4px 0 var(--shadow);
 }
 .pane-head {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: nowrap;
-  height: 28px;
+  height: 26px;
   box-sizing: border-box;
   padding: 0 4px 0 10px;
   background: var(--surface);
-  border-bottom: 2px solid var(--line);
-  border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid var(--line);
   min-width: 0;
   container-type: inline-size;
 }
-.pane[data-focused="true"] .pane-head {
-  background: var(--surface-2);
+.pane[data-active="true"] .pane-head {
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 .pane-head .title {
   font-weight: 600;
   font-size: 12px;
+  color: var(--fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--muted);
 }
-.pane[data-focused="true"] .pane-head .title {
-  font-weight: 800;
-  color: var(--fg);
-}
+
 .pane-head .chip {
   flex: none;
   padding: 0 8px;
   font-size: 11px;
+  color: var(--muted);
+  background: var(--surface-2);
 }
 .pane-head .chip.broadcast {
   border: 1px solid var(--accent, #6cf);
@@ -138,15 +119,22 @@
 .pane-head .pane-btn:hover {
   background: var(--surface-2);
 }
-.pane-head .pane-split {
-  display: none;
+.pane-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0; /* never display/visibility: keyboard users still tab here */
 }
-/* Split buttons only on hover/focus, and only if the header is wide enough. */
-@container (min-width: 300px) {
-  .pane-head:hover .pane-split,
-  .pane-head:focus-within .pane-split {
-    display: inline-flex;
-  }
+.pane:hover .pane-actions,
+.pane[data-active="true"] .pane-actions,
+.pane:focus-within .pane-actions {
+  opacity: 1;
+}
+.pane-head .pane-btn.danger {
+  color: var(--muted);
+}
+.pane-head .pane-btn.danger:hover {
+  color: var(--danger, #c0392b);
 }
 .pane-menu kbd {
   margin-left: auto;
@@ -163,7 +151,7 @@
   position: relative;
   box-sizing: border-box;
   padding: 8px;
-  border-radius: 0 0 12px 12px;
+  border-radius: 0;
   overflow: hidden;
 }
 .snap-wrap {
