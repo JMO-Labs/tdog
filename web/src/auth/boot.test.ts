@@ -19,7 +19,7 @@ import { bootFor, BOOT_MS } from "./boot";
 test("variant follows the page theme; unknown falls back to drop", () => {
   expect(bootFor("colonial-marine", false)).toBe("tracker");
   expect(bootFor("wake-up-neo", false)).toBe("rain");
-  expect(bootFor("mainframe", false)).toBe("post");
+  expect(bootFor("mainframe", false)).toBe("tracker");
   expect(bootFor("dial-up-paranoia", false)).toBe("dialup");
   expect(bootFor("truth-is-out-there", false)).toBe("tracker");
   expect(bootFor("cartridge-blast", false)).toBe("cartridge");
