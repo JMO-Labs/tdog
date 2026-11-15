@@ -4,9 +4,16 @@ import { describe, expect, it } from "vitest";
 
 const css = readFileSync(join(__dirname, "layout.css"), "utf8");
 const rule = (sel: string) =>
-  new RegExp(
-    `(?:^|\\n)${sel.replace(/[.\[\]"=]/g, "\\$&")}\\s*\\{([^}]*)\\}`,
-  ).exec(css)?.[1] ?? "";
+  [
+    ...css.matchAll(
+      new RegExp(
+        `(?:^|\\n)${sel.replace(/[.\[\]"=]/g, "\\$&")}\\s*\\{([^}]*)\\}`,
+        "g",
+      ),
+    ),
+  ]
+    .map((m) => m[1])
+    .join("\n");
 
 describe("pane chrome css", () => {
   it(".pane does not clip popovers", () => {
