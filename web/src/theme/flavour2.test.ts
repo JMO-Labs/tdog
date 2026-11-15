@@ -23,7 +23,7 @@ const SPECS: Spec[] = [
     true,
     "share-tech-mono",
     0,
-    "none",
+    "glow",
     1,
     "rain",
   ],

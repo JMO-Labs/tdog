@@ -86,7 +86,7 @@
     },
     "shape": {
       "radius": 0,
-      "shadow": "none",
+      "shadow": "glow",
       "border": 1
     },
     "pattern": "none",
