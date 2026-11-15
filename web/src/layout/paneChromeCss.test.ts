@@ -28,6 +28,18 @@ describe("pane chrome css", () => {
     expect(rule(".pane-head")).toMatch(/height:\s*26px/);
     expect(rule(".pane-head")).toMatch(/flex-wrap:\s*nowrap/);
   });
+  it("title truncates instead of overflowing the header", () => {
+    const t = rule(".pane-head .title");
+    expect(t).toMatch(/min-width:\s*0/);
+    expect(t).toMatch(/flex:\s*1 1 0/);
+    expect(t).toMatch(/overflow:\s*hidden/);
+    expect(t).toMatch(/text-overflow:\s*ellipsis/);
+    expect(t).toMatch(/white-space:\s*nowrap/);
+    expect(rule(".pane-actions")).toMatch(/flex:\s*none/);
+    expect(rule(".pane-head .chip.broadcast")).toMatch(
+      /background:\s*transparent/,
+    );
+  });
   it("actions hide by opacity only and show on hover/active/focus", () => {
     expect(rule(".pane-actions")).toMatch(/opacity:\s*0/);
     expect(css).not.toMatch(/visibility:\s*hidden/);

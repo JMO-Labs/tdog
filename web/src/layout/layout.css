@@ -55,8 +55,6 @@
   isolation: isolate; /* effects/z-index stay inside this pane */
   position: relative;
 }
-/* inset only: shadows and rings must never paint onto neighbours; drawn on
-   a pseudo-element so they sit above the opaque head and body */
 /* a scene background shows through; the pane's own layer/theme tints it */
 .scene-view:has(> [data-scene-bg]) .pane {
   background: transparent;
@@ -81,6 +79,8 @@
   font-weight: 600;
   font-size: 12px;
   color: var(--fg);
+  flex: 1 1 0;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -98,6 +98,7 @@
   border-radius: 4px;
   color: var(--accent, #6cf);
   padding: 0 6px;
+  background: transparent;
 }
 .pane-head .spacer {
   flex: 1;
@@ -122,6 +123,7 @@
 .pane-actions {
   display: flex;
   align-items: center;
+  flex: none;
   gap: 2px;
   opacity: 0; /* never display/visibility: keyboard users still tab here */
 }
