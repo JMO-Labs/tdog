@@ -411,7 +411,7 @@ export function TerminalPane({
           onStart={killed ? startNew : connect}
         />
       )}
-      <PaneOverlayHost renderer={renderer.current} />
+      <PaneOverlayHost renderer={renderer.current} handle={hostRef} />
       {menu && (
         <TerminalMenu
           {...menu}

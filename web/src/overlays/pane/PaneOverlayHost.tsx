@@ -2,12 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PaneOverlayContext } from "../../terminal/renderer";
 import type { TerminalRenderer } from "../../terminal/renderer";
 import { getPaneOverlay } from "./registry";
-import { setFocusedPaneOverlay } from "./focusedPane";
+import { clearFocusedPaneOverlay, setFocusedPaneOverlay } from "./focusedPane";
 import "./overlay.css";
 
 export interface PaneOverlayHostProps {
   renderer: TerminalRenderer | null;
   onClose?: () => void;
+  /** Filled with this host's `open`, for the pane's own menu. */
+  handle?: { current: PaneOverlayHostHandle };
 }
 
 export interface PaneOverlayHostHandle {
@@ -17,9 +19,11 @@ export interface PaneOverlayHostHandle {
 export const PaneOverlayHost = ({
   renderer,
   onClose: onCloseCallback,
+  handle,
 }: PaneOverlayHostProps) => {
   const [overlayId, setOverlayId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hostDiv = useRef<HTMLDivElement>(null);
 
   const close = useCallback(() => {
     setOverlayId(null);
@@ -111,22 +115,18 @@ export const PaneOverlayHost = ({
     };
   }, [overlayId, close]);
 
-  // Store handle for external access
-  const hostHandle = useRef<PaneOverlayHostHandle>({ open });
-  hostHandle.current.open = open;
+  if (handle) handle.current = { open };
 
-  // Set this pane's overlay opener as focused when container receives focus
+  // ⌘K acts on the pane that last had focus: track focus on the whole pane
+  // (the host's parent), not just the overlay, which only exists while open.
   useEffect(() => {
-    if (!containerRef.current) return;
-    const container = containerRef.current;
-
-    const handleFocus = () => {
-      setFocusedPaneOverlay(open);
-    };
-
-    container.addEventListener("focusin", handleFocus);
+    const pane = hostDiv.current?.parentElement;
+    if (!pane) return;
+    const onFocus = () => setFocusedPaneOverlay(open);
+    pane.addEventListener("focusin", onFocus);
     return () => {
-      container.removeEventListener("focusin", handleFocus);
+      pane.removeEventListener("focusin", onFocus);
+      clearFocusedPaneOverlay(open);
     };
   }, [open]);
 
@@ -134,7 +134,11 @@ export const PaneOverlayHost = ({
   const renderedContent = overlay && ctx ? overlay.render(ctx) : null;
 
   return (
-    <div data-testid="pane-overlay-host" className="pane-overlay-host">
+    <div
+      ref={hostDiv}
+      data-testid="pane-overlay-host"
+      className="pane-overlay-host"
+    >
       {overlayId && (
         <div className="pane-overlay-backdrop" onClick={close}>
           <div

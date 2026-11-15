@@ -14,3 +14,8 @@ export function setFocusedPaneOverlay(open: OpenOverlayFunc | null): void {
 export function openFocusedPaneOverlay(id: string): void {
   focusedPaneOverlay?.(id);
 }
+
+/** Forget `open` if it is still the focused one (its pane unmounted). */
+export function clearFocusedPaneOverlay(open: OpenOverlayFunc): void {
+  if (focusedPaneOverlay === open) focusedPaneOverlay = null;
+}
