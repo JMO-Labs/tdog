@@ -5,9 +5,9 @@ import { validateTheme } from "./schema";
 // id, effects, cursor, font, radius, shadow, boot
 const PACK = [
   ["linking-book", ["vignette"], "bar", "courier-prime", "soft", "drop"],
-  ["llama-skin", ["scanlines"], "block", "vt323", "bevel", "post"],
+  ["llama-skin", ["scanlines"], "block", "space-mono", "bevel", "post"],
   ["sim-grid", [], "underline", "ibm-plex-mono", "soft", "post"],
-  ["cartridge-blast", [], "block", "press-start-2p", "hard", "cartridge"],
+  ["cartridge-blast", [], "block", "space-mono", "hard", "cartridge"],
   ["slime-time", [], "block", "space-mono", "soft", "wipe"],
 ] as const;
 

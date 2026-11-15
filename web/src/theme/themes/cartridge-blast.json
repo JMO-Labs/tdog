@@ -31,7 +31,7 @@
       "shape": "block",
       "blink": false
     },
-    "font": "press-start-2p",
+    "font": "space-mono",
     "effects": []
   },
   "chrome": {

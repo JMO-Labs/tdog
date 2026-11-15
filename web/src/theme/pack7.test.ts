@@ -16,7 +16,7 @@ const PACK: Row[] = [
   [
     "colonial-marine",
     "block",
-    "vt323",
+    "share-tech-mono",
     { scanlines: true, glow: true },
     "combat helmet",
     0,
@@ -33,7 +33,16 @@ const PACK: Row[] = [
     "bevel",
     "post",
   ],
-  ["ninety-five", "underline", "vt323", {}, "wizard hat", 0, "bevel", "post"],
+  [
+    "ninety-five",
+    "underline",
+    "courier-prime",
+    {},
+    "wizard hat",
+    0,
+    "bevel",
+    "post",
+  ],
   [
     "hack-the-planet",
     "block",
