@@ -20,14 +20,16 @@ const (
 type jrnl struct {
 	buf *journal.Buffer
 
-	mu   sync.Mutex // guards the fields below
-	p    *journal.Parser
-	on   bool
-	base uint64 // seq offset so a fresh parser continues the old numbering
-	max  uint64 // highest seq added
-	last time.Time
-	done chan struct{}
-	once sync.Once
+	mu              sync.Mutex // guards the fields below
+	p               *journal.Parser
+	on              bool
+	base            uint64 // seq offset so a fresh parser continues the old numbering
+	max             uint64 // highest seq added
+	recBase, recMax uint64 // Rec offset/highest so a fresh parser's ids stay unique
+	sent            uint64 // highest seq streamed to a client; acks are clamped to it
+	last            time.Time
+	done            chan struct{}
+	once            sync.Once
 }
 
 func newJrnl() *jrnl {
@@ -39,6 +41,10 @@ func (j *jrnl) add(evs []journal.Event) {
 	for _, e := range evs {
 		e.Seq += j.base
 		j.max = e.Seq
+		if e.Rec != 0 {
+			e.Rec += j.recBase
+			j.recMax = max(j.recMax, e.Rec)
+		}
 		j.buf.Add(e)
 	}
 }
@@ -100,7 +106,10 @@ func (j *jrnl) control(p []byte) {
 	}
 	switch v.Type {
 	case "jrnl-ack":
-		j.buf.Ack(v.Seq)
+		j.mu.Lock()
+		seq := min(v.Seq, j.sent) // a bogus ack must not free unsent events
+		j.mu.Unlock()
+		j.buf.Ack(seq)
 	case "jrnl-forget":
 		j.buf.Wipe()
 	case "jrnl-record":
@@ -114,14 +123,13 @@ func (j *jrnl) control(p []byte) {
 			j.on = false
 			j.buf.Wipe()
 		case *v.On && !j.on:
-			j.on, j.base, j.p = true, j.max, journal.NewParser(time.Now)
+			j.on, j.base, j.recBase, j.p = true, j.max, j.recMax, journal.NewParser(time.Now)
 		}
 	}
 }
 
 // stream sends pending events as Journal frames each tick until ctx ends or a
-// write fails. Events too fresh to have been flushed as output are held to the
-// next tick so a Journal frame never precedes the Output frame of its bytes.
+// write fails.
 func (j *jrnl) stream(ctx context.Context, write func([]byte) error) {
 	if j == nil {
 		return
@@ -136,16 +144,15 @@ func (j *jrnl) stream(ctx context.Context, write func([]byte) error) {
 		case <-t.C:
 		}
 		evs := j.buf.Since(sent)
-		n := 0
-		for n < len(evs) && time.Since(evs[n].At) >= 2*flushAfter {
-			n++
-		}
-		if n == 0 {
+		if len(evs) == 0 {
 			continue
 		}
-		if write(frame.EncodeJournal(evs[:n])) != nil {
+		if write(frame.EncodeJournal(evs)) != nil {
 			return
 		}
-		sent = evs[n-1].Seq
+		sent = evs[len(evs)-1].Seq
+		j.mu.Lock()
+		j.sent = max(j.sent, sent)
+		j.mu.Unlock()
 	}
 }

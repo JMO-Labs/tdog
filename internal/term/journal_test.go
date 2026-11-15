@@ -87,13 +87,13 @@ func jrnlOf(t *testing.T, r *rig, id string) *jrnl {
 	return s.j
 }
 
-func TestJournalFrameFollowsOutput(t *testing.T) {
+func TestJournalFrameDelivered(t *testing.T) {
 	r := newRig(t)
 	c, _ := r.start("")
 	mark(t, r, c, "hel''lo")
-	evs, out, jr := readJournal(t, r.ctx, c, "hello")
-	if out < 0 || jr <= out {
-		t.Fatalf("output frame %d, journal frame %d, events %+v", out, jr, evs)
+	evs, _, jr := readJournal(t, r.ctx, c, "hello")
+	if jr < 0 || len(evs) == 0 || evs[0].Kind != journal.KindStart && evs[0].Kind != journal.KindOut {
+		t.Fatalf("journal frame %d, events %+v", jr, evs)
 	}
 }
 
@@ -218,3 +218,47 @@ func TestJournalAddsNoUnauthenticatedPath(t *testing.T) {
 }
 
 func itoa(n uint64) string { return strconv.FormatUint(n, 10) }
+
+func cmdRun(j *jrnl, text string) {
+	j.feed([]byte("\x1b]133;C\x07" + text + "\n\x1b]133;D;0\x07"))
+}
+
+func TestJournalRecAndSeqMonotonicAcrossRecordToggle(t *testing.T) {
+	j := newJrnl()
+	cmdRun(j, "one")
+	old := j.buf.Since(0)
+	j.control([]byte(`{"type":"jrnl-record","on":false}`))
+	j.control([]byte(`{"type":"jrnl-record","on":true}`))
+	cmdRun(j, "two")
+	all := j.buf.Since(0)
+	if len(old) == 0 || len(all) == 0 {
+		t.Fatalf("old %d new %d", len(old), len(all))
+	}
+	var oldRec, oldSeq uint64
+	for _, e := range old {
+		oldRec, oldSeq = max(oldRec, e.Rec), max(oldSeq, e.Seq)
+	}
+	for _, e := range all {
+		if e.Rec <= oldRec || e.Seq <= oldSeq {
+			t.Fatalf("event %+v not above old rec %d seq %d", e, oldRec, oldSeq)
+		}
+	}
+}
+
+func TestJournalAckClampedToSent(t *testing.T) {
+	j := newJrnl()
+	cmdRun(j, "one")
+	n := len(j.buf.Since(0))
+	j.control([]byte(`{"type":"jrnl-ack","seq":999}`))
+	if len(j.buf.Since(0)) != n {
+		t.Fatal("bogus ack freed unsent events")
+	}
+	first := j.buf.Since(0)[0].Seq
+	j.mu.Lock()
+	j.sent = first
+	j.mu.Unlock()
+	j.control([]byte(`{"type":"jrnl-ack","seq":999}`))
+	if got := j.buf.Since(0); len(got) != n-1 {
+		t.Fatalf("want %d events left, got %d", n-1, len(got))
+	}
+}

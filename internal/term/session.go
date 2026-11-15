@@ -74,10 +74,12 @@ func (s *Session) pump() {
 // feed records b and forwards it to the attached socket. A client too slow to
 // keep up is detached (it can reattach and replay) rather than blocking the shell.
 func (s *Session) feed(b []byte) {
+	// Parsing and encryption run outside s.mu so they never block attach/info.
+	// pump is the only feeder, so journal order matches output order.
+	s.j.feed(b)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.ring.write(b)
-	s.j.feed(b)
 	if s.att == nil {
 		return
 	}
