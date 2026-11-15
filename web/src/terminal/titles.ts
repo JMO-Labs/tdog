@@ -4,6 +4,8 @@ import { useSyncExternalStore } from "react";
 export interface PaneInfo {
   title?: string;
   cwd?: string;
+  /** Explicit terminal theme (preset or saved scene); unset = page theme. */
+  theme?: string;
 }
 
 /** Path from an OSC 7 `file://host/path` URL; undefined if malformed. */

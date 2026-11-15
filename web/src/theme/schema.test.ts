@@ -145,6 +145,16 @@ describe("bundled themes", () => {
     ])
       expect(THEMES.find((t) => t.id === id)?.light, id).toBeDefined();
   });
+  it("ships a light variant for every dual-appearance theme", () => {
+    for (const id of [
+      "slime-time",
+      "truth-is-out-there",
+      "virtual-mind",
+      "wake-up-neo",
+      "wetwired",
+    ])
+      expect(THEMES.find((t) => t.id === id)?.light, id).toBeDefined();
+  });
   it("ships a light variant for the dark-only pack", () => {
     for (const id of [
       "night-market",
