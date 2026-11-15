@@ -108,13 +108,18 @@ test("cancel closes the kill dialog without killing", async () => {
   expect(killScene).not.toHaveBeenCalled();
 });
 
-test("scene tab menu closes on mouse leave and on blur", () => {
+test("scene tab menu closes on an outside click and when focus leaves it", async () => {
   render(<Workspace />);
   const tab = () => screen.getByRole("tab", { name: "scene 1" });
   fireEvent.contextMenu(tab());
-  fireEvent.mouseLeave(screen.getByRole("menu"));
+  fireEvent.pointerDown(document.body);
   expect(screen.queryByRole("menu")).toBeNull();
   fireEvent.contextMenu(tab());
-  fireEvent.blur(screen.getByRole("menuitem", { name: "Kill scene" }));
+  const item = screen.getByRole("menuitem", { name: "Kill scene" });
+  act(() => tab().focus()); // e.g. Tab away
+  fireEvent.blur(item);
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(1);
+  });
   expect(screen.queryByRole("menu")).toBeNull();
 });

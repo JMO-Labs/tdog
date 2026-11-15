@@ -37,7 +37,7 @@ export function PaneMenu({
   const btn = useRef<HTMLButtonElement>(null);
 
   const handleSnap = (t: TemplateId, confirmed?: boolean) => {
-    const surplus = onSnap?.(t, confirmed) ?? [];
+    const surplus = (confirmed ? onSnap?.(t, true) : onSnap?.(t)) ?? [];
     if (surplus.length && !confirmed) {
       setConfirmation({ t, n: surplus.length });
     } else {
@@ -50,6 +50,7 @@ export function PaneMenu({
         {
           label: `Close ${confirmation.n} pane${confirmation.n > 1 ? "s" : ""} and apply`,
           danger: true,
+          keepOpen: true,
           onSelect: () => {
             handleSnap(confirmation.t, true);
             setConfirmation(null);
@@ -57,13 +58,14 @@ export function PaneMenu({
         },
         {
           label: "Cancel",
+          keepOpen: true,
           onSelect: () => setConfirmation(null),
         },
       ]
     : TEMPLATES.map((t) => ({
         label: t.label,
-        // ponytail: empty submenu prevents ActionMenu from dismissing on click
-        submenu: [],
+        // Stays open: a template may first ask to confirm closing panes.
+        keepOpen: true,
         onSelect: () => handleSnap(t.id),
       }));
 
@@ -193,7 +195,15 @@ export function PaneMenu({
         x={x}
         y={y}
         groups={groups}
-        onDismiss={() => setOpen(false)}
+        onDismiss={(refocus) => {
+          setOpen(false);
+          setConfirmation(null);
+          // Back on the ⋯ button (it re-renders), like any closed menu.
+          if (refocus) setTimeout(() => btn.current?.focus());
+        }}
+        onSubmenuChange={(label) => {
+          if (label !== "Layouts") setConfirmation(null);
+        }}
         ariaLabel="Pane actions"
       />
     </>

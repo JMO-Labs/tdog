@@ -42,10 +42,21 @@ test("swap with previous reports -1 and closes the menu", () => {
 test("Escape closes the menu; other keys do not", () => {
   const { open } = setup();
   open();
-  fireEvent.keyDown(screen.getByRole("menu"), { key: "a" });
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "Shift" });
   expect(screen.getByRole("menu")).toBeTruthy();
   fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
-  // ActionMenu dismisses on Escape
+  expect(screen.queryByRole("menu")).toBeNull();
+});
+
+test("typing filters first; Escape clears the filter, then closes", () => {
+  const { open } = setup();
+  open();
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "a" });
+  expect(screen.getByRole("textbox", { name: "Filter actions" })).toBeTruthy();
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+  expect(screen.queryByRole("textbox", { name: "Filter actions" })).toBeNull();
+  expect(screen.getByRole("menu")).toBeTruthy();
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
   expect(screen.queryByRole("menu")).toBeNull();
 });
 
@@ -105,7 +116,7 @@ test("ArrowRight on Move to scene opens the submenu; other keys do not", () => {
   const { open } = setup();
   open();
   const item = screen.getByRole("menuitem", { name: "Move to scene" });
-  fireEvent.keyDown(item, { key: "a" });
+  fireEvent.keyDown(item, { key: "Shift" });
   expect(screen.queryByRole("menu", { name: "Move to scene" })).toBeNull();
   fireEvent.keyDown(item, { key: "ArrowRight" });
   expect(screen.getByRole("menu", { name: "Move to scene" })).toBeTruthy();

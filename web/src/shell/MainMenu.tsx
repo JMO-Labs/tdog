@@ -19,6 +19,7 @@ const toMenuItem = (entry: MenuEntry): MenuItem => ({
   label: entry.label,
   icon: entry.icon,
   shortcut: entry.shortcut,
+  hint: entry.hint,
   disabled: entry.disabled,
   checked: entry.checked,
   isRadio: entry.checked !== undefined,

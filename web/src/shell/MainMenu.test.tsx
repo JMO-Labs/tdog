@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { MainMenu, type MenuGroup } from "./MainMenu";
 
@@ -63,14 +69,16 @@ test("arrow keys move focus; ArrowRight opens submenu, ArrowLeft closes it", asy
   expect(document.activeElement).toBe(app);
 });
 
-test("Escape closes every level and refocuses the button", async () => {
+test("Escape closes the submenu, then the menu, and refocuses the button", async () => {
   render(<MainMenu groups={groups()} />);
   await open();
   const app = screen.getByRole("menuitem", { name: "Appearance" });
   fireEvent.click(app);
   expect(screen.getAllByRole("menu")).toHaveLength(2);
   fireEvent.keyDown(document.activeElement!, { key: "Escape" });
-  expect(screen.queryByRole("menu")).toBeNull();
+  expect(screen.getAllByRole("menu")).toHaveLength(1);
+  fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+  await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
   expect(document.activeElement).toBe(
     screen.getByRole("button", { name: "Menu" }),
   );
