@@ -180,6 +180,13 @@ func (s *Store) add(family, source string, files []blob) error {
 	}
 	es := s.load()
 	for _, it := range items {
+		for _, e := range es {
+			if e.File == it.e.File && e.Family != it.e.Family {
+				return fmt.Errorf("file name clashes with installed family %q", e.Family)
+			}
+		}
+	}
+	for _, it := range items {
 		if err := os.WriteFile(filepath.Join(s.dir, it.e.File), it.data, 0o600); err != nil {
 			return err
 		}
@@ -187,6 +194,8 @@ func (s *Store) add(family, source string, files []blob) error {
 		for _, e := range es {
 			if e.Family != it.e.Family || e.Style != it.e.Style {
 				kept = append(kept, e)
+			} else if e.File != it.e.File {
+				_ = os.Remove(filepath.Join(s.dir, e.File))
 			}
 		}
 		es = append(kept, it.e)

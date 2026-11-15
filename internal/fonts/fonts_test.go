@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -232,5 +233,39 @@ func TestPersistsAcrossStores(t *testing.T) {
 	New(dir, nil).Register(mux2)
 	if got := list(t, mux2); len(got) != 1 || got[0].Family != "Persist" {
 		t.Fatalf("%+v", got)
+	}
+}
+
+var woff2 = append([]byte("wOF2"), bytes.Repeat([]byte{7}, 32)...)
+
+func TestSlugCollisionRejected(t *testing.T) {
+	mux, _ := newMux(t, nil)
+	if w := upload(t, mux, "Fira-Regular.ttf", "Fira Code", ttf); w.Code != 204 {
+		t.Fatalf("first: %d", w.Code)
+	}
+	if w := upload(t, mux, "Fira-Regular.ttf", "Fira-Code", ttf); w.Code != 400 {
+		t.Fatalf("collision should be rejected, got %d", w.Code)
+	}
+	got := list(t, mux)
+	if len(got) != 1 || got[0].Family != "Fira Code" {
+		t.Fatalf("list: %+v", got)
+	}
+}
+
+func TestReplaceDifferentExtRemovesOldFile(t *testing.T) {
+	mux, s := newMux(t, nil)
+	upload(t, mux, "Fira-Regular.ttf", "Fira Code", ttf)
+	if w := upload(t, mux, "Fira-Regular.woff2", "Fira Code", woff2); w.Code != 204 {
+		t.Fatalf("replace: %d", w.Code)
+	}
+	ents, _ := os.ReadDir(s.dir)
+	n := 0
+	for _, e := range ents {
+		if strings.HasSuffix(e.Name(), ".ttf") || strings.HasSuffix(e.Name(), ".woff2") {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Fatalf("want 1 font file on disk, got %d", n)
 	}
 }

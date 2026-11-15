@@ -33,14 +33,20 @@ function terminalPaint(t: TerminalTheme, clear: boolean): TerminalTheme {
   return clear ? { ...t, background: "rgba(0,0,0,0)" } : t;
 }
 
-function applyFont(r: TerminalRenderer | null, f: Resolved) {
+const wantFamily = new WeakMap<TerminalRenderer, string | undefined>();
+
+export function applyFont(r: TerminalRenderer | null, f: Resolved) {
   const family = f["font.family"]?.value;
   const size = f["font.size"]?.value;
   const f2 = typeof family === "string" ? family : undefined;
   const s2 = typeof size === "number" ? size : undefined;
   if (f2 || s2) r?.setFont?.(f2, s2);
   // Server-installed families arrive via /api/fonts.css; refit once loaded.
-  if (f2 && r) void whenFamilyReady(f2).then(() => r.setFont?.(f2, s2));
+  if (r) wantFamily.set(r, f2);
+  if (f2 && r)
+    void whenFamilyReady(f2).then(() => {
+      if (wantFamily.get(r) === f2) r.setFont?.(f2, s2);
+    });
 }
 
 function wsUrl(scene?: string, id?: string, preset?: string): string {
@@ -251,6 +257,7 @@ export function TerminalPane({
         offClear();
         offTheme();
         ro.disconnect();
+        wantFamily.delete(r);
         session.current = null;
         s.dispose();
       };
