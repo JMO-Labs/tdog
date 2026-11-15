@@ -44,6 +44,8 @@ export interface SessionHooks {
 
 export class TerminalSession {
   private sock: SocketLike | null = null;
+  /** True between onopen and onclose; WebSocket.send throws while CONNECTING. */
+  private ready = false;
   private pending = 0;
   private exitCode: number | undefined;
   private pinger: ReturnType<typeof setInterval> | undefined;
@@ -68,8 +70,10 @@ export class TerminalSession {
     this.onState({ status: "connecting" });
     const s = this.open();
     this.sock = s;
+    this.ready = false;
     s.binaryType = "arraybuffer";
     s.onopen = () => {
+      this.ready = true;
       const { cols, rows } = this.r.size();
       s.send(encodeResize(cols, rows));
       this.hooks.onSize?.(cols, rows);
@@ -81,6 +85,7 @@ export class TerminalSession {
     s.onclose = () => {
       if (this.sock === s) {
         this.sock = null;
+        this.ready = false;
         this.stopPing();
       }
       this.onState({ status: "closed", exitCode: this.exitCode });
@@ -108,7 +113,7 @@ export class TerminalSession {
   }
 
   private send(f: Uint8Array<ArrayBuffer>): void {
-    this.sock?.send(f);
+    if (this.ready) this.sock?.send(f);
   }
 
   private onMessage(buf: ArrayBuffer): void {
