@@ -1,163 +1,121 @@
-/** Sandbox: runs plugin code in a Worker inside a sandboxed iframe for maximum isolation. */
-
-import { PluginBroker, type BrokerContext } from "./broker";
-
 /**
- * Create and run a plugin in a secure sandbox: Worker inside a sandboxed iframe.
- * - iframe: sandbox="allow-scripts", no same-origin, CSP blocks network
- * - Worker: no DOM, no navigation, no network, runs plugin code only
- * - Rate limiting and message size enforcement done HOST-side (in broker)
- * Returns a cleanup function and broker for API access.
+ * Plugin sandbox (ADR-0005): a hidden `sandbox="allow-scripts"` iframe (opaque
+ * origin, strict CSP) whose only job is to start a Worker. Plugin code runs in
+ * that Worker: no DOM, no navigation, no network (CSP connect-src falls back to
+ * 'none'). The iframe HTML and the worker prelude are constants; plugin source
+ * arrives as message data and is loaded with importScripts(blob:) only after
+ * the prelude has hidden the host port in a closure.
  */
-export async function createSandbox(
-  entryCode: string,
-  permissions: string[],
-  ctx: BrokerContext,
-): Promise<{ cleanup: () => void; broker: PluginBroker }> {
-  // Create MessageChannel for communication
-  const channel = new MessageChannel();
-  const hostPort = channel.port1;
-  const pluginPort = channel.port2;
+import { PluginBroker, type BrokerHost, type Port } from "./broker";
 
-  // Create iframe with strict isolation, opaque origin, CSP
-  const iframe = document.createElement("iframe");
-  iframe.sandbox.add("allow-scripts");
-  // Note: intentionally NO allow-same-origin; this keeps the iframe origin opaque
-  // and prevents access to parent window or localStorage
-  iframe.style.display = "none";
-
-  // Worker prelude: sets up the tdog API, port kept in closure (not accessible to plugin)
-  const workerPrelude = `
-    // Port is kept in a closure that plugin code cannot access
-    let port = null;
-
-    // Receive port from iframe bootstrap
-    self.addEventListener('message', function setup(e) {
-      if (e.data && e.data.type === 'init' && e.ports && e.ports[0]) {
-        port = e.ports[0];
-        self.removeEventListener('message', setup);
-
-        // Create tdog API (restricted interface, all via postMessage)
-        // Object.freeze prevents plugin from accessing port or modifying methods
-        const tdog = Object.freeze({
-          ready: (perms) => {
-            port.postMessage({ type: 'ready', permissions: perms });
-          },
-          screenRead: (id) => {
-            port.postMessage({ type: 'screen:read:request', id });
-          },
-          inputObserve: (line) => {
-            port.postMessage({ type: 'input:observe:line', line });
-          },
-          inputGate: (id, line) => {
-            port.postMessage({ type: 'input:gate:request', id, line });
-          },
-          overlayRender: (tree) => {
-            port.postMessage({ type: 'overlay:render', tree });
-          },
-          overlayDismiss: () => {
-            port.postMessage({ type: 'overlay:dismiss' });
-          },
-          error: (err) => {
-            port.postMessage({ type: 'error', error: String(err) });
-          },
-        });
-
-        // Run plugin code in isolated scope with the tdog API
-        try {
-          (function(tdog) {
-            'use strict';
-            // Plugin code is injected here
-            PLUGIN_CODE_PLACEHOLDER
-          })(tdog);
-        } catch (err) {
-          tdog.error(err);
-        }
-
-        // Clean up global references to port and setup function
-        port.start();
-
-        // Delete global references so plugin code cannot access them
-        delete self.addEventListener;
-        delete self.removeEventListener;
+/** Runs first in the Worker. Exposes a frozen `tdog`; never the port. */
+export const PRELUDE = `"use strict";
+(() => {
+  const post = MessagePort.prototype.postMessage;
+  const on = { gate: null, line: null, action: null };
+  const waiting = new Map();
+  let seq = 0;
+  function init(e) {
+    if (!e.data || e.data.type !== "init" || !e.ports || !e.ports[0]) return;
+    e.stopImmediatePropagation();
+    self.removeEventListener("message", init);
+    const port = e.ports[0];
+    const send = (m) => post.call(port, m);
+    port.onmessage = (ev) => {
+      const m = ev.data || {};
+      if (m.type === "gate") {
+        Promise.resolve()
+          .then(() => (on.gate ? on.gate(String(m.line)) : null))
+          .then((v) => {
+            const confirm = v && v.verdict === "confirm";
+            send({ type: "verdict", id: m.id, verdict: confirm ? "confirm" : "allow",
+              reason: confirm && typeof v.reason === "string" ? v.reason.slice(0, 200) : "" });
+          })
+          .catch(() => send({ type: "verdict", id: m.id, verdict: "allow", reason: "" }));
+      } else if (m.type === "line" && on.line) {
+        try { on.line(String(m.line)); } catch (_) {}
+      } else if (m.type === "screen" && waiting.has(m.id)) {
+        waiting.get(m.id)(m.lines);
+        waiting.delete(m.id);
+      } else if (m.type === "action" && on.action) {
+        try { on.action(m.id, m.value); } catch (_) {}
       }
+    };
+    const tdog = Object.freeze({
+      onGate: (fn) => { on.gate = fn; },
+      onLine: (fn) => { on.line = fn; },
+      onAction: (fn) => { on.action = fn; },
+      screen: () => new Promise((resolve) => { const id = ++seq; waiting.set(id, resolve); send({ type: "screen", id }); }),
+      overlay: (nodes) => send({ type: "overlay", nodes }),
+      dismiss: () => send({ type: "dismiss" }),
+      insert: (text) => send({ type: "insert", text: String(text) }),
     });
-  `;
+    Object.defineProperty(self, "tdog", { value: tdog, enumerable: true });
+    try { importScripts(e.data.plugin); }
+    catch (err) { send({ type: "error", error: String(err).slice(0, 400) }); }
+    // Ready only once the plugin has registered its handlers.
+    send({ type: "ready" });
+  }
+  self.addEventListener("message", init);
+})();
+`;
 
-  // Replace placeholder with actual plugin code
-  const workerCode = workerPrelude.replace(
-    "PLUGIN_CODE_PLACEHOLDER",
-    entryCode,
+const CSP =
+  "default-src 'none'; script-src 'unsafe-inline' blob:; worker-src blob:";
+
+/** Constant iframe document: relays one init message into a new Worker. */
+export const SRCDOC = `<!doctype html><meta http-equiv="Content-Security-Policy" content="${CSP}"><script>
+window.addEventListener("message", function boot(e) {
+  if (!e.data || e.data.type !== "init" || !e.ports || !e.ports[0]) return;
+  window.removeEventListener("message", boot);
+  var js = function (s) { return URL.createObjectURL(new Blob([s], { type: "text/javascript" })); };
+  var w = new Worker(js(e.data.prelude));
+  w.postMessage({ type: "init", plugin: js(String(e.data.code)) }, [e.ports[0]]);
+});
+</script>`;
+
+export interface Sandbox {
+  broker: PluginBroker;
+  dispose(): void;
+}
+
+/** Start one plugin. */
+export function createSandbox(
+  plugin: { id: string; name: string; permissions: string[] },
+  code: string,
+  host: BrokerHost,
+): Sandbox {
+  const frame = document.createElement("iframe");
+  frame.setAttribute("sandbox", "allow-scripts");
+  frame.setAttribute("aria-hidden", "true");
+  frame.tabIndex = -1;
+  frame.style.display = "none";
+  frame.srcdoc = SRCDOC;
+  const ch = new MessageChannel();
+  const broker = new PluginBroker(
+    plugin.id,
+    plugin.name,
+    plugin.permissions,
+    ch.port1 as unknown as Port,
+    host,
   );
-
-  // Bootstrap code runs in the iframe; it creates the Worker from a Blob
-  const bootstrapCode = `
-    (function() {
-      "use strict";
-
-      // Strict CSP: no network, no navigation, only unsafe-inline for our bootstrap
-      const meta = document.createElement('meta');
-      meta.httpEquiv = 'Content-Security-Policy';
-      meta.content = "default-src 'none'; script-src 'unsafe-inline' blob:; worker-src blob:";
-      document.head.appendChild(meta);
-
-      // Receive MessagePort from host and worker code
-      window.addEventListener('message', function setup(e) {
-        if (e.data && e.data.type === 'init' && e.ports && e.ports[0]) {
-          const port = e.ports[0];
-          const workerCode = e.data.workerCode;
-          window.removeEventListener('message', setup);
-
-          // Create Worker from Blob (isolates plugin further: no navigation, no DOM)
-          const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
-          const workerUrl = URL.createObjectURL(workerBlob);
-          const worker = new Worker(workerUrl);
-
-          // Relay messages between host port and worker
-          port.onmessage = (e) => {
-            worker.postMessage(e.data);
-          };
-          worker.onmessage = (e) => {
-            port.postMessage(e.data);
-          };
-
-          // Send port and start worker
-          worker.postMessage({ type: 'init' }, [port]);
-          port.start();
-        }
-      });
-    })();
-  `;
-
-  // Create srcdoc (ONLY contains our bootstrap, never plugin code)
-  iframe.srcdoc = `<!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob:; worker-src blob:">
-      </head>
-      <body>
-        <script>${bootstrapCode}</script>
-      </body>
-    </html>`;
-
-  // Add iframe to DOM
-  document.body.appendChild(iframe);
-
-  // Send port, worker code, and plugin code to iframe via postMessage
-  iframe.contentWindow?.postMessage({ type: "init", workerCode }, "*", [
-    pluginPort,
-  ]);
-
-  // Create broker
-  const broker = new PluginBroker(hostPort, permissions, ctx);
-  broker.start();
-
-  // Cleanup function
-  const cleanup = () => {
-    broker.stop();
-    document.body.removeChild(iframe);
+  frame.addEventListener(
+    "load",
+    () =>
+      frame.contentWindow?.postMessage(
+        { type: "init", prelude: PRELUDE, code },
+        "*", // opaque-origin frame: no origin to name; it only gets a port
+        [ch.port2],
+      ),
+    { once: true },
+  );
+  document.body.appendChild(frame);
+  ch.port1.start();
+  return {
+    broker,
+    dispose: () => {
+      broker.stop();
+      frame.remove();
+    },
   };
-
-  return { cleanup, broker };
 }

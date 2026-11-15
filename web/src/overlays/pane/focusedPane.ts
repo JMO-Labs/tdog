@@ -19,3 +19,13 @@ export function openFocusedPaneOverlay(id: string): void {
 export function clearFocusedPaneOverlay(open: OpenOverlayFunc): void {
   if (focusedPaneOverlay === open) focusedPaneOverlay = null;
 }
+
+let focusedScreen: (() => string[]) | null = null;
+
+/** The focused pane's visible lines (for plugins with screen:read). */
+export function setFocusedScreen(read: (() => string[]) | null): void {
+  focusedScreen = read;
+}
+export function readFocusedScreen(): string[] {
+  return focusedScreen?.() ?? [];
+}

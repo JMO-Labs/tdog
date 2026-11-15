@@ -10,10 +10,10 @@
 }
 
 .plugin-item {
-  border: 1px solid var(--gray-6);
+  border: 1px solid var(--muted);
   border-radius: 6px;
   padding: 12px;
-  background: var(--gray-2);
+  background: var(--surface-2);
 }
 
 .plugin-header {
@@ -29,6 +29,8 @@
 }
 
 .plugin-permissions {
+  list-style: none;
+  padding: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -37,12 +39,11 @@
 
 .permission-chip {
   display: inline-block;
-  background: var(--gray-4);
+  background: var(--surface-2);
   border-radius: 4px;
   padding: 4px 8px;
   font-size: 0.85em;
-  font-family: monospace;
-  color: var(--text);
+  color: var(--fg);
 }
 
 .plugin-add {
@@ -54,16 +55,16 @@
 
 .plugin-add input[type="text"] {
   padding: 8px;
-  border: 1px solid var(--gray-5);
+  border: 1px solid var(--line);
   border-radius: 4px;
   background: var(--bg);
-  color: var(--text);
+  color: var(--fg);
   font-size: 0.9em;
 }
 
 .plugin-add input[type="text"]:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--pink);
 }
 
 .dialog-content {
@@ -78,8 +79,8 @@
 
 .dialog-content li {
   padding: 8px;
-  background: var(--gray-2);
-  border-left: 3px solid var(--gray-5);
+  background: var(--surface-2);
+  border-left: 3px solid var(--line);
 }
 
 .dialog-actions {

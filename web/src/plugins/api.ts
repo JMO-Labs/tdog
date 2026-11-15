@@ -4,6 +4,8 @@ import { apiPost, apiFetch, apiDelete } from "../auth/api";
 
 export interface PluginInfo {
   id: string;
+  name: string;
+  author: string;
   version: string;
   enabled: boolean;
   permissions: string[];
@@ -27,19 +29,22 @@ export interface StagedManifest {
   token: string;
 }
 
-/** Inspect a plugin from URL or file. Returns StagedManifest or error. */
-export async function inspectPlugin(input: {
-  url?: string;
-  file?: File;
-}): Promise<StagedManifest> {
-  const r = input.url
-    ? await apiPost("/api/plugins/inspect", { url: input.url })
-    : await inspectFile(input.file!);
+/** A plugin as its two files: the manifest and the entry script. */
+export type PluginFiles = { manifest: Blob | string; entry: Blob | string };
+
+/** Inspect a plugin from a URL or its files. Returns StagedManifest or error. */
+export async function inspectPlugin(
+  input: { url: string } | PluginFiles,
+): Promise<StagedManifest> {
+  const r =
+    "url" in input
+      ? await apiPost("/api/plugins/inspect", { url: input.url })
+      : await inspectFiles(input);
 
   if (!r.ok) {
     const msg = await r
       .json()
-      .then((d: any) => d.error)
+      .then((d: { error?: string }) => d.error)
       .catch(() => "Unknown error");
     throw new Error(`Inspect failed: ${msg}`);
   }
@@ -47,10 +52,13 @@ export async function inspectPlugin(input: {
   return r.json();
 }
 
-/** Inspect plugin from uploaded file. */
-async function inspectFile(file: File): Promise<Response> {
+/** The server wants `manifest` and `entry` parts. */
+async function inspectFiles(f: PluginFiles): Promise<Response> {
+  const blob = (v: Blob | string) =>
+    typeof v === "string" ? new Blob([v]) : v;
   const form = new FormData();
-  form.append("file", file);
+  form.append("manifest", blob(f.manifest), "tdog-plugin.json");
+  form.append("entry", blob(f.entry), "index.js");
   return apiPost("/api/plugins/inspect", form);
 }
 
@@ -66,7 +74,7 @@ export async function installPlugin(
   if (!r.ok) {
     const msg = await r
       .json()
-      .then((d: any) => d.error)
+      .then((d: { error?: string }) => d.error)
       .catch(() => "Unknown error");
     throw new Error(`Install failed: ${msg}`);
   }
@@ -113,13 +121,13 @@ export function permissionDescription(perm: string): string {
       "Insert text at cursor from buttons you click; cannot type otherwise",
     overlay:
       "Show panels and messages in your terminal; renders only text, buttons, and lists",
-    ai: "Send prompts to your AI provider for processing (rate-limited)",
+    ai: "Send prompts to your AI provider through tdog (not available yet)",
   };
 
   // Check for net: permission
   if (perm.startsWith("net:")) {
     const host = perm.slice(4);
-    return `Make requests to ${host}; cannot access local network`;
+    return `Make requests to ${host}; cannot reach your local network (not available yet)`;
   }
 
   return descriptions[perm] || `Permission: ${perm}`;

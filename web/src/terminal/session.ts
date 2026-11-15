@@ -42,6 +42,8 @@ export interface SessionHooks {
   onLatency?: (ms: number) => void;
   /** Called when input is received (for broadcasting). */
   onBroadcast?: (data: Uint8Array) => void;
+  /** May hold or drop user input; call `pass` to send (and broadcast) it. */
+  interceptInput?: (data: Uint8Array, pass: (d: Uint8Array) => void) => void;
 }
 
 export class TerminalSession {
@@ -59,10 +61,13 @@ export class TerminalSession {
     private onState: (s: SessionState) => void,
     private hooks: SessionHooks = {},
   ) {
-    r.onInput((d) => {
+    const pass = (d: Uint8Array) => {
       this.send(encodeInput(d));
       this.hooks.onBroadcast?.(d);
-    });
+    };
+    r.onInput((d) =>
+      this.hooks.interceptInput ? this.hooks.interceptInput(d, pass) : pass(d),
+    );
     r.onResize((c, rows) => {
       this.send(encodeResize(c, rows));
       this.hooks.onSize?.(c, rows);

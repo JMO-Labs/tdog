@@ -43,9 +43,7 @@ import {
   getBroadcastGroup,
   getBroadcastStore,
 } from "../broadcast/store";
-import { PluginManager } from "../plugins/PluginManager";
-import type { BrokerContext } from "../plugins/broker";
-import type { OverlayNode } from "../plugins/schema";
+import { startPlugins } from "../plugins/runtime";
 import "./shell.css";
 import "./narrow.css";
 import "./menu.css";
@@ -93,43 +91,14 @@ export function Workspace({
   const toast = useToast();
   const c = useCopy();
   const [broadcastCount, setBroadcastCount] = useState(0);
-  const pluginManagerRef = useRef<PluginManager | null>(null);
-  const [showPluginOverlay, setShowPluginOverlay] =
-    useState<OverlayNode | null>(null);
-
-  // Initialize PluginManager on mount
-  useEffect(() => {
-    const ctx: BrokerContext = {
-      getScreen: () => {
-        // TODO: Return current pane's screen content
-        return [];
-      },
-      requestGate: async () => {
-        // TODO: Show confirm overlay and wait for user response
-        return true;
-      },
-      renderOverlay: async (tree: OverlayNode) => {
-        setShowPluginOverlay(tree);
-      },
-      dismissOverlay: () => {
-        setShowPluginOverlay(null);
-      },
-      onPluginError: (reason: string) => {
-        console.error("Plugin error:", reason);
-        toast("fail", "Plugin error: " + reason);
-      },
-    };
-
-    const manager = new PluginManager(ctx);
-    pluginManagerRef.current = manager;
-
-    void manager.init();
-
-    return () => {
-      void manager.destroy();
-      pluginManagerRef.current = null;
-    };
-  }, [toast]);
+  // Enabled plugins run for as long as the signed-in workspace is open.
+  useEffect(
+    () =>
+      startPlugins((plugin, reason) =>
+        toast("fail", `Plugin ${plugin} was stopped: it ${reason}.`),
+      ),
+    [toast],
+  );
 
   useEffect(() => saveScenes(sc), [sc]);
   useEffect(() => {

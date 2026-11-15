@@ -1,124 +1,102 @@
-/** Plugin lifecycle manager: init/start/stop plugins based on enabled state. */
-
-import { createSandbox } from "./sandbox";
+/** Starts/stops one sandbox per enabled plugin and fans out gate/observe. */
 import { getPluginEntry, listPlugins, type PluginInfo } from "./api";
-import { PluginBroker, type BrokerContext } from "./broker";
+import type { BrokerHost, Verdict } from "./broker";
+import { createSandbox, type Sandbox } from "./sandbox";
 
-export interface PluginInstance {
-  id: string;
-  info: PluginInfo;
-  broker?: PluginBroker;
-  cleanup?: () => void;
-}
+export type GateResult = Verdict & { plugin?: string };
 
-/** Manages plugin startup/shutdown and communicates with pane context. */
+export type SandboxFactory = (
+  plugin: { id: string; name: string; permissions: string[] },
+  code: string,
+  host: BrokerHost,
+) => Sandbox;
+
+/** Longest an Enter waits for plugins that are still loading. */
+export const LOAD_WAIT_MS = 3000;
+
 export class PluginManager {
-  private plugins = new Map<string, PluginInstance>();
-  private ctx: BrokerContext;
-  private sandboxFactory = createSandbox; // Can be mocked in tests
+  private running = new Map<string, Sandbox>();
+  /** Set while plugins load: Enter waits instead of slipping past a guard. */
+  private loading: Promise<void> | null = null;
 
-  constructor(ctx: BrokerContext) {
-    this.ctx = ctx;
+  constructor(
+    private host: BrokerHost,
+    private make: SandboxFactory = createSandbox,
+    private list: () => Promise<PluginInfo[]> = listPlugins,
+    private entry: (id: string) => Promise<string> = getPluginEntry,
+  ) {}
+
+  /** Start every enabled plugin and stop the rest (call after any change). */
+  async sync(): Promise<void> {
+    const run = this.load();
+    this.loading = run;
+    try {
+      await run;
+    } finally {
+      if (this.loading === run) this.loading = null;
+    }
   }
 
-  /** Load installed plugins from backend and start enabled ones. */
-  async init(): Promise<void> {
+  private async load(): Promise<void> {
+    let infos: PluginInfo[];
     try {
-      const list = await listPlugins();
-      for (const info of list) {
-        this.plugins.set(info.id, { id: info.id, info });
-        if (info.enabled) {
-          await this.startPlugin(info.id);
-        }
+      infos = await this.list();
+    } catch {
+      return; // offline or signed out: keep what runs
+    }
+    const want = new Map(infos.filter((p) => p.enabled).map((p) => [p.id, p]));
+    for (const id of [...this.running.keys()]) if (!want.has(id)) this.stop(id);
+    for (const p of want.values()) {
+      if (this.running.has(p.id)) continue;
+      try {
+        const code = await this.entry(p.id);
+        this.running.set(
+          p.id,
+          this.make(
+            { id: p.id, name: p.name || p.id, permissions: p.permissions },
+            code,
+            this.host,
+          ),
+        );
+      } catch {
+        /* entry unavailable: try again on the next sync */
       }
-    } catch (err) {
-      console.error("Failed to initialize plugins:", err);
     }
   }
 
-  /** Start a plugin: fetch entry code and create sandbox. */
-  async startPlugin(id: string): Promise<void> {
-    const inst = this.plugins.get(id);
-    if (!inst) return;
-    if (inst.broker) return; // Already running
-
-    try {
-      const entry = await getPluginEntry(id);
-      const { cleanup, broker } = await this.sandboxFactory(
-        entry,
-        inst.info.permissions,
-        this.ctx,
-      );
-      inst.broker = broker;
-      inst.cleanup = cleanup;
-    } catch (err) {
-      console.error(`Failed to start plugin ${id}:`, err);
-    }
+  stop(id: string): void {
+    this.running.get(id)?.dispose();
+    this.running.delete(id);
   }
 
-  /** Stop a plugin: cleanup sandbox. */
-  async stopPlugin(id: string): Promise<void> {
-    const inst = this.plugins.get(id);
-    if (!inst || !inst.broker) return;
-
-    inst.cleanup?.();
-    inst.broker = undefined;
-    inst.cleanup = undefined;
+  destroy(): void {
+    for (const id of [...this.running.keys()]) this.stop(id);
   }
 
-  /** Enable a plugin: start it if not already running. */
-  async enablePlugin(id: string): Promise<void> {
-    const inst = this.plugins.get(id);
-    if (!inst) return;
-    inst.info.enabled = true;
-    await this.startPlugin(id);
+  /** True when some running plugin may hold a command for confirmation. */
+  hasGate(): boolean {
+    if (this.loading) return true;
+    return [...this.running.values()].some(
+      (s) => !s.broker.stopped && s.broker.has("input:gate"),
+    );
   }
 
-  /** Disable a plugin: stop it. */
-  async disablePlugin(id: string): Promise<void> {
-    const inst = this.plugins.get(id);
-    if (!inst) return;
-    inst.info.enabled = false;
-    await this.stopPlugin(id);
+  /** Ask every gate plugin at once; the first "confirm" wins. */
+  async gate(line: string): Promise<GateResult> {
+    if (this.loading)
+      await Promise.race([
+        this.loading,
+        new Promise((r) => setTimeout(r, LOAD_WAIT_MS)),
+      ]);
+    const brokers = [...this.running.values()].map((s) => s.broker);
+    const verdicts = await Promise.all(brokers.map((b) => b.gate(line)));
+    const i = verdicts.findIndex((v) => v.verdict === "confirm");
+    return i < 0
+      ? { verdict: "allow", reason: "" }
+      : { ...verdicts[i], plugin: brokers[i].name };
   }
 
-  /** Install a new plugin: add to list and start if enabled. */
-  async installPlugin(id: string, info: PluginInfo): Promise<void> {
-    this.plugins.set(id, { id, info });
-    if (info.enabled) {
-      await this.startPlugin(id);
-    }
-  }
-
-  /** Uninstall a plugin: stop and remove. */
-  async uninstallPlugin(id: string): Promise<void> {
-    await this.stopPlugin(id);
-    this.plugins.delete(id);
-  }
-
-  /** Cleanup: stop all plugins. */
-  async destroy(): Promise<void> {
-    for (const inst of this.plugins.values()) {
-      await this.stopPlugin(inst.id);
-    }
-    this.plugins.clear();
-  }
-
-  /** Get all active brokers (for wiring input events). */
-  getActiveBrokers(): PluginBroker[] {
-    return Array.from(this.plugins.values())
-      .filter((inst) => inst.broker)
-      .map((inst) => inst.broker!);
-  }
-
-  /** For testing: inject a mock sandbox factory. */
-  setSandboxFactory(
-    factory: (
-      code: string,
-      perms: string[],
-      ctx: BrokerContext,
-    ) => Promise<{ cleanup: () => void; broker: PluginBroker }>,
-  ): void {
-    this.sandboxFactory = factory;
+  observe(line: string): void {
+    for (const s of this.running.values()) s.broker.observe(line);
   }
 }

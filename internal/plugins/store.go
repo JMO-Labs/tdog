@@ -28,6 +28,8 @@ func randToken(n int) string {
 // PluginInfo is the public-facing plugin metadata.
 type PluginInfo struct {
 	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Author      string   `json:"author"`
 	Version     string   `json:"version"`
 	Enabled     bool     `json:"enabled"`
 	Permissions []string `json:"permissions"`
@@ -335,6 +337,8 @@ func (s *Store) get(id string) (*PluginInfo, error) {
 	}
 	return &PluginInfo{
 		ID:          id,
+		Name:        state.Manifest.Name,
+		Author:      state.Manifest.Author,
 		Version:     state.Manifest.Version,
 		Enabled:     state.Enabled,
 		Permissions: state.Permissions,

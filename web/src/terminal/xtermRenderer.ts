@@ -126,6 +126,17 @@ export class XtermRenderer implements TerminalRenderer {
   mouseReporting(): boolean {
     return this.term.modes.mouseTrackingMode !== "none";
   }
+  cursorLine(): string {
+    const b = this.term.buffer.active;
+    let y = b.baseY + b.cursorY;
+    let line = b.getLine(y);
+    let text = line?.translateToString(true) ?? "";
+    while (line?.isWrapped && y > 0) {
+      line = b.getLine(--y);
+      text = (line?.translateToString(true) ?? "") + text;
+    }
+    return text;
+  }
   screenLines(): ScreenLine[] {
     const lines: ScreenLine[] = [];
     const buffer = this.term.buffer.active;

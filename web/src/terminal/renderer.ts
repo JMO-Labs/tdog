@@ -78,6 +78,8 @@ export interface TerminalRenderer {
   mouseReporting?(): boolean;
   /** Visible screen lines with row numbers from the viewport. Optional: for overlays. */
   screenLines?(): ScreenLine[];
+  /** Text of the cursor's logical line (wrapped rows joined), prompt included. */
+  cursorLine?(): string;
   /** Cell geometry: dimensions and offsets for layout. Optional: for overlays. */
   cellGeometry?(): CellGeometry | null;
   /** Enable/disable inline images (sixel/iTerm2). Optional: renderers may not support it. */

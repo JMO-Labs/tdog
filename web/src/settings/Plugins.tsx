@@ -14,6 +14,12 @@ import { useToast } from "../overlays/toast";
 import { Dialog } from "../overlays/Dialog";
 import { Switch } from "./Switch";
 import "./plugins.css";
+import { syncPlugins } from "../plugins/runtime";
+import carefulManifest from "../../../plugins/careful-commands/tdog-plugin.json?raw";
+import carefulEntry from "../../../plugins/careful-commands/index.js?raw";
+
+const message = (e: unknown, fallback: string) =>
+  e instanceof Error && e.message ? e.message : fallback;
 
 export function Plugins() {
   const toast = useToast();
@@ -34,7 +40,7 @@ export function Plugins() {
       setLoading(true);
       const list = await listPlugins();
       setPlugins(list);
-    } catch (err) {
+    } catch {
       toast("fail", "Failed to load plugins");
     } finally {
       setLoading(false);
@@ -49,24 +55,30 @@ export function Plugins() {
       setStaged(manifest);
       setConfirmInstall(true);
       setUrlInput("");
-    } catch (err: any) {
-      toast("fail", err.message || "Failed to inspect plugin");
+    } catch (err) {
+      toast("fail", message(err, "Could not inspect that plugin."));
     } finally {
       setInspecting(false);
     }
   };
 
+  /** Pick the manifest (tdog-plugin.json) and the entry script together. */
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.currentTarget.files?.[0];
-    if (!file) return;
+    const input = e.currentTarget;
+    const files = [...(input.files ?? [])];
+    input.value = "";
+    const manifest = files.find((f) => f.name.endsWith(".json"));
+    const entry = files.find((f) => f.name.endsWith(".js"));
+    if (!manifest || !entry) {
+      toast("fail", "Choose both files: tdog-plugin.json and its .js entry.");
+      return;
+    }
     try {
       setInspecting(true);
-      const manifest = await inspectPlugin({ file });
-      setStaged(manifest);
+      setStaged(await inspectPlugin({ manifest, entry }));
       setConfirmInstall(true);
-      e.currentTarget.value = "";
-    } catch (err: any) {
-      toast("fail", err.message || "Failed to inspect plugin");
+    } catch (err) {
+      toast("fail", message(err, "Could not read that plugin."));
     } finally {
       setInspecting(false);
     }
@@ -80,8 +92,9 @@ export function Plugins() {
       setConfirmInstall(false);
       setStaged(null);
       await loadPlugins();
-    } catch (err: any) {
-      toast("fail", err.message || "Failed to install plugin");
+      await syncPlugins();
+    } catch (err) {
+      toast("fail", message(err, "Install failed."));
     }
   };
 
@@ -89,7 +102,8 @@ export function Plugins() {
     try {
       await setPluginEnabled(id, enabled);
       setPlugins(plugins.map((p) => (p.id === id ? { ...p, enabled } : p)));
-    } catch (err: any) {
+      await syncPlugins();
+    } catch {
       toast("fail", "Failed to update plugin");
     }
   };
@@ -98,33 +112,22 @@ export function Plugins() {
     try {
       await deletePlugin(id);
       setPlugins(plugins.filter((p) => p.id !== id));
+      await syncPlugins();
       toast("success", "Plugin uninstalled");
-    } catch (err: any) {
+    } catch {
       toast("fail", "Failed to uninstall plugin");
     }
   };
 
+  /** Careful commands ships with tdog; it still goes through the same prompt. */
   const installBundledCarefulCommands = async () => {
     try {
-      // Install the bundled careful-commands plugin
-      // The server provides it at /api/plugins/bundled/careful-commands
-      const response = await fetch("/api/plugins/bundled/careful-commands");
-      if (!response.ok) {
-        throw new Error("Failed to load bundled plugin");
-      }
-
-      // The response should be a zip file
-      const blob = await response.blob();
-      const file = new File([blob], "careful-commands.zip", {
-        type: "application/zip",
-      });
-
-      // Use the inspect and install flow
-      const staged = await inspectPlugin({ file });
-      setStaged(staged);
+      setStaged(
+        await inspectPlugin({ manifest: carefulManifest, entry: carefulEntry }),
+      );
       setConfirmInstall(true);
-    } catch (err: any) {
-      toast("fail", err.message || "Failed to install Careful Commands");
+    } catch (err) {
+      toast("fail", message(err, "Could not prepare Careful commands."));
     }
   };
 
@@ -145,18 +148,19 @@ export function Plugins() {
                 marginBottom: "16px",
                 border: "1px solid var(--border)",
                 borderRadius: "4px",
-                backgroundColor: "var(--bg-2)",
+                backgroundColor: "var(--surface-2)",
               }}
             >
-              <h4 style={{ margin: "0 0 8px 0" }}>Careful Commands</h4>
+              <h4 style={{ margin: "0 0 8px 0" }}>Careful commands</h4>
               <p className="muted" style={{ margin: "0 0 12px 0" }}>
-                Review and confirm dangerous commands before execution.
+                Asks you to confirm before obviously destructive commands like
+                rm -rf ~.
               </p>
               <Button
                 onClick={() => void installBundledCarefulCommands()}
                 variant="primary"
               >
-                Install Careful Commands
+                Install Careful commands
               </Button>
             </div>
           )}
@@ -168,21 +172,24 @@ export function Plugins() {
               {plugins.map((p) => (
                 <div key={p.id} className="plugin-item">
                   <div className="plugin-header">
-                    <h4>{p.id}</h4>
+                    <h4 id={`sw-${p.id}`}>{p.name || p.id}</h4>
                     <Switch
                       labelledBy={`sw-${p.id}`}
                       checked={p.enabled}
                       onChange={(enabled) => void handleToggle(p.id, enabled)}
                     />
                   </div>
-                  <p className="muted">v{p.version}</p>
-                  <div className="plugin-permissions">
+                  <p className="muted">
+                    v{p.version}
+                    {p.author ? ` · by ${p.author}` : ""}
+                  </p>
+                  <ul className="plugin-permissions">
                     {p.permissions.map((perm) => (
-                      <span key={perm} className="permission-chip">
-                        {perm}
-                      </span>
+                      <li key={perm} className="permission-chip">
+                        {permissionDescription(perm)}
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                   <Button
                     variant="danger-quiet"
                     onClick={() => void handleDelete(p.id)}
@@ -216,12 +223,14 @@ export function Plugins() {
           onClick={() => fileInputRef.current?.click()}
           disabled={inspecting}
         >
-          Upload file
+          Upload files…
         </Button>
         <input
           ref={fileInputRef}
           type="file"
-          accept=".zip"
+          multiple
+          aria-label="Plugin files (tdog-plugin.json and its .js entry)"
+          accept=".json,.js,application/json,text/javascript"
           onChange={(e) => void handleFileSelected(e)}
           style={{ display: "none" }}
         />

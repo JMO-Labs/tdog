@@ -1,208 +1,152 @@
-/** API broker: gated access to pane APIs from plugins. */
+/**
+ * Host side of one plugin (ADR-0005). Enforces permissions, message shape,
+ * size and rate here, outside the plugin's reach; the plugin only ever sees
+ * what this class posts to its port.
+ */
+import {
+  parsePluginMessage,
+  type HostToPlugin,
+  type OverlayNode,
+} from "./schema";
 
-import type { PluginMessage, HostMessage, OverlayNode } from "./schema";
-import { isValidPluginMessage } from "./schema";
+export const MAX_MESSAGES_PER_SEC = 50;
+export const GATE_TIMEOUT_MS = 300;
+/** A plugin still starting gets longer, so a fast Enter can't slip past it. */
+export const GATE_STARTUP_TIMEOUT_MS = 2000;
+/** How long after a click in its overlay a plugin may insert text. */
+const INSERT_WINDOW_MS = 2000;
 
-// Host-enforced limits (cannot be bypassed by plugin code)
-const MAX_MESSAGE_SIZE = 64 * 1024; // 64 KB
-const MAX_MESSAGES_PER_SEC = 50;
+export type Verdict = { verdict: "allow" | "confirm"; reason: string };
 
-export interface BrokerContext {
-  /** Get visible lines from the focused pane. */
-  getScreen(): string[];
-  /** Called when plugin requests input:gate. Returns true if confirmed. */
-  requestGate(line: string, reason: string): Promise<boolean>;
-  /** Called when plugin renders an overlay. */
-  renderOverlay(tree: OverlayNode): Promise<void>;
-  /** Dismiss any open overlay. */
-  dismissOverlay(): void;
-  /** Called when plugin violates limits or misbehaves. */
-  onPluginError?(reason: string): void;
+/** What a plugin can reach, always through tdog. */
+export interface BrokerHost {
+  /** Visible lines of the focused pane. */
+  screen(): string[];
+  /** Show (or replace) this plugin's overlay in the focused pane. */
+  showOverlay(
+    plugin: string,
+    nodes: OverlayNode[],
+    onAction: (id: string, value?: string) => void,
+  ): void;
+  hideOverlay(plugin: string): void;
+  /** Insert text at the cursor of the pane showing this plugin's overlay. */
+  insert(plugin: string, text: string): void;
+  /** The plugin broke a rule and was stopped. */
+  onStopped(plugin: string, reason: string): void;
 }
 
-export interface PendingRequest {
-  id: string;
-  resolve: (msg: HostMessage) => void;
-  timeout: ReturnType<typeof setTimeout>;
+export interface Port {
+  postMessage(m: HostToPlugin): void;
+  onmessage: ((e: { data: unknown }) => void) | null;
+  close(): void;
 }
 
-/** Broker mediates plugin messages to the host, gating by permissions. */
 export class PluginBroker {
-  private port: MessagePort;
-  private permissions: Set<string>;
-  private ctx: BrokerContext;
-  private messageCount = 0;
-  private messageWindow = Date.now();
-  private terminated = false;
+  private perms: Set<string>;
+  private seq = 0;
+  private gates = new Map<number, (v: Verdict) => void>();
+  private window = { start: 0, count: 0 };
+  private lastAction = -Infinity;
+  private ready = false;
+  stopped = false;
 
-  constructor(port: MessagePort, permissions: string[], ctx: BrokerContext) {
-    this.port = port;
-    this.permissions = new Set(permissions);
-    this.ctx = ctx;
-    this.port.onmessage = (e) => this.handleMessage(e.data);
+  constructor(
+    readonly id: string,
+    readonly name: string,
+    permissions: string[],
+    private port: Port,
+    private host: BrokerHost,
+    private now: () => number = () => Date.now(),
+  ) {
+    this.perms = new Set(permissions);
+    port.onmessage = (e) => this.receive(e.data);
   }
 
-  private hasPermission(perm: string): boolean {
-    return this.permissions.has(perm);
+  has(p: string): boolean {
+    return this.perms.has(p);
   }
 
-  private checkRateLimit(): boolean {
-    const now = Date.now();
-    if (now - this.messageWindow > 1000) {
-      this.messageCount = 0;
-      this.messageWindow = now;
-    }
-    this.messageCount++;
-    if (this.messageCount > MAX_MESSAGES_PER_SEC) {
-      return false;
-    }
-    return true;
+  /** Ask the plugin about a line before it runs; silence = allow. */
+  gate(line: string): Promise<Verdict> {
+    const allow: Verdict = { verdict: "allow", reason: "" };
+    if (this.stopped || !this.has("input:gate")) return Promise.resolve(allow);
+    const id = ++this.seq;
+    return new Promise((resolve) => {
+      const done = (v: Verdict) => {
+        clearTimeout(t);
+        this.gates.delete(id);
+        resolve(v);
+      };
+      const t = setTimeout(
+        () => done(allow),
+        this.ready ? GATE_TIMEOUT_MS : GATE_STARTUP_TIMEOUT_MS,
+      );
+      this.gates.set(id, done);
+      this.port.postMessage({ type: "gate", id, line });
+    });
   }
 
-  private checkMessageSize(msg: unknown): boolean {
-    try {
-      // Validate that message is plain JSON-serializable data
-      // Rejects: ArrayBuffer, typed arrays, Blob, Map, Set, Date, RegExp, Error, functions, cyclic
-      const json = JSON.stringify(msg);
-      const reparsed = JSON.parse(json);
-
-      // Deep equality check: verify re-stringify matches
-      // Catches: Date conversions, lossy transformations, cyclic references
-      if (JSON.stringify(reparsed) !== json) {
-        return false;
-      }
-
-      return json.length <= MAX_MESSAGE_SIZE;
-    } catch {
-      // JSON errors: cyclic refs, rejected values, etc.
-      return false;
-    }
+  /** Tell an observing plugin a line was run. */
+  observe(line: string): void {
+    if (!this.stopped && this.has("input:observe"))
+      this.port.postMessage({ type: "line", line });
   }
 
-  private terminate(reason: string): void {
-    if (this.terminated) return;
-    this.terminated = true;
-    this.ctx.onPluginError?.(reason);
+  stop(reason?: string): void {
+    if (this.stopped) return;
+    this.stopped = true;
+    this.gates.forEach((done) => done({ verdict: "allow", reason: "" }));
+    this.host.hideOverlay(this.id);
+    this.port.onmessage = null;
     this.port.close();
+    if (reason) this.host.onStopped(this.id, reason);
   }
 
-  private async handleMessage(msg: unknown): Promise<void> {
-    if (this.terminated) return;
-
-    // Check rate limit (host-side enforcement)
-    if (!this.checkRateLimit()) {
-      this.terminate("Rate limit exceeded: too many messages");
-      return;
-    }
-
-    // Check message size (host-side enforcement)
-    if (!this.checkMessageSize(msg)) {
-      this.terminate("Message too large");
-      return;
-    }
-
-    // Validate message schema
-    if (!isValidPluginMessage(msg)) {
-      this.sendToPlugin({
-        type: "error",
-        id: "invalid",
-        error: "Invalid message format",
-      });
-      return;
-    }
-
-    const m = msg as PluginMessage;
-
+  private receive(raw: unknown): void {
+    if (this.stopped) return;
+    const t = this.now();
+    if (t - this.window.start >= 1000) this.window = { start: t, count: 0 };
+    if (++this.window.count > MAX_MESSAGES_PER_SEC)
+      return this.stop("sent too many messages");
+    const m = parsePluginMessage(raw);
+    if (!m) return this.stop("sent a malformed or oversized message");
     switch (m.type) {
-      case "screen:read:request":
-        return this.handleScreenRead(m);
-      case "input:gate:request":
-        return this.handleInputGate(m);
-      case "overlay:render":
-        return void this.handleOverlayRender(m);
-      case "overlay:dismiss":
-        return this.ctx.dismissOverlay();
-      // ignore other types (ready, error, observe are informational)
+      case "verdict":
+        this.gates.get(m.id)?.({ verdict: m.verdict, reason: m.reason });
+        return;
+      case "screen":
+        if (this.has("screen:read"))
+          this.port.postMessage({
+            type: "screen",
+            id: m.id,
+            lines: this.host.screen(),
+          });
+        return;
+      case "overlay":
+        if (this.has("overlay"))
+          this.host.showOverlay(this.id, m.nodes, (id, value) => {
+            this.lastAction = this.now();
+            this.port.postMessage({ type: "action", id, value });
+          });
+        return;
+      case "dismiss":
+        this.host.hideOverlay(this.id);
+        return;
+      case "insert":
+        // Only right after the user clicked in this plugin's overlay.
+        if (
+          this.has("input:insert") &&
+          this.now() - this.lastAction <= INSERT_WINDOW_MS
+        ) {
+          this.lastAction = -Infinity;
+          this.host.insert(this.id, m.text);
+        }
+        return;
+      case "ready":
+        this.ready = true;
+        return;
+      case "error":
+        return;
     }
-  }
-
-  private handleScreenRead(
-    msg: Extract<PluginMessage, { type: "screen:read:request" }>,
-  ): void {
-    if (!this.hasPermission("screen:read")) {
-      this.sendToPlugin({
-        type: "error",
-        id: msg.id,
-        error: "Permission denied: screen:read",
-      });
-      return;
-    }
-    const lines = this.ctx.getScreen();
-    this.sendToPlugin({
-      type: "screen:read:response",
-      id: msg.id,
-      lines,
-    });
-  }
-
-  private async handleInputGate(
-    msg: Extract<PluginMessage, { type: "input:gate:request" }>,
-  ): Promise<void> {
-    if (!this.hasPermission("input:gate")) {
-      this.sendToPlugin({
-        type: "error",
-        id: msg.id,
-        error: "Permission denied: input:gate",
-      });
-      return;
-    }
-
-    // Request gate confirmation from host with 300ms timeout
-    const promise = Promise.race([
-      this.ctx.requestGate(msg.line, "Plugin review requested"),
-      new Promise<boolean>((resolve) => setTimeout(() => resolve(true), 300)),
-    ]);
-
-    const confirmed = await promise;
-    this.sendToPlugin({
-      type: "input:gate:response",
-      id: msg.id,
-      verdict: confirmed ? "allow" : "deny",
-    });
-  }
-
-  private async handleOverlayRender(
-    msg: Extract<PluginMessage, { type: "overlay:render" }>,
-  ): Promise<void> {
-    if (!this.hasPermission("overlay")) {
-      this.sendToPlugin({
-        type: "error",
-        id: msg.type,
-        error: "Permission denied: overlay",
-      });
-      return;
-    }
-
-    try {
-      await this.ctx.renderOverlay(msg.tree);
-    } catch (err) {
-      this.sendToPlugin({
-        type: "error",
-        id: msg.type,
-        error: "Failed to render overlay",
-      });
-    }
-  }
-
-  private sendToPlugin(msg: HostMessage): void {
-    this.port.postMessage(msg);
-  }
-
-  start(): void {
-    this.port.start();
-  }
-
-  stop(): void {
-    this.terminate("Broker stopped");
   }
 }
