@@ -29,6 +29,11 @@ const P = {
   briefcase:
     '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/>',
+  copy: '<rect x="8" y="8" width="12" height="13" rx="2"/><path d="M4 16V5a2 2 0 0 1 2-2h9"/>',
+  paste:
+    '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/>',
+  eraser: '<path d="M4 15l9-9 7 7-6 6H8z"/><path d="M9 10l7 7M8 19h12"/>',
 };
 export type IconName = keyof typeof P;
 
