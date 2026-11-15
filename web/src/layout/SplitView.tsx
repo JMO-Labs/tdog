@@ -105,8 +105,7 @@ function Pane({ id }: { id: string }) {
   live.current = p;
   const isFocused = focus === id && p.active !== false;
 
-  const broadcast =
-    p.sceneId && isFocused ? useBroadcast(p.sceneId, id) : null;
+  const broadcast = p.sceneId && isFocused ? useBroadcast(p.sceneId, id) : null;
 
   // ⌘K actions target the focused pane of the visible scene.
   useEffect(() => {

@@ -30,8 +30,7 @@ const terminalReportPatterns = [
  * Returns true if data appears to be a terminal-generated response rather than user input.
  */
 export function isTerminalReport(data: Uint8Array | string): boolean {
-  const str =
-    typeof data === "string" ? data : new TextDecoder().decode(data);
+  const str = typeof data === "string" ? data : new TextDecoder().decode(data);
 
   // Empty data or single byte control characters are likely user input
   if (str.length === 0) return false;

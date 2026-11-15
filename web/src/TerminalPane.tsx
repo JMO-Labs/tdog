@@ -206,8 +206,7 @@ export function TerminalPane({
   const hooks = useRef({ onSize, onOutput, onLatency });
   hooks.current = { onSize, onOutput, onLatency };
 
-  const broadcast =
-    paneId && sceneId ? useBroadcast(sceneId, paneId) : null;
+  const broadcast = paneId && sceneId ? useBroadcast(sceneId, paneId) : null;
 
   sceneRef.current = sceneId;
 

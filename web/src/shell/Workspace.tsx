@@ -430,7 +430,8 @@ export function Workspace({
         )}
         {broadcastCount > 0 && (
           <span className="chip broadcast">
-            Broadcasting to {broadcastCount} pane{broadcastCount === 1 ? "" : "s"}
+            Broadcasting to {broadcastCount} pane
+            {broadcastCount === 1 ? "" : "s"}
             <button
               className="stop-broadcast"
               aria-label="Stop broadcasting"

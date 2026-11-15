@@ -106,10 +106,12 @@ export function TerminalMenu(p: TerminalMenuProps) {
         <button
           role="menuitem"
           className={p.isBroadcasting ? "checked" : undefined}
-          onClick={(() => {
-            p.onDismiss();
-            p.onBroadcast?.();
-          }) as () => void}
+          onClick={
+            (() => {
+              p.onDismiss();
+              p.onBroadcast?.();
+            }) as () => void
+          }
         >
           <span>Broadcast input</span>
           {p.isBroadcasting && <span aria-hidden="true">✓</span>}
