@@ -17,6 +17,7 @@ vi.mock("./dock", async (orig) => {
   };
 });
 
+import { titleStore } from "../terminal/titles";
 import { SETTLE_MS, SplitView } from "./SplitView";
 
 afterEach(() => vi.useRealTimers());
@@ -59,7 +60,9 @@ test("each leaf renders a pane with split and close buttons", () => {
 test("nested splits render inside dockview splitviews in order", () => {
   const three = splitLeaf(two, "b", "col", "c", "s2");
   const { r } = setup(three);
-  const ids = screen.getAllByTestId(/^pane-/).map((e) => e.dataset.testid);
+  const ids = screen
+    .getAllByTestId(/^pane-[a-z]$/)
+    .map((e) => e.dataset.testid);
   expect(ids).toEqual(["pane-a", "pane-b", "pane-c"]);
   const outer = screen.getByTestId("split-s1");
   expect(outer.querySelector(".dv-split-view-container")).toBeTruthy();
@@ -80,6 +83,15 @@ test("a sash relayout reports the ratio; panes settle after it stops", () => {
   expect(screen.getByTestId("pane-b").dataset.settled).toBe("false");
   act(() => vi.advanceTimersByTime(1));
   expect(screen.getByTestId("pane-b").dataset.settled).toBe("true");
+});
+
+test("pane header shows the shell title, falling back to Shell N", () => {
+  titleStore.set("a", { title: "vim" });
+  setup(two);
+  expect(screen.getAllByTestId("pane-title").map((e) => e.textContent)).toEqual(
+    ["vim", "Shell 2"],
+  );
+  titleStore.clear();
 });
 
 test("header shows title and target chip, no dockview tab strip", () => {

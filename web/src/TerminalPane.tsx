@@ -6,6 +6,7 @@ import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
+import { titleStore } from "./terminal/titles";
 import { useMotifOpacity } from "./settings/prefs";
 import { registerClear } from "./terminal/paneActions";
 import { resolvePreset, type Resolved } from "./presets/api";
@@ -183,6 +184,12 @@ export function TerminalPane({
       );
       session.current = s;
       renderer.current = r;
+      r.onTitle?.((title) => {
+        if (keyRef.current) titleStore.set(keyRef.current, { title });
+      });
+      r.onCwd?.((cwd) => {
+        if (keyRef.current) titleStore.set(keyRef.current, { cwd });
+      });
       // ED 3: erase scrollback only; works the same in both renderers.
       const offClear = sceneKey
         ? registerClear(sceneKey, () =>
@@ -208,6 +215,7 @@ export function TerminalPane({
     return () => {
       cancelled = true;
       cleanup();
+      if (keyRef.current) titleStore.remove(keyRef.current);
     };
   }, [connect, sceneKey, paintTheme, preset]);
 
