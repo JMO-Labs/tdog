@@ -22,15 +22,6 @@ func validGradient(s string) bool {
 		return false
 	}
 	calls := gradFuncs.FindAllStringSubmatch(s, -1)
-	opens := 0
-	for _, c := range s {
-		if c == '(' {
-			opens++
-		}
-	}
-	if len(calls) != opens {
-		return false
-	}
 	for _, c := range calls[1:] {
 		if !gradColor[c[1]] {
 			return false

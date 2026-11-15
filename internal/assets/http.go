@@ -141,14 +141,9 @@ func (s *Store) fromURL(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 201, a)
 }
 
-// client dials only addresses that pass the policy; the check runs on the
-// resolved IP of every connection, so redirects and DNS tricks are covered.
-func (s *Store) client() *http.Client {
-	allow := s.allowIP
-	if allow == nil {
-		allow = publicIP
-	}
-	d := &net.Dialer{Timeout: 10 * time.Second, Control: func(_, addr string, _ syscall.RawConn) error {
+// dialControl rejects any resolved address that is not an IP allowed by allow.
+func dialControl(allow func(net.IP) bool) func(string, string, syscall.RawConn) error {
+	return func(_, addr string, _ syscall.RawConn) error {
 		host, _, err := net.SplitHostPort(addr)
 		if err != nil {
 			return errBlocked
@@ -157,7 +152,17 @@ func (s *Store) client() *http.Client {
 			return errBlocked
 		}
 		return nil
-	}}
+	}
+}
+
+// client dials only addresses that pass the policy; the check runs on the
+// resolved IP of every connection, so redirects and DNS tricks are covered.
+func (s *Store) client() *http.Client {
+	allow := s.allowIP
+	if allow == nil {
+		allow = publicIP
+	}
+	d := &net.Dialer{Timeout: 10 * time.Second, Control: dialControl(allow)}
 	return &http.Client{
 		Timeout:   fetchTimeout,
 		Transport: &http.Transport{DialContext: d.DialContext, Proxy: nil},
