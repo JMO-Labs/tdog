@@ -2,14 +2,20 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Modal } from "../overlays/Modal";
+import { SceneDesigner } from "./SceneDesigner";
 import { Cassette } from "./Cassette";
 import { SECTIONS, filterSections, hashFor, sectionFromHash } from "./sections";
 import "./studio.css";
 
-type Props = { open: boolean; onClose: () => void };
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  /** Launch a saved scene preset in a new scene tab. */
+  onOpenScene?: (name: string) => Promise<void>;
+};
 
 /** Full-screen Studio: nav + settings search (sections are placeholders). */
-export function Studio({ open, onClose }: Props) {
+export function Studio({ open, onClose, onOpenScene }: Props) {
   const [current, setCurrent] = useState(
     () => sectionFromHash(location.hash) ?? SECTIONS[0].id,
   );
@@ -128,6 +134,8 @@ export function Studio({ open, onClose }: Props) {
             ) : (
               <p className="studio-none">No settings match “{query.trim()}”.</p>
             )
+          ) : section.id === "scene" ? (
+            <SceneDesigner onOpenScene={onOpenScene ?? (async () => {})} />
           ) : (
             <section className="studio-empty">
               <h3>{section.label}</h3>

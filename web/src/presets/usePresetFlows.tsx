@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { saveLayout, loadLayout } from "../layout/store";
+import { loadLayout } from "../layout/store";
 import { addLeaf } from "../layout/transfer";
-import { newId, leaves } from "../layout/tree";
+import { leaves } from "../layout/tree";
 import { registerCommand } from "../overlays/commands";
 import { useToast } from "../overlays/toast";
-import { listPresets, putScenePreset, startScene } from "./api";
+import { listPresets, putScenePreset } from "./api";
 import { errorMessage, preparePane } from "./launch";
-import { runToTree } from "./layout";
+import { openScenePreset } from "./openScene";
 import { NameDialog, PresetPicker } from "./PresetPicker";
-import { bindSession, panePresets, setScenePreset } from "./panes";
+import { panePresets } from "./panes";
 import { sceneToml } from "./toml";
 
 type Pick = { kind: "terminal" | "scene"; names: string[] } | null;
@@ -70,23 +70,7 @@ export function usePresetFlows({
       const id = await preparePane(name, toast);
       if (id) addLeaf(scene, id);
     } else if (kind === "scene") {
-      try {
-        const run = await startScene(name);
-        const { tree, sessions } = runToTree(run);
-        const tab = newId("sc");
-        for (const [pane, s] of Object.entries(sessions)) bindSession(pane, s);
-        saveLayout(tab, tree);
-        setScenePreset(tab, name);
-        openTab(tab, name);
-        toast(
-          "success",
-          run.existing
-            ? `"${name}" was already running. Attached.`
-            : `Started "${name}".`,
-        );
-      } catch (e) {
-        toast("fail", errorMessage(e));
-      }
+      await openScenePreset(name, openTab, toast);
     }
   };
 

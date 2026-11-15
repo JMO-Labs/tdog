@@ -73,3 +73,14 @@ export async function resolveScene(name: string): Promise<Resolved> {
   const r = await check(await apiFetch(`/api/presets/resolve?${q}`));
   return (await r.json()) as Resolved;
 }
+
+/** Raw TOML of a stored preset. */
+export async function getPreset(
+  kind: "terminal" | "scene",
+  name: string,
+): Promise<string> {
+  const r = await check(
+    await apiFetch(`/api/presets/${kind}/${encodeURIComponent(name)}`),
+  );
+  return r.text();
+}

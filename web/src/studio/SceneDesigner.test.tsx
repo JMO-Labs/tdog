@@ -1,0 +1,114 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, expect, test, vi } from "vitest";
+import { json, mockFetch } from "../auth/testutil";
+import { SceneDesigner } from "./SceneDesigner";
+
+afterEach(() => vi.unstubAllGlobals());
+
+const stored = [
+  'name = "dev"',
+  "autostart = true",
+  "gap = 6",
+  "",
+  "[layout]",
+  'type = "split"',
+  'dir = "row"',
+  "ratio = 0.5",
+  "",
+  "[layout.a]",
+  'type = "pane"',
+  'pane = "s1"',
+  "",
+  "[layout.b]",
+  'type = "pane"',
+  'pane = "s2"',
+  "",
+  "[[panes]]",
+  'id = "s1"',
+  'preset = "app"',
+  "",
+  "[[panes]]",
+  'id = "s2"',
+  'preset = "logs"',
+  "",
+].join("\n");
+
+function setup(extra: Parameters<typeof mockFetch>[0] = {}) {
+  const f = mockFetch({
+    "GET /api/presets/scene": json(["dev"]),
+    "GET /api/presets/terminal": json(["app", "logs"]),
+    "GET /api/presets/scene/dev": new Response(stored),
+    "GET /api/presets/resolve?terminal=app": json({
+      theme: { value: "mtv", origin: "global" },
+    }),
+    "GET /api/presets/resolve?terminal=logs": json({
+      theme: { value: "noir", origin: "terminal" },
+    }),
+    ...extra,
+  });
+  vi.stubGlobal("fetch", f);
+  return f;
+}
+
+test("loads a scene, edits slots, saves via PUT, reloads", async () => {
+  const f = setup({
+    "PUT /api/presets/scene/dev": () => new Response(null, { status: 204 }),
+  });
+  const onOpen = vi.fn();
+  render(<SceneDesigner onOpenScene={onOpen} />);
+  fireEvent.click(await screen.findByRole("button", { name: "dev" }));
+  const sw = await screen.findByRole("switch", { name: "Start with server" });
+  expect(sw.getAttribute("aria-checked")).toBe("true");
+  // go to 3 columns and pick presets
+  fireEvent.click(screen.getByRole("radio", { name: "3 columns" }));
+  const slot3 = await screen.findByLabelText("Terminal for slot 3");
+  fireEvent.change(slot3, { target: { value: "app" } });
+  fireEvent.change(screen.getByLabelText("Gap between panes"), {
+    target: { value: "12" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Save scene" }));
+  await waitFor(() =>
+    expect(f.mock.calls.some((c) => c[1]?.method === "PUT")).toBe(true),
+  );
+  const put = f.mock.calls.find((c) => c[1]?.method === "PUT")!;
+  const saved = String(put[1]!.body);
+  expect(saved).toContain("gap = 12");
+  expect(saved.match(/\[\[panes\]\]/g)).toHaveLength(3);
+  expect(saved).toContain("autostart = true");
+});
+
+test("TOML toggle shows source and applies edits back to the form", async () => {
+  setup();
+  render(<SceneDesigner onOpenScene={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "dev" }));
+  await screen.findByRole("switch", { name: "Start with server" });
+  fireEvent.click(screen.getByRole("radio", { name: "TOML" }));
+  const box = screen.getByLabelText("Scene TOML") as HTMLTextAreaElement;
+  expect(box.value).toContain('preset = "logs"');
+  fireEvent.change(box, {
+    target: { value: box.value.replace("gap = 6", "gap = 20") },
+  });
+  fireEvent.click(screen.getByRole("radio", { name: "Form" }));
+  expect(
+    (screen.getByLabelText("Gap between panes") as HTMLInputElement).value,
+  ).toBe("20");
+});
+
+test("Open scene saves, then launches in a new tab", async () => {
+  setup({
+    "PUT /api/presets/scene/dev": () => new Response(null, { status: 204 }),
+  });
+  const onOpen = vi.fn(async () => {});
+  render(<SceneDesigner onOpenScene={onOpen} />);
+  fireEvent.click(await screen.findByRole("button", { name: "dev" }));
+  await screen.findByRole("switch", { name: "Start with server" });
+  fireEvent.click(screen.getByRole("button", { name: "Open scene" }));
+  await waitFor(() => expect(onOpen).toHaveBeenCalledWith("dev"));
+});
+
+test("slot shows a thumbnail of the preset's look", async () => {
+  setup();
+  render(<SceneDesigner onOpenScene={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "dev" }));
+  expect(await screen.findByText("noir")).toBeTruthy();
+});
