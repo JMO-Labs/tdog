@@ -23,3 +23,31 @@ test("loadFont loads once per id and waits for the face", async () => {
   expect(load).toHaveBeenCalledTimes(1);
   expect(load).toHaveBeenCalledWith('16px "VT323"');
 });
+
+const stubFonts = (load: unknown) =>
+  Object.defineProperty(document, "fonts", {
+    value: { load },
+    configurable: true,
+  });
+
+test("loadFont requests every schema font family", async () => {
+  vi.resetModules();
+  const { loadFont: fresh } = await import("./fonts");
+  const load = vi.fn().mockResolvedValue([]);
+  stubFonts(load);
+  for (const id of FONTS) await expect(fresh(id)).resolves.toBeUndefined();
+  expect(load).toHaveBeenCalledTimes(FONTS.length);
+  for (const id of FONTS) {
+    const family = fontFamily(id).split('"')[1];
+    expect(load).toHaveBeenCalledWith(`16px "${family}"`);
+  }
+});
+
+test("loadFont swallows a font load failure and keeps the fallback", async () => {
+  vi.resetModules();
+  const { loadFont: fresh } = await import("./fonts");
+  const load = vi.fn().mockRejectedValue(new Error("boom"));
+  stubFonts(load);
+  await expect(fresh("courier-prime")).resolves.toBeUndefined();
+  expect(load).toHaveBeenCalledWith('16px "Courier Prime"');
+});
