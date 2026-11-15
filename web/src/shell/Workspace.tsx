@@ -4,7 +4,7 @@ import { CommandPalette } from "../overlays/CommandPalette";
 import { Sheet } from "../overlays/Sheet";
 import { registerCommand } from "../overlays/commands";
 import { SettingsPanel } from "../settings/SettingsPanel";
-import { usePref } from "../settings/prefs";
+import { getPref, usePref } from "../settings/prefs";
 import { THEMES } from "../theme/registry";
 import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
@@ -58,6 +58,7 @@ export function Workspace({
   const [focused, setFocused] = useState<string | null>(null);
   const [stamp, setStamp] = useState(0);
   const [petShown, setPetShown] = usePref("pet");
+  const [serious, setSerious] = usePref("serious");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
   const [studio, setStudio] = useState(() => !!sectionFromHash(location.hash));
@@ -197,7 +198,13 @@ export function Workspace({
         shortcut: "⇧⌘L",
         run: cycle,
       }),
-      ...THEMES.map((t) =>
+      registerCommand({
+        id: "serious",
+        title: "Serious mode",
+        group: "Themes",
+        run: () => setSerious(!getPref("serious")),
+      }),
+      ...(serious ? [] : THEMES).map((t) =>
         registerCommand({
           id: `theme:${t.id}`,
           title: `Theme: ${t.name}`,
@@ -249,7 +256,7 @@ export function Workspace({
       }),
     ];
     return () => offs.forEach((f) => f());
-  }, [cycle, signOut, add]);
+  }, [cycle, signOut, add, serious, setSerious]);
 
   const themeLabel = `Theme: ${mode[0].toUpperCase()}${mode.slice(1)}`;
   // Status bar follows the focused pane, else the first one.
@@ -288,6 +295,12 @@ export function Workspace({
               },
               { label: "Theme", icon: mode, onSelect: cycle },
               {
+                label: "Serious mode",
+                icon: "briefcase",
+                hint: serious ? "On" : "Off",
+                onSelect: () => setSerious(!serious),
+              },
+              {
                 label: "Kill all shells",
                 icon: "power",
                 danger: true,
@@ -311,6 +324,14 @@ export function Workspace({
               onClick={cycle}
             >
               <Icon name={mode} />
+            </IconButton>
+            <IconButton
+              label="Serious mode"
+              tip={`Serious mode: ${serious ? "on" : "off"}`}
+              aria-pressed={serious}
+              onClick={() => setSerious(!serious)}
+            >
+              <Icon name="briefcase" />
             </IconButton>
           </>
         )}
@@ -378,7 +399,7 @@ export function Workspace({
             {latency} ms
           </span>
         )}
-        {petShown && (
+        {petShown && !serious && (
           <Pet
             awake={awake}
             engine={engine.pet}
