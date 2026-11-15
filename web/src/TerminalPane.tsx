@@ -415,7 +415,7 @@ export function TerminalPane({
   const themes = THEMES.map((t) => ({
     id: t.id,
     name: t.name,
-    swatch: t.terminal.palette.ansi[5] ?? t.terminal.palette.fg,
+    swatch: t.terminal.palette.cursor ?? t.terminal.palette.fg,
   }));
   const bg =
     sceneBg && !perf ? "transparent" : themeStore.terminal(theme).background;

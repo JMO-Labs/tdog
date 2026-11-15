@@ -43,6 +43,19 @@ export function flipSubmenuPosition(
   return { left: parentRect.right };
 }
 
+/** Wrap the first case-insensitive match of `q` in a <mark>. */
+export function highlight(text: string, q: string) {
+  const i = q ? text.toLowerCase().indexOf(q.toLowerCase()) : -1;
+  if (i < 0) return text;
+  return (
+    <>
+      {text.slice(0, i)}
+      <mark>{text.slice(i, i + q.length)}</mark>
+      {text.slice(i + q.length)}
+    </>
+  );
+}
+
 export function ActionMenu(props: ActionMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x: props.x, y: props.y });
@@ -63,7 +76,9 @@ export function ActionMenu(props: ActionMenuProps) {
 
     setPos(newPos);
     if (!filter) {
-      el.querySelector<HTMLElement>("[role=menuitem]:not([disabled])")?.focus();
+      el.querySelector<HTMLElement>(
+        "[role^=menuitem]:not([disabled])",
+      )?.focus();
     }
   }, [props.x, props.y, filter]);
 
@@ -126,7 +141,7 @@ export function ActionMenu(props: ActionMenuProps) {
       if (e.key === "ArrowDown" || e.key === "Enter") {
         e.preventDefault();
         const first = ref.current?.querySelector<HTMLElement>(
-          "[role=menuitem]:not([disabled])",
+          "[role^=menuitem]:not([disabled])",
         );
         if (first) first.focus();
       }
@@ -136,7 +151,7 @@ export function ActionMenu(props: ActionMenuProps) {
     // Keyboard navigation in menu
     const items = Array.from(
       ref.current?.querySelectorAll<HTMLElement>(
-        "[role=menuitem]:not([disabled])",
+        "[role^=menuitem]:not([disabled])",
       ) || [],
     );
 
@@ -206,6 +221,30 @@ export function ActionMenu(props: ActionMenuProps) {
 
     return visible;
   };
+
+  /** While filtering: one flat list of every matching action, submenus included. */
+  const q = filter.toLowerCase();
+  const hit = (m: MenuItem) => m.label.toLowerCase().includes(q);
+  const results: { item: MenuItem; label: string }[] = !filter
+    ? []
+    : [
+        ...(props.strip ?? []).filter(hit).map((item) => ({
+          item,
+          label: item.label,
+        })),
+        ...props.groups.flat().flatMap((item) =>
+          item.submenu
+            ? item.submenu
+                .filter((s) => hit(s) || hit(item))
+                .map((s) => ({
+                  item: s,
+                  label: `${item.label} › ${s.label}`,
+                }))
+            : hit(item)
+              ? [{ item, label: item.label }]
+              : [],
+        ),
+      ];
 
   const renderItem = (item: MenuItem) => {
     if (filter && !item.label.toLowerCase().includes(filter.toLowerCase())) {
@@ -285,76 +324,110 @@ export function ActionMenu(props: ActionMenuProps) {
         </label>
       )}
 
-      {/* Icon strip for quick actions */}
-      {props.strip && props.strip.length > 0 && (
+      {filter ? (
+        <div className="menu-items">
+          {results.length === 0 ? (
+            <p className="menu-empty">No matching actions</p>
+          ) : (
+            results.map((r) => (
+              <button
+                key={r.label}
+                role="menuitem"
+                className={`menu-item ${r.item.danger ? "danger" : ""}`}
+                disabled={r.item.disabled}
+                onClick={() => run(r.item, true)}
+              >
+                {r.item.icon ? (
+                  <span className="menu-row-icon">
+                    <Icon name={r.item.icon} />
+                  </span>
+                ) : null}
+                <span className="menu-label">{highlight(r.label, filter)}</span>
+                {r.item.shortcut && (
+                  <span className="menu-shortcut">{r.item.shortcut}</span>
+                )}
+              </button>
+            ))
+          )}
+        </div>
+      ) : (
         <>
-          <div className="menu-strip" role="group" aria-label="Quick actions">
-            {props.strip.map((item, i) => {
-              if (
-                filter &&
-                !item.label.toLowerCase().includes(filter.toLowerCase())
-              ) {
-                return null;
-              }
+          {/* Icon strip for quick actions */}
+          {props.strip && props.strip.length > 0 && (
+            <>
+              <div
+                className="menu-strip"
+                role="group"
+                aria-label="Quick actions"
+              >
+                {props.strip.map((item, i) => {
+                  if (
+                    filter &&
+                    !item.label.toLowerCase().includes(filter.toLowerCase())
+                  ) {
+                    return null;
+                  }
+
+                  return (
+                    <button
+                      key={i}
+                      role="menuitem"
+                      className="menu-icon-btn"
+                      disabled={item.disabled}
+                      title={item.tooltip || item.label}
+                      aria-label={item.label}
+                      onClick={() => run(item)}
+                    >
+                      {item.icon && <Icon name={item.icon} />}
+                    </button>
+                  );
+                })}
+              </div>
+              <hr role="separator" className="menu-sep" />
+            </>
+          )}
+
+          {/* Main menu items */}
+          <div className="menu-items">
+            {props.groups.map((group, gi) => {
+              const visibleInGroup = group.filter(
+                (item) =>
+                  !filter ||
+                  item.label.toLowerCase().includes(filter.toLowerCase()) ||
+                  (item.submenu?.some((s) =>
+                    s.label.toLowerCase().includes(filter.toLowerCase()),
+                  ) ??
+                    false),
+              );
+
+              if (visibleInGroup.length === 0) return null;
 
               return (
-                <button
-                  key={i}
-                  role="menuitem"
-                  className="menu-icon-btn"
-                  disabled={item.disabled}
-                  title={item.tooltip || item.label}
-                  aria-label={item.label}
-                  onClick={() => run(item)}
-                >
-                  {item.icon && <Icon name={item.icon} />}
-                </button>
+                <div key={gi}>
+                  {gi > 0 && <hr role="separator" className="menu-sep" />}
+                  {visibleInGroup.map((item) => {
+                    const rendered = renderItem(item);
+                    if (!rendered) return null;
+
+                    return (
+                      <div key={item.label} className="menu-item-with-sub">
+                        {rendered}
+                        {item.submenu && openSub === item.label && !filter && (
+                          <SubMenu
+                            label={item.label}
+                            items={item.submenu}
+                            onSelect={run}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               );
             })}
           </div>
-          <hr role="separator" className="menu-sep" />
         </>
       )}
-
-      {/* Main menu items */}
-      <div className="menu-items">
-        {props.groups.map((group, gi) => {
-          const visibleInGroup = group.filter(
-            (item) =>
-              !filter ||
-              item.label.toLowerCase().includes(filter.toLowerCase()) ||
-              (item.submenu?.some((s) =>
-                s.label.toLowerCase().includes(filter.toLowerCase()),
-              ) ??
-                false),
-          );
-
-          if (visibleInGroup.length === 0) return null;
-
-          return (
-            <div key={gi}>
-              {gi > 0 && <hr role="separator" className="menu-sep" />}
-              {visibleInGroup.map((item) => {
-                const rendered = renderItem(item);
-                if (!rendered) return null;
-
-                return (
-                  <div key={item.label} className="menu-item-with-sub">
-                    {rendered}
-                    {item.submenu && openSub === item.label && !filter && (
-                      <SubMenu
-                        label={item.label}
-                        items={item.submenu}
-                        onSelect={run}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
 
       {/* Help text */}
       {filter && (
@@ -373,15 +446,22 @@ function SubMenu(props: {
   onSelect: (item: MenuItem, refocus?: boolean) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ left?: number; right?: number }>({
-    left: 0,
-  });
+  const [pos, setPos] = useState<{
+    left?: number;
+    right?: number;
+    top?: number;
+  }>({ left: 0 });
 
+  // position: fixed in viewport coordinates, so the parent menu's scrolling
+  // list (overflow) can't clip the submenu.
   useLayoutEffect(() => {
-    const parent = ref.current?.parentElement?.querySelector("[role=menuitem]");
-    if (!parent) return;
+    const el = ref.current;
+    const parent = el?.parentElement?.querySelector("[role^=menuitem]");
+    if (!el || !parent) return;
     const rect = parent.getBoundingClientRect();
-    setPos(flipSubmenuPosition(rect, 160));
+    const h = el.offsetHeight;
+    const top = Math.max(8, Math.min(rect.top - 6, window.innerHeight - h - 8));
+    setPos({ ...flipSubmenuPosition(rect, el.offsetWidth || 180), top });
   }, []);
 
   return (

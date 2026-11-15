@@ -9,8 +9,11 @@
   background: var(--surface);
   color: var(--fg);
   border: 2px solid var(--line);
-  border-radius: calc(14px * var(--radius-scale));
-  box-shadow: var(--shadow-sm);
+  border-radius: calc(12px * var(--radius-scale));
+  /* Sticker shadow plus a soft drop so it lifts off dark terminals too. */
+  box-shadow:
+    var(--shadow-sm),
+    0 12px 28px rgb(8 4 24 / 0.45);
 }
 
 /* Filter input at top */
@@ -191,8 +194,7 @@
 }
 
 .menu-submenu {
-  position: absolute;
-  top: 0;
+  position: fixed;
   min-width: 160px;
   max-height: 300px;
   overflow-y: auto;
@@ -243,4 +245,26 @@
   border: 1px solid var(--line);
   flex: none;
   margin-right: 8px;
+}
+
+.menu-row-icon {
+  display: inline-flex;
+  width: 16px;
+  margin-right: 8px;
+  opacity: 0.8;
+}
+.menu-row-icon svg {
+  width: 15px;
+  height: 15px;
+}
+.menu-label mark {
+  background: none;
+  color: var(--pink);
+  font-weight: 700;
+}
+.menu-empty {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--muted);
 }

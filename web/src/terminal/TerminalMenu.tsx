@@ -32,20 +32,20 @@ export function TerminalMenu(p: TerminalMenuProps) {
   const strip: MenuItem[] = [
     {
       label: "Copy",
-      icon: "check",
+      icon: "copy",
       tooltip: "Copy",
       disabled: !p.hasSelection,
       onSelect: p.onCopy,
     },
     {
       label: "Paste",
-      icon: "modem",
+      icon: "paste",
       tooltip: `Paste · ${mod}V`,
       onSelect: p.onPaste,
     },
     {
       label: "Clear",
-      icon: "layout",
+      icon: "eraser",
       tooltip: "Clear",
       onSelect: p.onClear,
     },

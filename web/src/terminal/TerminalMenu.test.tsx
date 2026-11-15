@@ -139,3 +139,35 @@ test("only advertises shortcuts that really work (Paste)", () => {
   // Copy should not have a keyboard shortcut (it's not the native Paste)
   expect(copyBtn?.title ?? "").not.toMatch(/(⌘|Ctrl)/);
 });
+
+test("typing filters into labelled rows, strip actions included", () => {
+  setup();
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "s" });
+  fireEvent.change(screen.getByRole("textbox", { name: "Filter actions" }), {
+    target: { value: "sp" },
+  });
+  const rows = screen.getAllByRole("menuitem").map((b) => b.textContent);
+  expect(rows).toEqual(expect.arrayContaining(["Split right", "Split down"]));
+  expect(rows.every((r) => /sp/i.test(r ?? ""))).toBe(true);
+});
+
+test("filtering reaches submenu items and runs them", () => {
+  const p = setup();
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "a" });
+  fireEvent.change(screen.getByRole("textbox", { name: "Filter actions" }), {
+    target: { value: "alpha" },
+  });
+  fireEvent.click(
+    screen.getByRole("menuitem", { name: "Theme for this terminal › Alpha" }),
+  );
+  expect(p.onTheme).toHaveBeenCalledWith("a");
+});
+
+test("no match says so", () => {
+  setup();
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "z" });
+  fireEvent.change(screen.getByRole("textbox", { name: "Filter actions" }), {
+    target: { value: "zzz" },
+  });
+  expect(screen.getByText("No matching actions")).toBeTruthy();
+});
