@@ -104,7 +104,7 @@
       "term-dim": "#7a9ab8"
     },
     "shape": {
-      "radius": 2,
+      "radius": 1.5,
       "shadow": "none",
       "border": 1
     },
