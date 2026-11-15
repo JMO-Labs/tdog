@@ -4,7 +4,7 @@ import { findTheme } from "./registry";
 const PACK = [
   ["bayside", "confetti", true, "dark"],
   ["morph-squad", "none", false, "dark"],
-  ["truth-is-out-there", "none", false, "dark"],
+  ["truth-is-out-there", "none", true, "dark"],
   ["laser-binder", "zigzag", false, "dark"],
   ["rainbow-leopard", "leopard", true, "dark"],
 ] as const;
