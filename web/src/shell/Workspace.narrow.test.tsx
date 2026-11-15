@@ -12,6 +12,7 @@ vi.mock("../overlays/toast", () => ({ useToast: () => vi.fn() }));
 
 import { Workspace } from "./Workspace";
 import { clearCommands } from "../overlays/commands";
+import { getPref } from "../settings/prefs";
 
 const setWidth = (w: number) =>
   vi.stubGlobal("matchMedia", (q: string) => {
@@ -31,36 +32,40 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-test("390px: header actions collapse into the More menu", () => {
+test("390px and 1024px keep the same header: Menu + Kill", () => {
+  for (const w of [390, 1024]) {
+    setWidth(w);
+    const { unmount } = render(<Workspace />);
+    expect(screen.getByRole("button", { name: "Menu" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Kill all shells" }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "More" })).toBeNull();
+    unmount();
+  }
+});
+
+test("390px: Menu lists Studio, Settings, Sign out", () => {
   setWidth(390);
   render(<Workspace />);
-  expect(screen.queryByRole("button", { name: "Kill all shells" })).toBeNull();
-  expect(screen.getByRole("button", { name: "Settings" })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "More" }));
-  const items = screen.getAllByRole("menuitem").map((e) => e.textContent);
-  expect(items).toEqual(
-    expect.arrayContaining([
-      expect.stringContaining("Studio"),
-      expect.stringContaining("Theme"),
-      expect.stringContaining("Kill all shells"),
-    ]),
-  );
+  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
   const studio = screen.getByRole("menuitem", { name: /Studio/ });
   expect(studio.getAttribute("aria-disabled")).toBeNull();
+  expect(screen.getByRole("menuitem", { name: /Sign out/ })).toBeTruthy();
 });
 
-test("1024px: inline buttons, no More", () => {
-  setWidth(1024);
-  render(<Workspace />);
-  expect(screen.queryByRole("button", { name: "More" })).toBeNull();
-  for (const n of ["Studio", "Theme", "Settings", "Kill all shells"])
-    expect(screen.getByRole("button", { name: n })).toBeTruthy();
-});
-
-test("390px: More menu 'Kill all shells' opens the kill dialog", () => {
+test("390px: Menu 'Serious mode' toggles the pref", () => {
   setWidth(390);
   render(<Workspace />);
-  fireEvent.click(screen.getByRole("button", { name: "More" }));
-  fireEvent.click(screen.getByRole("menuitem", { name: /Kill all shells/ }));
-  expect(screen.getByRole("button", { name: /hold to nuke/i })).toBeTruthy();
+  const open = () =>
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+  open();
+  const item = () => screen.getByRole("menuitem", { name: /Serious mode/ });
+  expect(item().textContent).toContain("Off");
+  fireEvent.click(item());
+  expect(getPref("serious")).toBe(true);
+  open();
+  expect(item().textContent).toContain("On");
+  fireEvent.click(item());
+  expect(getPref("serious")).toBe(false);
 });

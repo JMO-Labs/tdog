@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog } from "../overlays/Dialog";
+import { usePref } from "../settings/prefs";
+import { useCopy } from "../copy/copy";
 
 /** How long the nuke button must be held. */
 export const HOLD_MS = 1500;
@@ -39,15 +41,19 @@ export function KillDialog({ open, count, scope, onClose, onConfirm }: Props) {
     if (!open) cancel();
   }, [open, cancel]);
 
+  const c = useCopy();
+  const [serious] = usePref("serious");
   const what = `${count} shell${count === 1 ? "" : "s"}`;
   return (
     <Dialog
       open={open}
-      title={scope === "all" ? "Kill all shells?" : `Kill scene ${scope}?`}
+      title={c(scope === "all" ? "kill.titleAll" : "kill.titleScene", {
+        scope,
+      })}
       onClose={onClose}
     >
-      <div className="zebra" aria-hidden="true" />
-      <p>{what} will die. SIGHUP first, SIGKILL after 3 s.</p>
+      {!serious && <div className="zebra" aria-hidden="true" />}
+      <p>{c("kill.body", { what })}</p>
       <div className="dialog-actions">
         <button className="btn" onClick={onClose}>
           Cancel
@@ -72,7 +78,7 @@ export function KillDialog({ open, count, scope, onClose, onConfirm }: Props) {
           <svg className="ring" viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="12" cy="12" r="10" pathLength="100" />
           </svg>
-          Hold to nuke
+          {c("kill.hold")}
         </button>
       </div>
     </Dialog>

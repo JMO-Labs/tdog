@@ -1,3 +1,4 @@
+import { useCopy } from "./copy/copy";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Workspace } from "./shell/Workspace";
 import { getStatus, logout, setUnauthorizedHandler } from "./auth/api";
@@ -47,6 +48,7 @@ function Root() {
 function AuthApp() {
   const [view, setView] = useState<View>("loading");
   const toast = useToast();
+  const c = useCopy();
 
   // Explicit sign out (not a 401): end the session, rewind.
   const signOut = useCallback(async () => {
@@ -55,8 +57,8 @@ function AuthApp() {
       return;
     }
     setView("login");
-    toast("info", "Session ended. See you next time.", "Be kind, rewind.");
-  }, [toast]);
+    toast("info", c("session.ended"), c("session.endedHead"));
+  }, [toast, c]);
   useEffect(() => {
     const h = () => void signOut();
     addEventListener("tdog:signout", h);
