@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { PaneOverlayContext } from "../../terminal/renderer";
 import type { TerminalRenderer } from "../../terminal/renderer";
 import { getPaneOverlay } from "./registry";
+import { setFocusedPaneOverlay } from "./focusedPane";
 import "./overlay.css";
 
 export interface PaneOverlayHostProps {
@@ -9,7 +11,7 @@ export interface PaneOverlayHostProps {
 }
 
 export interface PaneOverlayHostHandle {
-  open(overlayId: string): void;
+  open: (overlayId: string) => void;
 }
 
 export const PaneOverlayHost = ({
@@ -17,31 +19,23 @@ export const PaneOverlayHost = ({
   onClose: onCloseCallback,
 }: PaneOverlayHostProps) => {
   const [overlayId, setOverlayId] = useState<string | null>(null);
-  const hostRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const close = () => {
+  const close = useCallback(() => {
     setOverlayId(null);
     onCloseCallback?.();
     renderer?.focus?.();
-  };
+  }, [renderer, onCloseCallback]);
 
-  const open = (id: string) => {
+  const open = useCallback((id: string) => {
     const overlay = getPaneOverlay(id);
     if (!overlay) return;
     setOverlayId(id);
-  };
+  }, []);
 
-  useEffect(() => {
-    if (!overlayId) return;
-    const overlay = getPaneOverlay(overlayId);
-    if (!overlay || !containerRef.current) return;
-
-    const container = containerRef.current;
-    container.innerHTML = "";
-
-    // Set global reference for overlay to access container
-    (globalThis as any).__paneOverlayContainer = container;
+  // Build context once when overlay opens, keyed on overlayId
+  const ctx: PaneOverlayContext | null = useMemo(() => {
+    if (!overlayId) return null;
 
     const screen = renderer?.screenLines?.() ?? [];
     const cellGeometry = renderer?.cellGeometry?.() ?? {
@@ -51,7 +45,7 @@ export const PaneOverlayHost = ({
       offsetY: 0,
     };
 
-    const ctx = {
+    return {
       screen,
       cellGeometry,
       insert: (text: string) => {
@@ -68,13 +62,17 @@ export const PaneOverlayHost = ({
       },
       close,
     };
+  }, [overlayId, renderer, close]);
 
-    overlay.render(ctx);
+  // Handle keyboard: Esc closes, Tab traps focus, no other keys reach xterm
+  useEffect(() => {
+    if (!overlayId || !containerRef.current) return;
 
-    // Focus trap: keep focus in overlay, close on Esc
-    const onKeyDown = (e: KeyboardEvent) => {
+    const container = containerRef.current;
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
+        e.stopPropagation();
         close();
         return;
       }
@@ -94,38 +92,63 @@ export const PaneOverlayHost = ({
           e.preventDefault();
           focusable[0]?.focus();
         }
+      } else {
+        // All other keys stay in overlay, don't reach xterm
+        e.stopPropagation();
       }
     };
 
-    container.addEventListener("keydown", onKeyDown);
+    container.addEventListener("keydown", handleKeyDown, true);
+
+    // Focus first focusable element
     const first = container.querySelector<HTMLElement>(
       "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])",
     );
     first?.focus();
 
     return () => {
-      container.removeEventListener("keydown", onKeyDown);
+      container.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [overlayId, renderer]);
+  }, [overlayId, close]);
 
-  // Store open function on host element for external access
+  // Store handle for external access
   const hostHandle = useRef<PaneOverlayHostHandle>({ open });
   hostHandle.current.open = open;
 
+  // Set this pane's overlay opener as focused when container receives focus
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+
+    const handleFocus = () => {
+      setFocusedPaneOverlay(open);
+    };
+
+    container.addEventListener("focusin", handleFocus);
+    return () => {
+      container.removeEventListener("focusin", handleFocus);
+    };
+  }, [open]);
+
+  const overlay = overlayId ? getPaneOverlay(overlayId) : null;
+  const renderedContent = overlay && ctx ? overlay.render(ctx) : null;
+
   return (
-    <div
-      ref={hostRef}
-      data-testid="pane-overlay-host"
-      className="pane-overlay-host"
-      style={{ display: overlayId ? "contents" : "none" }}
-    >
+    <div data-testid="pane-overlay-host" className="pane-overlay-host">
       {overlayId && (
         <div className="pane-overlay-backdrop" onClick={close}>
           <div
             ref={containerRef}
             className="pane-overlay-container"
             onClick={(e) => e.stopPropagation()}
-          />
+            onKeyDown={(e) => {
+              if (e.key === "Escape") e.stopPropagation();
+            }}
+            role="dialog"
+            aria-modal="true"
+          >
+            {renderedContent}
+          </div>
         </div>
       )}
     </div>
@@ -134,10 +157,6 @@ export const PaneOverlayHost = ({
 
 export function usePaneOverlayHost() {
   const hostRef = useRef<PaneOverlayHostHandle>({ open: () => {} });
-
-  const openOverlay = (id: string) => {
-    hostRef.current.open(id);
-  };
-
+  const openOverlay = (id: string) => hostRef.current.open(id);
   return { hostRef, openOverlay };
 }

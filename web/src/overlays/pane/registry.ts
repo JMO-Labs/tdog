@@ -1,6 +1,7 @@
+import type { ReactNode } from "react";
 import type { PaneOverlayContext } from "../../terminal/renderer";
 
-export type PaneOverlayRender = (ctx: PaneOverlayContext) => void;
+export type PaneOverlayRender = (ctx: PaneOverlayContext) => ReactNode;
 
 export interface PaneOverlay {
   id: string;
