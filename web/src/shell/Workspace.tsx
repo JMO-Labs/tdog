@@ -209,7 +209,7 @@ export function Workspace({
   return (
     <div className="ws">
       <header className="ws-head">
-        <span className="brand" aria-label="tdog">
+        <span className="brand" role="img" aria-label="tdog">
           <span className="logo-mark small" aria-hidden="true" />
           <span className="wordmark small" aria-hidden="true">
             tdog

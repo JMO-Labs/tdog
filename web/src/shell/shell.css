@@ -281,7 +281,7 @@ html[data-serious] .ws-head .wordmark.small {
   font: inherit;
   font-weight: 800;
   width: 9em;
-  padding: 6px 10px;
+  padding: 2px 8px;
   border: 1px solid var(--line);
   border-radius: 3px;
   background: var(--surface);
