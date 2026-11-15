@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { COPY, SLANG_WORDS, text } from "./copy";
 
+const FRAGMENTS = new Set(["empty.offlineHint2", "boot.post"]);
+
 describe("copy module", () => {
   const entries = Object.entries(COPY);
   it("has entries", () => expect(entries.length).toBeGreaterThan(5));
@@ -11,9 +13,10 @@ describe("copy module", () => {
   it.each(entries)("%s plain is sober", (_k, v) => {
     expect(v.plain).not.toContain("!");
     for (const w of SLANG_WORDS) expect(v.plain.toLowerCase()).not.toContain(w);
-    expect(v.plain[0]).toBe(v.plain[0].toUpperCase());
+    // Fragments continue a neighbouring string or are brand/lowercase by design.
+    if (!FRAGMENTS.has(_k)) expect(v.plain[0]).toBe(v.plain[0].toUpperCase());
     expect(v.plain).not.toMatch(/[?!.…]!|!\?|\?!/);
-    expect(v.plain).not.toMatch(/\b[A-Z]{3,}\b/);
+    expect(v.plain).not.toMatch(/\b(?!SIG(?:HUP|KILL|TERM)\b)[A-Z]{3,}\b/);
   });
   it("text picks variant and fills vars", () => {
     expect(text("kill.done", true, { n: 2 })).toBe("Killed 2 shells.");
