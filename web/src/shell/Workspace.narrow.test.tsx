@@ -12,6 +12,7 @@ vi.mock("../overlays/toast", () => ({ useToast: () => vi.fn() }));
 
 import { Workspace } from "./Workspace";
 import { clearCommands } from "../overlays/commands";
+import { getPref } from "../settings/prefs";
 
 const setWidth = (w: number) =>
   vi.stubGlobal("matchMedia", (q: string) => {
@@ -63,4 +64,20 @@ test("390px: More menu 'Kill all shells' opens the kill dialog", () => {
   fireEvent.click(screen.getByRole("button", { name: "More" }));
   fireEvent.click(screen.getByRole("menuitem", { name: /Kill all shells/ }));
   expect(screen.getByRole("button", { name: /hold to nuke/i })).toBeTruthy();
+});
+
+test("390px: More menu 'Serious mode' toggles the pref", () => {
+  setWidth(390);
+  render(<Workspace />);
+  const open = () =>
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+  open();
+  const item = () => screen.getByRole("menuitem", { name: /Serious mode/ });
+  expect(item().textContent).toContain("Off");
+  fireEvent.click(item());
+  expect(getPref("serious")).toBe(true);
+  open();
+  expect(item().textContent).toContain("On");
+  fireEvent.click(item());
+  expect(getPref("serious")).toBe(false);
 });
