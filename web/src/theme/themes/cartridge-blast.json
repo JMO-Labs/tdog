@@ -29,9 +29,9 @@
     },
     "cursor": {
       "shape": "block",
-      "blink": true
+      "blink": false
     },
-    "font": "jetbrains-mono",
+    "font": "press-start-2p",
     "effects": []
   },
   "chrome": {
@@ -53,12 +53,99 @@
       "term-dim": "#8c8c99"
     },
     "shape": {
-      "radius": 1,
+      "radius": 0.9,
       "shadow": "hard",
-      "border": 1
+      "border": 3
     },
     "pattern": "zigzag",
     "boot": "cartridge",
-    "costume": "none"
+    "costume": {
+      "name": "propeller cap",
+      "rows": [
+        "..#####..#####",
+        ".......#......",
+        "...########...",
+        "..##########..",
+        "##############"
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 48, 48],
+      "tile": [48, 48],
+      "shapes": [
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 6,
+          "r": 3,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 18,
+          "r": 3,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 4,
+          "cy": 12,
+          "r": 3,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 16,
+          "cy": 12,
+          "r": 3,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 36,
+          "cy": 12,
+          "r": 7,
+          "fill": "muted"
+        },
+        {
+          "type": "rect",
+          "x": 34,
+          "y": 18,
+          "width": 4,
+          "height": 16,
+          "fill": "muted"
+        },
+        {
+          "type": "rect",
+          "x": 28,
+          "y": 34,
+          "width": 16,
+          "height": 4,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 38,
+          "r": 2,
+          "stroke": "line"
+        },
+        {
+          "type": "circle",
+          "cx": 18,
+          "cy": 38,
+          "r": 2,
+          "stroke": "line"
+        },
+        {
+          "type": "circle",
+          "cx": 14,
+          "cy": 44,
+          "r": 2,
+          "stroke": "line"
+        }
+      ]
+    }
   }
 }

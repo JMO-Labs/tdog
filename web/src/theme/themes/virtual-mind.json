@@ -31,8 +31,17 @@
       "shape": "block",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "space-mono",
+    "effects": [
+      {
+        "id": "glow",
+        "intensity": 0.3
+      },
+      {
+        "id": "flicker",
+        "intensity": 0.2
+      }
+    ]
   },
   "chrome": {
     "tokens": {
@@ -52,12 +61,47 @@
       "term-fg": "#f0eaff"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
+      "radius": 0.5,
+      "shadow": "glow",
       "border": 1
     },
     "pattern": "zigzag",
-    "boot": "drop",
-    "costume": "none"
+    "boot": "rain",
+    "costume": {
+      "name": "vr helmet",
+      "rows": [
+        "..##########..",
+        ".############.",
+        "##############",
+        "#.##########.#",
+        "..##......##.."
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 32, 32],
+      "tile": [32, 32],
+      "shapes": [
+        {
+          "type": "polygon",
+          "points": "0,0 16,0 16,16 0,16",
+          "fill": "surface-2"
+        },
+        {
+          "type": "polygon",
+          "points": "16,16 32,16 32,32 16,32",
+          "fill": "surface-2"
+        },
+        {
+          "type": "polygon",
+          "points": "8,22 14,30 4,30",
+          "fill": "purple"
+        },
+        {
+          "type": "polygon",
+          "points": "24,4 29,12 19,12",
+          "fill": "cyan"
+        }
+      ]
+    }
   }
 }

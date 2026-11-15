@@ -31,7 +31,7 @@
       "shape": "block",
       "blink": true
     },
-    "font": "jetbrains-mono",
+    "font": "space-mono",
     "effects": []
   },
   "chrome": {
@@ -52,12 +52,72 @@
       "term-dim": "#9a8cb0"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
-      "border": 1
+      "radius": 1.5,
+      "shadow": "soft",
+      "border": 2
     },
     "pattern": "confetti",
     "boot": "wipe",
-    "costume": "none"
+    "costume": {
+      "name": "slime drip",
+      "rows": [
+        "...########...",
+        "..##########..",
+        "..#..##..#.#..",
+        "..#..#.....#..",
+        ".....#........"
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 48, 48],
+      "tile": [48, 48],
+      "shapes": [
+        {
+          "type": "circle",
+          "cx": 14,
+          "cy": 14,
+          "r": 9,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 26,
+          "cy": 10,
+          "r": 4,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 6,
+          "cy": 24,
+          "r": 3,
+          "fill": "muted"
+        },
+        {
+          "type": "path",
+          "d": "M10 20 L18 20 L18 34 C18 38 10 38 10 34 Z",
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 36,
+          "cy": 34,
+          "r": 8,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 44,
+          "cy": 28,
+          "r": 3,
+          "fill": "muted"
+        },
+        {
+          "type": "path",
+          "d": "M32 38 L40 38 L40 46 C40 48 32 48 32 46 Z",
+          "fill": "muted"
+        }
+      ]
+    }
   }
 }
