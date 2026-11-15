@@ -15,7 +15,7 @@ import { EffectsOverlay } from "./effects/EffectsOverlay";
 import { useActiveEffects } from "./effects/useActiveEffects";
 import { titleStore } from "./terminal/titles";
 import { useMotifOpacity, usePref } from "./settings/prefs";
-import { registerClear } from "./terminal/paneActions";
+import { clearScrollback, registerClear } from "./terminal/paneActions";
 import { resolvePreset, type Resolved } from "./presets/api";
 import { EndedPanel } from "./terminal/EndedPanel";
 import {
@@ -24,6 +24,10 @@ import {
   markKilled,
   subscribeKilled,
 } from "./terminal/killed";
+import { THEMES } from "./theme/registry";
+import { TerminalMenu } from "./terminal/TerminalMenu";
+import { usePaneOps } from "./layout/paneOps";
+import { killScene } from "./terminal/sessions";
 import { panePreset, resolveSession } from "./presets/panes";
 
 /** Retry cadence while a dropped socket is being re-established. */
@@ -106,7 +110,9 @@ export function TerminalPane({
   const preset = sceneKey ? panePreset(sceneKey) : undefined;
   const [resolved, setResolved] = useState<Resolved>({});
   const presetTheme = resolved.theme?.value;
-  theme ??= typeof presetTheme === "string" ? presetTheme : undefined;
+  const [override, setOverride] = useState<string | undefined>();
+  theme ??=
+    override ?? (typeof presetTheme === "string" ? presetTheme : undefined);
   const fontRef = useRef<Resolved>({});
   fontRef.current = resolved;
   const themeRef = useRef(theme);
@@ -305,11 +311,48 @@ export function TerminalPane({
     };
   }, [connect, applyScope, sceneKey, paintTheme, preset]);
 
+  const ops = usePaneOps();
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const openMenu = (x: number, y: number) => setMenu({ x, y });
+  const closeMenu = () => {
+    setMenu(null);
+    renderer.current?.focus?.();
+  };
+  const paste = async () => {
+    try {
+      renderer.current?.paste?.(await navigator.clipboard.readText());
+    } catch {
+      toast(
+        "error",
+        "Allow clipboard access in your browser to paste here, or press Ctrl+Shift+V.",
+      );
+    }
+  };
+  const copy = () => {
+    const t = renderer.current?.getSelection?.() ?? "";
+    if (t) void navigator.clipboard.writeText(t).catch(() => {});
+  };
+  const themes = THEMES.map((t) => ({ id: t.id, name: t.name }));
   const bg =
     sceneBg && !perf ? "transparent" : themeStore.terminal(theme).background;
   return (
     <div
       data-testid="terminal-pane"
+      onContextMenuCapture={(e) => {
+        // Apps that track the mouse keep right-clicks unless Shift is held.
+        if (renderer.current?.mouseReporting?.() && !e.shiftKey) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openMenu(e.clientX, e.clientY);
+      }}
+      onKeyDownCapture={(e) => {
+        if (e.key === "ContextMenu" || (e.key === "F10" && e.shiftKey)) {
+          e.preventDefault();
+          e.stopPropagation();
+          const r = e.currentTarget.getBoundingClientRect();
+          openMenu(r.left + 16, r.top + 16);
+        }
+      }}
       style={{ position: "relative", height: "100%", background: bg }}
     >
       <BackgroundLayer spec={paneBg} />
@@ -339,6 +382,23 @@ export function TerminalPane({
           killed={killed}
           exitCode={state.status === "closed" ? state.exitCode : undefined}
           onStart={killed ? startNew : connect}
+        />
+      )}
+      {menu && (
+        <TerminalMenu
+          {...menu}
+          hasSelection={!!renderer.current?.getSelection?.()}
+          themes={themes}
+          onCopy={copy}
+          onPaste={() => void paste()}
+          onSelectAll={() => renderer.current?.selectAll?.()}
+          onClear={() => sceneKey && clearScrollback(sceneKey)}
+          onSplit={(d) => ops?.split(d)}
+          onTheme={setOverride}
+          onRename={ops?.rename}
+          onKill={() => sceneKey && void killScene(sceneKey)}
+          onClose={() => ops?.close()}
+          onDismiss={closeMenu}
         />
       )}
     </div>

@@ -53,6 +53,27 @@ export class ResttyRenderer implements TerminalRenderer {
     if (family) this.term.setOption("fontFamily", family);
     if (size) this.term.setOption("fontSize", size);
   }
+  /** restty's xterm-compat surface; each call is guarded in case one is missing. */
+  private get compat(): Partial<{
+    getSelection(): string;
+    selectAll(): void;
+    paste(t: string): void;
+    focus(): void;
+  }> {
+    return this.term as never;
+  }
+  getSelection(): string {
+    return this.compat.getSelection?.() ?? "";
+  }
+  selectAll(): void {
+    this.compat.selectAll?.();
+  }
+  paste(text: string): void {
+    this.compat.paste?.(text);
+  }
+  focus(): void {
+    this.compat.focus?.();
+  }
   dispose(): void {
     this.term.dispose();
   }

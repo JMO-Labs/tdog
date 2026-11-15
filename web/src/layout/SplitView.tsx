@@ -23,6 +23,7 @@ import { clearScrollback } from "../terminal/paneActions";
 import { registerCommand } from "../overlays/commands";
 import { mountSplit, orientation } from "./dock";
 import type { Dir, Node } from "./tree";
+import { PaneOpsContext } from "./paneOps";
 import { PaneMenu } from "./PaneMenu";
 import { SnapPicker } from "./SnapPicker";
 import type { TemplateId } from "./templates";
@@ -252,7 +253,15 @@ function Pane({ id }: { id: string }) {
         </button>
       </header>
       <div className="pane-body">
-        {p.renderPane(id, settled)}
+        <PaneOpsContext.Provider
+          value={{
+            split: (d) => p.onSplit(id, d),
+            rename: p.onRename && (() => setRenaming(true)),
+            close: () => p.onClose(id),
+          }}
+        >
+          {p.renderPane(id, settled)}
+        </PaneOpsContext.Provider>
         {zone && (
           <div
             className="drop-zone"

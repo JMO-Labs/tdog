@@ -263,3 +263,33 @@
   min-width: 0;
   width: 14ch;
 }
+.term-menu {
+  position: fixed;
+  top: auto;
+  right: auto;
+  z-index: 60;
+  min-width: 220px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}
+.term-menu button {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.term-menu hr {
+  width: 100%;
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid currentColor;
+  opacity: 0.2;
+}
+.term-submenu {
+  max-height: 200px;
+  overflow-y: auto;
+}
+.menu-key {
+  opacity: 0.6;
+  font: inherit;
+  font-size: 0.85em;
+}
