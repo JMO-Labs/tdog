@@ -119,6 +119,16 @@ describe("bundled themes", () => {
     expect(by("ninety-five").light).toBeTruthy();
     expect(by("hack-the-planet").chrome.pattern).toBe("zigzag");
   });
+  it("ships a light variant for every dual-appearance theme", () => {
+    for (const id of [
+      "slime-time",
+      "truth-is-out-there",
+      "virtual-mind",
+      "wake-up-neo",
+      "wetwired",
+    ])
+      expect(THEMES.find((t) => t.id === id)?.light, id).toBeDefined();
+  });
   for (const t of THEMES) {
     describe(t.id, () => {
       it("is schema valid", () => {
