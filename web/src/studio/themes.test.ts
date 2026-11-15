@@ -8,7 +8,7 @@ test("filters by appearance and name", () => {
   expect(dark.every((t) => t.appearance === "dark")).toBe(true);
   const light = filterThemes(THEMES, "", "light");
   expect(light.length).toBeGreaterThan(0);
-  expect(light.length).toBeLessThan(THEMES.length);
+  expect(light.length).toBeLessThanOrEqual(THEMES.length);
   expect(light.every((t) => t.appearance === "light" || t.light)).toBe(true);
   expect(filterThemes(THEMES, "", "all")).toHaveLength(THEMES.length);
   const hit = filterThemes(THEMES, "  ACK ", "all");

@@ -29,7 +29,8 @@ test("filters by light/dark and by name", () => {
   render(<ThemeGallery />);
   fireEvent.click(screen.getByRole("radio", { name: "Light" }));
   const n = screen.getAllByTestId("theme-card").length;
-  expect(n).toBeLessThan(THEMES.length);
+  expect(n).toBeGreaterThan(0);
+  expect(n).toBeLessThanOrEqual(THEMES.length);
   fireEvent.click(screen.getByRole("radio", { name: "All" }));
   fireEvent.change(screen.getByLabelText("Search themes"), {
     target: { value: "ack ack" },
