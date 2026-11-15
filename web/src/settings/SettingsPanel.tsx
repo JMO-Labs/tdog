@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch, apiPost } from "../auth/api";
 import { Button } from "../components/ui/button";
+import { useCopy } from "../copy/copy";
 import { useToast } from "../overlays/toast";
 import { Dialog } from "../overlays/Dialog";
 import { Appearance } from "./Appearance";
@@ -14,6 +15,7 @@ import "./settings.css";
 /** Body of the settings sheet. Uses only existing /api endpoints. */
 export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   const toast = useToast();
+  const c = useCopy();
   const [totp, setTotp] = useState(false);
   const [serious, setSerious] = usePref("serious");
   const [pet, setPet] = usePref("pet");
@@ -46,7 +48,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
       toast("fail", "Couldn't sign out other sessions. Try again.");
       return;
     }
-    toast("success", "Signed out everywhere.");
+    toast("success", c("settings.signedOutAll"));
     onSignedOut();
   };
 
@@ -74,7 +76,9 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
       <div className="row">
         <div>
           <b id="sw-serious">Serious mode</b>
-          <p className="muted">Drops the slang from messages.</p>
+          <p className="muted">
+            Plain light/dark look, no mascot or effects, no slang.
+          </p>
         </div>
         <Switch
           labelledBy="sw-serious"

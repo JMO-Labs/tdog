@@ -3,6 +3,7 @@ import { saveLayout, loadLayout } from "../layout/store";
 import { addLeaf } from "../layout/transfer";
 import { newId, leaves, titles } from "../layout/tree";
 import { registerCommand } from "../overlays/commands";
+import { useCopy } from "../copy/copy";
 import { useToast } from "../overlays/toast";
 import { listPresets, putScenePreset, startScene } from "./api";
 import { errorMessage, preparePane } from "./launch";
@@ -35,6 +36,7 @@ export function usePresetFlows({
   openTab: (id: string, name: string) => void;
 }) {
   const toast = useToast();
+  const c = useCopy();
   const [pick, setPick] = useState<Pick>(null);
   const [naming, setNaming] = useState<string | null>(null); // scene being saved
   const [existing, setExisting] = useState<string[]>([]);
@@ -43,7 +45,7 @@ export function usePresetFlows({
     try {
       const names = await listPresets(kind);
       if (names.length) setPick({ kind, names });
-      else toast("info", `No ${kind} presets yet.`);
+      else toast("info", c("preset.none", { kind }));
     } catch (e) {
       toast("fail", errorMessage(e));
     }
@@ -54,7 +56,7 @@ export function usePresetFlows({
     const tree = loadLayout(tab);
     if (!tree || !leaves(tree).length) {
       setNaming(null);
-      toast("info", "Nothing to save: this scene has no panes.");
+      toast("info", c("preset.nothing"));
       return;
     }
     const custom = titles(tree);
@@ -71,7 +73,7 @@ export function usePresetFlows({
       setScenePreset(tab, name);
       putSave(name, snapshot(tree, liveInfo));
       setNaming(null);
-      toast("success", `Saved scene preset "${name}".`);
+      toast("success", c("preset.saved", { name }));
     } catch (e) {
       toast("fail", errorMessage(e));
     }
@@ -150,9 +152,7 @@ export function usePresetFlows({
         openTab(tab, name);
         toast(
           "success",
-          run.existing
-            ? `"${name}" was already running. Attached.`
-            : `Started "${name}".`,
+          c(run.existing ? "preset.attached" : "preset.started", { name }),
         );
       } catch (e) {
         toast("fail", errorMessage(e));

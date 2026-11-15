@@ -1,5 +1,12 @@
 import type { TerminalTheme } from "../terminal/renderer";
-import { DEFAULT_THEME_ID, THEMES, findTheme, type Theme } from "./registry";
+import {
+  DEFAULT_THEME_ID,
+  PLAIN_THEME_ID,
+  THEMES,
+  findTheme as lookup,
+  type Theme,
+} from "./registry";
+import { getPref, subscribePrefs } from "../settings/prefs";
 import { motifSvg } from "./motif";
 import { shapeVars } from "./shape";
 import {
@@ -48,11 +55,16 @@ const prefersLight = () =>
 function read(): string {
   try {
     const v = localStorage.getItem(KEY);
-    return findTheme(v) ? v! : DEFAULT_THEME_ID;
+    return lookup(v) ? v! : DEFAULT_THEME_ID;
   } catch {
     return DEFAULT_THEME_ID;
   }
 }
+
+let serious = getPref("serious");
+/** Serious mode swaps every theme lookup for Plain; stored choices stay untouched. */
+const findTheme = (tid: string | null | undefined) =>
+  lookup(serious ? PLAIN_THEME_ID : tid);
 
 let id = read();
 let previewId: string | null = null;
@@ -83,6 +95,8 @@ const pretty = (n: number) => String(Math.round(n * 1000) / 1000);
 function apply() {
   const t = current();
   const el = document.documentElement;
+  if (serious) el.dataset.serious = "1";
+  else delete el.dataset.serious;
   applied.forEach((p) => el.style.removeProperty(p));
   applied = [];
   const set = (p: string, v: string) => {
@@ -142,7 +156,7 @@ export const themeStore = {
     return () => void listeners.delete(l);
   },
   select(next: string) {
-    if (!findTheme(next)) return;
+    if (!lookup(next)) return;
     id = next;
     previewId = null;
     try {
@@ -154,7 +168,7 @@ export const themeStore = {
   },
   /** Live preview without persisting; null reverts. */
   preview(next: string | null) {
-    previewId = next && findTheme(next) ? next : null;
+    previewId = next && lookup(next) ? next : null;
     apply();
   },
   setScheme(s: Scheme) {
@@ -163,9 +177,18 @@ export const themeStore = {
   },
   /** Re-read persisted state (tests). */
   reset() {
+    serious = getPref("serious");
     id = read();
     previewId = null;
     scheme = "system";
     apply();
   },
 };
+
+// Serious mode flips live: re-apply whenever the pref changes.
+subscribePrefs(() => {
+  const next = getPref("serious");
+  if (next === serious) return;
+  serious = next;
+  apply();
+});

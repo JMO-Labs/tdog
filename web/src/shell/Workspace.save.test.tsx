@@ -103,14 +103,14 @@ test("main menu Save scene / Save scene as… (narrow)", async () => {
   saveLayout("scene 1", split(0.5));
   link();
   mount();
-  fireEvent.click(screen.getByRole("button", { name: "More" }));
+  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
   await act(async () => {
-    fireEvent.click(screen.getByRole("menuitem", { name: "Save scene" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Save scene(?! as)/ }));
   });
   expect(puts()).toHaveLength(1);
-  fireEvent.click(screen.getByRole("button", { name: "More" }));
+  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
   await act(async () => {
-    fireEvent.click(screen.getByRole("menuitem", { name: "Save scene as…" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Save scene as…/ }));
   });
   expect(await screen.findByLabelText("Preset name")).toBeTruthy();
 });
