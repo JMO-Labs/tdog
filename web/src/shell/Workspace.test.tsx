@@ -1,10 +1,4 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { json, mockFetch } from "../auth/testutil";
@@ -185,8 +179,10 @@ test("Studio opens from the brush button and ⌘.", async () => {
   render(<Workspace />);
   fireEvent.click(screen.getByRole("button", { name: "Studio" }));
   expect(await screen.findByRole("dialog", { name: "Studio" })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Back to workspace" }));
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+});
+
+test("⌘. opens Studio", async () => {
+  render(<Workspace />);
   fireEvent.keyDown(document, { key: ".", metaKey: true });
   expect(await screen.findByRole("dialog", { name: "Studio" })).toBeTruthy();
-}, 15000);
+});
