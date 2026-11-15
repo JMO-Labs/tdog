@@ -5,6 +5,7 @@ import { CommandPalette } from "../overlays/CommandPalette";
 import { ThemePicker } from "../overlays/ThemePicker";
 import { Sheet } from "../overlays/Sheet";
 import { SettingsPanel } from "../settings/SettingsPanel";
+import { pullSyncedHistory } from "../journal/pull";
 import { getHistorySync, usePref } from "../settings/prefs";
 import { useThemeMode } from "../theme/useThemeMode";
 import { Dialog } from "../overlays/Dialog";
@@ -97,6 +98,9 @@ export function Workspace({
     [toast],
   );
 
+  useEffect(() => {
+    void pullSyncedHistory().catch(() => {}); // other devices' history, once per load
+  }, []);
   useEffect(() => saveScenes(sc), [sc]);
   useEffect(() => {
     return getBroadcastStore().subscribe(() => {
