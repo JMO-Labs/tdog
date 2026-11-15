@@ -217,3 +217,15 @@ test("⌘. opens Studio", () => {
   fireEvent.keyDown(document, { key: ".", metaKey: true });
   expect(screen.getByRole("dialog", { name: "Studio" })).toBeTruthy();
 });
+
+test("status bar shows host, shell, size and latency as plain items", () => {
+  const { container } = render(<Workspace />);
+  act(() => cb.onSize!(80, 24));
+  act(() => cb.onLatency!(12));
+  const bar = container.querySelector("footer.status")!;
+  expect(bar.querySelectorAll(".chip")).toHaveLength(0);
+  expect(bar.textContent).toContain("container");
+  expect(bar.textContent).toContain("80×24");
+  expect(bar.textContent).toContain("12 ms");
+  expect(bar.textContent).toContain("⌘K");
+});

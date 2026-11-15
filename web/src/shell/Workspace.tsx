@@ -269,18 +269,18 @@ export function Workspace({
       </main>
 
       <footer className="status">
-        <span className="chip">
+        <span className="sb-item">
           <Icon name="server" />
           container
         </span>
-        <span className="chip">{shellName}</span>
+        <span className="sb-item">{shellName}</span>
         {size && (
-          <span className="chip num hide-xs">
+          <span className="sb-item num hide-xs">
             {size.cols}×{size.rows}
           </span>
         )}
         {broadcastCount > 0 && (
-          <span className="chip broadcast">
+          <span className="sb-item broadcast">
             Broadcasting to {broadcastCount} pane
             {broadcastCount === 1 ? "" : "s"}
             <button
@@ -299,7 +299,7 @@ export function Workspace({
         {latency !== null && (
           <span
             data-testid="latency"
-            className={`chip num hide-xs${latency > SLOW_MS ? " slow" : ""}`}
+            className={`sb-item num hide-xs${latency > SLOW_MS ? " slow" : ""}`}
             title={latency > SLOW_MS ? c("conn.slow") : undefined}
           >
             <Icon name={latency > SLOW_MS ? "modem" : "bolt"} />
@@ -307,7 +307,7 @@ export function Workspace({
           </span>
         )}
         <button
-          className="chip kbd-chip"
+          className="sb-item kbd-chip"
           aria-label="Command palette"
           onClick={() => setPalette(true)}
         >

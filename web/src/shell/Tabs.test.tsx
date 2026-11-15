@@ -120,3 +120,13 @@ test("context menu Broadcast to all panes toggles the scene", async () => {
   fireEvent.click(item);
   expect(onBroadcastAll).toHaveBeenCalledWith("b");
 });
+
+test("active tab is marked with aria-selected and the underline class", () => {
+  mount();
+  const a = screen.getByRole("tab", { name: /alpha/ });
+  const b = screen.getByRole("tab", { name: /beta/ });
+  expect(a.getAttribute("aria-selected")).toBe("true");
+  expect(a.classList.contains("on")).toBe(true);
+  expect(b.getAttribute("aria-selected")).toBe("false");
+  expect(b.classList.contains("on")).toBe(false);
+});

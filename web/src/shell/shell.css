@@ -15,57 +15,20 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 40px;
-  padding: 0 max(12px, env(safe-area-inset-right, 0px)) 4px
+  height: 36px;
+  padding: 0 max(12px, env(safe-area-inset-right, 0px)) 0
     max(12px, env(safe-area-inset-left, 0px));
   background: var(--surface);
-}
-/* Quiet header: the theme only shows as a 4px accent strip, the wordmark shadow and the active tab. */
-.ws-head::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 4px;
-  /* The motif replaces the confetti; the gradient is only the fallback. */
-  background: var(
-      --header-motif,
-      repeating-linear-gradient(
-        90deg,
-        var(--pink) 0 28px,
-        var(--cyan) 28px 56px,
-        var(--yellow) 56px 84px,
-        var(--purple) 84px 112px
-      )
-    )
-    repeat-x 0 0 / auto 100%;
+  border-bottom: 1px solid var(--line);
+  font-family:
+    "JetBrains Mono", "Symbols Nerd Font Mono", ui-monospace, monospace;
 }
 .wordmark {
-  font-family: var(--display);
-  line-height: 0.9;
+  font-family: inherit;
+  line-height: 1;
   margin: 0;
-  color: transparent;
-  letter-spacing: 0.01em;
-  background:
-    repeating-linear-gradient(
-      180deg,
-      transparent 0 3px,
-      rgb(22 11 46 / 0.28) 3px 5px
-    ),
-    linear-gradient(180deg, var(--pink) 10%, var(--yellow) 90%);
-  background-size:
-    100% 200%,
-    100% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-stroke: 0.045em var(--ink);
-  paint-order: stroke fill;
-  filter: drop-shadow(0.03em 0.03em 0 var(--ink))
-    drop-shadow(0.05em 0.05em 0 var(--purple));
-}
-.wordmark.small {
-  font-size: 30px;
+  font-weight: 700;
+  color: var(--fg);
 }
 .ws-head .brand {
   display: inline-flex;
@@ -74,28 +37,23 @@
 }
 .ws-head .logo-mark.small {
   display: inline-block;
-  height: 26px;
+  height: 20px;
   aspect-ratio: 208 / 256;
-  filter: drop-shadow(2px 2px 0 var(--pink));
 }
 .ws-head .logo-mark.small::before {
   content: "";
   display: block;
   height: 100%;
-  background: var(--fg);
+  background: currentColor;
   -webkit-mask: url(/logo-mark.png) center / contain no-repeat;
   mask: url(/logo-mark.png) center / contain no-repeat;
 }
 .ws-head .wordmark.small {
-  font-size: 20px;
-  color: var(--fg);
-  background: none;
-  /* Same ink outline as the sign-in wordmark. */
-  -webkit-text-stroke: 0.06em var(--ink);
-  paint-order: stroke fill;
-  filter: none;
-  animation: none;
-  text-shadow: 2px 2px 0 var(--pink);
+  font-size: 16px;
+  text-shadow: 1.5px 1.5px 0 var(--accent);
+}
+html[data-serious] .ws-head .wordmark.small {
+  text-shadow: none;
 }
 .ws-head .icon-btn {
   width: 30px;
@@ -112,16 +70,13 @@
   box-shadow: none;
 }
 .ws-head .icon-btn.danger:hover {
-  background: var(--pink);
-  color: var(--ink);
+  background: var(--surface-2);
+  color: var(--accent);
 }
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   position: relative;
-  padding: 3px;
-  border-radius: calc(12px * var(--radius-scale));
-  background: var(--surface-2);
   flex: none;
 }
 .tab {
@@ -129,29 +84,26 @@
   z-index: 1;
   border: 0;
   background: none;
-  padding: 3px 12px;
-  border-radius: calc(9px * var(--radius-scale));
-  font-weight: 600;
+  padding: 0 10px;
+  height: 36px;
+  font: inherit;
+  font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
   color: var(--muted);
 }
-.tab[aria-selected="true"] {
-  color: var(--ink);
-  font-weight: 800;
+.tab.on {
+  color: var(--fg);
+  font-weight: 600;
 }
-.tab-pill {
+.tab.on::after {
+  content: "";
   position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
-  width: 0;
-  border-radius: calc(9px * var(--radius-scale));
-  border: calc(1.5px * var(--border-width)) solid var(--line);
-  transition:
-    transform 0.35s var(--spring),
-    width 0.35s var(--spring);
-  background: var(--yellow);
+  left: 6px;
+  right: 6px;
+  bottom: 0;
+  height: 2px;
+  background: var(--accent);
 }
 .ws .icon-btn[aria-disabled="true"] {
   opacity: 0.5;
@@ -235,50 +187,48 @@
 .status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px
-    max(16px, env(safe-area-inset-left, 0px));
-  border-top: calc(2px * var(--border-width)) solid var(--line);
+  gap: 14px;
+  height: 24px;
+  padding: 0 max(12px, env(safe-area-inset-right, 0px)) 0
+    max(12px, env(safe-area-inset-left, 0px));
+  border-top: 1px solid var(--line);
   background: var(--surface);
+  color: var(--muted);
+  font-family:
+    "JetBrains Mono", "Symbols Nerd Font Mono", ui-monospace, monospace;
+  font-size: 11px;
   overflow-x: auto;
 }
-.chip {
+.sb-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  border: calc(2px * var(--border-width)) solid var(--line);
-  border-radius: calc(99px * var(--radius-scale));
-  padding: 2px 10px;
-  background: var(--surface);
-  font-size: 12px;
-  font-weight: 600;
+  gap: 5px;
   flex: none;
+  white-space: nowrap;
 }
-.chip .nf {
-  font-size: 14px;
+.sb-item .nf {
+  font-size: 12px;
 }
 .kbd-chip {
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 0;
+  font: inherit;
   background: none;
   border: 0;
   color: inherit;
 }
 @media (prefers-reduced-motion: reduce) {
   .mascot.pane-dog,
-  .mascot.pane-dog .m-arm,
-  .tab-pill {
+  .mascot.pane-dog .m-arm {
     animation: none !important;
     transition: none;
   }
 }
-.chip.slow {
-  background: var(--yellow);
-  color: var(--ink);
+.sb-item.slow {
+  color: var(--accent);
 }
-.chip.broadcast {
-  border-color: var(--accent, #6cf);
-  color: var(--accent, #6cf);
+.sb-item.broadcast {
+  color: var(--accent);
 }
 .stop-broadcast {
   background: none;
@@ -332,24 +282,25 @@
   font-weight: 800;
   width: 9em;
   padding: 6px 10px;
-  border: calc(2px * var(--border-width)) solid var(--line);
-  border-radius: calc(10px * var(--radius-scale));
+  border: 1px solid var(--line);
+  border-radius: 3px;
   background: var(--surface);
   color: inherit;
 }
 .tab-add {
   flex: none;
-  width: 32px;
-  height: 32px;
-  border: calc(2px * var(--border-width)) solid var(--line);
-  border-radius: calc(10px * var(--radius-scale));
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  font-weight: 800;
-  font-size: 18px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 16px;
   line-height: 1;
-  color: inherit;
+  text-align: center;
   cursor: pointer;
+}
+.tab-add:hover {
+  color: var(--fg);
 }
 .scene-view {
   position: absolute;
