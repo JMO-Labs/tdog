@@ -152,7 +152,8 @@ const isNum = (v: unknown, lo: number, hi: number): v is number =>
   typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
 const oneOf = (list: readonly string[], v: unknown) =>
   typeof v === "string" && list.includes(v);
-const isPaint = (v: unknown) => isHex(v) || oneOf(CHROME_TOKENS, v);
+const isPaint = (v: unknown) =>
+  v === "none" || isHex(v) || oneOf(CHROME_TOKENS, v);
 /** Path data and point lists: digits, separators and command letters only. */
 const GEOM = /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,+\-\s]*$/;
 
