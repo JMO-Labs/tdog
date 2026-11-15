@@ -1,4 +1,5 @@
 import { expect, test, vi } from "vitest";
+import { setPaneRecording } from "../presets/panes";
 import { memJournal, type JournalDB } from "../journal/db";
 import { FrameType } from "../protocol/frames";
 import { TerminalSession, type SocketLike } from "./session";
@@ -127,4 +128,20 @@ test("frames after dispose are dropped", async () => {
   recv([e(1)]);
   await new Promise((r) => setTimeout(r, 0));
   expect(spy).not.toHaveBeenCalled();
+});
+
+test("reconnect re-sends jrnl-record off for an opted-out pane", () => {
+  const { s, sock, ctl } = setup(memJournal());
+  expect(ctl()).toEqual([]); // recording on: nothing to say
+  setPaneRecording("p", false);
+  s.connect();
+  sock.onopen!(new Event("open"));
+  sock.onmessage!({
+    data: new Uint8Array([
+      FrameType.Control,
+      ...new TextEncoder().encode(JSON.stringify({ type: "session", id: "B" })),
+    ]).buffer,
+  } as MessageEvent);
+  expect(ctl()).toEqual([{ type: "jrnl-record", on: false }]);
+  localStorage.clear();
 });

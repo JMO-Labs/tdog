@@ -401,6 +401,7 @@ export function TerminalPane({
           {...menu}
           renderer={renderer.current}
           paneId={paneId}
+          session={session.current}
           ops={ops}
           broadcast={broadcast}
           override={override}

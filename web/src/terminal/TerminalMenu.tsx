@@ -26,6 +26,10 @@ export interface TerminalMenuProps {
   zoom?: number;
   /** +1 / -1 to zoom, 0 to reset. */
   onZoom?: (delta: number) => void;
+  /** Whether history is recorded for this pane (default true). */
+  recording?: boolean;
+  onToggleRecording?: () => void;
+  onForget?: () => void;
   /** `refocus: false` leaves focus alone (the action takes it). */
   onDismiss: (refocus?: boolean) => void;
 }
@@ -168,6 +172,19 @@ export function TerminalMenu(p: TerminalMenuProps) {
               onSelect: p.onShowScreen,
             },
           ]
+        : []),
+      ...(p.onToggleRecording
+        ? [
+            {
+              label: "Don't record this pane",
+              isRadio: true,
+              checked: p.recording === false,
+              onSelect: p.onToggleRecording,
+            },
+          ]
+        : []),
+      ...(p.onForget
+        ? [{ label: "Forget this pane's history", onSelect: p.onForget }]
         : []),
       {
         label: "Kill shell",

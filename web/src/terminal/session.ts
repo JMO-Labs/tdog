@@ -1,3 +1,4 @@
+import { paneRecording } from "../presets/panes";
 import {
   decodeFrame,
   encodeAck,
@@ -186,6 +187,8 @@ export class TerminalSession {
       this.killed = true;
     } else if (f.kind === "session") {
       this.sid = f.id;
+      const pane = this.hooks.journal?.pane;
+      if (pane && !paneRecording(pane)) this.setRecording(false);
     } else if (f.kind === "journal") {
       this.journaled(f.events);
     } else if (f.kind === "pong") {

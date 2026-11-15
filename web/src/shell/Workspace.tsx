@@ -5,7 +5,7 @@ import { CommandPalette } from "../overlays/CommandPalette";
 import { ThemePicker } from "../overlays/ThemePicker";
 import { Sheet } from "../overlays/Sheet";
 import { SettingsPanel } from "../settings/SettingsPanel";
-import { usePref } from "../settings/prefs";
+import { getHistorySync, usePref } from "../settings/prefs";
 import { useThemeMode } from "../theme/useThemeMode";
 import { Dialog } from "../overlays/Dialog";
 import { useToast } from "../overlays/toast";
@@ -383,6 +383,7 @@ export function Workspace({
         onClose={() => setSearch(false)}
         scenes={sc.scenes}
         leafMap={leafMap}
+        syncOn={search && getHistorySync() !== "off"}
       />
       <CommandPalette open={palette} onOpenChange={setPalette} />
       <ThemePicker

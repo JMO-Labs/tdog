@@ -59,3 +59,22 @@ export function useMotifOpacity(): [number, (pct: number) => void] {
   const v = useSyncExternalStore(subscribePrefs, getMotifOpacity);
   return [v, setMotifOpacity];
 }
+
+export type HistorySync = "off" | "12" | "24" | "36";
+const SYNC_KEY = "tdog.historySync";
+
+/** Server history sync: "off" (this browser only) or retention hours. */
+export function getHistorySync(): HistorySync {
+  let v: string | null = null;
+  try {
+    v = localStorage.getItem(SYNC_KEY);
+  } catch {
+    /* storage unavailable: stay local */
+  }
+  return v === "12" || v === "24" || v === "36" ? v : "off";
+}
+
+export function setHistorySync(v: HistorySync): void {
+  localStorage.setItem(SYNC_KEY, v);
+  listeners.forEach((l) => l());
+}

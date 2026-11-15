@@ -13,3 +13,11 @@ test("stale pet and dress keys in storage do not throw or surface", () => {
   expect(getPref("pet" as never)).toBeUndefined();
   expect(getPref("dress" as never)).toBeUndefined();
 });
+
+test("historySync falls back to off for junk", async () => {
+  const { getHistorySync, setHistorySync } = await import("./prefs");
+  localStorage.setItem("tdog.historySync", "99");
+  expect(getHistorySync()).toBe("off");
+  setHistorySync("12");
+  expect(getHistorySync()).toBe("12");
+});

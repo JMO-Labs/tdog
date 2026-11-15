@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { isKilled } from "./killed";
 import { findSessionId, killScene, sessionExists } from "./sessions";
+import { paneRecording, setPaneRecording } from "../presets/panes";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -84,4 +85,11 @@ test("killScene works when no journal db exists", async () => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok({ killed: 0 })));
   await expect(killScene("pa")).resolves.toBe(0);
   vi.restoreAllMocks();
+});
+
+test("killScene drops the pane's recording opt-out", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok({ killed: 0 })));
+  setPaneRecording("pa", false);
+  await killScene("pa");
+  expect(paneRecording("pa")).toBe(true);
 });

@@ -1,6 +1,7 @@
 import { markKilled } from "./killed";
 import { journalDB } from "../journal/db";
 import { apiFetch, apiPost } from "../auth/api";
+import { setPaneRecording } from "../presets/panes";
 
 /** Server session id for a pane's `scene` key, if its shell is still alive. */
 export async function findSessionId(
@@ -24,6 +25,7 @@ export async function findSessionId(
  */
 export async function killScene(scene: string): Promise<number> {
   // Every pane close/kill path funnels here: drop its browser journal too.
+  setPaneRecording(scene, true);
   void journalDB()
     ?.forget(scene)
     .catch(() => {});
