@@ -86,8 +86,13 @@ export function applySaved(
   tree: Node,
 ): { tree: Node; themes: Record<string, string> } {
   const panes: SavedPane[] = [];
-  const walk = (x: Saved) =>
-    x.t === "leaf" ? panes.push(x) : (walk(x.a), walk(x.b));
+  const walk = (x: Saved): void => {
+    if (x.t === "leaf") panes.push(x);
+    else {
+      walk(x.a);
+      walk(x.b);
+    }
+  };
   walk(s);
   const ids = leaves(tree);
   const themes: Record<string, string> = {};
