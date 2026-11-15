@@ -1,0 +1,90 @@
+.plugins-settings {
+  margin-top: 16px;
+}
+
+.plugins-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.plugin-item {
+  border: 1px solid var(--muted);
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--surface-2);
+}
+
+.plugin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.plugin-header h4 {
+  margin: 0;
+  font-size: 1em;
+}
+
+.plugin-permissions {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.permission-chip {
+  display: inline-block;
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.85em;
+  color: var(--fg);
+}
+
+.plugin-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.plugin-add input[type="text"] {
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.9em;
+}
+
+.plugin-add input[type="text"]:focus {
+  outline: none;
+  border-color: var(--pink);
+}
+
+.dialog-content {
+  padding: 12px 0;
+}
+
+.dialog-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dialog-content li {
+  padding: 8px;
+  background: var(--surface-2);
+  border-left: 3px solid var(--line);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
