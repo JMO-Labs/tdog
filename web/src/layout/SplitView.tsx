@@ -24,7 +24,6 @@ import { registerCommand } from "../overlays/commands";
 import { mountSplit, orientation } from "./dock";
 import type { Dir, Node } from "./tree";
 import { PaneMenu } from "./PaneMenu";
-import { SnapPicker } from "./SnapPicker";
 import type { TemplateId } from "./templates";
 import "./layout.css";
 
@@ -213,7 +212,22 @@ function Pane({ id }: { id: string }) {
         {/* Panes are always local PTYs for now (no remote targets in spec). */}
         <span className="chip">local</span>
         <span className="spacer" />
-        <SnapPicker onSnap={p.onSnap} />
+        <button
+          className="pane-btn pane-split icon-btn sm"
+          aria-label="Split right"
+          title="Split right"
+          onClick={() => p.onSplit(id, "row")}
+        >
+          <Icon name="splitRight" />
+        </button>
+        <button
+          className="pane-btn pane-split icon-btn sm"
+          aria-label="Split down"
+          title="Split down"
+          onClick={() => p.onSplit(id, "col")}
+        >
+          <Icon name="splitDown" />
+        </button>
         {p.onSwap && p.onMoveToScene && (
           <PaneMenu
             id={id}
@@ -224,24 +238,10 @@ function Pane({ id }: { id: string }) {
             onDuplicate={p.onDuplicate}
             onClear={clear}
             onClose={p.onClose}
+            onSplit={p.onSplit}
+            onSnap={p.onSnap}
           />
         )}
-        <button
-          className="pane-btn icon-btn sm"
-          aria-label="Split right"
-          title="Split right"
-          onClick={() => p.onSplit(id, "row")}
-        >
-          <Icon name="splitRight" />
-        </button>
-        <button
-          className="pane-btn icon-btn sm"
-          aria-label="Split down"
-          title="Split down"
-          onClick={() => p.onSplit(id, "col")}
-        >
-          <Icon name="splitDown" />
-        </button>
         <button
           className="pane-btn icon-btn sm danger"
           aria-label="Close pane"

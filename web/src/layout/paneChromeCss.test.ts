@@ -21,4 +21,13 @@ describe("pane chrome css", () => {
     expect(rule(".snap-pop")).toMatch(/right:\s*0/);
     expect(rule(".snap-pop")).toMatch(/left:\s*auto/);
   });
+  it("header is 28px max and never wraps", () => {
+    expect(rule(".pane-head")).toMatch(/height:\s*28px/);
+    expect(rule(".pane-head")).toMatch(/flex-wrap:\s*nowrap/);
+  });
+  it("split buttons show on hover/focus only", () => {
+    expect(rule(".pane-head .pane-split")).toMatch(/display:\s*none/);
+    expect(css).toMatch(/\.pane-head:hover \.pane-split/);
+    expect(css).toMatch(/\.pane-head:focus-within \.pane-split/);
+  });
 });

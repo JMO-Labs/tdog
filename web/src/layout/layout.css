@@ -65,11 +65,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px 6px 12px;
+  flex-wrap: nowrap;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 4px 0 10px;
   background: var(--surface);
   border-bottom: 2px solid var(--line);
   border-radius: 12px 12px 0 0;
   min-width: 0;
+  container-type: inline-size;
 }
 .pane[data-focused="true"] .pane-head {
   background: var(--surface-2);
@@ -96,16 +100,36 @@
 }
 .pane-head .pane-btn {
   flex: none;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border-radius: calc(7px * var(--radius-scale));
-  box-shadow: 2px 2px 0 var(--shadow);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
   font-size: 14px;
   line-height: 1;
 }
 .pane-head .pane-btn svg {
   width: 14px;
   height: 14px;
+}
+.pane-head .pane-btn:hover {
+  background: var(--surface-2);
+}
+.pane-head .pane-split {
+  display: none;
+}
+/* Split buttons only on hover/focus, and only if the header is wide enough. */
+@container (min-width: 300px) {
+  .pane-head:hover .pane-split,
+  .pane-head:focus-within .pane-split {
+    display: inline-flex;
+  }
+}
+.pane-menu kbd {
+  margin-left: auto;
+  opacity: 0.6;
+  font-size: 10px;
 }
 .pane-head .pane-btn:focus-visible {
   outline: 2px solid var(--accent, #6cf);

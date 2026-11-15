@@ -12,6 +12,8 @@ function setup() {
     onDuplicate: vi.fn(),
     onClear: vi.fn(),
     onClose: vi.fn(),
+    onSplit: vi.fn(),
+    onSnap: vi.fn(() => [] as string[]),
   };
   render(
     <div>
@@ -106,4 +108,46 @@ test("ArrowRight on Move to scene opens the submenu; other keys do not", () => {
   expect(screen.queryByRole("menu", { name: "Move to scene" })).toBeNull();
   fireEvent.keyDown(item, { key: "ArrowRight" });
   expect(screen.getByRole("menu", { name: "Move to scene" })).toBeTruthy();
+});
+
+test.each([
+  ["Split right", ["a", "row"]],
+  ["Split down", ["a", "col"]],
+] as const)("%s item splits the pane", (name, args) => {
+  const { p, open } = setup();
+  open();
+  fireEvent.click(screen.getByRole("menuitem", { name: new RegExp(name) }));
+  expect(p.onSplit).toHaveBeenCalledWith(...args);
+  expect(screen.queryByRole("menu")).toBeNull();
+});
+
+test("Layouts submenu applies a template; surplus asks to confirm", () => {
+  const { p, open } = setup();
+  open();
+  fireEvent.click(screen.getByRole("menuitem", { name: /Layouts/ }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "2-up" }));
+  expect(p.onSnap).toHaveBeenCalledWith("2-up");
+  expect(screen.queryByRole("menu")).toBeNull();
+  p.onSnap.mockReturnValueOnce(["x", "y"]);
+  open();
+  fireEvent.click(screen.getByRole("menuitem", { name: /Layouts/ }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Single" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: /Close 2 panes/ }));
+  expect(p.onSnap).toHaveBeenLastCalledWith("single", true);
+});
+
+test("every former header action is a menu item, all keyboard reachable", () => {
+  const { open } = setup();
+  open();
+  const names = screen.getAllByRole("menuitem").map((i) => i.textContent);
+  for (const n of [
+    "Layouts",
+    "Split right",
+    "Split down",
+    "Rename pane",
+    "Close pane",
+  ])
+    expect(names.some((t) => t?.startsWith(n))).toBe(true);
+  for (const i of screen.getAllByRole("menuitem"))
+    expect(i.getAttribute("tabindex")).not.toBe("-1");
 });
