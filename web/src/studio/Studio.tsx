@@ -3,6 +3,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Modal } from "../overlays/Modal";
 import { Cassette } from "./Cassette";
+import { ThemeGallery } from "./ThemeGallery";
 import { TerminalDesigner } from "./TerminalDesigner";
 import { SECTIONS, filterSections, hashFor, sectionFromHash } from "./sections";
 import "./studio.css";
@@ -144,6 +145,11 @@ export function Studio({ open, onClose }: Props) {
             ) : (
               <p className="studio-none">No settings match “{query.trim()}”.</p>
             )
+          ) : section.id === "themes" ? (
+            <>
+              <h3 className="studio-h">{section.label}</h3>
+              <ThemeGallery />
+            </>
           ) : section.id === "terminal" ? (
             <TerminalDesigner onDirty={setDirty} />
           ) : (
