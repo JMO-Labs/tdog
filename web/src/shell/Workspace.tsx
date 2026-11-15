@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
+import { ThemePicker } from "../overlays/ThemePicker";
 import { Sheet } from "../overlays/Sheet";
 import { registerCommand } from "../overlays/commands";
 import { SettingsPanel } from "../settings/SettingsPanel";
 import { usePref } from "../settings/prefs";
-import { THEMES } from "../theme/registry";
-import { themeStore } from "../theme/store";
 import { useThemeMode } from "../theme/useThemeMode";
 import { Dialog } from "../overlays/Dialog";
 import { useToast } from "../overlays/toast";
@@ -58,6 +57,7 @@ export function Workspace({
   const [petShown, setPetShown] = usePref("pet");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [picker, setPicker] = useState(false);
   const awake = usePetAwake(stamp);
   const engine = usePetEngine();
   const [sc, setSc] = useState(loadScenes);
@@ -182,23 +182,12 @@ export function Workspace({
         shortcut: "⇧⌘L",
         run: cycle,
       }),
-      ...THEMES.map((t) =>
-        registerCommand({
-          id: `theme:${t.id}`,
-          title: `Theme: ${t.name}`,
-          group: "Themes",
-          swatch: [
-            t.terminal.palette.bg,
-            t.terminal.palette.ansi[1],
-            t.terminal.palette.ansi[2],
-            t.terminal.palette.ansi[4],
-            t.terminal.palette.fg,
-          ],
-          run: () => themeStore.select(t.id),
-          preview: () => themeStore.preview(t.id),
-          revert: () => themeStore.preview(null),
-        }),
-      ),
+      registerCommand({
+        id: "theme:pick",
+        title: "Theme…",
+        group: "Themes",
+        run: () => setPicker(true),
+      }),
       registerCommand({
         id: "settings",
         title: "Open settings",
@@ -223,7 +212,6 @@ export function Workspace({
     return () => offs.forEach((f) => f());
   }, [cycle, signOut, add]);
 
-  const themeLabel = `Theme: ${mode[0].toUpperCase()}${mode.slice(1)}`;
   // Status bar follows the focused pane, else the first one.
   const ids = leafMap[sc.active] ?? [];
   const shown = focused && ids.includes(focused) ? focused : ids[0];
@@ -260,7 +248,7 @@ export function Workspace({
                 disabled: true,
                 onSelect: noop,
               },
-              { label: "Theme", icon: mode, onSelect: cycle },
+              { label: "Theme…", icon: mode, onSelect: () => setPicker(true) },
               {
                 label: "Kill all shells",
                 icon: "power",
@@ -281,9 +269,8 @@ export function Workspace({
             </IconButton>
             <IconButton
               label="Theme"
-              tip={themeLabel}
-              shortcut="⇧⌘L"
-              onClick={cycle}
+              tip="Theme…"
+              onClick={() => setPicker(true)}
             >
               <Icon name={mode} />
             </IconButton>
@@ -403,6 +390,7 @@ export function Workspace({
       />
       {presetDialogs}
       <CommandPalette open={palette} onOpenChange={setPalette} />
+      <ThemePicker open={picker} onClose={() => setPicker(false)} />
       <Sheet
         open={settings}
         title="Settings"
