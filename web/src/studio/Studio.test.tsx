@@ -68,10 +68,9 @@ test("nav lists sections, switching updates hash and empty state", async () => {
   fireEvent.click(nav().getByRole("button", { name: "Backgrounds" }));
   expect(location.hash).toBe("#studio/backgrounds");
   expect(screen.getByRole("heading", { name: "Backgrounds" })).toBeTruthy();
-  // The picker itself lives in the terminal designer's Look fields.
-  expect(
-    screen.getByText(/Pick a background from the Look fields/),
-  ).toBeTruthy();
+  const tabs = screen.getByRole("radiogroup", { name: "Background source" });
+  for (const n of ["Starters", "Uploads", "Gradient"])
+    expect(within(tabs).getByText(n)).toBeTruthy();
   fireEvent.click(nav().getByRole("button", { name: "Fonts" }));
   expect(location.hash).toBe("#studio/fonts");
   const fonts = nav().getByRole("button", { name: "Fonts" });
@@ -161,7 +160,11 @@ test("Backgrounds section mounts the library without a stray picker state", asyn
   fireEvent.click(screen.getByText("opener"));
   await screen.findByRole("dialog", { name: "Studio" });
   expect(screen.getByRole("heading", { name: "Backgrounds" })).toBeTruthy();
-  expect(screen.getByText(/Look fields/)).toBeTruthy();
+  const tile = document.querySelector<HTMLButtonElement>(
+    '.bgp-grid button[aria-pressed="false"]',
+  )!;
+  fireEvent.click(tile);
+  expect(tile.getAttribute("aria-pressed")).toBe("true");
 });
 
 test("Try it clears the dirty guard and search, then hands the preset on", async () => {

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Modal } from "../overlays/Modal";
+import { BackgroundPicker } from "../backgrounds/BackgroundPicker";
+import type { BgSpec } from "../backgrounds/spec";
 import { FontsSection } from "./FontsSection";
 import { Cassette } from "./Cassette";
 import { ThemeGallery } from "./ThemeGallery";
@@ -24,6 +26,13 @@ export function Studio({ open, onClose, onTry }: Props) {
   const [query, setQuery] = useState("");
   const navRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  // Library view: a scratch picker; saving happens in the designers.
+  const [bg, setBg] = useState<BgSpec>({
+    kind: "color",
+    ref: "",
+    opacity: 1,
+    blur: 0,
+  });
   const [dirty, setDirty] = useState(false);
   const leave = () => !dirty || confirm("Discard unsaved changes?");
 
@@ -154,10 +163,7 @@ export function Studio({ open, onClose, onTry }: Props) {
           ) : current === "backgrounds" ? (
             <section className="studio-bg">
               <h3>{section.label}</h3>
-              <p className="muted">
-                Pick a background from the Look fields of the terminal designer
-                (starters, uploads, gradient, opacity and blur).
-              </p>
+              <BackgroundPicker value={bg} onChange={setBg} />
             </section>
           ) : section.id === "fonts" ? (
             <FontsSection />

@@ -1,3 +1,4 @@
+import { STARTERS } from "../backgrounds/starters";
 import {
   cleanup,
   fireEvent,
@@ -238,14 +239,13 @@ test("Look background picker writes the chosen starter into the saved preset", a
   const tile = document.querySelector<HTMLButtonElement>(
     '.bgp-grid button[aria-pressed="false"]',
   )!;
-  const label = tile.getAttribute("aria-label");
   fireEvent.click(tile);
   expect(tile.getAttribute("aria-pressed")).toBe("true");
   fireEvent.click(screen.getByRole("button", { name: "Save" }));
   await waitFor(() => expect(calls(f, "PUT")).toHaveLength(1));
   const body = String(calls(f, "PUT")[0][1]?.body);
   expect(body).toContain("[background]");
-  expect(body).toMatch(/kind = "(gradient|pattern|image|color)"/);
-  expect(body).toContain("ref = ");
-  expect(label).toBeTruthy();
+  const first = STARTERS[0];
+  expect(body).toContain(`kind = "${first.kind}"`);
+  expect(body).toContain(`ref = "${first.ref}"`);
 });
