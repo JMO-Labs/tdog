@@ -112,6 +112,28 @@ describe("palette rendering", () => {
   });
 });
 
+describe("palette menu look", () => {
+  it("renders icon slot, search field, shortcut chip and help footer", () => {
+    registerCommand({
+      id: "s",
+      title: "Open settings",
+      group: "Panes",
+      icon: "gear",
+      shortcut: "⌘,",
+      run: vi.fn(),
+    });
+    render(<CommandPalette defaultOpen />);
+    const opt = screen.getByRole("option");
+    expect(opt.querySelector('svg[data-icon="gear"]')).toBeTruthy();
+    expect(opt.querySelector("kbd")?.textContent).toBe("⌘,");
+    expect(document.querySelector(".cmdk-filter svg")).toBeTruthy();
+    expect(screen.getByText("↑↓ move · ↵ run")).toBeTruthy();
+    expect(screen.getByRole("combobox").getAttribute("aria-controls")).toBe(
+      "cmdk-list",
+    );
+  });
+});
+
 describe("fuzzyMatch", () => {
   it("matches subsequences case-insensitively", () => {
     expect(fuzzyMatch("nt", "New Terminal")).toBe(true);

@@ -215,6 +215,7 @@ export function Workspace({
     const offs = [
       registerCommand({
         id: "theme",
+        icon: "brush",
         title: "Cycle theme",
         group: "Themes",
         shortcut: "⇧⌘L",
@@ -226,6 +227,7 @@ export function Workspace({
         : [
             registerCommand({
               id: "theme:pick",
+              icon: "brush",
               title: "Theme…",
               group: "Themes",
               run: () => setPicker(true),
@@ -233,12 +235,14 @@ export function Workspace({
           ]),
       registerCommand({
         id: "serious",
+        icon: "system",
         title: "Serious mode",
         group: "Themes",
         run: () => setSerious(!getPref("serious")),
       }),
       registerCommand({
         id: "settings",
+        icon: "gear",
         title: "Open settings",
         group: "Panes",
         shortcut: "⌘,",
@@ -246,6 +250,7 @@ export function Workspace({
       }),
       registerCommand({
         id: "studio",
+        icon: "layout",
         title: "Open Studio",
         group: "Panes",
         shortcut: "⌘.",
@@ -253,6 +258,7 @@ export function Workspace({
       }),
       registerCommand({
         id: "scene:new",
+        icon: "briefcase",
         title: "New scene",
         group: "Scenes",
         shortcut: "⌘T",
@@ -260,18 +266,21 @@ export function Workspace({
       }),
       registerCommand({
         id: "scene:close",
+        icon: "close",
         title: "Close scene",
         group: "Scenes",
         run: () => closeActive.current(),
       }),
       registerCommand({
         id: "signout",
+        icon: "signout",
         title: "Sign out",
         group: "Account",
         run: signOut,
       }),
       registerCommand({
         id: "broadcast:toggle",
+        icon: "bolt",
         title: "Broadcast this pane",
         group: "Panes",
         run: () => {
@@ -287,6 +296,7 @@ export function Workspace({
       }),
       registerCommand({
         id: "broadcast:stop",
+        icon: "power",
         title: "Stop broadcasting",
         group: "Panes",
         run: () => {

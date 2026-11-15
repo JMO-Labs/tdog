@@ -5,6 +5,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { Icon } from "../shell/icons";
 import { Modal } from "./Modal";
 import {
   getCommands,
@@ -99,33 +100,36 @@ export function CommandPalette({
       onClose={close}
       className="dialog cmdk"
     >
-      <input
-        className="input"
-        role="combobox"
-        aria-expanded="true"
-        aria-controls="cmdk-list"
-        aria-activedescendant={list[sel] ? `cmdk-${list[sel].id}` : undefined}
-        placeholder="Type a command…"
-        autoFocus
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setSel(0);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            setSel((s) => Math.min(list.length - 1, s + 1));
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            setSel((s) => Math.max(0, s - 1));
-          } else if (e.key === "Enter") {
-            e.preventDefault();
-            run(sel);
-          }
-        }}
-      />
-      <ul id="cmdk-list" role="listbox">
+      <label className="cmdk-filter">
+        <Icon name="search" />
+        <input
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="cmdk-list"
+          aria-activedescendant={list[sel] ? `cmdk-${list[sel].id}` : undefined}
+          placeholder="Type a command…"
+          autoFocus
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setSel(0);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setSel((s) => Math.min(list.length - 1, s + 1));
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setSel((s) => Math.max(0, s - 1));
+            } else if (e.key === "Enter") {
+              e.preventDefault();
+              run(sel);
+            }
+          }}
+        />
+        <span className="cmdk-hint">Esc</span>
+      </label>
+      <ul id="cmdk-list" role="listbox" className="cmdk-list">
         {sections.map((sec) => (
           <li key={sec.heading} role="presentation" className="cmdk-group">
             <div className="cmdk-heading">{sec.heading}</div>
@@ -143,8 +147,10 @@ export function CommandPalette({
                     onClick={() => run(i)}
                   >
                     <span className="cmdk-title">
+                      {c.icon && <Icon name={c.icon} />}
                       {c.swatch && (
                         <span className="swatch" aria-hidden="true">
+                          {c.icon && <Icon name={c.icon} />}
                           {c.swatch.map((col, k) => (
                             <i key={k} style={{ background: col }} />
                           ))}
@@ -165,6 +171,10 @@ export function CommandPalette({
           </li>
         )}
       </ul>
+      <div className="cmdk-help">
+        <span>↑↓ move · ↵ run</span>
+        <span>Esc close</span>
+      </div>
     </Modal>
   );
 }

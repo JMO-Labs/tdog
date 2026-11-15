@@ -1,9 +1,13 @@
+import type { IconName } from "../shell/icons";
+
 export type Command = {
   id: string;
   title: string;
   shortcut?: string;
   /** Palette section heading (sentence case). */
   group?: string;
+  /** Optional leading icon. */
+  icon?: IconName;
   /** Five colours shown as a swatch (theme rows). */
   swatch?: string[];
   run: () => void;
