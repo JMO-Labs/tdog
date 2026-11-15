@@ -3,6 +3,7 @@ package term
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"sync"
 	"time"
 
@@ -30,6 +31,13 @@ type jrnl struct {
 	last            time.Time
 	done            chan struct{}
 	once            sync.Once
+
+	// Optional server sync (nil store = off). pane returns "" when the session
+	// has no valid pane id; such sessions never sync.
+	store   *journal.Store
+	sid     string
+	pane    func() string
+	prevAck uint64 // highest seq already appended to the store; guarded by mu
 
 	streamMu   sync.Mutex // serializes stream's Since+write with forget's wipe+reply
 	afterSince func()     // test seam: runs in stream between Since and write
@@ -109,14 +117,16 @@ func (j *jrnl) control(p []byte, reply func([]byte) error) {
 	}
 	switch v.Type {
 	case "jrnl-ack":
-		j.mu.Lock()
-		seq := min(v.Seq, j.sent) // a bogus ack must not free unsent events
-		j.mu.Unlock()
-		j.buf.Ack(seq)
+		j.ack(v.Seq)
 	case "jrnl-forget":
 		j.streamMu.Lock()
 		defer j.streamMu.Unlock()
 		j.buf.Wipe()
+		if p := j.syncPane(); p != "" {
+			if err := j.store.DeletePane(p); err != nil {
+				log.Printf("journal: forget %s: %v", p, err)
+			}
+		}
 		// The socket is ordered: the client drops journal frames until this
 		// arrives, so none sent before the wipe can re-add rows afterwards.
 		if reply != nil {
@@ -136,6 +146,37 @@ func (j *jrnl) control(p []byte, reply func([]byte) error) {
 			j.on, j.base, j.recBase, j.p = true, j.max, j.recMax, journal.NewParser(time.Now)
 		}
 	}
+}
+
+// syncPane is the pane to sync under, or "" when sync is off or unavailable.
+func (j *jrnl) syncPane() string {
+	if j.store == nil || j.pane == nil {
+		return ""
+	}
+	return j.pane()
+}
+
+// ack frees events up to seq (clamped to what was sent). With sync on, the
+// newly acked events are appended to the store first; a store error is logged
+// and the ack still goes through, so the browser copy stays authoritative.
+func (j *jrnl) ack(want uint64) {
+	j.mu.Lock()
+	seq := min(want, j.sent) // a bogus ack must not free unsent events
+	prev := j.prevAck
+	j.prevAck = max(prev, seq)
+	j.mu.Unlock()
+	if p := j.syncPane(); p != "" && seq > prev && j.store.Enabled() {
+		var evs []journal.Event
+		for _, e := range j.buf.Since(prev) {
+			if e.Seq <= seq {
+				evs = append(evs, e)
+			}
+		}
+		if err := j.store.Append(p, j.sid, evs); err != nil {
+			log.Printf("journal: sync %s: %v", p, err)
+		}
+	}
+	j.buf.Ack(seq)
 }
 
 // stream sends pending events as Journal frames each tick until ctx ends or a

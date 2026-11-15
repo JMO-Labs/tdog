@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -91,6 +92,21 @@ func TestFontRoutesAuthenticated(t *testing.T) {
 	} {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest(c[0], c[1], nil))
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("%s %s: %d", c[0], c[1], rec.Code)
+		}
+	}
+}
+
+func TestJournalRoutesRequireSession(t *testing.T) {
+	a, err := auth.New(t.TempDir(), func(string, ...any) {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := NewSecuredPresets(fstest.MapFS{"index.html": {Data: []byte("x")}}, a, config.NewStore(t.TempDir()))
+	for _, c := range [][2]string{{http.MethodGet, "/api/journal?since=0"}, {http.MethodPut, "/api/journal/settings"}} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(c[0], c[1], strings.NewReader(`{"retentionHours":12}`)))
 		if rec.Code != http.StatusUnauthorized {
 			t.Fatalf("%s %s: %d", c[0], c[1], rec.Code)
 		}

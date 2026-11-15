@@ -2,11 +2,13 @@ package term
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
 	"github.com/JMO-Labs/tdog/internal/audit"
 	"github.com/JMO-Labs/tdog/internal/frame"
+	"github.com/JMO-Labs/tdog/internal/journal"
 	"github.com/coder/websocket"
 )
 
@@ -23,6 +25,8 @@ type Session struct {
 	exited bool
 	killed bool // ended by a kill request; clients get a "killed" control
 
+	pane string // browser pane key for journal sync; "" = never syncs; set once
+
 	onClose func() // preset on_close hook; nil when none
 	j       *jrnl  // session journal; nil when absent
 }
@@ -33,6 +37,37 @@ type attachment struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	reason string // why the server ended it (set before cancel)
+}
+
+// paneID returns the pane key ("" when none was given).
+func (s *Session) paneID() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.pane
+}
+
+// setPane records the pane key unless one is already set or p is not a safe
+// id: the first valid pane wins, so a later attach cannot retarget the files.
+func (s *Session) setPane(p string) {
+	if !journal.ValidPane(p) {
+		return
+	}
+	s.mu.Lock()
+	if s.pane == "" {
+		s.pane = p
+	}
+	s.mu.Unlock()
+}
+
+// dropSynced deletes the pane's synced journal files (a user kill or close).
+func (s *Session) dropSynced() {
+	st, p := s.reg.store(), s.paneID()
+	if st == nil || p == "" {
+		return
+	}
+	if err := st.DeletePane(p); err != nil {
+		log.Printf("journal: delete %s: %v", p, err)
+	}
 }
 
 func (s *Session) info() Info {

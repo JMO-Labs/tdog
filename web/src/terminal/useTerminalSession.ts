@@ -27,12 +27,19 @@ async function createRenderer(el: HTMLElement): Promise<TerminalRenderer> {
   return new XtermRenderer(el);
 }
 
-function wsUrl(scene?: string, id?: string, preset?: string): string {
+/** `pane` is the journal key: the server syncs and deletes history by it. */
+export function wsUrl(
+  scene?: string,
+  id?: string,
+  preset?: string,
+  pane?: string,
+): string {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const q = new URLSearchParams();
   if (scene) q.set("scene", scene);
   if (id) q.set("id", id);
   if (preset) q.set("preset", preset);
+  if (pane) q.set("pane", pane);
   const qs = q.toString();
   return `${proto}://${location.host}/ws/term${qs ? `?${qs}` : ""}`;
 }
@@ -107,7 +114,8 @@ export function useTerminalSession(d: TerminalSessionDeps) {
       if (cancelled) return r.dispose();
       const s = new TerminalSession(
         r,
-        () => new WebSocket(wsUrl(keyRef.current, idRef.current, preset)),
+        () =>
+          new WebSocket(wsUrl(keyRef.current, idRef.current, preset, paneId)),
         setState,
         {
           paneId,

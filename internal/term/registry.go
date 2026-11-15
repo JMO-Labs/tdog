@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/JMO-Labs/tdog/internal/audit"
+	"github.com/JMO-Labs/tdog/internal/journal"
 )
 
 const (
@@ -34,6 +35,21 @@ type Registry struct {
 	sessions   map[string]*Session
 	scrollback int
 	audit      *audit.Logger
+	jstore     *journal.Store // optional server journal sync; nil = off
+}
+
+func (r *Registry) store() *journal.Store {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.jstore
+}
+
+// SetJournalStore enables server-side journal sync for sessions created after
+// the call (nil = off).
+func (r *Registry) SetJournalStore(s *journal.Store) {
+	r.mu.Lock()
+	r.jstore = s
+	r.mu.Unlock()
 }
 
 // NewRegistry returns an empty registry; scrollback is the per-session ring
@@ -75,6 +91,7 @@ func (r *Registry) add(id, target, scene string, s *session, onClose func()) *Se
 		s: s, reg: r, ring: newRing(r.scrollback), onClose: onClose, j: newJrnl(),
 	}
 	r.mu.Lock()
+	sess.j.store, sess.j.sid, sess.j.pane = r.jstore, id, sess.paneID
 	r.sessions[sess.id] = sess
 	r.mu.Unlock()
 	r.audit.Log(audit.Entry{Event: "term_start", Target: target, PID: s.pid, Session: sess.id})
@@ -120,6 +137,7 @@ func (s *Session) kill() {
 	s.mu.Lock()
 	s.killed = true
 	s.mu.Unlock()
+	s.dropSynced()
 	go s.s.kill()
 }
 

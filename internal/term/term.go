@@ -68,6 +68,7 @@ func NewHandler(cfg Config) http.Handler {
 			http.Error(w, "scene too long", http.StatusBadRequest)
 			return
 		}
+		pane := q.Get("pane")
 		var existing *Session
 		if id := q.Get("id"); id != "" {
 			if existing = reg.get(id); existing == nil {
@@ -114,6 +115,7 @@ func NewHandler(cfg Config) http.Handler {
 				return
 			}
 		}
+		sess.setPane(pane)
 		sess.serve(c)
 	})
 }
