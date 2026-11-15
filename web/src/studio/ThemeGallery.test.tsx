@@ -116,3 +116,11 @@ test("randomize selects a card and previews it", () => {
       .filter((c) => c.getAttribute("aria-pressed") === "true"),
   ).toHaveLength(1);
 });
+
+test("survives a failing preset list fetch", async () => {
+  vi.mocked(api.listPresets).mockRejectedValue(new Error("boom"));
+  render(<ThemeGallery />);
+  await waitFor(() => expect(api.listPresets).toHaveBeenCalled());
+  await Promise.resolve();
+  expect(screen.getAllByTestId("theme-card")).toHaveLength(THEMES.length);
+});

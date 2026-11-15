@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Modal } from "../overlays/Modal";
+import { FontsSection } from "./FontsSection";
 import { SceneDesigner } from "./SceneDesigner";
 import { Cassette } from "./Cassette";
 import { ThemeGallery } from "./ThemeGallery";
@@ -153,6 +154,8 @@ export function Studio({ open, onClose, onOpenScene }: Props) {
             )
           ) : section.id === "scene" ? (
             <SceneDesigner onOpenScene={onOpenScene ?? (async () => {})} />
+          ) : section.id === "fonts" ? (
+            <FontsSection />
           ) : section.id === "themes" ? (
             <>
               <h3 className="studio-h">{section.label}</h3>

@@ -1,3 +1,4 @@
+import { text, type CopyKey } from "../copy/copy";
 import { saveLayout } from "../layout/store";
 import { newId } from "../layout/tree";
 import { startScene } from "./api";
@@ -10,6 +11,10 @@ export async function openScenePreset(
   name: string,
   openTab: (id: string, name: string) => void,
   toast: Toast,
+  c: (key: CopyKey, vars?: Record<string, string | number>) => string = (
+    k,
+    v,
+  ) => text(k, false, v),
 ): Promise<void> {
   try {
     const run = await startScene(name);
@@ -21,9 +26,7 @@ export async function openScenePreset(
     openTab(tab, name);
     toast(
       "success",
-      run.existing
-        ? `"${name}" was already running. Attached.`
-        : `Started "${name}".`,
+      c(run.existing ? "preset.attached" : "preset.started", { name }),
     );
   } catch (e) {
     toast("fail", errorMessage(e));

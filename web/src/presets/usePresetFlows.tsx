@@ -3,6 +3,7 @@ import { loadLayout } from "../layout/store";
 import { addLeaf } from "../layout/transfer";
 import { leaves } from "../layout/tree";
 import { registerCommand } from "../overlays/commands";
+import { useCopy } from "../copy/copy";
 import { useToast } from "../overlays/toast";
 import { listPresets, putScenePreset } from "./api";
 import { errorMessage, preparePane } from "./launch";
@@ -27,6 +28,7 @@ export function usePresetFlows({
   openTab: (id: string, name: string) => void;
 }) {
   const toast = useToast();
+  const c = useCopy();
   const [pick, setPick] = useState<Pick>(null);
   const [naming, setNaming] = useState(false);
 
@@ -35,7 +37,7 @@ export function usePresetFlows({
       try {
         const names = await listPresets(kind);
         if (names.length) setPick({ kind, names });
-        else toast("info", `No ${kind} presets yet.`);
+        else toast("info", c("preset.none", { kind }));
       } catch (e) {
         toast("fail", errorMessage(e));
       }
@@ -70,7 +72,7 @@ export function usePresetFlows({
       const id = await preparePane(name, toast);
       if (id) addLeaf(scene, id);
     } else if (kind === "scene") {
-      await openScenePreset(name, openTab, toast);
+      await openScenePreset(name, openTab, toast, c);
     }
   };
 
@@ -78,13 +80,13 @@ export function usePresetFlows({
     const tree = loadLayout(scene);
     if (!tree || !leaves(tree).length) {
       setNaming(false);
-      toast("info", "Nothing to save: this scene has no panes.");
+      toast("info", c("preset.nothing"));
       return;
     }
     try {
       await putScenePreset(name, sceneToml(name, tree, panePresets()));
       setNaming(false);
-      toast("success", `Saved scene preset "${name}".`);
+      toast("success", c("preset.saved", { name }));
     } catch (e) {
       toast("fail", errorMessage(e));
     }
