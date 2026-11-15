@@ -55,7 +55,7 @@ describe("themeStore", () => {
     off();
   });
   it("forces data-theme to appearance when no light variant", () => {
-    themeStore.select("night-market");
+    themeStore.select("wetwired");
     themeStore.setScheme("light");
     expect(document.documentElement.dataset.theme).toBe("dark");
   });

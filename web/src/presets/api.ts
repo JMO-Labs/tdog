@@ -1,4 +1,4 @@
-import { apiFetch, apiPost, apiPut } from "../auth/api";
+import { apiDelete, apiFetch, apiPost, apiPut } from "../auth/api";
 
 /** A server-side preset failure; `message` is plain text naming the field. */
 export class PresetError extends Error {}
@@ -74,18 +74,40 @@ export async function resolveScene(name: string): Promise<Resolved> {
   return (await r.json()) as Resolved;
 }
 
-/** Raw TOML of a stored terminal preset. */
-export async function getTerminalPreset(name: string): Promise<string> {
-  const r = await check(
-    await apiFetch(`/api/presets/terminal/${encodeURIComponent(name)}`),
-  );
-  return r.text();
+const presetPath = (kind: string, name: string) =>
+  `/api/presets/${kind}/${encodeURIComponent(name)}`;
+
+/** A stored preset's raw TOML. */
+export async function getPresetToml(
+  kind: "terminal" | "scene",
+  name: string,
+): Promise<string> {
+  return (await check(await apiFetch(presetPath(kind, name)))).text();
 }
 
-export async function putTerminalPreset(
+/** Create or replace a preset; rejects with the server's "path: message". */
+export async function putPresetToml(
+  kind: "terminal" | "scene",
   name: string,
   toml: string,
 ): Promise<void> {
-  const path = `/api/presets/terminal/${encodeURIComponent(name)}`;
-  await check(await apiPut(path, toml));
+  await check(await apiPut(presetPath(kind, name), toml));
+}
+
+export async function deletePreset(
+  kind: "terminal" | "scene",
+  name: string,
+): Promise<void> {
+  await check(await apiDelete(presetPath(kind, name)));
+}
+
+/** Resolve unsaved terminal TOML on top of the global layer (origins only). */
+export async function resolveDraft(toml: string): Promise<Resolved> {
+  const r = await check(await apiPut("/api/presets/resolve", toml, "POST"));
+  return (await r.json()) as Resolved;
+}
+
+export async function getSchema(kind: "terminal" | "scene" | "global") {
+  const r = await check(await apiFetch(`/api/schema/${kind}`));
+  return (await r.json()) as Record<string, unknown>;
 }

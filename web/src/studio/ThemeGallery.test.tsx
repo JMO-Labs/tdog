@@ -11,8 +11,8 @@ beforeEach(() => {
   localStorage.clear();
   themeStore.reset();
   vi.mocked(api.listPresets).mockResolvedValue(["work"]);
-  vi.mocked(api.getTerminalPreset).mockResolvedValue('name = "work"\n');
-  vi.mocked(api.putTerminalPreset).mockResolvedValue();
+  vi.mocked(api.getPresetToml).mockResolvedValue('name = "work"\n');
+  vi.mocked(api.putPresetToml).mockResolvedValue();
 });
 
 const card = (name: string | RegExp) => screen.getByRole("button", { name });
@@ -87,7 +87,8 @@ test("apply to a terminal preset writes its theme", async () => {
   fireEvent.change(sel, { target: { value: "work" } });
   fireEvent.click(screen.getByRole("button", { name: "Apply to preset" }));
   await waitFor(() =>
-    expect(api.putTerminalPreset).toHaveBeenCalledWith(
+    expect(api.putPresetToml).toHaveBeenCalledWith(
+      "terminal",
       "work",
       'name = "work"\ntheme = "ack-ack"\n',
     ),
@@ -96,7 +97,7 @@ test("apply to a terminal preset writes its theme", async () => {
 });
 
 test("preset errors are shown", async () => {
-  vi.mocked(api.putTerminalPreset).mockRejectedValue(new Error("bad theme"));
+  vi.mocked(api.putPresetToml).mockRejectedValue(new Error("bad theme"));
   render(<ThemeGallery />);
   fireEvent.click(cardFor("ack-ack"));
   const sel = await screen.findByLabelText("Terminal preset");

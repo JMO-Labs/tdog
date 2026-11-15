@@ -168,3 +168,44 @@ test("Layouts opens with ArrowRight and a template applies by keyboard", () => {
   fireEvent.click(first);
   expect(p.onSnap).toHaveBeenCalled();
 });
+
+function openLayouts(p: ReturnType<typeof setup>) {
+  p.open();
+  fireEvent.click(screen.getByRole("menuitem", { name: /Layouts/ }));
+}
+
+test("Escape and ArrowLeft close only the Layouts submenu", () => {
+  for (const key of ["Escape", "ArrowLeft"]) {
+    const s = setup();
+    openLayouts(s);
+    fireEvent.keyDown(screen.getByRole("menu", { name: "Layouts" }), { key });
+    expect(screen.queryByRole("menu", { name: "Layouts" })).toBeNull();
+    expect(screen.getByRole("menu")).toBeTruthy();
+    cleanup();
+  }
+});
+
+test("closing the submenu clears a pending confirmation", () => {
+  const s = setup();
+  s.p.onSnap.mockReturnValueOnce(["x"]);
+  openLayouts(s);
+  fireEvent.click(screen.getByRole("menuitem", { name: "Single" }));
+  expect(
+    screen.getByRole("menuitem", { name: /Close 1 pane and/ }),
+  ).toBeTruthy();
+  fireEvent.keyDown(screen.getByRole("menu", { name: "Layouts" }), {
+    key: "Escape",
+  });
+  fireEvent.click(screen.getByRole("menuitem", { name: /Layouts/ }));
+  expect(screen.queryByRole("menuitem", { name: /Close 1 pane/ })).toBeNull();
+});
+
+test("Cancel returns from the confirmation to the template list", () => {
+  const s = setup();
+  s.p.onSnap.mockReturnValueOnce(["x", "y"]);
+  openLayouts(s);
+  fireEvent.click(screen.getByRole("menuitem", { name: "Single" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Cancel" }));
+  expect(screen.getByRole("menuitem", { name: "Single" })).toBeTruthy();
+  expect(s.p.onSnap).not.toHaveBeenCalledWith("single", true);
+});

@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  getTerminalPreset,
-  listPresets,
-  putTerminalPreset,
-} from "../presets/api";
+import { getPresetToml, listPresets, putPresetToml } from "../presets/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
@@ -96,8 +92,8 @@ export function ThemeGallery() {
   const applyPreset = async () => {
     if (!picked || !preset) return;
     try {
-      const toml = await getTerminalPreset(preset);
-      await putTerminalPreset(preset, setThemeInToml(toml, picked));
+      const toml = await getPresetToml("terminal", preset);
+      await putPresetToml("terminal", preset, setThemeInToml(toml, picked));
       setStatus({ ok: true, text: `Saved to ${preset}.` });
     } catch (e) {
       setStatus({ ok: false, text: (e as Error).message });
