@@ -143,6 +143,7 @@ export function TerminalPane({
   const session = useRef<TerminalSession | null>(null);
   const idRef = useRef<string | undefined>(undefined);
   const keyRef = useRef(sceneKey);
+  const cwdRef = useRef<string | undefined>(undefined);
   /** (Re)connect; with a sceneKey, re-resolves the live session id first. */
   const connect = useCallback(() => {
     const key = keyRef.current;
@@ -306,6 +307,7 @@ export function TerminalPane({
         if (keyRef.current) titleStore.set(keyRef.current, { title });
       });
       r.onCwd?.((cwd) => {
+        cwdRef.current = cwd;
         if (keyRef.current) titleStore.set(keyRef.current, { cwd });
       });
       // ED 3: erase scrollback only; works the same in both renderers.
@@ -420,7 +422,12 @@ export function TerminalPane({
           onStart={killed ? startNew : connect}
         />
       )}
-      <PaneOverlayHost renderer={renderer.current} handle={hostRef} />
+      <PaneOverlayHost
+        renderer={renderer.current}
+        handle={hostRef}
+        sessionId={idRef.current}
+        cwd={cwdRef.current}
+      />
       {menu && (
         <TerminalMenu
           {...menu}
@@ -439,6 +446,7 @@ export function TerminalPane({
           }}
           onRename={ops?.rename}
           onShowScreen={() => openOverlay("show-screen")}
+          onDiff={() => openOverlay("diff")}
           onKill={() => sceneKey && void killScene(sceneKey)}
           onClose={() => ops?.close()}
           onDismiss={closeMenu}

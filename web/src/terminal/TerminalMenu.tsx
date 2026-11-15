@@ -17,6 +17,7 @@ export interface TerminalMenuProps {
   onKill: () => void;
   onClose: () => void;
   onShowScreen?: () => void;
+  onDiff?: () => void;
   /** `refocus: false` leaves focus alone (the action takes it). */
   onDismiss: (refocus?: boolean) => void;
 }
@@ -141,6 +142,7 @@ export function TerminalMenu(p: TerminalMenuProps) {
       {p.onRename && item("Rename", p.onRename, { refocus: false })}
       {p.onShowScreen &&
         item("Show screen text", p.onShowScreen, { refocus: false })}
+      {p.onDiff && item("Diff files", p.onDiff, { refocus: false })}
       {item("Kill shell", p.onKill, { danger: true })}
       {item("Close pane", p.onClose, { danger: true })}
     </div>
