@@ -5,6 +5,7 @@ import { leaves } from "../layout/tree";
 import { useLayout } from "../layout/useLayout";
 import type { Scene } from "./scenes";
 import { PaneSlot } from "./PaneSlot";
+import { SceneArtContext, useSceneArt } from "../terminal/useSceneArt";
 import { clearScene } from "../broadcast/store";
 
 type SlotProps = Omit<
@@ -32,48 +33,51 @@ export function SceneView({
   onMoveScene: (id: string, from: string, to: string) => void;
 }) {
   const layout = useLayout(scene);
+  const art = useSceneArt(scene);
   const ids = layout.tree ? leaves(layout.tree).join(",") : "";
   useEffect(
     () => onLeaves(scene, ids ? ids.split(",") : []),
     [scene, ids, onLeaves],
   );
   return (
-    <div className="scene-view" data-active={active} aria-hidden={!active}>
-      <SceneBackground scene={scene}>
-        {layout.tree ? (
-          <SplitView
-            tree={layout.tree}
-            sceneId={scene}
-            onSplit={layout.split}
-            onClose={layout.close}
-            onRatio={layout.ratio}
-            onSnap={layout.snap}
-            onMove={layout.move}
-            onSwap={layout.swap}
-            onRename={layout.rename}
-            onDuplicate={layout.duplicate}
-            active={active}
-            scenes={scenes.filter((x) => x.id !== scene)}
-            onMoveToScene={(id, to) => onMoveScene(id, scene, to)}
-            renderPane={(id, settled) => (
-              <div
-                style={{ height: "100%" }}
-                onFocusCapture={() => onFocus(id)}
-                onPointerDownCapture={() => onFocus(id)}
-              >
-                <PaneSlot
-                  id={id}
-                  sceneId={scene}
-                  settled={settled}
-                  visible={active}
-                  state={paneOpen[id]}
-                  {...slot}
-                />
-              </div>
-            )}
-          />
-        ) : null}
-      </SceneBackground>
-    </div>
+    <SceneArtContext.Provider value={art}>
+      <div className="scene-view" data-active={active} aria-hidden={!active}>
+        <SceneBackground scene={scene}>
+          {layout.tree ? (
+            <SplitView
+              tree={layout.tree}
+              sceneId={scene}
+              onSplit={layout.split}
+              onClose={layout.close}
+              onRatio={layout.ratio}
+              onSnap={layout.snap}
+              onMove={layout.move}
+              onSwap={layout.swap}
+              onRename={layout.rename}
+              onDuplicate={layout.duplicate}
+              active={active}
+              scenes={scenes.filter((x) => x.id !== scene)}
+              onMoveToScene={(id, to) => onMoveScene(id, scene, to)}
+              renderPane={(id, settled) => (
+                <div
+                  style={{ height: "100%" }}
+                  onFocusCapture={() => onFocus(id)}
+                  onPointerDownCapture={() => onFocus(id)}
+                >
+                  <PaneSlot
+                    id={id}
+                    sceneId={scene}
+                    settled={settled}
+                    visible={active}
+                    state={paneOpen[id]}
+                    {...slot}
+                  />
+                </div>
+              )}
+            />
+          ) : null}
+        </SceneBackground>
+      </div>
+    </SceneArtContext.Provider>
   );
 }

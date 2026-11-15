@@ -1,6 +1,9 @@
 import { useRef, useState } from "react";
 import { dragPane, draggedPane } from "../layout/dnd";
 import { ActionMenu, type MenuItem } from "../components/menu/ActionMenu";
+import { usePref } from "../settings/prefs";
+import { setSceneArt } from "../presets/panes";
+import { useSceneArt } from "../terminal/useSceneArt";
 import type { Scene } from "./scenes";
 
 type Props = {
@@ -36,6 +39,9 @@ export function Tabs(p: Props) {
     x: number;
     y: number;
   } | null>(null);
+
+  const [serious] = usePref("serious");
+  const art = useSceneArt(menu?.id ?? "");
 
   const commit = (id: string) => {
     setEditing(null);
@@ -168,6 +174,18 @@ export function Tabs(p: Props) {
                   ],
                 ]
               : []),
+            ...(serious
+              ? []
+              : [
+                  [
+                    {
+                      label: "Theme art in this scene",
+                      isRadio: true,
+                      checked: art,
+                      onSelect: () => setSceneArt(menu.id, !art),
+                    },
+                  ],
+                ]),
             [
               {
                 label: "Close scene",

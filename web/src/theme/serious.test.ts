@@ -1,6 +1,7 @@
 import { beforeEach, expect, it } from "vitest";
 import { themeStore } from "./store";
 import { findTheme } from "./registry";
+import { sceneArt, setSceneArt } from "../presets/panes";
 import { setPref } from "../settings/prefs";
 
 beforeEach(() => {
@@ -65,4 +66,13 @@ it("starts serious when the pref is already stored", () => {
   localStorage.setItem("tdog.serious", "1");
   themeStore.reset();
   expect(themeStore.get().id).toBe("plain");
+});
+
+it("serious mode shows no motif or effects even in an opted-in scene", () => {
+  setSceneArt("s1", true);
+  expect(sceneArt("s1")).toBe(true);
+  expect(themeStore.effects("black-box").length).toBeGreaterThan(0);
+  setPref("serious", true);
+  expect(themeStore.effects("black-box")).toEqual([]);
+  expect(themeStore.terminalMotif("black-box")).toBeNull();
 });

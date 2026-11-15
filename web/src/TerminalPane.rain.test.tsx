@@ -52,9 +52,14 @@ vi.stubGlobal(
 );
 
 import { TerminalPane } from "./TerminalPane";
+import { SceneArtContext } from "./terminal/useSceneArt";
 
 test("glyph-rain behind the text makes the renderer transparent without a motif", async () => {
-  render(<TerminalPane />);
+  render(
+    <SceneArtContext.Provider value={true}>
+      <TerminalPane />
+    </SceneArtContext.Provider>,
+  );
   expect(screen.queryByTestId("terminal-motif")).toBeNull();
   await waitFor(() =>
     expect(h.themes.at(-1)).toMatchObject({ background: "rgba(0,0,0,0)" }),

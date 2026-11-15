@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
-const h = vi.hoisted(() => ({ themes: [] as any[], pct: 6 }));
+const h = vi.hoisted(() => ({ themes: [] as any[], pct: 6, fx: [] as any[] }));
 
 vi.mock("./terminal/xtermRenderer", () => ({
   XtermRenderer: class {
@@ -28,7 +28,7 @@ vi.mock("./theme/store", () => ({
   themeStore: {
     terminal: () => ({ background: "#123456" }),
     terminalMotif: () => 'url("data:image/svg+xml,x")',
-    effects: () => [],
+    effects: () => h.fx,
     subscribe: () => () => {},
     paneTheme: (_p?: string, fallback?: string) => fallback,
     scope: () => ({
@@ -53,10 +53,17 @@ vi.stubGlobal(
 );
 
 import { TerminalPane } from "./TerminalPane";
+import { SceneArtContext } from "./terminal/useSceneArt";
+
+const art = (on = true) => (
+  <SceneArtContext.Provider value={on}>
+    <TerminalPane />
+  </SceneArtContext.Provider>
+);
 
 test("motif layer sits under the text host; renderer is transparent", async () => {
   h.pct = 6;
-  render(<TerminalPane />);
+  render(art());
   const motif = screen.getByTestId("terminal-motif");
   const pane = screen.getByTestId("terminal-pane");
   expect(pane.style.background).toContain("rgb(18, 52, 86)");
@@ -72,7 +79,7 @@ test("motif layer sits under the text host; renderer is transparent", async () =
 test("no motif keeps the opaque renderer background", async () => {
   h.pct = 0;
   h.themes.length = 0;
-  render(<TerminalPane />);
+  render(art());
   expect(screen.queryByTestId("terminal-motif")).toBeNull();
   await waitFor(() =>
     expect(h.themes.at(-1)).toMatchObject({ background: "#123456" }),
@@ -81,6 +88,27 @@ test("no motif keeps the opaque renderer background", async () => {
 
 test("motif layer is clipped to the pane", () => {
   h.pct = 6;
-  render(<TerminalPane />);
+  render(art());
   expect(screen.getByTestId("terminal-motif").style.overflow).toBe("hidden");
+});
+
+test("no motif or effects by default", () => {
+  h.pct = 6;
+  h.fx = [{ id: "scanlines", intensity: 1 }];
+  render(<TerminalPane />);
+  expect(screen.queryByTestId("terminal-motif")).toBeNull();
+  expect(screen.queryByTestId("fx-root")).toBeNull();
+});
+
+test("scene opt-in shows motif and theme effects in every pane of that scene", () => {
+  h.pct = 6;
+  h.fx = [{ id: "scanlines", intensity: 1 }];
+  render(
+    <SceneArtContext.Provider value={true}>
+      <TerminalPane />
+      <TerminalPane />
+    </SceneArtContext.Provider>,
+  );
+  expect(screen.getAllByTestId("terminal-motif")).toHaveLength(2);
+  expect(screen.getAllByTestId("fx-root")).toHaveLength(2);
 });
