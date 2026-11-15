@@ -168,7 +168,7 @@
   padding: 36px 16px;
   border: 2px dashed var(--line);
   border-radius: var(--radius, 6px);
-
+}
 .td {
   display: flex;
   flex-direction: column;
