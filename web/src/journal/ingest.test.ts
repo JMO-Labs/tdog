@@ -94,6 +94,16 @@ describe("journal fold", () => {
     expect(cb).toHaveBeenCalledTimes(1);
   });
 
+  test("resent starts already stored do not notify again", async () => {
+    const db = memJournal();
+    await ingest(db, "p", "A", [ev(1, "start", 1)]);
+    const cb = vi.fn();
+    const off = onJournalStart(cb);
+    await ingest(db, "p", "A", [ev(1, "start", 1), ev(2, "start", 2)]);
+    off();
+    expect(cb).toHaveBeenCalledExactlyOnceWith("p", "A", 2);
+  });
+
   test("new session id restarts seq; old records are kept", async () => {
     const db = memJournal();
     await ingest(

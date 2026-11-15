@@ -82,3 +82,15 @@ it("jump: unmounted pane falls back to the focused pane overlay", () => {
   expect(jumpTo({ ...hit, pane: "nope" })).toBe("overlay");
   expect(open).toHaveBeenCalledWith("journal-record");
 });
+
+it("copyOutput/copyBoth reject when the record is gone", async () => {
+  const gone = { ...hit, rkey: "s/99" };
+  await expect(copyOutput(gone)).rejects.toThrow();
+  await expect(copyBoth(gone)).rejects.toThrow();
+  expect(write).not.toHaveBeenCalled();
+});
+
+it("copy rejects (not throws) without a clipboard", async () => {
+  Object.assign(navigator, { clipboard: undefined });
+  await expect(copyCommand(hit)).rejects.toThrow();
+});

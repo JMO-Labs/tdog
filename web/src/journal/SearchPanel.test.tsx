@@ -17,6 +17,8 @@ vi.mock("./jump", async (orig) => ({
   ...(await orig<typeof import("./jump")>()),
   jumpTo: jump,
 }));
+const toast = vi.hoisted(() => vi.fn());
+vi.mock("../overlays/toast", () => ({ useToast: () => toast }));
 import { SearchPanel } from "./SearchPanel";
 
 const mk = (pane: string, rec: number, cmd: string, exit?: number): Hit => ({
@@ -65,7 +67,7 @@ it("groups hits by scene then pane, orphans under Other sessions", () => {
   const groups = screen
     .getAllByRole("group")
     .map((g) => g.getAttribute("aria-label"));
-  expect(groups).toEqual(["work", "play", "Other sessions"]);
+  expect(groups).toEqual(["work › p1", "play › p2", "Other sessions › gone"]);
   const opts = screen.getAllByRole("option");
   expect(opts).toHaveLength(3);
   expect(opts[0].textContent).toContain("ls");
@@ -123,4 +125,40 @@ it("empty state, with and without sync", () => {
   expect(screen.getByText(/Turn on history sync in Settings/)).toBeTruthy();
   rerender(ui({ syncOn: true }));
   expect(screen.queryByText(/Turn on history sync/)).toBeNull();
+});
+
+it("Esc restores focus to the element focused before opening", () => {
+  const b = document.createElement("button");
+  document.body.append(b);
+  b.focus();
+  const { rerender } = render(ui({ open: false }));
+  rerender(ui({ open: true }));
+  expect(document.activeElement).toBe(screen.getByRole("searchbox"));
+  fireEvent.keyDown(screen.getByRole("searchbox"), { key: "Escape" });
+  expect(document.activeElement).toBe(b);
+  b.remove();
+});
+
+it("arrows scroll the selected option into view", () => {
+  const sv = vi.fn();
+  Element.prototype.scrollIntoView = sv;
+  render(ui());
+  fireEvent.keyDown(screen.getByRole("searchbox"), { key: "ArrowDown" });
+  expect(sv).toHaveBeenCalledWith({ block: "nearest" });
+  // @ts-expect-error cleanup
+  delete Element.prototype.scrollIntoView;
+});
+
+it("copy of a missing record or without clipboard shows the failure toast", async () => {
+  hits.list = [mk("gone", 9, "x")];
+  render(ui());
+  const o = screen.getAllByRole("option")[0];
+  fireEvent.click(o.querySelector('[aria-label="Copy output"]')!);
+  await waitFor(() =>
+    expect(toast).toHaveBeenCalledWith("fail", "Copy failed"),
+  );
+  Object.assign(navigator, { clipboard: undefined });
+  fireEvent.click(o.querySelector('[aria-label="Copy command"]')!);
+  await waitFor(() => expect(toast).toHaveBeenCalledTimes(2));
+  expect(toast).toHaveBeenLastCalledWith("fail", "Copy failed");
 });

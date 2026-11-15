@@ -5,9 +5,10 @@ export interface JournalDB {
   /**
    * Idempotent per (pane, sid): events with seq <= that session's high-water
    * mark are ignored. A new `sid` (server restarted) resets the mark and
-   * keeps the old records.
+   * keeps the old records. Resolves to the high-water mark before this call
+   * (Infinity when the journal is wiped), so callers can tell new events.
    */
-  apply(pane: string, sid: string, evs: JournalEvent[]): Promise<void>;
+  apply(pane: string, sid: string, evs: JournalEvent[]): Promise<number>;
   records(pane?: string): AsyncIterable<JournalRecord>;
   forget(pane: string): Promise<void>;
 }
@@ -32,9 +33,10 @@ export function memJournal(): JournalDB {
   return {
     apply: (pane, sid, evs) =>
       q(pane, async () => {
-        if (wiped) return;
+        if (wiped) return Infinity;
         let m = meta.get(pane);
         if (m?.sid !== sid) m = { sid, hwm: 0 };
+        const prev = m.hwm;
         for (const ev of evs) {
           if (ev.seq <= m.hwm) continue;
           m.hwm = ev.seq;
@@ -42,6 +44,7 @@ export function memJournal(): JournalDB {
           recs.set(k, fold(recs.get(k), ev, pane, sid));
         }
         meta.set(pane, m);
+        return prev;
       }),
     async *records(pane) {
       for (const r of [...recs.values()]) if (!pane || r.pane === pane) yield r;
@@ -107,13 +110,14 @@ export function idbJournal(): JournalDB {
   return {
     apply: (pane, sid, evs) =>
       q(pane, async () => {
-        if (wiped) return;
+        if (wiped) return Infinity;
         const t = (await open()).transaction(["records", "meta"], "readwrite");
         const recs = t.objectStore("records");
         const meta = t.objectStore("meta");
         const m = (await req(meta.get(pane))) as
           { sid: string; hwm: number } | undefined;
         let hwm = m?.sid === sid ? m.hwm : 0;
+        const prev = hwm;
         const cur = new Map<number, JournalRecord | undefined>();
         for (const ev of evs) {
           if (ev.seq <= hwm) continue;
@@ -125,6 +129,7 @@ export function idbJournal(): JournalDB {
         for (const r of cur.values()) recs.put(r);
         meta.put({ pane, sid, hwm });
         await done(t);
+        return prev;
       }),
     async *records(pane) {
       // Page by key; a fresh readonly transaction each time so nothing is

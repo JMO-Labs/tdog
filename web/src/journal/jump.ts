@@ -39,9 +39,13 @@ export async function readRecord(
     if (r.rkey === rkey) return r;
 }
 
-const put = (s: string) => navigator.clipboard.writeText(s);
+// async so an insecure context (no clipboard) rejects instead of throwing
+const put = async (s: string) => navigator.clipboard.writeText(s);
+const outOf = async (h: Hit) => {
+  const r = await readRecord(h.pane, h.rkey);
+  if (!r) throw new Error("record not found");
+  return r.out;
+};
 export const copyCommand = (h: Hit) => put(h.cmd);
-export const copyOutput = async (h: Hit) =>
-  put((await readRecord(h.pane, h.rkey))?.out ?? "");
-export const copyBoth = async (h: Hit) =>
-  put(`$ ${h.cmd}\n${(await readRecord(h.pane, h.rkey))?.out ?? ""}`);
+export const copyOutput = async (h: Hit) => put(await outOf(h));
+export const copyBoth = async (h: Hit) => put(`$ ${h.cmd}\n${await outOf(h)}`);

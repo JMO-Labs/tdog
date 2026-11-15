@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "../shell/icons";
 import { useToast } from "../overlays/toast";
 import { displayTitle, titleStore } from "../terminal/titles";
@@ -33,7 +33,11 @@ export function rel(at: number, now = Date.now()): string {
   return `${Math.floor(n)}${u[i][1]} ago`;
 }
 
-function group(hits: Hit[], { scenes, leafMap }: Props): Group[] {
+function group(
+  hits: Hit[],
+  scenes: Props["scenes"],
+  leafMap: Props["leafMap"],
+): Group[] {
   const paneLabel = (p: string) => displayTitle(titleStore.get(p), p);
   const out: Group[] = [];
   const seen = new Set<string>();
@@ -84,19 +88,32 @@ const ACTIONS: [string, IconName, (h: Hit) => Promise<void>][] = [
 ];
 
 export function SearchPanel(props: Props) {
-  const { open, onClose, syncOn = false } = props;
+  const { open, onClose, scenes, leafMap, syncOn = false } = props;
   const [text, setText] = useState("");
   const [regex, setRegex] = useState(false);
   const [caseSensitive, setCase] = useState(false);
   const [sel, setSel] = useState(0);
   const toast = useToast();
+  // Remember who had focus when we open (render phase: before autoFocus).
+  const was = useRef(false);
+  const back = useRef<Element | null>(null);
+  const list = useRef<HTMLDivElement>(null);
+  if (open && !was.current) back.current = document.activeElement;
+  was.current = open;
   const q = { text, regex, caseSensitive };
   const { hits, done } = useJournalSearch(q);
-  const groups = useMemo(() => group(hits, props), [hits, props]);
+  const groups = useMemo(
+    () => group(hits, scenes, leafMap),
+    [hits, scenes, leafMap],
+  );
   const flat = groups.flatMap((g) => g.panes.flatMap((p) => p.hits));
   const re = useMemo(() => compile(q), [text, regex, caseSensitive]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!open) return null;
   const cur = Math.min(sel, Math.max(0, flat.length - 1));
+  const dismiss = () => {
+    onClose();
+    (back.current as HTMLElement | null)?.focus?.();
+  };
   const go = (h: Hit) => {
     jumpTo(h);
     onClose(); // overlay opens in the pane; either way the panel is done
@@ -109,11 +126,15 @@ export function SearchPanel(props: Props) {
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       e.stopPropagation();
-      onClose();
+      dismiss();
     } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       const d = e.key === "ArrowDown" ? 1 : -1;
-      setSel(Math.max(0, Math.min(flat.length - 1, cur + d)));
+      const to = Math.max(0, Math.min(flat.length - 1, cur + d));
+      setSel(to);
+      list.current
+        ?.querySelectorAll("[role=option]")
+        [to]?.scrollIntoView?.({ block: "nearest" });
     } else if (e.key === "Enter" && flat[cur]) {
       e.preventDefault();
       go(flat[cur]);
@@ -121,7 +142,7 @@ export function SearchPanel(props: Props) {
   };
   let n = -1;
   return (
-    <div className="sp-backdrop" onClick={onClose}>
+    <div className="sp-backdrop" onClick={dismiss}>
       <div
         className="sp float"
         role="dialog"
@@ -153,14 +174,14 @@ export function SearchPanel(props: Props) {
             Aa
           </button>
         </div>
-        <div className="sp-list" role="listbox" aria-label="Matches">
+        <div ref={list} className="sp-list" role="listbox" aria-label="Matches">
           {groups.map((g) => (
             <Fragment key={g.label}>
               {g.panes.map((p) => (
                 <div
                   key={p.label + p.hits[0].pane}
                   role="group"
-                  aria-label={g.label}
+                  aria-label={`${g.label} › ${p.label}`}
                   className="sp-group"
                 >
                   <div className="sp-head">

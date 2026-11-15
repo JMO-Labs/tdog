@@ -17,7 +17,8 @@ export function useJournalMarkers(
     if (!pane) return;
     const marks = new Map<string, PaneMarker>();
     const off = onJournalStart((p, sid, rec) => {
-      if (p !== pane) return;
+      if (p !== pane || marks.get(`${sid}/${rec}`)?.isDisposed === false)
+        return;
       const m = renderer.current?.markLine?.();
       if (m) marks.set(`${sid}/${rec}`, m);
     });

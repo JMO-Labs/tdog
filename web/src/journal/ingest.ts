@@ -62,9 +62,11 @@ export async function ingest(
   sid: string,
   evs: JournalEvent[],
 ): Promise<number> {
-  await db.apply(pane, sid, evs);
+  const prev = (await db.apply(pane, sid, evs)) ?? 0;
   for (const e of evs) {
-    if (e.kind === "start") startSubs.forEach((cb) => cb(pane, sid, e.rec));
+    // Resent (already stored) starts are not new: no second marker.
+    if (e.kind === "start" && e.seq > prev)
+      startSubs.forEach((cb) => cb(pane, sid, e.rec));
   }
   return evs.reduce((m, e) => Math.max(m, e.seq), 0);
 }
