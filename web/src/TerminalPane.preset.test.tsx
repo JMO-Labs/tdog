@@ -30,6 +30,7 @@ vi.mock("./theme/store", () => ({
       return { background: "#000" };
     },
     terminalMotif: () => null,
+    effects: () => [],
     subscribe: () => () => {},
   },
 }));

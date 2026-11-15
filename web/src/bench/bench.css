@@ -33,3 +33,21 @@
     background-position: 100% 50%;
   }
 }
+.bench-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.bench-panes {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid: 1fr 1fr / 1fr 1fr;
+  gap: 2px;
+  pointer-events: none;
+}
+.bench-pane {
+  position: relative;
+  overflow: hidden;
+}

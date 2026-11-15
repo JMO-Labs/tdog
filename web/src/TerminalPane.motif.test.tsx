@@ -25,6 +25,7 @@ vi.mock("./theme/store", () => ({
   themeStore: {
     terminal: () => ({ background: "#123456" }),
     terminalMotif: () => 'url("data:image/svg+xml,x")',
+    effects: () => [],
     subscribe: () => () => {},
   },
 }));

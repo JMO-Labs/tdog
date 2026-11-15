@@ -6,6 +6,8 @@ import { Dialog } from "../overlays/Dialog";
 import { Appearance } from "./Appearance";
 import { Switch } from "./Switch";
 import { TwoFactor } from "./TwoFactor";
+import { EFFECT_IDS, FX_LABELS } from "../effects/resolve";
+import { setFx, setFxOn, useFx } from "../effects/store";
 import { useMotifOpacity, usePref } from "./prefs";
 import "./settings.css";
 
@@ -18,6 +20,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   const [confirm, setConfirm] = useState(false);
   const [motif, setMotif] = useMotifOpacity();
   const [dress, setDress] = usePref("dress");
+  const fx = useFx();
   const [boot, setBoot] = usePref("boot");
 
   useEffect(() => {
@@ -99,6 +102,39 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
         </div>
         <Switch labelledBy="sw-boot" checked={boot} onChange={setBoot} />
       </div>
+      <h3>Screen effects</h3>
+      <div className="row">
+        <b id="sw-fx">All effects</b>
+        <Switch
+          labelledBy="sw-fx"
+          checked={fx.master}
+          onChange={(master) => setFx({ ...fx, master })}
+        />
+      </div>
+      <div className="row">
+        <b id="fx-int">Intensity</b>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          aria-labelledby="fx-int"
+          value={fx.intensity}
+          disabled={!fx.master}
+          onChange={(e) => setFx({ ...fx, intensity: +e.target.value })}
+        />
+      </div>
+      {EFFECT_IDS.map((id) => (
+        <div className="row" key={id}>
+          <b id={`fx-${id}`}>{FX_LABELS[id]}</b>
+          <Switch
+            labelledBy={`fx-${id}`}
+            checked={fx.on[id]}
+            disabled={!fx.master}
+            onChange={(on) => setFxOn(id, on)}
+          />
+        </div>
+      ))}
       <h3>Sessions</h3>
       <div className="row actions">
         <Button onClick={() => dispatchEvent(new Event("tdog:signout"))}>
