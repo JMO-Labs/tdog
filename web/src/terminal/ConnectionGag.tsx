@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "../motion/confetti";
+import { useCopy } from "../copy/copy";
 import type { Phase } from "./connection";
 import "./gag.css";
 
@@ -38,6 +39,7 @@ export function ConnectionGag({
   phase: Phase;
   onReconnect: () => void;
 }) {
+  const c = useCopy();
   if (phase === "live") return null;
   if (phase === "static") return <Static />;
   const still = prefersReducedMotion() ? " still" : "";
@@ -45,7 +47,7 @@ export function ConnectionGag({
   return (
     <div className={`vhs${still}${tracking ? "" : " rew"}`} role="status">
       <span className="play">{tracking ? "▶ PLAY" : "◀◀ REW"}</span>
-      {tracking ? "Adjusting tracking…" : "Rewinding…"}
+      {c(tracking ? "conn.tracking" : "conn.rewinding")}
       {tracking && (
         <button className="btn sticker" onClick={onReconnect}>
           Reconnect

@@ -7,6 +7,7 @@ import {
   type Ref,
 } from "react";
 import * as api from "./api";
+import { useCopy } from "../copy/copy";
 import { MIN_PASSWORD } from "./constants";
 import { OtpBoxes } from "./otp";
 import { AuthShell } from "./shell";
@@ -60,6 +61,7 @@ export function LoginScreen(props: {
   const [dialing, setDialing] = useState(false);
   const [nono, setNono] = useState(false);
   const toast = useToast();
+  const c = useCopy();
   const input = useRef<HTMLInputElement>(null);
   const recoveryInput = useRef<HTMLInputElement>(null);
   useEffect(() => input.current?.focus(), []);
@@ -94,7 +96,7 @@ export function LoginScreen(props: {
     <>
       {nono && (
         <NoNo
-          detail="Wrong password. Give it another go."
+          detail={c("auth.wrongPassword")}
           onDone={() => {
             setNono(false);
             input.current?.select();
@@ -105,10 +107,7 @@ export function LoginScreen(props: {
         <DialUp
           onDone={() => {
             celebrate();
-            toast(
-              "success",
-              "Signed in. Your shells are right where you left them.",
-            );
+            toast("success", c("auth.signedIn"));
             props.onDone();
           }}
         />
@@ -208,6 +207,7 @@ export function SetupScreen(props: { onDone: (signedIn: boolean) => void }) {
   const [busy, setBusy] = useState(false);
   const [dialing, setDialing] = useState(false);
   const toast = useToast();
+  const c = useCopy();
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => input.current?.focus(), []);
   const meter = tape(pw.length);
@@ -293,7 +293,7 @@ export function SetupScreen(props: { onDone: (signedIn: boolean) => void }) {
         <DialUp
           onDone={() => {
             celebrate();
-            toast("success", "Account created. You're in.");
+            toast("success", c("auth.created"));
             props.onDone(true);
           }}
         />

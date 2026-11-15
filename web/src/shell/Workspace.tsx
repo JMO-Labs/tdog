@@ -1,3 +1,4 @@
+import { useCopy } from "../copy/copy";
 import { useCallback, useEffect, useState } from "react";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
@@ -65,6 +66,7 @@ export function Workspace({
   const [closing, setClosing] = useState<string | null>(null);
   const [kill, setKill] = useState<string | null>(null); // "all" or scene id
   const toast = useToast();
+  const c = useCopy();
   useEffect(() => saveScenes(sc), [sc]);
   const onLeaves = useCallback(
     (scene: string, ids: string[]) =>
@@ -117,7 +119,7 @@ export function Workspace({
     setKill(null);
     const done = await Promise.all(targets.map((p) => killScene(p)));
     const n = done.filter(Boolean).length;
-    toast("success", `Killed ${n} shell${n === 1 ? "" : "s"}.`);
+    toast("success", c(n === 1 ? "kill.done1" : "kill.done", { n }));
   };
 
   const onSize = useCallback(

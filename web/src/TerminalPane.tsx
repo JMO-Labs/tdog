@@ -1,3 +1,4 @@
+import { useCopy } from "./copy/copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TerminalSession, type SessionState } from "./terminal/session";
 import type { TerminalRenderer, TerminalTheme } from "./terminal/renderer";
@@ -127,8 +128,9 @@ export function TerminalPane({
   const [state, setState] = useState<SessionState>({ status: "connecting" });
 
   const toast = useToast();
+  const c = useCopy();
   const { phase, noteOutput } = useConnectionPhase(state, () =>
-    toast("success", "Reconnected. Scrollback replayed."),
+    toast("success", c("conn.back")),
   );
   const noteRef = useRef(noteOutput);
   noteRef.current = noteOutput;
