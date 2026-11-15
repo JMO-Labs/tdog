@@ -185,7 +185,7 @@ func (s *Store) add(family, source string, files []blob) error {
 		}
 		kept := es[:0]
 		for _, e := range es {
-			if !(e.Family == it.e.Family && e.Style == it.e.Style) {
+			if e.Family != it.e.Family || e.Style != it.e.Style {
 				kept = append(kept, e)
 			}
 		}
@@ -321,7 +321,7 @@ func (s *Store) upload(w http.ResponseWriter, r *http.Request) {
 		jerr(w, http.StatusBadRequest, "missing file field")
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	data, err := io.ReadAll(io.LimitReader(f, MaxUpload+1))
 	if err != nil || len(data) > MaxUpload {
 		jerr(w, http.StatusRequestEntityTooLarge, "font too large (20 MB max)")

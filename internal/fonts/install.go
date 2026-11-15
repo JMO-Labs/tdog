@@ -41,7 +41,7 @@ func httpGet(ctx context.Context, url string, max int64) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, ErrNotFound
 	}
@@ -108,7 +108,7 @@ func (s *Store) installNerd(ctx context.Context, name string) error {
 				continue
 			}
 			data, _ := io.ReadAll(io.LimitReader(rc, MaxUpload+1))
-			rc.Close()
+			_ = rc.Close()
 			if len(data) <= MaxUpload {
 				files = append(files, blob{zf.Name, data})
 			}
