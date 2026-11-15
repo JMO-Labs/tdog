@@ -24,6 +24,7 @@ import { type PaneOpen } from "./PaneSlot";
 import { SceneView } from "./SceneView";
 import { openScenePreset } from "../presets/openScene";
 import { usePresetFlows } from "../presets/usePresetFlows";
+import { useDirtyScenes } from "../presets/useDirtyScenes";
 import {
   addNamedScene,
   addScene,
@@ -95,10 +96,11 @@ export function Workspace({
   const add = useCallback(() => setSc((s) => addScene(s, newId("sc"))), []);
   const openSceneTab = (id: string, name: string) =>
     setSc((s) => addNamedScene(s, id, name));
-  const presetDialogs = usePresetFlows({
+  const flows = usePresetFlows({
     scene: sc.active,
     openTab: openSceneTab,
   });
+  const dirty = useDirtyScenes(sc.scenes.map((x) => x.id));
   const finishClose = useCallback(
     (id: string) => {
       (leafMap[id] ?? []).forEach((p) => void killScene(p));
@@ -171,7 +173,10 @@ export function Workspace({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) return;
-      if (e.key === ",") {
+      if (e.key === "s" && !e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        void flows.save();
+      } else if (e.key === ",") {
         e.preventDefault();
         setSettings(true);
       } else if (e.shiftKey && e.key.toLowerCase() === "m") {
@@ -196,7 +201,7 @@ export function Workspace({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [add, select, sc.scenes]);
+  }, [add, select, sc.scenes, flows]);
 
   useEffect(() => {
     const offs = [
@@ -293,6 +298,19 @@ export function Workspace({
     ],
     [
       {
+        label: "Save scene",
+        icon: "server",
+        shortcut: "⌘S",
+        onSelect: () => void flows.save(),
+      },
+      {
+        label: "Save scene as…",
+        icon: "server",
+        onSelect: () => void flows.saveAs(),
+      },
+    ],
+    [
+      {
         label: "Studio",
         icon: "brush",
         shortcut: "⌘.",
@@ -327,6 +345,10 @@ export function Workspace({
           onRename={(id, n) => setSc((s) => renameScene(s, id, n))}
           onClose={requestClose}
           onKill={setKill}
+          dirty={dirty}
+          onSave={(id) => void flows.save(id)}
+          onSaveAs={(id) => void flows.saveAs(id)}
+          onOpenSaved={() => void flows.openSaved()}
           onReorder={(id, to) => setSc((s) => reorderScene(s, id, to))}
           onDropPane={dropOnTab}
         />
@@ -440,7 +462,7 @@ export function Workspace({
         onClose={() => setKill(null)}
         onConfirm={() => void runKill()}
       />
-      {presetDialogs}
+      {flows.dialogs}
       <Studio
         open={studio}
         onClose={() => setStudio(false)}

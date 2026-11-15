@@ -55,9 +55,16 @@ describe("themeStore", () => {
     off();
   });
   it("forces data-theme to appearance when no light variant", () => {
-    themeStore.select("wetwired");
-    themeStore.setScheme("light");
-    expect(document.documentElement.dataset.theme).toBe("dark");
+    // Every bundled theme ships a light variant; register a dark-only one.
+    const { light: _light, ...darkOnly } = THEMES[0];
+    THEMES.push({ ...darkOnly, id: "dark-only-test" });
+    try {
+      themeStore.select("dark-only-test");
+      themeStore.setScheme("light");
+      expect(document.documentElement.dataset.theme).toBe("dark");
+    } finally {
+      THEMES.pop();
+    }
   });
   it("uses the light variant when shipped", () => {
     themeStore.select("memphis-pop");

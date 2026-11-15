@@ -57,15 +57,23 @@ export function draftToToml(d: Draft): string {
     if (s?.preset) presets[id] = s.preset;
     if (s?.fontSize) fontSize[id] = s.fontSize;
   });
-  return sceneToml(d.name, tree, presets, {
-    top: [
-      `autostart = ${d.autostart}`,
-      `gap = ${d.gap}`,
-      `pane_opacity = ${d.opacity}`,
-    ],
-    background: d.bg ? ['kind = "color"', `ref = ${JSON.stringify(d.bg)}`] : [],
-    fontSize,
-  });
+  return sceneToml(
+    d.name,
+    tree,
+    presets,
+    {},
+    {
+      top: [
+        `autostart = ${d.autostart}`,
+        `gap = ${d.gap}`,
+        `pane_opacity = ${d.opacity}`,
+      ],
+      background: d.bg
+        ? ['kind = "color"', `ref = ${JSON.stringify(d.bg)}`]
+        : [],
+      fontSize,
+    },
+  );
 }
 
 type Obj = Record<string, unknown>;

@@ -139,7 +139,7 @@ test("start errors toast the server message", async () => {
   expect(screen.getAllByRole("tab")).toHaveLength(1);
 });
 
-test("Save scene as preset… writes layout and pane presets", async () => {
+test("Save scene as… writes layout and pane presets", async () => {
   localStorage.setItem(
     "tdog.layout.scene 1",
     JSON.stringify({ t: "leaf", id: "p1" }),
@@ -148,7 +148,8 @@ test("Save scene as preset… writes layout and pane presets", async () => {
   routes["PUT /api/presets/scene/mine"] = () =>
     new Response(null, { status: 204 });
   mount();
-  await runCommand("Save scene as preset…");
+  routes["GET /api/presets/scene"] = () => json([]);
+  await runCommand("Save scene as…");
   fireEvent.change(screen.getByLabelText("Preset name"), {
     target: { value: "mine" },
   });
@@ -165,7 +166,8 @@ test("save validation errors toast the server message", async () => {
   routes["PUT /api/presets/scene/bad"] = () =>
     json({ error: "layout.ratio: must be between 0.1 and 0.9" }, 400);
   mount();
-  await runCommand("Save scene as preset…");
+  routes["GET /api/presets/scene"] = () => json([]);
+  await runCommand("Save scene as…");
   fireEvent.change(screen.getByLabelText("Preset name"), {
     target: { value: "bad" },
   });

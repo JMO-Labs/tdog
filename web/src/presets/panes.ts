@@ -64,3 +64,28 @@ export function setScenePreset(tab: string, name: string): void {
     /* storage unavailable: the scene just has no background */
   }
 }
+
+/** Per-pane terminal theme restored from a saved scene (beats the preset's). */
+const THEME_KEY = "tdog.paneThemes";
+function readThemes(): Record<string, string> {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(THEME_KEY) ?? "{}");
+    return v && typeof v === "object" && !Array.isArray(v)
+      ? (v as Record<string, string>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+export const paneTheme = (pane: string): string | undefined =>
+  readThemes()[pane];
+export function setPaneTheme(pane: string, theme: string): void {
+  try {
+    localStorage.setItem(
+      THEME_KEY,
+      JSON.stringify({ ...readThemes(), [pane]: theme }),
+    );
+  } catch {
+    /* storage unavailable: the pane keeps its preset theme */
+  }
+}

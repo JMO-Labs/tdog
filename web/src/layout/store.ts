@@ -17,6 +17,13 @@ function valid(n: unknown): n is Node {
   );
 }
 
+const subs = new Set<() => void>();
+/** Called after every saved layout change (any scene). */
+export const onAnyLayoutSave = (f: () => void) => {
+  subs.add(f);
+  return () => void subs.delete(f);
+};
+
 /** Persist a scene's tree (null = no panes). Storage errors are ignored. */
 export function saveLayout(scene: string, tree: Node | null): void {
   try {
@@ -24,6 +31,7 @@ export function saveLayout(scene: string, tree: Node | null): void {
   } catch {
     /* private mode / quota: layout just won't persist */
   }
+  subs.forEach((f) => f());
 }
 
 /** Saved tree, null for an emptied scene, undefined when nothing usable. */
