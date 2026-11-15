@@ -50,9 +50,9 @@ func bashRCFile() string {
 		if err != nil {
 			return
 		}
-		defer f.Close()
-		if _, err := f.WriteString(bashRC); err == nil {
-			rcPath = f.Name()
+		_, werr := f.WriteString(bashRC)
+		if cerr := f.Close(); werr == nil && cerr == nil {
+			rcPath = f.Name() // only use the rc file if it was fully written
 		}
 	})
 	return rcPath
