@@ -104,44 +104,97 @@ export function Plugins() {
     }
   };
 
+  const installBundledCarefulCommands = async () => {
+    try {
+      // Install the bundled careful-commands plugin
+      // The server provides it at /api/plugins/bundled/careful-commands
+      const response = await fetch("/api/plugins/bundled/careful-commands");
+      if (!response.ok) {
+        throw new Error("Failed to load bundled plugin");
+      }
+
+      // The response should be a zip file
+      const blob = await response.blob();
+      const file = new File([blob], "careful-commands.zip", {
+        type: "application/zip",
+      });
+
+      // Use the inspect and install flow
+      const staged = await inspectPlugin({ file });
+      setStaged(staged);
+      setConfirmInstall(true);
+    } catch (err: any) {
+      toast("fail", err.message || "Failed to install Careful Commands");
+    }
+  };
+
   return (
     <div className="plugins-settings">
       <h3>Plugins</h3>
 
       {loading ? (
         <p className="muted">Loading...</p>
-      ) : plugins.length === 0 ? (
-        <p className="muted">No plugins installed.</p>
       ) : (
-        <div className="plugins-list">
-          {plugins.map((p) => (
-            <div key={p.id} className="plugin-item">
-              <div className="plugin-header">
-                <h4>{p.id}</h4>
-                <Switch
-                  labelledBy={`sw-${p.id}`}
-                  checked={p.enabled}
-                  onChange={(enabled) => void handleToggle(p.id, enabled)}
-                />
-              </div>
-              <p className="muted">v{p.version}</p>
-              <div className="plugin-permissions">
-                {p.permissions.map((perm) => (
-                  <span key={perm} className="permission-chip">
-                    {perm}
-                  </span>
-                ))}
-              </div>
+        <>
+          {/* Careful commands suggestion */}
+          {!plugins.some((p) => p.id === "careful-commands") && (
+            <div
+              className="plugin-suggestion"
+              style={{
+                padding: "16px",
+                marginBottom: "16px",
+                border: "1px solid var(--border)",
+                borderRadius: "4px",
+                backgroundColor: "var(--bg-2)",
+              }}
+            >
+              <h4 style={{ margin: "0 0 8px 0" }}>Careful Commands</h4>
+              <p className="muted" style={{ margin: "0 0 12px 0" }}>
+                Review and confirm dangerous commands before execution.
+              </p>
               <Button
-                variant="danger-quiet"
-                onClick={() => void handleDelete(p.id)}
-                style={{ marginTop: "8px" }}
+                onClick={() => void installBundledCarefulCommands()}
+                variant="primary"
               >
-                Uninstall
+                Install Careful Commands
               </Button>
             </div>
-          ))}
-        </div>
+          )}
+
+          {plugins.length === 0 && !loading ? (
+            <p className="muted">No plugins installed.</p>
+          ) : (
+            <div className="plugins-list">
+              {plugins.map((p) => (
+                <div key={p.id} className="plugin-item">
+                  <div className="plugin-header">
+                    <h4>{p.id}</h4>
+                    <Switch
+                      labelledBy={`sw-${p.id}`}
+                      checked={p.enabled}
+                      onChange={(enabled) => void handleToggle(p.id, enabled)}
+                    />
+                  </div>
+                  <p className="muted">v{p.version}</p>
+                  <div className="plugin-permissions">
+                    {p.permissions.map((perm) => (
+                      <span key={perm} className="permission-chip">
+                        {perm}
+                      </span>
+                    ))}
+                  </div>
+                  <Button
+                    variant="danger-quiet"
+                    onClick={() => void handleDelete(p.id)}
+                    style={{ marginTop: "8px" }}
+                  >
+                    Uninstall
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <h4 style={{ marginTop: "24px" }}>Add plugin</h4>

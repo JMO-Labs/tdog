@@ -119,7 +119,7 @@ export class PluginBroker {
       case "input:gate:request":
         return this.handleInputGate(m);
       case "overlay:render":
-        return this.handleOverlayRender(m);
+        return void this.handleOverlayRender(m);
       case "overlay:dismiss":
         return this.ctx.dismissOverlay();
       // ignore other types (ready, error, observe are informational)
@@ -171,9 +171,9 @@ export class PluginBroker {
     });
   }
 
-  private handleOverlayRender(
+  private async handleOverlayRender(
     msg: Extract<PluginMessage, { type: "overlay:render" }>,
-  ): void {
+  ): Promise<void> {
     if (!this.hasPermission("overlay")) {
       this.sendToPlugin({
         type: "error",
@@ -183,13 +183,15 @@ export class PluginBroker {
       return;
     }
 
-    // TODO: Render overlay from declarative tree
-    // For now, just acknowledge
-    this.sendToPlugin({
-      type: "error",
-      id: msg.type,
-      error: "Overlay rendering not yet implemented",
-    });
+    try {
+      await this.ctx.renderOverlay(msg.tree);
+    } catch (err) {
+      this.sendToPlugin({
+        type: "error",
+        id: msg.type,
+        error: "Failed to render overlay",
+      });
+    }
   }
 
   private sendToPlugin(msg: HostMessage): void {
