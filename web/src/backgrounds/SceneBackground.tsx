@@ -29,7 +29,7 @@ export function SceneBackground({
   const spec = bgSpec(resolved);
   return (
     <SceneBgContext.Provider value={spec !== null}>
-      <BackgroundLayer spec={spec} />
+      <BackgroundLayer spec={spec} scene />
       {children}
     </SceneBgContext.Provider>
   );

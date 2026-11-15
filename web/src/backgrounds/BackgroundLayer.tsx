@@ -10,10 +10,9 @@ const FILL = {
   overflow: "hidden",
 } as const;
 
-function useOnScreen(ref: { current: Element | null }): boolean {
+function useOnScreen(el: Element | null): boolean {
   const [on, setOn] = useState(true);
   useEffect(() => {
-    const el = ref.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver((es) => {
       const last = es[es.length - 1];
@@ -21,16 +20,24 @@ function useOnScreen(ref: { current: Element | null }): boolean {
     });
     io.observe(el);
     return () => io.disconnect();
-  }, [ref]);
+  }, [el]);
   return on;
 }
 
 /** One background layer, drawn behind the terminal. Nothing in performance mode. */
-export function BackgroundLayer({ spec }: { spec: BgSpec | null }) {
+export function BackgroundLayer({
+  spec,
+  scene = false,
+}: {
+  spec: BgSpec | null;
+  /** Scene-wide layer: marks itself so CSS can make panes see-through. */
+  scene?: boolean;
+}) {
   const [perf] = usePref("perf");
   const pageVisible = usePageVisible();
-  const ref = useRef<HTMLDivElement>(null);
-  const onScreen = useOnScreen(ref);
+  // State-held element: the observer attaches when the div first appears.
+  const [el, setEl] = useState<HTMLDivElement | null>(null);
+  const onScreen = useOnScreen(el);
   const play = shouldPlay({ pageVisible, onScreen, perf });
   const vid = useRef<HTMLVideoElement>(null);
   const isVideo = spec?.kind === "video";
@@ -46,8 +53,9 @@ export function BackgroundLayer({ spec }: { spec: BgSpec | null }) {
   const still = spec.kind === "image" && !play;
   return (
     <div
-      ref={ref}
+      ref={setEl}
       data-testid="bg-layer"
+      data-scene-bg={scene ? "" : undefined}
       aria-hidden="true"
       style={{
         ...FILL,

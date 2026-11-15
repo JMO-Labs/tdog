@@ -26,6 +26,9 @@ test("draws the scene layer and tells panes to be see-through", async () => {
   await waitFor(() => screen.getByTestId("bg-layer"));
   expect(screen.getByTestId("probe").textContent).toBe("true");
   expect(screen.getByTestId("bg-layer").style.opacity).toBe("0.8");
+  expect(screen.getByTestId("bg-layer").hasAttribute("data-scene-bg")).toBe(
+    true,
+  );
 });
 
 test("a scene without a preset has no layer", () => {

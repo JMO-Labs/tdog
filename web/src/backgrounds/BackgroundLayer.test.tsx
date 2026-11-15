@@ -60,6 +60,14 @@ test("video pauses when scrolled off-screen", () => {
   expect(pause).toHaveBeenCalled();
 });
 
+test("observer attaches when the spec arrives after mount", () => {
+  const { rerender } = render(<BackgroundLayer spec={null} />);
+  rerender(<BackgroundLayer spec={video} />);
+  pause.mockClear();
+  act(() => io([{ isIntersecting: false }]));
+  expect(pause).toHaveBeenCalled();
+});
+
 test("performance mode draws nothing", () => {
   setPref("perf", true);
   render(<BackgroundLayer spec={video} />);
