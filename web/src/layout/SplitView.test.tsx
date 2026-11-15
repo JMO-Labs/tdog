@@ -184,6 +184,12 @@ test("palette has every pane action for the focused pane only", () => {
   expect(p.onClose).toHaveBeenCalledWith("b");
   act(() => by("pane:rename").run());
   expect(screen.getByRole("textbox", { name: "Pane name" })).toBeTruthy();
+  by("pane:split-right").run();
+  expect(p.onSplit).toHaveBeenCalledWith("b", "row");
+  by("pane:split-down").run();
+  expect(p.onSplit).toHaveBeenCalledWith("b", "col");
+  by("pane:layout:2-up").run();
+  expect(p.onSnap).toHaveBeenCalledWith("2-up");
 });
 
 test("inactive scenes register no pane commands", () => {
@@ -201,4 +207,23 @@ test("inactive scenes register no pane commands", () => {
   );
   fireEvent.focus(screen.getByRole("button", { name: "Split down" }));
   expect(getCommands()).toHaveLength(0);
+});
+
+test("palette layout asks to confirm when panes would close", () => {
+  clearCommands();
+  const { p } = setup(two);
+  fireEvent.focus(screen.getAllByRole("button", { name: "Split down" })[1]);
+  const run = () =>
+    getCommands()
+      .find((c) => c.id === "pane:layout:single")!
+      .run();
+  p.onSnap.mockReturnValue(["x", "y"] as never);
+  const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false);
+  run();
+  expect(confirm).toHaveBeenCalledWith("Close 2 panes and apply?");
+  expect(p.onSnap).not.toHaveBeenCalledWith("single", true);
+  confirm.mockReturnValueOnce(true);
+  run();
+  expect(p.onSnap).toHaveBeenCalledWith("single", true);
+  confirm.mockRestore();
 });
