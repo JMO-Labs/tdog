@@ -119,6 +119,17 @@ describe("bundled themes", () => {
     expect(by("ninety-five").light).toBeTruthy();
     expect(by("hack-the-planet").chrome.pattern).toBe("zigzag");
   });
+
+  it("ships a light variant for every theme in the light-variants set", () => {
+    for (const id of [
+      "liquid-metal",
+      "llama-skin",
+      "mainframe",
+      "morph-squad",
+      "multipass",
+    ])
+      expect(THEMES.find((t) => t.id === id)?.light, id).toBeDefined();
+  });
   it("ships a light variant for the dark-only themes", () => {
     for (const id of [
       "deep-gravity",
@@ -131,6 +142,26 @@ describe("bundled themes", () => {
       "bug-hunt",
       "cartridge-blast",
       "colonial-marine",
+    ])
+      expect(THEMES.find((t) => t.id === id)?.light, id).toBeDefined();
+  });
+  it("ships a light variant for every dual-appearance theme", () => {
+    for (const id of [
+      "slime-time",
+      "truth-is-out-there",
+      "virtual-mind",
+      "wake-up-neo",
+      "wetwired",
+    ])
+      expect(THEMES.find((t) => t.id === id)?.light, id).toBeDefined();
+  });
+  it("ships a light variant for the dark-only pack", () => {
+    for (const id of [
+      "night-market",
+      "rip-and-tear",
+      "section-9",
+      "sewer-squad",
+      "sim-grid",
     ])
       expect(THEMES.find((t) => t.id === id)?.light, id).toBeDefined();
   });

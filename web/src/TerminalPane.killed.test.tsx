@@ -26,6 +26,7 @@ vi.mock("./terminal/xtermRenderer", () => ({
 }));
 vi.mock("./presets/panes", () => ({
   panePreset: () => undefined,
+  paneTheme: () => undefined,
   resolveSession: async () => undefined,
 }));
 

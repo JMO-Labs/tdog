@@ -1,4 +1,5 @@
 import "./pet.css";
+import { useCopy } from "../copy/copy";
 import {
   type CSSProperties,
   useEffect,
@@ -45,9 +46,9 @@ function useReducedMotion(): boolean {
 }
 
 const BUTTONS = [
-  ["A", "Feed"],
-  ["B", "Play fetch"],
-  ["C", "Clean up"],
+  ["A", "pet.btnFeed"],
+  ["B", "pet.btnPlay"],
+  ["C", "pet.btnClean"],
 ] as const;
 
 interface PetProps {
@@ -86,18 +87,19 @@ export function Pet({
   const worn =
     dress && theme.chrome.costume !== "none" ? theme.chrome.costume : null;
   const costume = worn?.rows;
+  const c = useCopy();
   const [notice, setNotice] = useState("");
   const seen = useRef(theme.id);
   useEffect(() => {
     if (seen.current === theme.id) return;
     seen.current = theme.id;
     if (!worn) return setNotice("");
-    setNotice(`Dogbert put on a ${worn.name}.`);
+    setNotice(c("pet.dressed", { name: worn.name }));
     const t = setTimeout(() => setNotice(""), NOTICE_MS);
     return () => clearTimeout(t);
-  }, [theme.id, worn]);
+  }, [theme.id, worn, c]);
   const frame = petFrame({ awake, tick, reduced, view, costume });
-  const caption = notice || frame.caption;
+  const caption = notice || c(frame.caption);
 
   useEffect(() => {
     if (reduced) return;
@@ -141,7 +143,7 @@ export function Pet({
         ref={egg}
         data-testid="pet"
         className={`pet-egg ${view ? (view.asleep ? "sleep" : "awake") : awake ? "awake" : "sleep"}${reduced ? " reduced" : ""}`}
-        aria-label="Open Dogbert"
+        aria-label={c("pet.open")}
         aria-haspopup="dialog"
         aria-expanded={open}
         title={caption}
@@ -151,7 +153,12 @@ export function Pet({
         {attention && <span className="pet-pip" data-testid="pet-pip" />}
       </button>
       {open && (
-        <div ref={pop} className="pet-pop" role="dialog" aria-label="Dogbert">
+        <div
+          ref={pop}
+          className="pet-pop"
+          role="dialog"
+          aria-label={c("pet.name")}
+        >
           <div className="pet-card">
             <div className="egg">
               <span className="egg-ring" aria-hidden="true" />
@@ -197,8 +204,8 @@ export function Pet({
                   <button
                     key={k}
                     data-pet={k}
-                    aria-label={name}
-                    title={name}
+                    aria-label={c(name)}
+                    title={c(name)}
                     onClick={() => {
                       engine?.press(k);
                       setTick((n) => n + 1);
