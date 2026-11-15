@@ -66,3 +66,10 @@ export async function putScenePreset(
   const path = `/api/presets/scene/${encodeURIComponent(name)}`;
   await check(await apiPut(path, toml));
 }
+
+/** Resolve a scene preset's own fields (its background layer, theme). */
+export async function resolveScene(name: string): Promise<Resolved> {
+  const q = new URLSearchParams({ scene: name });
+  const r = await check(await apiFetch(`/api/presets/resolve?${q}`));
+  return (await r.json()) as Resolved;
+}

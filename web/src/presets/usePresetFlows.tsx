@@ -8,7 +8,7 @@ import { listPresets, putScenePreset, startScene } from "./api";
 import { errorMessage, preparePane } from "./launch";
 import { runToTree } from "./layout";
 import { NameDialog, PresetPicker } from "./PresetPicker";
-import { bindSession, panePresets } from "./panes";
+import { bindSession, panePresets, setScenePreset } from "./panes";
 import { sceneToml } from "./toml";
 
 type Pick = { kind: "terminal" | "scene"; names: string[] } | null;
@@ -76,6 +76,7 @@ export function usePresetFlows({
         const tab = newId("sc");
         for (const [pane, s] of Object.entries(sessions)) bindSession(pane, s);
         saveLayout(tab, tree);
+        setScenePreset(tab, name);
         openTab(tab, name);
         toast(
           "success",
