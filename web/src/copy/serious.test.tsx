@@ -101,3 +101,23 @@ test("login shows plain wrong-password text and sign-in toast", async () => {
   expect(screen.queryByText(/shells are right/)).toBeNull();
   expect(done).toHaveBeenCalled();
 });
+
+test("setup tape meter and auth gags are plain in serious mode", async () => {
+  const { SetupScreen } = await import("../auth/screens");
+  const { NoNo } = await vi.importActual<typeof import("../auth/SignOn")>(
+    "../auth/SignOn",
+  );
+  render(
+    <ToastProvider>
+      <SetupScreen onDone={() => {}} />
+    </ToastProvider>,
+  );
+  expect(
+    screen.getByText("Password too short. 8 characters minimum."),
+  ).toBeTruthy();
+  expect(screen.queryByText(/Tape empty|tubular/)).toBeNull();
+  cleanup();
+  render(<NoNo detail="x" onDone={() => {}} />);
+  expect(screen.getByText("Access denied.")).toBeTruthy();
+  expect(screen.queryByText(/Ah ah ah/)).toBeNull();
+});

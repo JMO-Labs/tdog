@@ -269,7 +269,7 @@ export function SetupScreen(props: { onDone: (signedIn: boolean) => void }) {
           <i style={{ width: `${meter.pct}%` }} />
         </div>
         <p className="tape-label muted" role="status">
-          {meter.label}
+          {c(meter.key, meter.vars)}
         </p>
         <Field label="Confirm password">
           <Input

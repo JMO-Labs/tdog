@@ -207,6 +207,30 @@ export const COPY = {
     fun: "Kill scene {scope}?",
     plain: "Kill scene {scope}?",
   },
+  "tape.empty": {
+    fun: "Tape empty. {min} characters minimum.",
+    plain: "Password too short. {min} characters minimum.",
+  },
+  "tape.more": {
+    fun: "{left} more characters to go.",
+    plain: "{left} more characters needed.",
+  },
+  "tape.more1": {
+    fun: "1 more character to go.",
+    plain: "1 more character needed.",
+  },
+  "tape.ok": { fun: "Good enough to record.", plain: "Password accepted." },
+  "tape.full": {
+    fun: "Full tape. Totally tubular.",
+    plain: "Strong password.",
+  },
+  "signon.dialing": { fun: "Dialing…", plain: "Connecting…" },
+  "signon.verifying": {
+    fun: "Verifying password…",
+    plain: "Verifying password…",
+  },
+  "signon.connected": { fun: "Connected!", plain: "Connected." },
+  "signon.denied": { fun: "Ah ah ah!", plain: "Access denied." },
 } satisfies Record<string, Variants>;
 
 export type CopyKey = keyof typeof COPY;
