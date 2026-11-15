@@ -26,6 +26,11 @@ function setup() {
   return { p, open };
 }
 
+function typeToFilter(text: string) {
+  const menu = screen.getByRole("menu");
+  fireEvent.keyDown(menu, { key: text[0] });
+}
+
 test("swap with previous reports -1 and closes the menu", () => {
   const { p, open } = setup();
   open();
@@ -37,31 +42,38 @@ test("swap with previous reports -1 and closes the menu", () => {
 test("Escape closes the menu; other keys do not", () => {
   const { open } = setup();
   open();
-  fireEvent.keyDown(screen.getByRole("menu"), { key: "a" });
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "Shift" });
   expect(screen.getByRole("menu")).toBeTruthy();
   fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
   expect(screen.queryByRole("menu")).toBeNull();
 });
 
-test("focus leaving the menu closes it; focus within keeps it open", () => {
+test("typing filters first; Escape clears the filter, then closes", () => {
   const { open } = setup();
   open();
-  const item = screen.getByRole("menuitem", { name: "Swap with next" });
-  fireEvent.blur(item, {
-    relatedTarget: screen.getByRole("button", { name: "Pane menu" }),
-  });
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "a" });
+  expect(screen.getByRole("textbox", { name: "Filter actions" })).toBeTruthy();
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+  expect(screen.queryByRole("textbox", { name: "Filter actions" })).toBeNull();
   expect(screen.getByRole("menu")).toBeTruthy();
-  fireEvent.blur(item, { relatedTarget: screen.getByText("outside") });
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
   expect(screen.queryByRole("menu")).toBeNull();
 });
 
-test("menu has a heading, focuses first item, arrows move and wrap", () => {
+test("outside pointerdown closes the menu", () => {
   const { open } = setup();
   open();
-  expect(screen.getByText("Pane actions")).toBeTruthy();
+  expect(screen.getByRole("menu")).toBeTruthy();
+  fireEvent.pointerDown(document.body);
+  expect(screen.queryByRole("menu")).toBeNull();
+});
+
+test("menu focuses first item, arrows move and wrap", () => {
+  const { open } = setup();
+  open();
   const items = screen.getAllByRole("menuitem");
   expect(document.activeElement).toBe(items[0]);
-  const menu = screen.getByRole("menu");
+  const menu = screen.getByRole("menu", { name: "Pane actions" });
   fireEvent.keyDown(menu, { key: "ArrowDown" });
   expect(document.activeElement).toBe(items[1]);
   fireEvent.keyDown(menu, { key: "ArrowUp" });
@@ -104,7 +116,7 @@ test("ArrowRight on Move to scene opens the submenu; other keys do not", () => {
   const { open } = setup();
   open();
   const item = screen.getByRole("menuitem", { name: "Move to scene" });
-  fireEvent.keyDown(item, { key: "a" });
+  fireEvent.keyDown(item, { key: "Shift" });
   expect(screen.queryByRole("menu", { name: "Move to scene" })).toBeNull();
   fireEvent.keyDown(item, { key: "ArrowRight" });
   expect(screen.getByRole("menu", { name: "Move to scene" })).toBeTruthy();
@@ -208,4 +220,37 @@ test("Cancel returns from the confirmation to the template list", () => {
   fireEvent.click(screen.getByRole("menuitem", { name: "Cancel" }));
   expect(screen.getByRole("menuitem", { name: "Single" })).toBeTruthy();
   expect(s.p.onSnap).not.toHaveBeenCalledWith("single", true);
+});
+
+test("typing to filter shows matching actions", () => {
+  const { open } = setup();
+  open();
+  const menu = screen.getByRole("menu", { name: "Pane actions" });
+  fireEvent.keyDown(menu, { key: "s" });
+  const filterInput = screen.getByPlaceholderText(
+    "Filter actions",
+  ) as HTMLInputElement;
+  expect(filterInput).toBeTruthy();
+  expect(filterInput.value).toBe("s");
+  const items = screen.getAllByRole("menuitem");
+  // Should show items containing "s": Split right, Split down, Swap, Layouts › Single, etc.
+  for (const item of items) {
+    const text = item.textContent || "";
+    expect(/s/i.test(text)).toBe(true);
+  }
+});
+
+test("typing Escape clears filter", () => {
+  const { open } = setup();
+  open();
+  const menu = screen.getByRole("menu", { name: "Pane actions" });
+  fireEvent.keyDown(menu, { key: "r" });
+  let filterInput = screen.getByPlaceholderText(
+    "Filter actions",
+  ) as HTMLInputElement;
+  expect(filterInput.value).toBe("r");
+  fireEvent.keyDown(filterInput, { key: "Escape" });
+  expect(screen.queryByPlaceholderText("Filter actions")).toBeNull();
+  const items = screen.getAllByRole("menuitem");
+  expect(items.length).toBeGreaterThan(4);
 });

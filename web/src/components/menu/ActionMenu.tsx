@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { Icon, type IconName } from "../../shell/icons";
 import "./menu.css";
+import { SubMenu } from "./SubMenu";
+export { flipSubmenuPosition } from "./SubMenu";
 
 export interface MenuItem {
   label: string;
@@ -13,7 +15,11 @@ export interface MenuItem {
   isRadio?: boolean;
   /** Colour dot before the label (e.g. a theme's accent). */
   swatch?: string;
+  /** Short state shown at the right, e.g. "On" / "Off". */
+  hint?: string;
   onSelect?: () => void;
+  /** Run without closing the menu (e.g. a step inside a submenu). */
+  keepOpen?: boolean;
   submenu?: MenuItem[];
 }
 
@@ -24,23 +30,8 @@ export interface ActionMenuProps {
   groups: MenuItem[][];
   onDismiss: (refocus?: boolean) => void;
   ariaLabel?: string;
-}
-
-/** Pure function: flip submenu left if it would overflow right. */
-export function flipSubmenuPosition(
-  parentRect: DOMRect,
-  submenuWidth: number,
-): { left?: number; right?: number } {
-  const RIGHT_THRESHOLD = 200; // pixels from right edge before flipping
-  const parentRight = parentRect.right;
-  const windowRight = window.innerWidth;
-
-  if (windowRight - parentRight < RIGHT_THRESHOLD + submenuWidth) {
-    // Flip to left side
-    return { right: windowRight - parentRect.left };
-  }
-  // Default: open to the right
-  return { left: parentRect.right };
+  /** Told when a submenu opens (its label) or closes (null). */
+  onSubmenuChange?: (label: string | null) => void;
 }
 
 /** Wrap the first case-insensitive match of `q` in a <mark>. */
@@ -60,27 +51,44 @@ export function ActionMenu(props: ActionMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x: props.x, y: props.y });
   const [filter, setFilter] = useState("");
-  const [openSub, setOpenSub] = useState<string | null>(null);
+  const [openSub, setOpenSubState] = useState<string | null>(null);
+  /** The open submenu was opened from the keyboard: focus its first item. */
+  const [subFocus, setSubFocus] = useState(false);
+  const setOpenSub = (label: string | null, focus = false) => {
+    setOpenSubState(label);
+    setSubFocus(focus);
+    props.onSubmenuChange?.(label);
+  };
+  /** Close the submenu and put focus back on the item that opened it. */
+  const closeSub = () => {
+    const label = openSub;
+    setOpenSub(null);
+    if (label)
+      [...(ref.current?.querySelectorAll<HTMLElement>("[data-sub]") ?? [])]
+        .find((el) => el.dataset.sub === label)
+        ?.focus();
+  };
   const filterInputRef = useRef<HTMLInputElement>(null);
 
-  // Reposition menu to stay in viewport
+  // Keep the menu inside the viewport (no focus changes here).
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-
     const r = el.getBoundingClientRect();
-    const newPos = {
+    setPos({
       x: Math.max(0, Math.min(props.x, window.innerWidth - r.width)),
       y: Math.max(0, Math.min(props.y, window.innerHeight - r.height)),
-    };
+    });
+  }, [props.x, props.y]);
 
-    setPos(newPos);
-    if (!filter) {
-      el.querySelector<HTMLElement>(
-        "[role^=menuitem]:not([disabled])",
-      )?.focus();
-    }
-  }, [props.x, props.y, filter]);
+  // Focus the first item when the menu opens and when the filter is cleared;
+  // not on every re-render, or it would pull focus out of an open submenu.
+  useLayoutEffect(() => {
+    if (filter) return;
+    ref.current
+      ?.querySelector<HTMLElement>("[role^=menuitem]:not([disabled])")
+      ?.focus();
+  }, [filter]);
 
   // Focus filter input when active
   useLayoutEffect(() => {
@@ -102,27 +110,43 @@ export function ActionMenu(props: ActionMenuProps) {
 
   const run = (item: MenuItem, refocus = true) => {
     if (item.disabled) return;
-    if (item.submenu) return; // Submenu items don't close menu
+    if (item.submenu) {
+      setOpenSub(openSub === item.label ? null : item.label);
+      return;
+    }
+    if (item.keepOpen) return item.onSelect?.();
     props.onDismiss(refocus);
     item.onSelect?.();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const root = ref.current;
+    if (!root) return;
+    // Keys aimed at an item act on it; keys sent to a menu act on what has
+    // focus there (screen readers often send them to the menu itself).
+    const target = e.target as HTMLElement;
+    const active = document.activeElement as HTMLElement | null;
+    const from =
+      target.matches("[role^=menuitem], input") ||
+      !active ||
+      !root.contains(active)
+        ? target
+        : active;
+    const level =
+      (target.getAttribute("role") === "menu" && root.contains(target)
+        ? target
+        : from.closest<HTMLElement>("[role=menu]")) ?? root;
+    const inSub = level.classList.contains("menu-submenu");
+
     if (e.key === "Escape") {
       e.stopPropagation();
-      if (openSub) {
-        setOpenSub(null);
-        return;
-      }
-      if (filter) {
-        setFilter("");
-        return;
-      }
-      props.onDismiss();
-      return;
+      e.preventDefault();
+      if (inSub || openSub) return closeSub();
+      if (filter) return setFilter("");
+      return props.onDismiss(true);
     }
 
-    // Type to filter: any printable character
+    // Type to filter: any printable character (not while in a submenu)
     if (
       e.key.length === 1 &&
       !e.ctrlKey &&
@@ -136,58 +160,49 @@ export function ActionMenu(props: ActionMenuProps) {
       return;
     }
 
-    // If in filter input, handle navigation there
-    if (filter && e.target === filterInputRef.current) {
+    // In the filter box: ArrowDown/Enter go to the first result
+    if (filter && from === filterInputRef.current) {
       if (e.key === "ArrowDown" || e.key === "Enter") {
         e.preventDefault();
-        const first = ref.current?.querySelector<HTMLElement>(
-          "[role^=menuitem]:not([disabled])",
-        );
-        if (first) first.focus();
+        root
+          .querySelector<HTMLElement>("[role^=menuitem]:not([disabled])")
+          ?.focus();
       }
       return;
     }
 
-    // Keyboard navigation in menu
-    const items = Array.from(
-      ref.current?.querySelectorAll<HTMLElement>(
+    // This level's own items (not those of a nested submenu)
+    const items = [
+      ...level.querySelectorAll<HTMLElement>(
         "[role^=menuitem]:not([disabled])",
-      ) || [],
-    );
-
-    const current = e.target as HTMLElement;
-    const i = items.indexOf(current);
+      ),
+    ].filter((el) => el.closest("[role=menu]") === level);
+    const i = items.indexOf(from);
+    const go = (n: number) => items[(n + items.length) % items.length]?.focus();
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      const next = items[(i + 1) % items.length];
-      next?.focus();
+      go(i + 1);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      const prev = items[(i - 1 + items.length) % items.length];
-      prev?.focus();
+      go(i < 0 ? -1 : i - 1);
     } else if (e.key === "Home") {
       e.preventDefault();
-      items[0]?.focus();
+      go(0);
     } else if (e.key === "End") {
       e.preventDefault();
-      items[items.length - 1]?.focus();
+      go(-1);
     } else if (e.key === "ArrowRight") {
-      e.preventDefault();
-      const item = allVisibleItems()[i];
-      if (item?.submenu) {
-        setOpenSub(item.label);
+      const sub = from.dataset.sub;
+      if (sub) {
+        e.preventDefault();
+        setOpenSub(sub, true);
       }
-    } else if (e.key === "ArrowLeft") {
+    } else if (e.key === "ArrowLeft" && inSub) {
       e.preventDefault();
-      if (openSub) {
-        setOpenSub(null);
-      }
-    } else if (e.key === "Enter" && i >= 0) {
-      e.preventDefault();
-      const item = allVisibleItems()[i];
-      if (item && !item.submenu) run(item, true);
+      closeSub();
     }
+    // Enter and Space: the focused button clicks itself.
   };
 
   const allVisibleItems = (): MenuItem[] => {
@@ -261,25 +276,15 @@ export function ActionMenu(props: ActionMenuProps) {
         }
         aria-checked={isRadio ? item.checked : undefined}
         aria-expanded={item.submenu ? openSub === item.label : undefined}
+        data-sub={item.submenu ? item.label : undefined}
         aria-haspopup={item.submenu ? "menu" : undefined}
         disabled={item.disabled}
         className={`menu-item ${item.danger ? "danger" : ""}`}
         title={item.tooltip}
-        onClick={() => {
-          if (item.submenu) {
-            setOpenSub(openSub === item.label ? null : item.label);
-          } else {
-            run(item);
-          }
-        }}
-        onKeyDown={(e) => {
-          if (item.submenu && e.key === "ArrowRight") {
-            e.preventDefault();
-            setOpenSub(item.label);
-          }
-        }}
+        onClick={() => run(item)}
       >
         <span className="menu-label">{item.label}</span>
+        {item.hint && <span className="menu-hint">{item.hint}</span>}
         {item.shortcut && (
           <span className="menu-shortcut">{item.shortcut}</span>
         )}
@@ -288,7 +293,11 @@ export function ActionMenu(props: ActionMenuProps) {
             ✓
           </span>
         )}
-        {item.submenu && <span className="menu-arrow">›</span>}
+        {item.submenu && (
+          <span className="menu-arrow" aria-hidden="true">
+            ›
+          </span>
+        )}
       </button>
     );
   };
@@ -302,6 +311,20 @@ export function ActionMenu(props: ActionMenuProps) {
       style={{ left: pos.x, top: pos.y }}
       onContextMenu={(e) => e.preventDefault()}
       onKeyDown={handleKeyDown}
+      onBlur={() =>
+        // Focus moved somewhere else (e.g. Tab away): close. Checked a tick
+        // later so a re-render that drops the focused item doesn't count.
+        setTimeout(() => {
+          const a = document.activeElement;
+          if (
+            ref.current &&
+            a &&
+            a !== document.body &&
+            !ref.current.contains(a)
+          )
+            props.onDismiss(false);
+        })
+      }
     >
       {/* Filter input appears when user starts typing */}
       {filter && (
@@ -416,7 +439,8 @@ export function ActionMenu(props: ActionMenuProps) {
                           <SubMenu
                             label={item.label}
                             items={item.submenu}
-                            onSelect={run}
+                            focusFirst={subFocus}
+                            onSelect={(sub) => run(sub, true)}
                           />
                         )}
                       </div>
@@ -436,83 +460,6 @@ export function ActionMenu(props: ActionMenuProps) {
           <span>⌘K all commands</span>
         </div>
       )}
-    </div>
-  );
-}
-
-function SubMenu(props: {
-  label: string;
-  items: MenuItem[];
-  onSelect: (item: MenuItem, refocus?: boolean) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{
-    left?: number;
-    right?: number;
-    top?: number;
-  }>({ left: 0 });
-
-  // position: fixed in viewport coordinates, so the parent menu's scrolling
-  // list (overflow) can't clip the submenu.
-  useLayoutEffect(() => {
-    const el = ref.current;
-    const parent = el?.parentElement?.querySelector("[role^=menuitem]");
-    if (!el || !parent) return;
-    const rect = parent.getBoundingClientRect();
-    const h = el.offsetHeight;
-    const top = Math.max(8, Math.min(rect.top - 6, window.innerHeight - h - 8));
-    setPos({ ...flipSubmenuPosition(rect, el.offsetWidth || 180), top });
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      className="menu-submenu"
-      role="menu"
-      aria-label={props.label}
-      style={pos as React.CSSProperties}
-      onKeyDown={(e) => {
-        if (e.key === "Escape" || e.key === "ArrowLeft") {
-          e.stopPropagation();
-        }
-      }}
-    >
-      {props.items.map((item) => {
-        const isRadio = item.isRadio ?? item.checked !== undefined;
-        return (
-          <button
-            key={item.label}
-            role={isRadio ? "menuitemradio" : "menuitem"}
-            aria-checked={isRadio ? item.checked : undefined}
-            disabled={item.disabled}
-            className={`menu-item ${item.danger ? "danger" : ""}`}
-            title={item.tooltip}
-            onClick={() => props.onSelect(item, true)}
-          >
-            {item.swatch && (
-              <span
-                className="menu-swatch"
-                aria-hidden="true"
-                style={{ background: item.swatch }}
-              />
-            )}
-            <span className="menu-label">{item.label}</span>
-            {item.shortcut && (
-              <span className="menu-shortcut">{item.shortcut}</span>
-            )}
-            {isRadio && item.checked && (
-              <span className="menu-check" aria-hidden="true">
-                ✓
-              </span>
-            )}
-            {item.icon && (
-              <span className="menu-dot">
-                <Icon name={item.icon} />
-              </span>
-            )}
-          </button>
-        );
-      })}
     </div>
   );
 }
