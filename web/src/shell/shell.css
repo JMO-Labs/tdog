@@ -314,6 +314,11 @@
 .scene-view[data-active="false"] {
   visibility: hidden;
   pointer-events: none;
+  /* Descendants (dockview views, xterm) can set visibility/pointer-events back;
+     an ancestor's opacity and clip-path cannot be undone, so hidden scenes never
+     paint over the active one or take clicks. */
+  opacity: 0;
+  clip-path: inset(50%);
 }
 .dialog-actions {
   display: flex;
