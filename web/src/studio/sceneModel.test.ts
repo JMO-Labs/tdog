@@ -1,5 +1,11 @@
 import { expect, test } from "vitest";
-import { draftToToml, newDraft, parseDraft, type Draft } from "./sceneModel";
+import {
+  draftToToml,
+  newDraft,
+  parseDraft,
+  resizeSlots,
+  type Draft,
+} from "./sceneModel";
 
 const draft: Draft = {
   ...newDraft("dev"),
@@ -28,7 +34,11 @@ test("3-slot scene from two presets round-trips through TOML", () => {
 });
 
 test("single-slot and empty slots round-trip", () => {
-  const d: Draft = { ...newDraft("x"), template: "single" };
+  const d: Draft = {
+    ...newDraft("x"),
+    template: "single",
+    slots: resizeSlots([], "single"),
+  };
   expect(parseDraft(draftToToml(d))).toEqual(d);
 });
 
