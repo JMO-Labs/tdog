@@ -328,8 +328,11 @@ export function Workspace({
   return (
     <div className="ws">
       <header className="ws-head">
-        <span className="wordmark small" aria-label="tdog">
-          tdog
+        <span className="brand" aria-label="tdog">
+          <span className="logo-mark small" aria-hidden="true" />
+          <span className="wordmark small" aria-hidden="true">
+            tdog
+          </span>
         </span>
         <Tabs
           scenes={sc.scenes}

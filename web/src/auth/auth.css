@@ -107,6 +107,34 @@
     drop-shadow(0.05em 0.05em 0 var(--purple))
     drop-shadow(0.02em 0.02em 0 var(--ink));
 }
+/* Dog mark: one mask image, painted with the theme's colours. */
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12em;
+}
+.logo-mark {
+  display: inline-block;
+  flex: none;
+  aspect-ratio: 208 / 256;
+}
+/* Mask on the pseudo-element: filter runs before mask, so a shadow on the
+   masked element itself would be cut away. */
+.logo-mark::before {
+  content: "";
+  display: block;
+  height: 100%;
+  background: var(--mark);
+  -webkit-mask: url(/logo-mark.png) center / contain no-repeat;
+  mask: url(/logo-mark.png) center / contain no-repeat;
+}
+.logo-mark.big {
+  height: clamp(64px, 15vw, 128px);
+  transform: rotate(-8deg);
+  --mark: linear-gradient(180deg, var(--pink) 10%, var(--yellow) 90%);
+  filter: drop-shadow(2px 2px 0 var(--ink)) drop-shadow(3px 3px 0 var(--purple));
+}
 .wordmark.big {
   font-size: clamp(72px, 18vw, 150px);
   transform: rotate(-4deg);
