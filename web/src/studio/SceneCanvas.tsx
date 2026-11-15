@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
+import { findTheme } from "../theme/registry";
 import { leaves, type Node } from "../layout/tree";
 import { buildTree, type Draft, type Slot } from "./sceneModel";
 
@@ -19,6 +20,12 @@ export function SceneCanvas({ draft, presets, looks, onSlot }: Props) {
     const i = order.indexOf(id);
     const slot = draft.slots[i] ?? { preset: "" };
     const n = i + 1;
+    const pal = findTheme(looks[slot.preset])?.terminal.palette;
+    const look = pal && {
+      background: pal.bg,
+      color: pal.fg,
+      borderColor: pal.cursor,
+    };
     return (
       <div
         key={id}
@@ -26,10 +33,10 @@ export function SceneCanvas({ draft, presets, looks, onSlot }: Props) {
         style={{ opacity: draft.opacity }}
         data-testid={`slot-${n}`}
       >
-        <div className="scene-look" aria-hidden="true">
-          <i />
-          <i />
-          <i />
+        <div className="scene-look" aria-hidden="true" style={look}>
+          <i style={pal && { background: pal.cursor }} />
+          <i style={pal && { background: pal.fg }} />
+          <i style={pal && { background: pal.fg }} />
         </div>
         <span className="scene-look-name">
           {slot.preset ? (looks[slot.preset] ?? "…") : "Empty"}
@@ -53,9 +60,12 @@ export function SceneCanvas({ draft, presets, looks, onSlot }: Props) {
           aria-label={`Font size for slot ${n}`}
           placeholder="Font size"
           value={slot.fontSize ?? ""}
+          step={1}
           onChange={(e) =>
             onSlot(i, {
-              fontSize: e.target.value ? Number(e.target.value) : undefined,
+              fontSize: e.target.value
+                ? Math.round(Number(e.target.value))
+                : undefined,
             })
           }
         />

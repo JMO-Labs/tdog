@@ -5,6 +5,7 @@ import { Input } from "../components/ui/input";
 import { SegmentedControl } from "../components/ui/segmented";
 import { Slider } from "../components/ui/slider";
 import { Switch } from "../components/ui/switch";
+import { Textarea } from "../components/ui/textarea";
 import { TEMPLATES, type TemplateId } from "../layout/templates";
 import {
   getPresetToml,
@@ -204,8 +205,8 @@ export function SceneDesigner({ onOpenScene }: Props) {
               />
             </div>
             {view === "toml" ? (
-              <textarea
-                className="input scene-toml"
+              <Textarea
+                className="scene-toml"
                 aria-label="Scene TOML"
                 spellCheck={false}
                 value={source}

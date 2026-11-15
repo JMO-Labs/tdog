@@ -39,10 +39,10 @@ function setup(extra: Parameters<typeof mockFetch>[0] = {}) {
     "GET /api/presets/terminal": json(["app", "logs"]),
     "GET /api/presets/scene/dev": new Response(stored),
     "GET /api/presets/resolve?terminal=app": json({
-      theme: { value: "mtv", origin: "global" },
+      theme: { value: "memphis-pop", origin: "global" },
     }),
     "GET /api/presets/resolve?terminal=logs": json({
-      theme: { value: "noir", origin: "terminal" },
+      theme: { value: "plain", origin: "terminal" },
     }),
     ...extra,
   });
@@ -75,6 +75,37 @@ test("loads a scene, edits slots, saves via PUT, reloads", async () => {
   expect(saved).toContain("gap = 12");
   expect(saved.match(/\[\[panes\]\]/g)).toHaveLength(3);
   expect(saved).toContain("autostart = true");
+
+  // reload: serve the saved body and pick the scene again
+  vi.stubGlobal(
+    "fetch",
+    mockFetch({
+      "GET /api/presets/scene": json(["dev"]),
+      "GET /api/presets/terminal": json(["app", "logs"]),
+      "GET /api/presets/scene/dev": new Response(saved),
+      "GET /api/presets/resolve?terminal=app": json({
+        theme: { value: "memphis-pop", origin: "global" },
+      }),
+      "GET /api/presets/resolve?terminal=logs": json({
+        theme: { value: "plain", origin: "terminal" },
+      }),
+    }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "dev" }));
+  await waitFor(() =>
+    expect(
+      (screen.getByLabelText("Gap between panes") as HTMLInputElement).value,
+    ).toBe("12"),
+  );
+  const sel = (n: number) =>
+    (screen.getByLabelText(`Terminal for slot ${n}`) as HTMLSelectElement)
+      .value;
+  expect([sel(1), sel(2), sel(3)]).toEqual(["app", "logs", "app"]);
+  expect(
+    screen
+      .getByRole("switch", { name: "Start with server" })
+      .getAttribute("aria-checked"),
+  ).toBe("true");
 });
 
 test("TOML toggle shows source and applies edits back to the form", async () => {
@@ -110,5 +141,42 @@ test("slot shows a thumbnail of the preset's look", async () => {
   setup();
   render(<SceneDesigner onOpenScene={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: "dev" }));
-  expect(await screen.findByText("noir")).toBeTruthy();
+  expect(await screen.findByText("plain")).toBeTruthy();
+});
+
+test("slots with different themes preview different colours", async () => {
+  setup();
+  render(<SceneDesigner onOpenScene={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "dev" }));
+  await screen.findByText("plain");
+  const bg = (n: number) =>
+    (
+      screen
+        .getByTestId(`slot-${n}`)
+        .querySelector(".scene-look") as HTMLElement
+    ).style.background;
+  expect(bg(1)).toBeTruthy();
+  expect(bg(2)).toBeTruthy();
+  expect(bg(1)).not.toBe(bg(2));
+  const bar = screen
+    .getByTestId("slot-1")
+    .querySelector(".scene-look i") as HTMLElement;
+  expect(bar.style.background).toBeTruthy();
+});
+
+test("font size is stored as a whole number", async () => {
+  const f = setup({
+    "PUT /api/presets/scene/dev": () => new Response(null, { status: 204 }),
+  });
+  render(<SceneDesigner onOpenScene={vi.fn()} />);
+  fireEvent.click(await screen.findByRole("button", { name: "dev" }));
+  const fs = await screen.findByLabelText("Font size for slot 1");
+  expect(fs.getAttribute("step")).toBe("1");
+  fireEvent.change(fs, { target: { value: "12.5" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save scene" }));
+  await waitFor(() =>
+    expect(f.mock.calls.some((c) => c[1]?.method === "PUT")).toBe(true),
+  );
+  const put = f.mock.calls.find((c) => c[1]?.method === "PUT")!;
+  expect(String(put[1]!.body)).not.toContain("12.5");
 });
