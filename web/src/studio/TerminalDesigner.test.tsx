@@ -22,7 +22,17 @@ const SCHEMA = {
     },
     background: {
       properties: {
-        kind: { enum: ["none", "color"] },
+        kind: {
+          enum: [
+            "none",
+            "color",
+            "image",
+            "shader",
+            "gradient",
+            "pattern",
+            "video",
+          ],
+        },
         opacity: { type: "number", minimum: 0, maximum: 1 },
       },
     },
@@ -223,7 +233,10 @@ test("Look background picker writes the chosen starter into the saved preset", a
   });
   render(<TerminalDesigner onDirty={() => {}} />);
   await screen.findByLabelText("Name");
-  const tile = screen.getAllByRole("button", { pressed: false })[0];
+  // First starter tile in the picker's grid (other toggle buttons exist).
+  const tile = document.querySelector<HTMLButtonElement>(
+    '.bgp-grid button[aria-pressed="false"]',
+  )!;
   const label = tile.getAttribute("aria-label");
   fireEvent.click(tile);
   expect(tile.getAttribute("aria-pressed")).toBe("true");

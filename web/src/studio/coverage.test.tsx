@@ -127,7 +127,9 @@ test("choice, switch, slider, removals and submit edit the saved toml", async ()
   // Switch onCheckedChange
   fireEvent.click(screen.getByRole("switch"));
   // Slider onValueChange
-  fireEvent.change(screen.getByRole("slider"), { target: { value: "0.5" } });
+  fireEvent.change(screen.getByRole("slider", { name: "Opacity" }), {
+    target: { value: "50" },
+  });
   // env add + remove
   fireEvent.click(screen.getByRole("button", { name: "Add variable" }));
   fireEvent.click(screen.getByRole("button", { name: "Remove variable 1" }));

@@ -61,8 +61,10 @@ test("nav lists sections, switching updates hash and empty state", async () => {
   fireEvent.click(nav().getByRole("button", { name: "Backgrounds" }));
   expect(location.hash).toBe("#studio/backgrounds");
   expect(screen.getByRole("heading", { name: "Backgrounds" })).toBeTruthy();
-  expect(screen.getByRole("img", { name: "Cassette" })).toBeTruthy();
-  expect(screen.getByText("Coming in v0.4")).toBeTruthy();
+  // The picker itself lives in the terminal designer's Look fields.
+  expect(
+    screen.getByText(/Pick a background from the Look fields/),
+  ).toBeTruthy();
   fireEvent.click(nav().getByRole("button", { name: "Fonts" }));
   expect(location.hash).toBe("#studio/fonts");
   const fonts = nav().getByRole("button", { name: "Fonts" });
