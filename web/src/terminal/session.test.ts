@@ -59,6 +59,15 @@ describe("TerminalSession", () => {
     expect([...sock.sent[0]]).toEqual([FrameType.Resize, 0, 80, 0, 24]);
   });
 
+  test("drops frames until the socket is open (send throws while CONNECTING)", () => {
+    const { sock, r } = setup();
+    r.resized!(100, 30);
+    r.input!(new Uint8Array([65]));
+    expect(sock.sent).toEqual([]);
+    sock.onopen!();
+    expect([...sock.sent[0]]).toEqual([FrameType.Resize, 0, 80, 0, 24]);
+  });
+
   test("forwards input as input frames", () => {
     const { sock, r } = setup();
     sock.onopen!();
