@@ -107,3 +107,16 @@ test("ligatures switch reflects the selected preset", async () => {
     expect(ap).toHaveBeenCalledWith("dev", { ligatures: true }),
   );
 });
+
+test("dropzone allows dragover and the file picker uploads chosen fonts", async () => {
+  const up = vi.spyOn(api, "uploadFont").mockResolvedValue();
+  const { container } = render(<FontsSection />);
+  fireEvent.click(await screen.findByRole("tab", { name: "Upload" }));
+  const zone = screen.getByTestId("dropzone");
+  expect(fireEvent.dragOver(zone)).toBe(false); // default prevented
+  const input = container.querySelector('input[type="file"]') as HTMLElement;
+  fireEvent.change(input, {
+    target: { files: [new File(["x"], "B-Regular.ttf")] },
+  });
+  await waitFor(() => expect(up).toHaveBeenCalledTimes(1));
+});

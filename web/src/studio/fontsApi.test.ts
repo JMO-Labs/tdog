@@ -6,6 +6,8 @@ import {
   readLigatures,
   withFont,
   applyFontToPreset,
+  listFonts,
+  getPresetLigatures,
 } from "./fontsApi";
 
 afterEach(() => vi.restoreAllMocks());
@@ -94,4 +96,33 @@ test("readLigatures reads inline, table, and defaults to on", () => {
   expect(readLigatures("[font]\nligatures = false\n")).toBe(false);
   expect(readLigatures('[font]\nfamily = "x"\n')).toBe(true);
   expect(readLigatures("")).toBe(true);
+});
+
+test("non-JSON error bodies are surfaced as plain text", async () => {
+  mockFetch(500, "boom");
+  await expect(installFont("nerd", "Hack")).rejects.toThrow("boom");
+});
+
+test("listFonts returns the list, treats null as empty, and reports errors", async () => {
+  mockFetch(200, JSON.stringify([{ family: "A", source: "nerd", styles: [] }]));
+  expect(await listFonts()).toHaveLength(1);
+  mockFetch(200, "null");
+  expect(await listFonts()).toEqual([]);
+  mockFetch(500, JSON.stringify({ error: "nope" }));
+  await expect(listFonts()).rejects.toThrow("nope");
+});
+
+test("applyFontToPreset fails on a non-404 read error", async () => {
+  const f = mockFetch(500, "disk gone");
+  await expect(applyFontToPreset("dev", { family: "Hack" })).rejects.toThrow(
+    "disk gone",
+  );
+  expect(f).toHaveBeenCalledTimes(1);
+});
+
+test("getPresetLigatures reads the preset and defaults to on when unreadable", async () => {
+  mockFetch(200, "[font]\nligatures = false\n");
+  expect(await getPresetLigatures("dev")).toBe(false);
+  mockFetch(404);
+  expect(await getPresetLigatures("dev")).toBe(true);
 });
