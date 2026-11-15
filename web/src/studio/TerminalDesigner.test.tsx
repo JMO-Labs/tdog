@@ -215,3 +215,23 @@ test("env rows and hook chains edit into the saved toml", async () => {
   expect(body).toContain('[env]\nA = "1"');
   expect(body).toContain('[pre_exec]\nmode = "stop_on_fail"\nrun = ["make"]');
 });
+
+test("Look background picker writes the chosen starter into the saved preset", async () => {
+  const f = routes({
+    "GET /api/assets": json([]),
+    "PUT /api/presets/terminal/api": new Response(null, { status: 204 }),
+  });
+  render(<TerminalDesigner onDirty={() => {}} />);
+  await screen.findByLabelText("Name");
+  const tile = screen.getAllByRole("button", { pressed: false })[0];
+  const label = tile.getAttribute("aria-label");
+  fireEvent.click(tile);
+  expect(tile.getAttribute("aria-pressed")).toBe("true");
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(calls(f, "PUT")).toHaveLength(1));
+  const body = String(calls(f, "PUT")[0][1]?.body);
+  expect(body).toContain("[background]");
+  expect(body).toMatch(/kind = "(gradient|pattern|image|color)"/);
+  expect(body).toContain("ref = ");
+  expect(label).toBeTruthy();
+});

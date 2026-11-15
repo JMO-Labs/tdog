@@ -3,8 +3,9 @@ import { Button } from "../components/ui/button";
 import { Field } from "../components/ui/field";
 import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
-import { Slider } from "../components/ui/slider";
 import { Switch } from "../components/ui/switch";
+import { BackgroundPicker } from "../backgrounds/BackgroundPicker";
+import type { BgKind } from "../backgrounds/spec";
 import type { Resolved } from "../presets/api";
 import { enumOf, type Schema } from "./schemaCheck";
 import { HookEditor } from "./HookEditor";
@@ -209,20 +210,20 @@ export function TerminalForm({
         {text("Theme", "theme")}
         {text("Font family", "font.family")}
         {number("Font size", "font.size")}
-        {choice("Background", "background.kind")}
-        {row("Opacity", "background.opacity", (inh) => (
-          <Slider
-            min={0}
-            max={1}
-            step={0.05}
-            value={
-              (get(draft, "background.opacity") as number | undefined) ??
-              (inh as number | undefined) ??
-              1
-            }
-            onValueChange={(v) => set("background.opacity", v)}
-          />
-        ))}
+        <BackgroundPicker
+          value={{
+            kind: (get(draft, "background.kind") as BgKind) ?? "color",
+            ref: (get(draft, "background.ref") as string) ?? "",
+            opacity: (get(draft, "background.opacity") as number) ?? 1,
+            blur: (get(draft, "background.blur") as number) ?? 0,
+          }}
+          onChange={(v) =>
+            onChange({
+              ...draft,
+              background: { ...draft.background, ...v },
+            })
+          }
+        />
       </fieldset>
     </form>
   );
