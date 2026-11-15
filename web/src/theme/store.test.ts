@@ -76,20 +76,18 @@ describe("themeStore", () => {
     themeStore.setScheme("system");
     expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
   });
-  it("toggle swaps terminal bg/fg for dark-first and light-first themes", () => {
-    for (const appearance of ["dark", "light"] as const) {
-      const t = THEMES.find((x) => x.appearance === appearance)!;
+  it("toggle swaps terminal bg/fg between dark and light variants", () => {
+    for (const t of THEMES.filter((x) => x.light)) {
       themeStore.select(t.id);
       themeStore.setScheme("dark");
-      const dark = themeStore.terminal();
+      const d = themeStore.terminal();
       themeStore.setScheme("light");
-      const light = themeStore.terminal();
-      const [d, l] = appearance === "dark" ? [t, t.light!] : [t.light!, t];
-      expect(dark.background, t.id).toBe(d.terminal.palette.bg);
-      expect(dark.foreground, t.id).toBe(d.terminal.palette.fg);
-      expect(light.background, t.id).toBe(l.terminal.palette.bg);
-      expect(light.foreground, t.id).toBe(l.terminal.palette.fg);
-      expect(light.background).not.toBe(dark.background);
+      const l = themeStore.terminal();
+      expect(d.background, t.id).toBe(t.terminal.palette.bg);
+      expect(d.foreground, t.id).toBe(t.terminal.palette.fg);
+      expect(l.background, t.id).toBe(t.light!.terminal.palette.bg);
+      expect(l.foreground, t.id).toBe(t.light!.terminal.palette.fg);
+      expect(l.background, t.id).not.toBe(d.background);
     }
   });
   it("system follows prefers-color-scheme changes live", () => {
