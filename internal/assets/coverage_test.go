@@ -206,3 +206,52 @@ func TestServeMissingBlob(t *testing.T) {
 		t.Fatalf("got %d", w.Code)
 	}
 }
+
+func TestIngestTempVanishes(t *testing.T) {
+	s, _ := newSrv(t)
+	data := bytes.NewReader([]byte("hello"))
+	r := readerFunc(func(p []byte) (int, error) {
+		n, err := data.Read(p)
+		if err == io.EOF {
+			m, _ := filepath.Glob(filepath.Join(s.dir, ".upload-*"))
+			for _, f := range m {
+				_ = os.Remove(f)
+			}
+		}
+		return n, err
+	})
+	if _, err := s.ingest(r); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestIngestRenameFails(t *testing.T) {
+	s, _ := newSrv(t)
+	boom := errors.New("boom")
+	old := rename
+	rename = func(string, string) error { return boom }
+	t.Cleanup(func() { rename = old })
+	if _, err := s.ingest(bytes.NewReader([]byte("hello"))); !errors.Is(err, boom) {
+		t.Fatalf("got %v", err)
+	}
+	m, _ := filepath.Glob(filepath.Join(s.dir, "*.json"))
+	if len(m) != 0 {
+		t.Fatalf("json left behind: %v", m)
+	}
+}
+
+func TestDialControl(t *testing.T) {
+	c := dialControl(func(ip net.IP) bool { return ip.IsLoopback() })
+	if err := c("tcp", "nohostport", nil); !errors.Is(err, errBlocked) {
+		t.Errorf("bad addr: %v", err)
+	}
+	if err := c("tcp", "example.com:80", nil); !errors.Is(err, errBlocked) {
+		t.Errorf("non-ip: %v", err)
+	}
+	if err := c("tcp", "8.8.8.8:80", nil); !errors.Is(err, errBlocked) {
+		t.Errorf("disallowed: %v", err)
+	}
+	if err := c("tcp", "127.0.0.1:80", nil); err != nil {
+		t.Errorf("allowed: %v", err)
+	}
+}

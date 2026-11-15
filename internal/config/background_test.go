@@ -3,7 +3,7 @@ package config
 import "testing"
 
 func TestGradientStructure(t *testing.T) {
-	// a second top-level group after the first closes
+	// a second top-level group after the first closes (rejected by the depth scan)
 	if validGradient("linear-gradient(red, blue) rgb(1,2,3)") {
 		t.Error("trailing group accepted")
 	}
