@@ -3,6 +3,7 @@
 package journal
 
 import (
+	"bytes"
 	"net/url"
 	"strconv"
 	"strings"
@@ -53,6 +54,10 @@ type Parser struct {
 	seqN     uint64 // last seq issued
 	recN     uint64 // last rec id issued
 	rec      uint64 // open record, 0 if none
+	cur      uint64 // record receiving out events (stays set after D)
+	ls       int    // start of current line in out
+	lineOpen bool   // current output line is non-empty
+	ovf      bool   // pending sequence exceeded maxSeq
 	markers  bool
 	atPrompt bool
 	phase    phase
@@ -75,54 +80,82 @@ func NewParser(now func() time.Time) *Parser {
 func (p *Parser) AtPrompt() bool   { return p.atPrompt }
 func (p *Parser) HasMarkers() bool { return p.markers }
 
-// Gap returns a gap event with a fresh seq and rec.
-func (p *Parser) Gap(why string) Event {
+// Gap closes any open record (flushing its output), resets the scanner and
+// returns the closing events followed by a gap event with a fresh seq and rec.
+func (p *Parser) Gap(why string) []Event {
+	p.at = p.now()
+	p.endRec(nil)
+	p.reset()
+	p.phase, p.atPrompt = phIdle, false
+	p.cmd = p.cmd[:0]
 	p.recN++
-	p.seqN++
-	return Event{Seq: p.seqN, Kind: KindGap, Rec: p.recN, Why: why, At: p.now()}
+	p.emit(Event{Kind: KindGap, Rec: p.recN, Why: why})
+	return p.take()
 }
 
-// Feed consumes PTY bytes and returns the events they completed.
+// Feed consumes PTY bytes and returns the events they completed. The partial
+// last line of output is held back until a newline or Flush.
 func (p *Parser) Feed(b []byte) []Event {
 	if len(b) == 0 {
 		return nil
 	}
 	p.at = p.now()
 	if !p.markers && p.rec != 0 && p.at.Sub(p.last) >= sliceGap {
-		p.closeRec(nil)
+		p.endRec(nil)
 	}
 	for _, c := range b {
 		p.step(c)
 	}
-	p.flush(false)
+	p.flush(flLines)
+	return p.take()
+}
+
+// Flush emits the held-back partial line (it is final once flushed) and, with
+// no markers seen, ends the open record after sliceGap without output.
+func (p *Parser) Flush(now time.Time) []Event {
+	p.at = now
+	p.flush(flTail)
+	if !p.markers && p.rec != 0 && now.Sub(p.last) >= sliceGap {
+		p.endRec(nil)
+	}
+	return p.take()
+}
+
+func (p *Parser) take() []Event {
 	evs := p.evs
 	p.evs = nil
 	return evs
 }
 
-func (p *Parser) emit(e Event) Event {
+func (p *Parser) emit(e Event) {
 	p.seqN++
 	e.Seq = p.seqN
 	e.At = p.at
 	p.evs = append(p.evs, e)
-	return e
 }
 
 func (p *Parser) openRec(cmd, cwd string) {
-	p.closeRec(nil)
+	p.endRec(nil)
 	p.recN++
-	p.rec = p.recN
+	p.rec, p.cur, p.lineOpen = p.recN, p.recN, false
 	p.emit(Event{Kind: KindStart, Rec: p.rec, Cmd: cmd, Cwd: cwd})
 }
 
+// closeRec ends the open record; output may still follow it (after D).
 func (p *Parser) closeRec(exit *int) {
-	p.flush(true)
+	p.flush(flFinal)
 	p.cr, p.alt = false, false
 	if p.rec == 0 {
 		return
 	}
 	p.emit(Event{Kind: KindEnd, Rec: p.rec, Exit: exit})
 	p.rec = 0
+}
+
+// endRec closes the record and detaches output from it.
+func (p *Parser) endRec(exit *int) {
+	p.closeRec(exit)
+	p.cur = 0
 }
 
 // active reports whether text should be journaled now, opening a time slice
@@ -135,23 +168,38 @@ func (p *Parser) active() bool {
 		p.last = p.at
 		return true
 	}
+	if p.phase == phIdle {
+		return p.cur != 0 // output after D joins the record that just ended
+	}
 	return p.phase == phOut && p.rec != 0
 }
 
-// flush emits buffered output; unless final, a trailing partial rune is kept.
-func (p *Parser) flush(final bool) {
+const (
+	flLines = iota // complete lines only (plus a tail past the cap)
+	flTail         // everything but an incomplete rune
+	flFinal        // everything
+)
+
+func (p *Parser) flush(mode int) {
 	cut := len(p.out)
-	if !final {
+	switch mode {
+	case flTail:
 		cut = completeLen(p.out)
-	}
-	if cut == 0 || p.rec == 0 {
-		if p.rec == 0 {
-			p.out = p.out[:0]
+	case flLines:
+		cut = bytes.LastIndexByte(p.out, '\n') + 1
+		if len(p.out)-cut >= maxOut {
+			cut = completeLen(p.out)
 		}
+	}
+	if cut == 0 {
 		return
 	}
-	s := strings.ToValidUTF8(string(p.out[:cut]), "�")
+	s := strings.ToValidUTF8(string(p.out[:cut]), "\uFFFD")
 	p.out = append(p.out[:0], p.out[cut:]...)
+	p.ls = 0
+	if p.cur == 0 {
+		return
+	}
 	for len(s) > 0 {
 		n := len(s)
 		if n > maxOut {
@@ -163,7 +211,7 @@ func (p *Parser) flush(final bool) {
 				n = maxOut
 			}
 		}
-		p.emit(Event{Kind: KindOut, Rec: p.rec, Text: s[:n]})
+		p.emit(Event{Kind: KindOut, Rec: p.cur, Text: s[:n]})
 		s = s[n:]
 	}
 }
@@ -182,28 +230,28 @@ func completeLen(b []byte) int {
 }
 
 func (p *Parser) mark(f []string) {
-	if len(f) == 0 || f[0] == "" {
+	if len(f) == 0 {
 		return
 	}
-	switch f[0][0] {
-	case 'A':
+	switch f[0] {
+	case "A":
 		p.markers = true
-		p.closeRec(nil)
+		p.endRec(nil)
 		p.phase, p.atPrompt = phPrompt, true
-	case 'B':
+	case "B":
 		p.markers = true
-		p.closeRec(nil)
+		p.endRec(nil)
 		p.phase, p.atPrompt = phCmd, false
 		p.cmd = p.cmd[:0]
-	case 'C':
+	case "C":
 		p.markers = true
 		cmd := ""
 		if p.phase == phCmd {
-			cmd = strings.TrimSpace(strings.ToValidUTF8(string(p.cmd), "�"))
+			cmd = strings.TrimSpace(strings.ToValidUTF8(string(p.cmd), "\uFFFD"))
 		}
 		p.openRec(cmd, p.cwd)
 		p.phase, p.atPrompt = phOut, false
-	case 'D':
+	case "D":
 		p.markers = true
 		var exit *int
 		if len(f) > 1 {

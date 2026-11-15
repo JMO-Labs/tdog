@@ -1,9 +1,6 @@
 package journal
 
-import (
-	"bytes"
-	"strings"
-)
+import "strings"
 
 type state uint8
 
@@ -15,6 +12,7 @@ const (
 	stOSCEsc
 	stStr // DCS / APC / PM / SOS: swallowed
 	stStrEsc
+	stSS3 // ESC O: swallow one byte
 )
 
 // step advances the byte-level state machine (ground / ESC / CSI / OSC).
@@ -28,6 +26,10 @@ func (p *Parser) step(c byte) {
 		p.text(c)
 	case stEsc:
 		switch {
+		case c == 0x1b:
+			p.begin(stEsc)
+		case c == 'O':
+			p.begin(stSS3)
 		case c == '[':
 			p.begin(stCSI)
 		case c == ']':
@@ -39,8 +41,14 @@ func (p *Parser) step(c byte) {
 		default:
 			p.reset()
 		}
+	case stSS3:
+		p.reset()
 	case stCSI:
-		if c >= 0x40 && c <= 0x7e {
+		if c == 0x1b {
+			p.begin(stEsc)
+		} else if c == 0x18 || c == 0x1a {
+			p.reset()
+		} else if c >= 0x40 && c <= 0x7e {
 			p.csi(c)
 			p.reset()
 		} else {
@@ -78,19 +86,23 @@ func (p *Parser) step(c byte) {
 	}
 }
 
-func (p *Parser) begin(s state) { p.state = s; p.buf = p.buf[:0] }
+func (p *Parser) begin(s state) { p.state = s; p.buf = p.buf[:0]; p.ovf = false }
 func (p *Parser) reset()        { p.begin(stGround) }
 
-// collect keeps a pending sequence byte; past maxSeq the sequence is dropped.
+// collect keeps a pending sequence byte; past maxSeq the sequence is marked
+// overflowed and swallowed to its terminator without being stored.
 func (p *Parser) collect(c byte) {
 	if len(p.buf) >= maxSeq {
-		p.reset()
+		p.ovf = true
 		return
 	}
 	p.buf = append(p.buf, c)
 }
 
 func (p *Parser) osc() {
+	if p.ovf {
+		return
+	}
 	s := string(p.buf)
 	switch {
 	case strings.HasPrefix(s, "133;"):
@@ -102,7 +114,7 @@ func (p *Parser) osc() {
 
 // csi detects full-screen (alternate screen) enter/leave.
 func (p *Parser) csi(final byte) {
-	if (final != 'h' && final != 'l') || len(p.buf) == 0 || p.buf[0] != '?' {
+	if p.ovf || (final != 'h' && final != 'l') || len(p.buf) == 0 || p.buf[0] != '?' {
 		return
 	}
 	for _, m := range strings.Split(string(p.buf[1:]), ";") {
@@ -117,8 +129,13 @@ func (p *Parser) setAlt(on bool) {
 		return
 	}
 	if on && p.active() {
-		p.flush(true)
-		p.emit(Event{Kind: KindOut, Rec: p.rec, Text: fullScreen})
+		p.flush(flFinal)
+		txt := fullScreen
+		if p.lineOpen {
+			txt = "\n" + txt
+		}
+		p.emit(Event{Kind: KindOut, Rec: p.cur, Text: txt})
+		p.lineOpen = false
 	}
 	p.alt = on
 }
@@ -129,7 +146,7 @@ func (p *Parser) text(c byte) {
 		return
 	}
 	if p.markers && p.phase == phCmd {
-		if (c >= 0x20 && c != 0x7f || c == '\t') && len(p.cmd) < maxCmd {
+		if (c >= 0x20 && c != 0x7f || c == '\t' || c == '\n') && len(p.cmd) < maxCmd {
 			p.cmd = append(p.cmd, c)
 		}
 		return
@@ -140,15 +157,21 @@ func (p *Parser) text(c byte) {
 	if !p.active() {
 		return
 	}
-	if p.cr {
-		p.cr = false
-		if c != '\n' { // lone CR: keep only text after it on this line
-			p.out = p.out[:bytes.LastIndexByte(p.out, '\n')+1]
-		}
-	}
-	if c == '\r' {
+	if c == '\r' { // consecutive CRs keep the pending state
 		p.cr = true
 		return
 	}
+	if p.cr {
+		p.cr = false
+		if c != '\n' { // lone CR: keep only text after it on this line
+			p.out = p.out[:p.ls]
+			p.lineOpen = false
+		}
+	}
 	p.out = append(p.out, c)
+	if c == '\n' {
+		p.ls, p.lineOpen = len(p.out), false
+	} else {
+		p.lineOpen = true
+	}
 }

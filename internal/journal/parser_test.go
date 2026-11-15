@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 type clock struct{ t time.Time }
@@ -86,7 +87,34 @@ func TestParser(t *testing.T) {
 			[]string{"start:", "out:a\n", "end:-"}, true, false, true},
 		{"cr progress bar",
 			"\x1b]133;C\x0710%\r50%\r100%\r\nok\r\n\x1b]133;D;0\x07",
-			[]string{"start:", "out:100%\nok\n", "end:0"}, true, true, true},
+			[]string{"start:", "out:100%\nok\n", "end:0"}, true, false, true},
+		{"double cr then lf",
+			"\x1b]133;C\x07hello\r\r\nworld\r\n\x1b]133;D;0\x07",
+			[]string{"start:", "out:hello\nworld\n", "end:0"}, true, false, true},
+		{"esc esc keeps second",
+			"\x1b]133;C\x07a\n\x1b\x1b]133;D;0\x07",
+			[]string{"start:", "out:a\n", "end:0"}, true, false, true},
+		{"ss3 swallowed",
+			"\x1b]133;C\x07a\x1bOPb\n\x1b]133;D;0\x07",
+			[]string{"start:", "out:ab\n", "end:0"}, true, false, true},
+		{"D with empty exit",
+			"\x1b]133;C\x07a\n\x1b]133;D;\x07",
+			[]string{"start:", "out:a\n", "end:-"}, true, false, true},
+		{"D with aid",
+			"\x1b]133;C\x07a\n\x1b]133;D;0;aid=5\x07",
+			[]string{"start:", "out:a\n", "end:0"}, true, false, true},
+		{"osc 133 terminated by ST",
+			"\x1b]133;C\x1b\\a\n\x1b]133;D;3\x1b\\",
+			[]string{"start:", "out:a\n", "end:3"}, true, false, true},
+		{"mark compares whole field",
+			"\x1b]133;Cx\x07a\n",
+			[]string{"start:", "out:a\n"}, false, false, false},
+		{"cmd keeps newlines and ignores prompt text",
+			"\x1b]133;A\x07$ typed\x1b]133;B\x07cat <<EOF\nfoo\nEOF\r\x1b]133;C\x07",
+			[]string{"start:cat <<EOF\nfoo\nEOF"}, false, false, true},
+		{"output after D joins ended rec",
+			"\x1b]133;C\x07a\n\x1b]133;D;0\x07late\n\x1b]133;A\x07prompt\x1b]133;B\x07",
+			[]string{"start:", "out:a\n", "end:0", "out:late\n"}, false, false, true},
 		{"utf8 intact",
 			"\x1b]133;C\x07h\xc3\xa9llo \xe2\x9c\x93\n\x1b]133;D;0\x07",
 			[]string{"start:", "out:héllo ✓\n", "end:0"}, true, false, true},
@@ -113,17 +141,40 @@ func TestParser(t *testing.T) {
 	}
 }
 
-func TestFullScreenApp(t *testing.T) {
-	p, _ := newTest()
-	evs := p.Feed([]byte("\x1b]133;C\x07\x1b[?1049hjunk\x1b[2J\x1b[H more\x1b[?1049l\x1b]133;D;0\x07"))
-	var outs []string
+func outs(evs []Event) []string {
+	var o []string
 	for _, e := range evs {
 		if e.Kind == KindOut {
-			outs = append(outs, e.Text)
+			o = append(o, e.Text)
 		}
 	}
-	if len(outs) != 1 || outs[0] != "[full-screen app]\n" {
-		t.Fatalf("outs=%q", outs)
+	return o
+}
+
+func TestFullScreenApp(t *testing.T) {
+	cases := []struct {
+		name string
+		in   []string
+		want []string
+	}{
+		{"1049", []string{"\x1b]133;C\x07\x1b[?1049hjunk\x1b[2J\x1b[H more\x1b[?1049l\x1b]133;D;0\x07"}, []string{"[full-screen app]\n"}},
+		{"47", []string{"\x1b]133;C\x07\x1b[?47hjunk\x1b[?47l\x1b]133;D;0\x07"}, []string{"[full-screen app]\n"}},
+		{"split across feeds", []string{"\x1b]133;C\x07\x1b[?10", "49hjunk\x1b[?10", "49l\x1b]133;D;0\x07"}, []string{"[full-screen app]\n"}},
+		{"new line after open line", []string{"\x1b]133;C\x07abc\x1b[?1049hxx\x1b[?1049l\x1b]133;D;0\x07"}, []string{"abc", "\n[full-screen app]\n"}},
+		{"killed then next prompt", []string{"\x1b]133;C\x07\x1b[?1049hjunk", "\x1b]133;A\x07\x1b]133;C\x07after\n\x1b]133;D;0\x07"}, []string{"[full-screen app]\n", "after\n"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			p, _ := newTest()
+			var evs []Event
+			for _, in := range tc.in {
+				evs = append(evs, p.Feed([]byte(in))...)
+			}
+			got := outs(evs)
+			if strings.Join(got, "|") != strings.Join(tc.want, "|") {
+				t.Fatalf("got %q want %q", got, tc.want)
+			}
+		})
 	}
 }
 
@@ -132,6 +183,7 @@ func TestNoMarkersTimeSlicing(t *testing.T) {
 	evs := p.Feed([]byte("x"))
 	c.t = c.t.Add(3 * time.Second)
 	evs = append(evs, p.Feed([]byte("y"))...)
+	evs = append(evs, p.Flush(c.t)...)
 	if p.HasMarkers() {
 		t.Fatal("HasMarkers should be false")
 	}
@@ -148,9 +200,29 @@ func TestNoMarkersTimeSlicing(t *testing.T) {
 	}
 	// within 2s: same record
 	p, c = newTest()
-	p.Feed([]byte("x"))
+	evs = p.Feed([]byte("x"))
 	c.t = c.t.Add(time.Second)
-	if evs := p.Feed([]byte("y")); len(evs) != 1 || evs[0].Kind != KindOut {
+	evs = append(evs, p.Feed([]byte("y"))...)
+	evs = append(evs, p.Flush(c.t)...)
+	if got := strings.Join(summarize(evs), "|"); got != "start:|out:xy" {
+		t.Fatalf("got %s", got)
+	}
+}
+
+func TestFlushTick(t *testing.T) {
+	p, c := newTest()
+	p.Feed([]byte("Password: "))
+	// tail held until flushed
+	evs := p.Flush(c.t)
+	if got := strings.Join(summarize(evs), "|"); got != "out:Password: " {
+		t.Fatalf("got %s", got)
+	}
+	// idle 2s ends the slice without further input
+	evs = p.Flush(c.t.Add(2 * time.Second))
+	if got := strings.Join(summarize(evs), "|"); got != "end:-" {
+		t.Fatalf("got %s", got)
+	}
+	if evs = p.Flush(c.t.Add(5 * time.Second)); len(evs) != 0 {
 		t.Fatalf("got %v", evs)
 	}
 }
@@ -167,20 +239,41 @@ func TestGap(t *testing.T) {
 	p, _ := newTest()
 	evs := p.Feed([]byte("\x1b]133;C\x07a\n\x1b]133;D;0\x07"))
 	last := evs[len(evs)-1]
-	g := p.Gap("parked")
-	if g.Kind != KindGap || g.Why != "parked" || g.Seq <= last.Seq || g.Rec == 0 || g.Rec == last.Rec {
-		t.Fatalf("gap=%+v last=%+v", g, last)
+	gev := p.Gap("parked")
+	g := gev[len(gev)-1]
+	if len(gev) != 1 || g.Kind != KindGap || g.Why != "parked" || g.Seq <= last.Seq || g.Rec == 0 || g.Rec == last.Rec {
+		t.Fatalf("gap=%+v last=%+v", gev, last)
 	}
 	next := p.Feed([]byte("\x1b]133;C\x07"))
-	if next[0].Seq <= g.Seq || next[0].Rec == g.Rec {
+	if next[0].Seq <= g.Seq || next[0].Rec <= g.Rec {
 		t.Fatalf("next=%+v gap=%+v", next[0], g)
 	}
 }
 
-func TestOutCap(t *testing.T) {
+func TestGapMidCommand(t *testing.T) {
 	p, _ := newTest()
+	evs := p.Feed([]byte("\x1b]133;C\x07part\nhal\x1b[3"))
+	start := evs[0]
+	gev := p.Gap("restore")
+	if got := strings.Join(summarize(gev), "|"); got != "out:hal|end:-|gap:restore" {
+		t.Fatalf("got %s", got)
+	}
+	end, gap := gev[len(gev)-2], gev[len(gev)-1]
+	if end.Rec != start.Rec || gap.Rec <= start.Rec || end.Seq >= gap.Seq {
+		t.Fatalf("end=%+v gap=%+v start=%+v", end, gap, start)
+	}
+	// scanner reset: a stray 'm' after the cut CSI is plain text, markers still work
+	next := p.Feed([]byte("\x1b]133;C\x07m\n\x1b]133;D;0\x07"))
+	if next[0].Rec <= gap.Rec || strings.Join(summarize(next), "|") != "start:|out:m\n|end:0" {
+		t.Fatalf("next=%v", next)
+	}
+}
+
+func TestOutCap(t *testing.T) {
+	p, c := newTest()
 	p.Feed([]byte("\x1b]133;C\x07"))
 	evs := p.Feed([]byte(strings.Repeat("a", 200000)))
+	evs = append(evs, p.Flush(c.t)...)
 	total := 0
 	for _, e := range evs {
 		if len(e.Text) > maxOut {
@@ -193,8 +286,45 @@ func TestOutCap(t *testing.T) {
 	}
 }
 
+func TestOutCapMultibyte(t *testing.T) {
+	for _, r := range []string{"é", "✓", "\U0001F600"} {
+		p, c := newTest()
+		p.Feed([]byte("\x1b]133;C\x07"))
+		in := strings.Repeat(r, 100000)
+		evs := p.Feed([]byte(in))
+		evs = append(evs, p.Flush(c.t)...)
+		var sb strings.Builder
+		for _, e := range evs {
+			if e.Kind != KindOut {
+				continue
+			}
+			if !utf8.ValidString(e.Text) || len(e.Text) > maxOut {
+				t.Fatalf("%q: bad out len=%d valid=%v", r, len(e.Text), utf8.ValidString(e.Text))
+			}
+			sb.WriteString(e.Text)
+		}
+		if sb.String() != in {
+			t.Fatalf("%q: text mismatch", r)
+		}
+	}
+}
+
+func TestCRHugeFeedLinear(t *testing.T) {
+	p, c := newTest()
+	p.Feed([]byte("\x1b]133;C\x07"))
+	in := strings.Repeat("x\r", 400000)
+	done := make(chan struct{})
+	go func() { p.Feed([]byte(in)); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("quadratic CR handling")
+	}
+	_ = c
+}
+
 func TestUnterminatedSequencesBounded(t *testing.T) {
-	for _, intro := range []string{"\x1b]0;", "\x1b[1;", "\x1bP", "\x1b("} {
+	for _, intro := range []string{"\x1b]0;", "\x1b[1;", "\x1bP", "\x1b(" + strings.Repeat(" ", 10)} {
 		p, _ := newTest()
 		p.Feed([]byte("\x1b]133;C\x07"))
 		junk := strings.Repeat("9", 100000)
@@ -205,32 +335,68 @@ func TestUnterminatedSequencesBounded(t *testing.T) {
 			}
 		}
 	}
-	// after a discard, parser is usable again
-	p, _ := newTest()
-	p.Feed([]byte("\x1b]133;C\x07\x1b]0;" + strings.Repeat("z", 10000)))
-	if p.state != stGround {
-		t.Fatal("expected ground state after overflow")
+}
+
+func TestOversizedStringNotJournaled(t *testing.T) {
+	for _, tc := range []struct{ intro, term string }{
+		{"\x1b]1337;File=", "\x07"},
+		{"\x1b]52;c;", "\x1b\\"},
+		{"\x1bP0;1q", "\x1b\\"},
+	} {
+		p, c := newTest()
+		in := "\x1b]133;C\x07" + tc.intro + strings.Repeat("QUJD", 2500) + tc.term + "after\n\x1b]133;D;0\x07"
+		evs := p.Feed([]byte(in[:6000]))
+		if len(p.buf) > maxSeq {
+			t.Fatalf("buf %d", len(p.buf))
+		}
+		evs = append(evs, p.Feed([]byte(in[6000:]))...)
+		evs = append(evs, p.Flush(c.t)...)
+		if got := strings.Join(summarize(evs), "|"); got != "start:|out:after\n|end:0" {
+			t.Fatalf("%q: got %.80q", tc.intro, got)
+		}
 	}
-	p.Feed([]byte("\x1b]133;D;0\x07"))
-	if !p.AtPrompt() {
-		t.Fatal("marker after overflow not parsed")
+	// an oversized OSC 133 is ignored, not acted upon
+	p, _ := newTest()
+	p.Feed([]byte("\x1b]133;A;" + strings.Repeat("k=v;", 2000) + "\x07"))
+	if p.HasMarkers() {
+		t.Fatal("overflowed OSC acted upon")
+	}
+}
+
+func TestCSIAbort(t *testing.T) {
+	p, _ := newTest()
+	// CAN aborts the CSI, ESC starts a new sequence (the D marker)
+	got := summarize(p.Feed([]byte("\x1b]133;C\x07a\x1b[1\x18b\x1b[2\x1b]133;D;0\x07")))
+	if strings.Join(got, "|") != "start:|out:ab|end:0" {
+		t.Fatalf("got %q", got)
 	}
 }
 
 func TestInvalidUTF8(t *testing.T) {
-	p, _ := newTest()
+	p, c := newTest()
 	evs := p.Feed([]byte("\x1b]133;B\x07\xff\xfe\x1b]133;C\x07\xff\xfe\xc3(\xe2\x82"))
 	evs = append(evs, p.Feed([]byte("\xe2\x1b]133;D;0\x07"))...)
+	n := 0
 	for _, e := range evs {
-		if e.Kind == KindOut && !strings.Contains(e.Text, "�") {
-			t.Fatalf("expected replacement char in %q", e.Text)
+		if !utf8.ValidString(e.Text) || !utf8.ValidString(e.Cmd) {
+			t.Fatalf("invalid utf8 in %+v", e)
 		}
+		if e.Kind == KindOut {
+			n++
+			if !strings.Contains(e.Text, "�") {
+				t.Fatalf("expected replacement char in %q", e.Text)
+			}
+		}
+	}
+	if n == 0 {
+		t.Fatal("no out")
 	}
 	// rune split across feeds is reassembled
 	p, _ = newTest()
 	p.Feed([]byte("\x1b]133;C\x07"))
 	evs = p.Feed([]byte("\xc3"))
 	evs = append(evs, p.Feed([]byte("\xa9"))...)
+	evs = append(evs, p.Flush(c.t)...)
 	if got := strings.Join(summarize(evs), "|"); got != "out:é" {
 		t.Fatalf("got %q", got)
 	}
