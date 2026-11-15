@@ -28,11 +28,16 @@
       ]
     },
     "cursor": {
-      "shape": "block",
+      "shape": "bar",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "courier-prime",
+    "effects": [
+      {
+        "id": "vignette",
+        "intensity": 0.5
+      }
+    ]
   },
   "chrome": {
     "tokens": {
@@ -49,13 +54,110 @@
       "term-dim": "#a8957a"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
+      "radius": 0.6,
+      "shadow": "soft",
       "border": 1
     },
     "pattern": "none",
     "boot": "drop",
-    "costume": "none"
+    "costume": {
+      "name": "explorer cap",
+      "rows": [
+        "....######....",
+        "...########...",
+        "..##########..",
+        "##############"
+      ]
+    },
+    "motif": {
+      "viewBox": [
+        0,
+        0,
+        48,
+        48
+      ],
+      "tile": [
+        48,
+        48
+      ],
+      "shapes": [
+        {
+          "type": "polygon",
+          "points": "24,4 27,21 44,24 27,27 24,44 21,27 4,24 21,21",
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 24,
+          "cy": 24,
+          "r": 9,
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 24,
+          "cy": 24,
+          "r": 3,
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 8,
+          "cy": 40,
+          "r": 5,
+          "stroke": "line"
+        },
+        {
+          "type": "circle",
+          "cx": 8,
+          "cy": 40,
+          "r": 2,
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 5,
+          "y": 34,
+          "width": 6,
+          "height": 2,
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 5,
+          "y": 44,
+          "width": 6,
+          "height": 2,
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 2,
+          "y": 37,
+          "width": 2,
+          "height": 6,
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 12,
+          "y": 37,
+          "width": 2,
+          "height": 6,
+          "stroke": "line"
+        },
+        {
+          "type": "path",
+          "d": "M30 42 C34 36 38 46 44 40",
+          "stroke": "line"
+        },
+        {
+          "type": "path",
+          "d": "M30 8 C34 2 40 12 44 6",
+          "stroke": "line"
+        }
+      ]
+    }
   },
   "light": {
     "terminal": {

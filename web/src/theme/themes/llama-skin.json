@@ -31,8 +31,13 @@
       "shape": "block",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "vt323",
+    "effects": [
+      {
+        "id": "scanlines",
+        "intensity": 0.2
+      }
+    ]
   },
   "chrome": {
     "tokens": {
@@ -49,12 +54,115 @@
       "term-dim": "#7f9a88"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
-      "border": 1
+      "radius": 0.3,
+      "shadow": "bevel",
+      "border": 2
     },
     "pattern": "none",
-    "boot": "drop",
-    "costume": "none"
+    "boot": "post",
+    "costume": {
+      "name": "headphones",
+      "rows": [
+        "..##########..",
+        ".#..........#.",
+        "#............#",
+        "##..........##",
+        "##..........##"
+      ]
+    },
+    "motif": {
+      "viewBox": [
+        0,
+        0,
+        48,
+        48
+      ],
+      "tile": [
+        48,
+        48
+      ],
+      "shapes": [
+        {
+          "type": "rect",
+          "x": 4,
+          "y": 28,
+          "width": 5,
+          "height": 16,
+          "fill": "muted"
+        },
+        {
+          "type": "rect",
+          "x": 12,
+          "y": 18,
+          "width": 5,
+          "height": 26,
+          "fill": "muted"
+        },
+        {
+          "type": "rect",
+          "x": 20,
+          "y": 8,
+          "width": 5,
+          "height": 36,
+          "fill": "muted"
+        },
+        {
+          "type": "rect",
+          "x": 28,
+          "y": 22,
+          "width": 5,
+          "height": 22,
+          "fill": "muted"
+        },
+        {
+          "type": "rect",
+          "x": 36,
+          "y": 14,
+          "width": 5,
+          "height": 30,
+          "fill": "muted"
+        },
+        {
+          "type": "rect",
+          "x": 4,
+          "y": 4,
+          "width": 8,
+          "height": 2,
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 4,
+          "y": 4,
+          "width": 2,
+          "height": 6,
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 4,
+          "y": 8,
+          "width": 8,
+          "height": 2,
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 10,
+          "y": 8,
+          "width": 2,
+          "height": 6,
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 4,
+          "y": 12,
+          "width": 8,
+          "height": 2,
+          "stroke": "line"
+        }
+      ]
+    }
   }
 }
