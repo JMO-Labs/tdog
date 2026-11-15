@@ -76,7 +76,8 @@ const current = (): Theme => findTheme(previewId ?? id) ?? THEMES[0];
 
 function variant(t: Theme): ThemeVariant {
   const light = scheme === "light" || (scheme === "system" && prefersLight());
-  return light && t.light ? t.light : t;
+  // `light` holds the alternate-appearance variant: the base serves its own appearance.
+  return (light ? "light" : "dark") === t.appearance ? t : (t.light ?? t);
 }
 
 /** Theme tokens merged over computed CSS defaults, so unset tokens still resolve. */
@@ -181,9 +182,23 @@ export const themeStore = {
     id = read();
     previewId = null;
     scheme = "system";
+    watchScheme();
     apply();
   },
 };
+
+// System scheme follows the OS live; explicit light/dark ignore it.
+const watched = new WeakSet<object>();
+function watchScheme() {
+  if (typeof matchMedia !== "function") return;
+  const mq = matchMedia("(prefers-color-scheme: light)");
+  if (!mq || watched.has(mq)) return;
+  watched.add(mq);
+  mq.addEventListener?.("change", () => {
+    if (scheme === "system") apply();
+  });
+}
+watchScheme();
 
 // Serious mode flips live: re-apply whenever the pref changes.
 subscribePrefs(() => {
