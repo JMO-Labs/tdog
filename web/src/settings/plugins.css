@@ -1,0 +1,89 @@
+.plugins-settings {
+  margin-top: 16px;
+}
+
+.plugins-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.plugin-item {
+  border: 1px solid var(--gray-6);
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--gray-2);
+}
+
+.plugin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.plugin-header h4 {
+  margin: 0;
+  font-size: 1em;
+}
+
+.plugin-permissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.permission-chip {
+  display: inline-block;
+  background: var(--gray-4);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.85em;
+  font-family: monospace;
+  color: var(--text);
+}
+
+.plugin-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.plugin-add input[type="text"] {
+  padding: 8px;
+  border: 1px solid var(--gray-5);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9em;
+}
+
+.plugin-add input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.dialog-content {
+  padding: 12px 0;
+}
+
+.dialog-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dialog-content li {
+  padding: 8px;
+  background: var(--gray-2);
+  border-left: 3px solid var(--gray-5);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

@@ -39,3 +39,5 @@ Plugins can't read files or run commands on their own: anything powerful goes th
 brokered, permissioned API, so each new capability is a deliberate tdog change. The
 declarative overlay UI limits how fancy plugin UIs can look, in exchange for no plugin HTML
 inside tdog's origin. Server-side plugins can be revisited later as a separate, admin-only ADR.
+
+**Implementation note (frontend)**: Plugin code runs in a Worker (no DOM, navigation, or network access) inside a sandboxed iframe (opaque origin, no same-origin), communicating with tdog only via MessageChannel. Rate limiting and message size validation are enforced host-side by the broker, not bypassable. iframe srcdoc contains only trusted bootstrap code (constant, never interpolated with plugin code).

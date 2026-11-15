@@ -7,6 +7,7 @@ import { Dialog } from "../overlays/Dialog";
 import { Appearance } from "./Appearance";
 import { Switch } from "./Switch";
 import { TwoFactor } from "./TwoFactor";
+import { Plugins } from "./Plugins";
 import { EFFECT_IDS, FX_LABELS } from "../effects/resolve";
 import { setFx, setFxOn, useFx } from "../effects/store";
 import { setPref, useMotifOpacity, usePref } from "./prefs";
@@ -165,6 +166,7 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
           />
         </div>
       ))}
+      <Plugins />
       <h3>Sessions</h3>
       <div className="row actions">
         <Button onClick={() => dispatchEvent(new Event("tdog:signout"))}>
