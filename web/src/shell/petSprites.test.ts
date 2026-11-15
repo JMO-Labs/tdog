@@ -35,20 +35,23 @@ describe("sprite data", () => {
 });
 
 describe("face composition", () => {
-  test("open eye adds two segments", () => {
+  test("open eye is cut out of the solid head", () => {
     const base = face("none");
     const open = face("open");
-    expect(open.length - base.length).toBe(2);
-    expect(has(open, 8, 3) && has(open, 8, 4)).toBe(true);
+    expect(base.length - open.length).toBe(1);
+    expect(has(base, 10, 3)).toBe(true);
+    expect(has(open, 10, 3)).toBe(false);
   });
   test("mouth (tongue) adds two segments below the jaw", () => {
     const d = face("open", { mouth: true }).length - face("open").length;
     expect(d).toBe(2);
-    expect(has(face("open", { mouth: true }), 11, 7)).toBe(true);
+    expect(has(face("open"), 12, 5)).toBe(false);
+    expect(has(face("open", { mouth: true }), 12, 5)).toBe(true);
   });
-  test("wagging tail swaps the rest stub, position by variant", () => {
+  test("wagging tail lifts or drops from the rest stub", () => {
     expect(has(face("open", { tail: 1 }), 0, 4)).toBe(true);
-    expect(has(face("open", { tail: 2 }), 0, 9)).toBe(true);
+    expect(has(face("open"), 0, 4)).toBe(false);
+    expect(has(face("open", { tail: 2 }), 0, 8)).toBe(true);
     expect(face("open", { tail: 1 }).length).toBe(face("open").length + 2);
   });
   test("legs alternate frames", () => {
@@ -67,14 +70,16 @@ describe("face composition", () => {
 describe("costume", () => {
   const HAT = ["..####..", ".######."];
   const lit = (c: number[][]) => c.map(([x, y]) => `${x},${y}`);
-  test("centred on the head top, drawn with the pose", () => {
+  test("sits on top of the head, drawn with the pose", () => {
     const base = lit(face("open", {}, 10, 9));
     const dressed = lit(face("open", { costume: HAT }, 10, 9));
     const extra = dressed.filter((c) => !base.includes(c));
     expect(extra.length).toBeGreaterThan(0);
-    // width 8 in 14 => offset 3; first lit cell of row 0 is col 2 => x 10+3+2
-    expect(dressed).toContain("15,9");
-    expect(dressed).toContain("14,10");
+    // head cols 8-13 (w 6), hat w 8 => x 10+7-1=16 clamped to 10+6; row 0 col 2; y 9-2
+    expect(dressed).toContain("18,7");
+    expect(dressed).toContain("17,8");
+    // the head itself stays visible
+    expect(dressed).toEqual(expect.arrayContaining(base));
   });
   test("walking and front poses move the costume with the face", () => {
     for (const legs of [0, 1] as const) {
@@ -92,7 +97,8 @@ describe("costume", () => {
     expect(d.length).toBe(
       lying(10, 15).length + costumeCells(HAT, 10, 15).length,
     );
-    expect(lit(d)).toContain("15,15");
+    // lying head cols 9-13; hat clamped inside 14 cols => x 10+6, y 15-2
+    expect(lit(d)).toContain("18,13");
   });
   test("mini egg composes costume for face and sleep, clipped to 14 cols", () => {
     for (const m of ["face", "sleep"] as const) {
