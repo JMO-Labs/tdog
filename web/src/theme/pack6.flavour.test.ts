@@ -10,67 +10,26 @@ const SHAPES = {
   pill: { radius: 1.5, shadow: "none", border: 2 },
 } as const;
 
-// id, costume, cursor, font, effects, shape, boot
+// id, cursor, font, effects, shape, boot
 const FLAVOUR = [
-  [
-    "bayside",
-    "backwards cap",
-    "bar",
-    "space-mono",
-    [],
-    "sticker hard",
-    "rewind",
-  ],
-  [
-    "morph-squad",
-    "visor",
-    "block",
-    "share-tech-mono",
-    ["glow"],
-    "sticker",
-    "drop",
-  ],
+  ["bayside", "bar", "space-mono", [], "sticker hard", "rewind"],
+  ["morph-squad", "block", "share-tech-mono", ["glow"], "sticker", "drop"],
   [
     "truth-is-out-there",
-    "tinfoil hat",
     "underline",
     "courier-prime",
     ["vignette", "grain"],
     "soft",
     "tracker",
   ],
-  [
-    "laser-binder",
-    "scrunchie bow",
-    "bar",
-    "space-mono",
-    ["glow"],
-    "pill",
-    "drop",
-  ],
-  [
-    "rainbow-leopard",
-    "sparkly bow",
-    "bar",
-    "space-mono",
-    [],
-    "sticker",
-    "drop",
-  ],
-  [
-    "memphis-pop",
-    "backwards cap",
-    "block",
-    "jetbrains-mono",
-    [],
-    "sticker",
-    "drop",
-  ],
-  ["night-market", "none", "block", "jetbrains-mono", ["glow"], "soft", "drop"],
+  ["laser-binder", "bar", "space-mono", ["glow"], "pill", "drop"],
+  ["rainbow-leopard", "bar", "space-mono", [], "sticker", "drop"],
+  ["memphis-pop", "block", "jetbrains-mono", [], "sticker", "drop"],
+  ["night-market", "block", "jetbrains-mono", ["glow"], "soft", "drop"],
 ] as const;
 
 describe("theme flavour pack 6", () => {
-  for (const [id, costume, cur, font, fx, shape, boot] of FLAVOUR) {
+  for (const [id, cur, font, fx, shape, boot] of FLAVOUR) {
     describe(id, () => {
       const t = findTheme(id)!;
       it("fills the v2 fields", () => {

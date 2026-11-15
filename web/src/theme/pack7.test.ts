@@ -6,7 +6,6 @@ type Row = [
   cursor: string,
   font: string,
   effects: Record<string, number | true>,
-  costume: string,
   radius: number,
   shadow: string,
   boot: string,
@@ -18,7 +17,6 @@ const PACK: Row[] = [
     "block",
     "share-tech-mono",
     { scanlines: true, glow: true },
-    "combat helmet",
     0,
     "hard",
     "tracker",
@@ -28,27 +26,16 @@ const PACK: Row[] = [
     "bar",
     "share-tech-mono",
     { glow: true },
-    "tiny shades",
     0.2,
     "bevel",
     "post",
   ],
-  [
-    "ninety-five",
-    "underline",
-    "courier-prime",
-    {},
-    "wizard hat",
-    0,
-    "bevel",
-    "post",
-  ],
+  ["ninety-five", "underline", "courier-prime", {}, 0, "bevel", "post"],
   [
     "hack-the-planet",
     "block",
     "share-tech-mono",
     { glow: true, "glyph-rain": true },
-    "visor shades",
     0.125,
     "glow",
     "dialup",
@@ -58,7 +45,6 @@ const PACK: Row[] = [
     "underline",
     "ibm-plex-mono",
     { vignette: true },
-    "safari hat",
     0.75,
     "soft",
     "post",
@@ -66,7 +52,7 @@ const PACK: Row[] = [
 ];
 
 describe("theme flavour pack 1", () => {
-  for (const [id, cursor, font, fx, costume, radius, shadow, boot] of PACK) {
+  for (const [id, cursor, font, fx, radius, shadow, boot] of PACK) {
     describe(id, () => {
       const t = () => findTheme(id)!;
       it("fills the v2 fields", () => {
