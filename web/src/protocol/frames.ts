@@ -14,6 +14,7 @@ export type Decoded =
   | { kind: "exit"; code: number }
   | { kind: "killed" }
   | { kind: "pong"; t: number }
+  | { kind: "session"; id: string }
   | { kind: "journal"; events: JournalEvent[] }
   | { kind: "unknown" };
 
@@ -87,6 +88,9 @@ export function decodeFrame(buf: ArrayBuffer): Decoded {
       const m = JSON.parse(dec.decode(b.subarray(1)));
       if (m?.type === "exit" && typeof m.code === "number") {
         return { kind: "exit", code: m.code };
+      }
+      if (m?.type === "session" && typeof m.id === "string") {
+        return { kind: "session", id: m.id };
       }
       if (m?.type === "killed") return { kind: "killed" };
       if (m?.type === "pong" && typeof m.t === "number") {

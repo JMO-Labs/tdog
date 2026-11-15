@@ -48,9 +48,9 @@ export interface SessionHooks {
   onLatency?: (ms: number) => void;
   /** Called when input is received (for broadcasting). */
   onBroadcast?: (data: Uint8Array) => void;
-  /** May hold or drop user input; call `pass` to send (and broadcast) it. */
   /** Where this pane's journal events are saved (acked once stored). */
   journal?: { pane: string; db: JournalDB };
+  /** May hold or drop user input; call `pass` to send (and broadcast) it. */
   interceptInput?: (data: Uint8Array, pass: (d: Uint8Array) => void) => void;
 }
 
@@ -62,6 +62,10 @@ export class TerminalSession {
   private exitCode: number | undefined;
   private killed = false;
   private warned = false;
+  private sid: string | undefined;
+  /** A save failed this connection: ingest/ack nothing until reconnect. */
+  private journalFailed = false;
+  private disposed = false;
   private pinger: ReturnType<typeof setInterval> | undefined;
 
   constructor(
@@ -88,6 +92,8 @@ export class TerminalSession {
     this.pending = 0;
     this.exitCode = undefined;
     this.killed = false;
+    this.sid = undefined;
+    this.journalFailed = false;
     this.onState({ status: "connecting" });
     const s = this.open();
     this.sock = s;
@@ -123,6 +129,7 @@ export class TerminalSession {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.stopPing();
     const s = this.sock;
     this.sock = null;
@@ -145,11 +152,13 @@ export class TerminalSession {
 
   private journaled(f: JournalEvent[]): void {
     const j = this.hooks.journal;
-    if (!j) return;
-    // No ack on failure: the server keeps (and resends) the data.
-    ingest(j.db, j.pane, f).then(
-      (seq) => seq > 0 && this.send(encodeJournalAck(seq)),
+    if (!j || !this.sid || this.journalFailed || this.disposed) return;
+    // On failure stop acking: the server resends from its last ack on reconnect.
+    ingest(j.db, j.pane, this.sid, f).then(
+      (seq) =>
+        seq > 0 && !this.journalFailed && this.send(encodeJournalAck(seq)),
       () => {
+        this.journalFailed = true;
         if (!this.warned) console.warn("journal: save failed, not acking");
         this.warned = true;
       },
@@ -175,6 +184,8 @@ export class TerminalSession {
       this.exitCode = f.code;
     } else if (f.kind === "killed") {
       this.killed = true;
+    } else if (f.kind === "session") {
+      this.sid = f.id;
     } else if (f.kind === "journal") {
       this.journaled(f.events);
     } else if (f.kind === "pong") {

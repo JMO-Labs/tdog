@@ -2,7 +2,7 @@
 export interface JournalEvent {
   seq: number;
   kind: "start" | "out" | "end" | "gap";
-  rec: string;
+  rec: number;
   cmd?: string;
   cwd?: string;
   text?: string;
@@ -13,7 +13,11 @@ export interface JournalEvent {
 
 export interface JournalRecord {
   pane: string;
-  rec: string;
+  /** Server session id: seq/rec restart per session. */
+  sid: string;
+  rec: number;
+  /** Storage key part: `${sid}/${rec}`. */
+  rkey: string;
   cmd: string;
   cwd: string;
   exit?: number;

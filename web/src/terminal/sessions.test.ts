@@ -77,3 +77,11 @@ test("killScene forgets the pane's browser journal", async () => {
   expect(forget).toHaveBeenCalledWith("pa");
   vi.restoreAllMocks();
 });
+
+test("killScene works when no journal db exists", async () => {
+  const db = await import("../journal/db");
+  vi.spyOn(db, "journalDB").mockReturnValue(null);
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok({ killed: 0 })));
+  await expect(killScene("pa")).resolves.toBe(0);
+  vi.restoreAllMocks();
+});

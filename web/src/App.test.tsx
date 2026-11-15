@@ -25,6 +25,12 @@ vi.mock("./terminal/xtermRenderer", () => ({
   },
 }));
 
+const wipe = vi.hoisted(() => vi.fn());
+vi.mock("./journal/db", async (orig) => ({
+  ...(await orig<typeof import("./journal/db")>()),
+  wipeJournal: wipe,
+}));
+
 class WS {
   static last: WS;
   binaryType = "";
@@ -111,6 +117,7 @@ test("palette sign out sends the CSRF token (from /api/status) and toasts", asyn
     "tok",
   );
   expect(await screen.findByText("Be kind, rewind.")).toBeTruthy();
+  expect(wipe).toHaveBeenCalledTimes(1);
 });
 
 async function signOutEverywhere(serious: boolean) {

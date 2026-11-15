@@ -18,10 +18,13 @@ export function fold(
   r: JournalRecord | undefined,
   ev: JournalEvent,
   pane = r?.pane ?? "",
+  sid = r?.sid ?? "",
 ): JournalRecord {
   const base: JournalRecord = r ?? {
     pane,
+    sid,
     rec: ev.rec,
+    rkey: `${sid}/${ev.rec}`,
     cmd: "",
     cwd: "",
     start: ev.at,
@@ -39,10 +42,10 @@ export function fold(
   }
 }
 
-type StartCb = (pane: string, rec: string) => void;
+type StartCb = (pane: string, sid: string, rec: number) => void;
 const startSubs = new Set<StartCb>();
 
-/** Subscribe to start events; returns unsubscribe. */
+/** Subscribe to start events (pane, session id, rec); returns unsubscribe. */
 export function onJournalStart(cb: StartCb): () => void {
   startSubs.add(cb);
   return () => void startSubs.delete(cb);
@@ -56,11 +59,12 @@ export function onJournalStart(cb: StartCb): () => void {
 export async function ingest(
   db: JournalDB,
   pane: string,
+  sid: string,
   evs: JournalEvent[],
 ): Promise<number> {
-  await db.apply(pane, evs);
+  await db.apply(pane, sid, evs);
   for (const e of evs) {
-    if (e.kind === "start") startSubs.forEach((cb) => cb(pane, e.rec));
+    if (e.kind === "start") startSubs.forEach((cb) => cb(pane, sid, e.rec));
   }
   return evs.reduce((m, e) => Math.max(m, e.seq), 0);
 }
