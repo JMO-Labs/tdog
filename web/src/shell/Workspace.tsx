@@ -1,13 +1,12 @@
 import { useCopy } from "../copy/copy";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
 import { ThemePicker } from "../overlays/ThemePicker";
 import { Sheet } from "../overlays/Sheet";
-import { registerCommand } from "../overlays/commands";
 import { SettingsPanel } from "../settings/SettingsPanel";
-import { getPref, usePref } from "../settings/prefs";
-import { MODES, useThemeMode } from "../theme/useThemeMode";
+import { usePref } from "../settings/prefs";
+import { useThemeMode } from "../theme/useThemeMode";
 import { Dialog } from "../overlays/Dialog";
 import { useToast } from "../overlays/toast";
 import { KillDialog } from "./KillDialog";
@@ -15,8 +14,9 @@ import { addLeaf, moveToScene } from "../layout/transfer";
 import { preparePane } from "../presets/launch";
 import { newId } from "../layout/tree";
 import { useShellName } from "../terminal/shellName";
-import { killScene } from "../terminal/sessions";
-import { useSceneKill } from "./useSceneKill";
+import { useCloseKill } from "./useCloseKill";
+import { useWorkspaceCommands } from "./useWorkspaceCommands";
+import { useMainMenuGroups } from "./useMainMenuGroups";
 import { Studio } from "../studio/Studio";
 import { sectionFromHash } from "../studio/sections";
 import { Icon } from "./icons";
@@ -37,9 +37,8 @@ import { Pet, usePetAwake } from "./pet";
 import { usePetEngine } from "./usePetEngine";
 import { useKeyboardShortcuts } from "./useKeyboardShortcuts";
 import { Tabs } from "./Tabs";
-import { MainMenu, type MenuGroup } from "./MainMenu";
+import { MainMenu } from "./MainMenu";
 import {
-  toggleBroadcast,
   toggleSceneBroadcast,
   isSceneBroadcasting,
   clearScene,
@@ -79,8 +78,6 @@ export function Workspace({
   const engine = usePetEngine();
   const [sc, setSc] = useState(loadScenes);
   const [leafMap, setLeafMap] = useState<Record<string, string[]>>({});
-  const [closing, setClosing] = useState<string | null>(null);
-  const [kill, setKill] = useState<string | null>(null); // "all" or scene id
   // Per-pane open state lives here: dockview remounts panes when splits collapse.
   const [paneOpen, setPaneOpen] = useState<Record<string, PaneOpen>>({});
   const onPaneOpen = useCallback(
@@ -126,21 +123,27 @@ export function Workspace({
     openTab: openSceneTab,
   });
   const dirty = useDirtyScenes(sc.scenes.map((x) => x.id));
-  const { removeSceneCleanup, runKill: runKillImpl } = useSceneKill(
+  const {
+    closing,
+    setClosing,
+    kill,
+    setKill,
+    finishClose,
+    requestClose,
+    closeActive,
+    killTargets,
+    closingName,
+    closingCount,
+    runKill,
+  } = useCloseKill(
     leafMap,
     sc.scenes,
+    sc.active,
     setSc,
     setLeafMap,
     toast,
     c,
-  );
-
-  const finishClose = useCallback(
-    (id: string) => {
-      (leafMap[id] ?? []).forEach((p) => void killScene(p));
-      removeSceneCleanup(id);
-    },
-    [leafMap, removeSceneCleanup],
+    paneOpen,
   );
   const moveScene = useCallback(
     (id: string, from: string, to: string) => void moveToScene(id, from, to),
@@ -150,33 +153,6 @@ export function Workspace({
     const from = Object.keys(leafMap).find((k) => leafMap[k]?.includes(id));
     if (from) moveScene(id, from, to);
   };
-  const requestClose = (id: string) => {
-    const running = (leafMap[id] ?? []).some((p) => paneOpen[p]?.open);
-    if (running) setClosing(id);
-    else finishClose(id);
-  };
-
-  const closeActive = useRef<() => void>(() => {});
-  closeActive.current = () => requestClose(sc.active);
-
-  const killTargets = (scope: string | null) =>
-    (scope === "all"
-      ? Object.values(leafMap).flat()
-      : (leafMap[scope ?? ""] ?? [])
-    ).filter((p) => paneOpen[p]?.open);
-  const closingName = sc.scenes.find((x) => x.id === closing)?.name ?? "";
-  const closingCount = closing
-    ? (leafMap[closing] ?? []).filter((p) => paneOpen[p]?.open).length
-    : 0;
-
-  const runKill = async () => {
-    const targets = killTargets(kill);
-    setKill(null);
-    // Nothing running (all disconnected): just remove the scene.
-    if (!targets.length && kill && kill !== "all") return finishClose(kill);
-    void runKillImpl(targets);
-  };
-
   const onSize = useCallback(
     (id: string, cols: number, rows: number) =>
       setSizes((m) => ({ ...m, [id]: { cols, rows } })),
@@ -211,171 +187,34 @@ export function Workspace({
     () => toggleSceneBroadcast(sc.active, leafMap[sc.active] ?? []),
   );
 
-  useEffect(() => {
-    const offs = [
-      registerCommand({
-        id: "theme",
-        icon: "brush",
-        title: "Cycle theme",
-        group: "Themes",
-        shortcut: "⇧⌘L",
-        run: cycle,
-      }),
-      // Serious mode forces Plain, so theme choice is hidden.
-      ...(serious
-        ? []
-        : [
-            registerCommand({
-              id: "theme:pick",
-              icon: "brush",
-              title: "Theme…",
-              group: "Themes",
-              run: () => setPicker(true),
-            }),
-          ]),
-      registerCommand({
-        id: "serious",
-        icon: "system",
-        title: "Serious mode",
-        group: "Themes",
-        run: () => setSerious(!getPref("serious")),
-      }),
-      registerCommand({
-        id: "settings",
-        icon: "gear",
-        title: "Open settings",
-        group: "Panes",
-        shortcut: "⌘,",
-        run: () => setSettings(true),
-      }),
-      registerCommand({
-        id: "studio",
-        icon: "layout",
-        title: "Open Studio",
-        group: "Panes",
-        shortcut: "⌘.",
-        run: () => setStudio(true),
-      }),
-      registerCommand({
-        id: "scene:new",
-        icon: "plus",
-        title: "New scene",
-        group: "Scenes",
-        shortcut: "⌘T",
-        run: add,
-      }),
-      registerCommand({
-        id: "scene:close",
-        icon: "close",
-        danger: true,
-        title: "Close scene",
-        group: "Scenes",
-        run: () => closeActive.current(),
-      }),
-      registerCommand({
-        id: "signout",
-        icon: "signout",
-        title: "Sign out",
-        group: "Account",
-        run: signOut,
-      }),
-      registerCommand({
-        id: "broadcast:toggle",
-        icon: "bolt",
-        title: "Broadcast this pane",
-        group: "Panes",
-        run: () => {
-          if (focused) toggleBroadcast(sc.active, focused);
-        },
-      }),
-      registerCommand({
-        id: "broadcast:all",
-        title: "Broadcast to all panes",
-        group: "Panes",
-        shortcut: "⇧⌘B",
-        run: () => toggleSceneBroadcast(sc.active, leafMap[sc.active] ?? []),
-      }),
-      registerCommand({
-        id: "broadcast:stop",
-        title: "Stop broadcasting",
-        group: "Panes",
-        run: () => {
-          if (focused && getBroadcastGroup(sc.active).has(focused)) {
-            toggleBroadcast(sc.active, focused);
-          }
-        },
-      }),
-    ];
-    return () => offs.forEach((f) => f());
-  }, [cycle, signOut, add, serious, setSerious, focused, sc.active, leafMap]);
+  useWorkspaceCommands({
+    cycle,
+    signOut,
+    add,
+    serious,
+    setSerious,
+    focused,
+    active: sc.active,
+    leafMap,
+    closeActive,
+    setPicker,
+    setSettings,
+    setStudio,
+  });
 
-  const menuGroups: MenuGroup[] = [
-    [
-      // Serious mode forces Plain, so theme choice is hidden.
-      ...(serious
-        ? []
-        : [
-            {
-              label: "Theme…",
-              icon: "system" as const,
-              onSelect: () => setPicker(true),
-            },
-          ]),
-      {
-        label: "Appearance",
-        icon: "light",
-        submenu: MODES.map((m) => ({
-          label: `${m[0].toUpperCase()}${m.slice(1)}`,
-          checked: m === mode,
-          onSelect: () => setMode(m),
-        })),
-      },
-      {
-        label: "Serious mode",
-        icon: "briefcase",
-        hint: serious ? "On" : "Off",
-        onSelect: () => setSerious(!serious),
-      },
-      ...(serious
-        ? []
-        : [
-            {
-              label: "Dogbert",
-              icon: "paw" as const,
-              hint: petShown ? "Shown" : "Hidden",
-              onSelect: () => setPetShown(!petShown),
-            },
-          ]),
-    ],
-    [
-      {
-        label: "Save scene",
-        icon: "server",
-        shortcut: "⌘S",
-        onSelect: () => void flows.save(),
-      },
-      {
-        label: "Save scene as…",
-        icon: "server",
-        onSelect: () => void flows.saveAs(),
-      },
-    ],
-    [
-      {
-        label: "Studio",
-        icon: "brush",
-        shortcut: "⌘.",
-        onSelect: () => setStudio(true),
-      },
-      {
-        label: "Settings",
-        icon: "gear",
-        shortcut: "⌘,",
-        onSelect: () => setSettings(true),
-      },
-    ],
-    [{ label: "Sign out", icon: "signout", onSelect: signOut }],
-  ];
+  const menuGroups = useMainMenuGroups({
+    serious,
+    setSerious,
+    petShown,
+    setPetShown,
+    mode,
+    setMode,
+    flows,
+    signOut,
+    setPicker,
+    setStudio,
+    setSettings,
+  });
   // Status bar follows the focused pane, else the first one.
   const ids = leafMap[sc.active] ?? [];
   const shown = focused && ids.includes(focused) ? focused : ids[0];

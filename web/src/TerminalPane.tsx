@@ -8,11 +8,8 @@ import {
   useState,
 } from "react";
 import { TerminalSession, type SessionState } from "./terminal/session";
-import type { TerminalRenderer, TerminalTheme } from "./terminal/renderer";
+import type { TerminalRenderer } from "./terminal/renderer";
 import { themeStore } from "./theme/store";
-import { fontFamily, fontScale, loadFont, scaledSize } from "./theme/fonts";
-import { whenFamilyReady } from "./theme/serverFonts";
-import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { PaneIntro } from "./terminal/PaneIntro";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
@@ -25,7 +22,6 @@ import { EffectsOverlay } from "./effects/EffectsOverlay";
 import { useActiveEffects } from "./effects/useActiveEffects";
 import { titleStore } from "./terminal/titles";
 import { useMotifOpacity, usePref } from "./settings/prefs";
-import { clearScrollback, registerClear } from "./terminal/paneActions";
 import { resolvePreset, type Resolved } from "./presets/api";
 import { EndedPanel } from "./terminal/EndedPanel";
 import {
@@ -34,8 +30,7 @@ import {
   markKilled,
   subscribeKilled,
 } from "./terminal/killed";
-import { THEMES } from "./theme/registry";
-import { TerminalMenu } from "./terminal/TerminalMenu";
+import { PaneMenu } from "./terminal/PaneMenu";
 import { usePaneCommands } from "./terminal/usePaneCommands";
 import { usePaneOps } from "./layout/paneOps";
 import { killScene } from "./terminal/sessions";
@@ -43,67 +38,19 @@ import {
   paneTheme,
   panePreset,
   resolveSession,
-  setPaneTheme,
   paneZoom,
   setPaneZoom,
 } from "./presets/panes";
-import {
-  registerPaneInput,
-  unregisterPaneInput,
-  getScenePanes,
-} from "./broadcast/sessionRegistry";
-import { getBroadcastGroup } from "./broadcast/store";
 import { useBroadcast } from "./broadcast/useBroadcast";
-import { filterTerminalReports } from "./broadcast/terminalFilter";
-import { createInputGate } from "./plugins/inputGate";
-import { plugins } from "./plugins/runtime";
 import { GateConfirm } from "./plugins/GateConfirm";
+
+import { useTerminalSession, type Held } from "./terminal/useTerminalSession";
+import { applyFont, applyThemeScope, terminalPaint } from "./terminal/paneFont";
+
+export { applyFont };
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
-
-async function createRenderer(el: HTMLElement): Promise<TerminalRenderer> {
-  if (pickRenderer(location.search) === "restty") {
-    const { ResttyRenderer } = await import("./terminal/resttyRenderer");
-    return new ResttyRenderer(el);
-  }
-  const { XtermRenderer } = await import("./terminal/xtermRenderer");
-  return new XtermRenderer(el);
-}
-
-/** Clear the background when a motif or effect is painted behind the text. */
-function terminalPaint(t: TerminalTheme, clear: boolean): TerminalTheme {
-  return clear ? { ...t, background: "rgba(0,0,0,0)" } : t;
-}
-
-const wantFamily = new WeakMap<TerminalRenderer, string | undefined>();
-/** Theme-font size multiplier per renderer, so a later size-only change keeps it. */
-const themeScale = new WeakMap<TerminalRenderer, number>();
-
-export function applyFont(r: TerminalRenderer | null, f: Resolved) {
-  const family = f["font.family"]?.value;
-  const size = f["font.size"]?.value;
-  const f2 = typeof family === "string" ? family : undefined;
-  const raw = typeof size === "number" ? size : undefined;
-  const s2 = raw && !f2 && r ? Math.round(raw * (themeScale.get(r) ?? 1)) : raw;
-  if (f2 || s2) r?.setFont?.(f2, s2);
-  // Server-installed families arrive via /api/fonts.css; refit once loaded.
-  if (r) wantFamily.set(r, f2);
-  if (f2 && r)
-    void whenFamilyReady(f2).then(() => {
-      if (wantFamily.get(r) === f2) r.setFont?.(f2, s2);
-    });
-}
-
-function wsUrl(scene?: string, id?: string, preset?: string): string {
-  const proto = location.protocol === "https:" ? "wss" : "ws";
-  const q = new URLSearchParams();
-  if (scene) q.set("scene", scene);
-  if (id) q.set("id", id);
-  if (preset) q.set("preset", preset);
-  const qs = q.toString();
-  return `${proto}://${location.host}/ws/term${qs ? `?${qs}` : ""}`;
-}
 
 export function TerminalPane({
   theme,
@@ -244,7 +191,6 @@ export function TerminalPane({
   /** Something paints behind the text: the renderer must be transparent. */
   const sceneBg = useContext(SceneBgContext);
   const [perf] = usePref("perf");
-  const [serious] = usePref("serious");
   const paneBg = bgSpec(resolved);
   const hasBg = !perf && paneBg !== null;
   const clear = motifOn || rainBehind || hasBg || (sceneBg && !perf);
@@ -257,29 +203,21 @@ export function TerminalPane({
     [],
   );
 
+  const scopeFontRef = useRef<string | null>(null);
+  const applyScope = useCallback(
+    (r: TerminalRenderer) =>
+      applyThemeScope(r, {
+        renderer,
+        theme: themeRef,
+        font: fontRef,
+        visible: visibleRef,
+        scopeFont: scopeFontRef,
+      }),
+    [],
+  );
+
   const dropped =
     state.status === "closed" && state.exitCode === undefined && !killed;
-  const scopeFontRef = useRef<string | null>(null);
-  /** Cursor now; theme font once loaded, unless a preset sets the family. */
-  const applyScope = useCallback((r: TerminalRenderer) => {
-    const { cursor, font } = themeStore.scope(themeRef.current);
-    r.setCursor(cursor);
-    const presetFont = () =>
-      typeof fontRef.current["font.family"]?.value === "string";
-    if (presetFont()) return;
-    if (!visibleRef.current || scopeFontRef.current === font) return;
-    scopeFontRef.current = font;
-    void loadFont(font).then(() => {
-      if (renderer.current !== r || scopeFontRef.current !== font) return;
-      if (presetFont()) return;
-      const size = fontRef.current["font.size"]?.value;
-      themeScale.set(r, fontScale(font));
-      r.setFont?.(
-        fontFamily(font),
-        scaledSize(font, typeof size === "number" ? size : undefined),
-      );
-    });
-  }, []);
   useEffect(() => {
     const r = renderer.current;
     if (!r) return;
@@ -315,11 +253,7 @@ export function TerminalPane({
   }, [settled]);
 
   /** A gate plugin held a command in this pane and wants the user to decide. */
-  const [held, setHeld] = useState<{
-    plugin: string;
-    reason: string;
-    done: (run: boolean) => void;
-  } | null>(null);
+  const [held, setHeld] = useState<Held | null>(null);
   const [images] = usePref("images");
   const imagesRef = useRef(images);
   imagesRef.current = images;
@@ -327,131 +261,29 @@ export function TerminalPane({
     renderer.current?.setInlineImages?.(images);
   }, [images]);
 
-  useEffect(() => {
-    const el = host.current!;
-    let cleanup = () => {};
-    let cancelled = false;
-    void createRenderer(el).then((r) => {
-      if (cancelled) return r.dispose();
-      const s = new TerminalSession(
-        r,
-        () => new WebSocket(wsUrl(keyRef.current, idRef.current, preset)),
-        setState,
-        {
-          onSize: (c, r2) => hooks.current.onSize?.(c, r2),
-          onOutput: (data) => {
-            hooks.current.onOutput?.(data);
-            noteRef.current();
-          },
-          onLatency: (ms) => hooks.current.onLatency?.(ms),
-          interceptInput: (() => {
-            // Enter waits for gate plugins (ADR-0005); everything else passes.
-            const enc = new TextEncoder();
-            const dec = new TextDecoder();
-            let feed: ((s: string) => void) | null = null;
-            return (data, pass) => {
-              feed ??= createInputGate(
-                {
-                  hasGate: plugins.hasGate,
-                  gate: plugins.gate,
-                  observe: plugins.observe,
-                  currentLine: () => r.cursorLine?.() ?? "",
-                  confirm: (plugin, reason) =>
-                    new Promise<boolean>((done) =>
-                      setHeld({
-                        plugin,
-                        reason,
-                        done: (run) => {
-                          setHeld(null);
-                          done(run);
-                          r.focus?.();
-                        },
-                      }),
-                    ),
-                },
-                (text) => pass(enc.encode(text)),
-              );
-              feed(dec.decode(data));
-            };
-          })(),
-          onBroadcast: (data) => {
-            const scene = sceneRef.current;
-            const pane = keyRef.current;
-            if (!scene || !pane) return;
-            // Filter out terminal reports (cursor position, device attributes, etc.)
-            // Only broadcast actual user input
-            const filtered = filterTerminalReports(data);
-            if (filtered.length === 0) return; // Don't broadcast terminal reports
-            const group = getBroadcastGroup(scene);
-            const panes = getScenePanes(scene);
-            // Fan out to all panes in the broadcast group except this one
-            group.forEach((targetPaneId) => {
-              if (targetPaneId === pane) return; // Don't echo back
-              const targetPane = panes[targetPaneId];
-              if (targetPane) targetPane.send(filtered);
-            });
-          },
-        },
-      );
-      session.current = s;
-      renderer.current = r;
-
-      r.setZoom?.(zoomRef.current);
-      // Register this pane for receiving broadcast input
-      if (keyRef.current && sceneRef.current) {
-        registerPaneInput(sceneRef.current, keyRef.current, (data) => {
-          // Raw bytes, not paste: bracketed paste would insert Backspace
-          // and other keys literally (^?) instead of running them.
-          s.input(data);
-        });
-      }
-
-      // The images effect ran before this async renderer existed: apply now.
-      void r.setInlineImages?.(imagesRef.current);
-      r.onTitle?.((title) => {
-        if (keyRef.current) titleStore.set(keyRef.current, { title });
-      });
-      r.onCwd?.((cwd) => {
-        cwdRef.current = cwd;
-        if (keyRef.current) titleStore.set(keyRef.current, { cwd });
-      });
-      // ED 3: erase scrollback only; works the same in both renderers.
-      const offClear = paneId
-        ? registerClear(paneId, () =>
-            r.write(new TextEncoder().encode("\x1b[3J")),
-          )
-        : () => {};
-      r.setTheme(paintTheme());
-      applyScope(r);
-      applyFont(r, fontRef.current);
-      const offTheme = themeStore.subscribe(() => {
-        r.setTheme(paintTheme());
-        applyScope(r);
-      });
-      connect();
-      const ro = new ResizeObserver(() => {
-        if (settledRef.current) r.resize();
-      });
-      ro.observe(el);
-      cleanup = () => {
-        // Unregister this pane from broadcasting
-        if (keyRef.current && sceneRef.current) {
-          unregisterPaneInput(sceneRef.current, keyRef.current);
-        }
-        offClear();
-        offTheme();
-        ro.disconnect();
-        wantFamily.delete(r);
-        session.current = null;
-        s.dispose();
-      };
-    });
-    return () => {
-      cancelled = true;
-      cleanup();
-      if (keyRef.current) titleStore.remove(keyRef.current);
-    };
-  }, [connect, applyScope, paneId, sceneId, paintTheme, preset]);
+  useTerminalSession({
+    host,
+    renderer,
+    session,
+    idRef,
+    keyRef,
+    sceneRef,
+    cwdRef,
+    hooks,
+    noteRef,
+    settledRef,
+    zoomRef,
+    imagesRef,
+    fontRef,
+    connect,
+    applyScope,
+    paintTheme,
+    paneId,
+    sceneId,
+    preset,
+    setState,
+    setHeld,
+  });
 
   const ops = usePaneOps();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -484,12 +316,6 @@ export function TerminalPane({
     showScreen: () => openOverlay("show-screen"),
     kill: () => paneId && void killScene(paneId),
   });
-  // Serious mode forces Plain everywhere: no per-pane theme choice.
-  const themes = (serious ? [] : THEMES).map((t) => ({
-    id: t.id,
-    name: t.name,
-    swatch: t.terminal.palette.cursor ?? t.terminal.palette.fg,
-  }));
   const bg =
     sceneBg && !perf ? "transparent" : themeStore.terminal(theme).background;
   return (
@@ -559,33 +385,19 @@ export function TerminalPane({
         cwd={cwdRef.current}
       />
       {menu && (
-        <TerminalMenu
+        <PaneMenu
           {...menu}
-          hasSelection={!!renderer.current?.getSelection?.()}
-          isBroadcasting={broadcast?.isBroadcasting}
-          allBroadcasting={broadcast?.allBroadcasting}
-          themes={themes}
-          currentTheme={override}
-          onCopy={copy}
-          onPaste={() => void paste()}
-          onSelectAll={() => renderer.current?.selectAll?.()}
-          onClear={() => paneId && clearScrollback(paneId)}
-          onSplit={(d) => ops?.split(d)}
-          onTheme={(t) => {
-            setOverride(t);
-            // Stored per pane so reload and "Save scene" keep the choice.
-            // ponytail: "default" (undefined) is not persisted; add clearPaneTheme if reload must forget it.
-            if (paneId && t) setPaneTheme(paneId, t);
-          }}
-          onRename={ops?.rename}
-          onShowScreen={() => openOverlay("show-screen")}
-          onBroadcast={broadcast?.toggle}
-          onBroadcastAll={broadcast?.toggleAll}
-          onDiff={() => openOverlay("diff")}
+          renderer={renderer.current}
+          paneId={paneId}
+          ops={ops}
+          broadcast={broadcast}
+          override={override}
+          setOverride={setOverride}
           zoom={zoom}
-          onZoom={(d) => setZoom((z) => (d === 0 ? 0 : z + d))}
-          onKill={() => paneId && void killScene(paneId)}
-          onClose={() => ops?.close()}
+          setZoom={setZoom}
+          copy={copy}
+          paste={paste}
+          openOverlay={openOverlay}
           onDismiss={closeMenu}
         />
       )}
