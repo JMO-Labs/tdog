@@ -67,3 +67,13 @@ test("sessionExists is false on http or network failure", async () => {
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
   expect(await sessionExists("x1")).toBe(false);
 });
+
+test("killScene forgets the pane's browser journal", async () => {
+  const forget = vi.fn().mockResolvedValue(undefined);
+  const db = await import("../journal/db");
+  vi.spyOn(db, "journalDB").mockReturnValue({ forget } as never);
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok({ killed: 0 })));
+  await killScene("pa");
+  expect(forget).toHaveBeenCalledWith("pa");
+  vi.restoreAllMocks();
+});

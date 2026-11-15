@@ -1,3 +1,4 @@
+import { journalDB } from "../journal/db";
 import { useEffect, type MutableRefObject, type RefObject } from "react";
 import { TerminalSession, type SessionState } from "./session";
 import type { TerminalRenderer } from "./renderer";
@@ -109,6 +110,10 @@ export function useTerminalSession(d: TerminalSessionDeps) {
         () => new WebSocket(wsUrl(keyRef.current, idRef.current, preset)),
         setState,
         {
+          journal: (() => {
+            const db = journalDB();
+            return paneId && db ? { pane: paneId, db } : undefined;
+          })(),
           onSize: (c, r2) => hooks.current.onSize?.(c, r2),
           onOutput: (data) => {
             hooks.current.onOutput?.(data);

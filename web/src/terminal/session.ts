@@ -2,9 +2,15 @@ import {
   decodeFrame,
   encodeAck,
   encodeInput,
+  encodeJournalAck,
+  encodeJournalForget,
+  encodeJournalRecord,
   encodePing,
   encodeResize,
 } from "../protocol/frames";
+import type { JournalEvent } from "../journal/types";
+import type { JournalDB } from "../journal/db";
+import { ingest } from "../journal/ingest";
 import type { TerminalRenderer } from "./renderer";
 
 /**
@@ -43,6 +49,8 @@ export interface SessionHooks {
   /** Called when input is received (for broadcasting). */
   onBroadcast?: (data: Uint8Array) => void;
   /** May hold or drop user input; call `pass` to send (and broadcast) it. */
+  /** Where this pane's journal events are saved (acked once stored). */
+  journal?: { pane: string; db: JournalDB };
   interceptInput?: (data: Uint8Array, pass: (d: Uint8Array) => void) => void;
 }
 
@@ -53,6 +61,7 @@ export class TerminalSession {
   private pending = 0;
   private exitCode: number | undefined;
   private killed = false;
+  private warned = false;
   private pinger: ReturnType<typeof setInterval> | undefined;
 
   constructor(
@@ -124,6 +133,29 @@ export class TerminalSession {
     this.r.dispose();
   }
 
+  /** Ask the server to start/stop journaling this session. */
+  setRecording(on: boolean): void {
+    this.send(encodeJournalRecord(on));
+  }
+
+  /** Ask the server to drop its journal copy. */
+  forget(): void {
+    this.send(encodeJournalForget());
+  }
+
+  private journaled(f: JournalEvent[]): void {
+    const j = this.hooks.journal;
+    if (!j) return;
+    // No ack on failure: the server keeps (and resends) the data.
+    ingest(j.db, j.pane, f).then(
+      (seq) => seq > 0 && this.send(encodeJournalAck(seq)),
+      () => {
+        if (!this.warned) console.warn("journal: save failed, not acking");
+        this.warned = true;
+      },
+    );
+  }
+
   private ping(): void {
     this.send(encodePing(performance.now()));
   }
@@ -143,6 +175,8 @@ export class TerminalSession {
       this.exitCode = f.code;
     } else if (f.kind === "killed") {
       this.killed = true;
+    } else if (f.kind === "journal") {
+      this.journaled(f.events);
     } else if (f.kind === "pong") {
       this.hooks.onLatency?.(Math.round(performance.now() - f.t));
     } else if (f.kind === "output") {

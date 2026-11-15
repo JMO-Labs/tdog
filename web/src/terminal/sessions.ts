@@ -1,4 +1,5 @@
 import { markKilled } from "./killed";
+import { journalDB } from "../journal/db";
 import { apiFetch, apiPost } from "../auth/api";
 
 /** Server session id for a pane's `scene` key, if its shell is still alive. */
@@ -18,8 +19,14 @@ export async function findSessionId(
 /**
  * Kill every shell behind a pane's `scene` key. Returns the server's real
  * count (0 on failure) and marks the pane killed so reload does not respawn.
+ * Also forgets the pane's browser journal (pane id = `scene` key, which is
+ * stable across reloads since layouts persist it).
  */
 export async function killScene(scene: string): Promise<number> {
+  // Every pane close/kill path funnels here: drop its browser journal too.
+  void journalDB()
+    ?.forget(scene)
+    .catch(() => {});
   try {
     const r = await apiPost(`/api/scenes/${encodeURIComponent(scene)}/kill`);
     if (!r.ok) return 0;
