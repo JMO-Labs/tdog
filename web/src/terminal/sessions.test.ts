@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { findSessionId, killScene } from "./sessions";
+import { findSessionId, killScene, sessionExists } from "./sessions";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -51,4 +51,20 @@ test("killScene is false when the kill request fails", async () => {
     .mockRejectedValueOnce(new Error("down"));
   vi.stubGlobal("fetch", f);
   expect(await killScene("pa")).toBe(false);
+});
+
+test("sessionExists is true only when the server lists the id", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok(list)));
+  expect(await sessionExists("x2")).toBe(true);
+  expect(await sessionExists("zz")).toBe(false);
+});
+
+test("sessionExists is false on http or network failure", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(new Response("no", { status: 500 })),
+  );
+  expect(await sessionExists("x1")).toBe(false);
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
+  expect(await sessionExists("x1")).toBe(false);
 });
