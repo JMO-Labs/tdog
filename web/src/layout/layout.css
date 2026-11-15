@@ -132,9 +132,8 @@
   font-size: 14px;
   line-height: 1;
 }
-.pane-head .pane-btn svg {
-  width: 14px;
-  height: 14px;
+.pane-head .pane-btn .nf {
+  font-size: 14px;
 }
 .pane-head .pane-btn:hover {
   background: var(--surface-2);
@@ -336,9 +335,8 @@
   font-size: 12px;
 }
 
-.term-filter svg {
-  width: 14px;
-  height: 14px;
+.term-filter .nf {
+  font-size: 14px;
   opacity: 0.6;
   flex-shrink: 0;
 }

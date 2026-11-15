@@ -1,56 +1,37 @@
-// Stroke icons (24 grid) from docs/design/mockup.js.
-const P = {
-  brush:
-    '<path d="M18 3l3 3-9 9-3-3z"/><path d="M9 12c-3 0-5 2-5 5 0 1-1 2-2 2 2 2 7 2 9-1 1-2 0-4-2-6"/>',
-  system:
-    '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>',
-  light:
-    '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
-  dark: '<path d="M20 14A8 8 0 1 1 10 4a6 6 0 0 0 10 10z"/>',
-  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/>',
-  power: '<path d="M12 3v9"/><path d="M6.3 7a8 8 0 1 0 11.4 0"/>',
-  server:
-    '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
-  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
-  modem:
-    '<rect x="2" y="13" width="20" height="7" rx="2"/><path d="M6 16.5h.01M10 16.5h.01M8 9a6 6 0 0 1 8 0M5 6a10 10 0 0 1 14 0"/>',
-  splitRight:
-    '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/>',
-  splitDown:
-    '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 12h18"/>',
-  layout:
-    '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 4v16M10 12h11"/>',
-  more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
-  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
-  chevron: '<path d="M9 6l6 6-6 6"/>',
-  check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
-  signout:
-    '<path d="M9 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M16 8l4 4-4 4M20 12H9"/>',
-  briefcase:
-    '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  close: '<path d="M6 6l12 12M18 6 6 18"/>',
-  search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/>',
-  copy: '<rect x="8" y="8" width="12" height="13" rx="2"/><path d="M4 16V5a2 2 0 0 1 2-2h9"/>',
-  paste:
-    '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/>',
-  eraser: '<path d="M4 15l9-9 7 7-6 6H8z"/><path d="M9 10l7 7M8 19h12"/>',
-  paw: '<circle cx="6" cy="10" r="2"/><circle cx="10" cy="6" r="2"/><circle cx="14" cy="6" r="2"/><circle cx="18" cy="10" r="2"/><path d="M12 12c-3 0-6 4-6 6.5S8 21 12 19.5 18 21 18 18.5 15 12 12 12z"/>',
-};
-export type IconName = keyof typeof P;
+// Nerd Font glyphs (Symbols Nerd Font Mono). Class names per the Nerd Fonts cheat sheet.
+export const GLYPHS = {
+  brush: "\u{F00E3}", // nf-md-brush
+  system: "", // nf-cod-color_mode
+  light: "\u{F05A8}", // nf-md-white_balance_sunny
+  dark: "\u{F0594}", // nf-md-weather_night
+  gear: "", // nf-cod-gear
+  power: "\u{F0425}", // nf-md-power
+  server: "", // nf-cod-server
+  bolt: "", // nf-fa-bolt
+  modem: "\u{F0469}", // nf-md-router_wireless
+  splitRight: "", // nf-cod-split_horizontal
+  splitDown: "", // nf-cod-split_vertical
+  layout: "", // nf-cod-layout
+  more: "", // nf-cod-ellipsis
+  menu: "", // nf-cod-menu
+  chevron: "", // nf-cod-chevron_right
+  check: "", // nf-cod-check
+  signout: "", // nf-cod-sign_out
+  briefcase: "", // nf-cod-briefcase
+  plus: "", // nf-cod-add
+  close: "", // nf-cod-close
+  search: "", // nf-cod-search
+  copy: "", // nf-cod-copy
+  paste: "", // nf-cod-clippy
+  eraser: "\u{F01FE}", // nf-md-eraser
+  paw: "\u{F03E9}", // nf-md-paw (removed in Task 4)
+} as const;
+export type IconName = keyof typeof GLYPHS;
 
 export function Icon({ name }: { name: IconName }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      data-icon={name}
-      dangerouslySetInnerHTML={{ __html: P[name] }}
-    />
+    <span className="nf" aria-hidden="true" data-icon={name}>
+      {GLYPHS[name]}
+    </span>
   );
 }

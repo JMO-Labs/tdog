@@ -3,8 +3,22 @@
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/600.css";
 @import "@fontsource/jetbrains-mono/800.css";
+
 @import "./components/ui/ui.css";
 @import "./auth/auth.css";
+
+@font-face {
+  font-family: "Symbols Nerd Font Mono";
+  src: url("./assets/fonts/SymbolsNerdFontMono-Regular.woff2") format("woff2");
+  font-display: block;
+}
+.nf {
+  font-family: "Symbols Nerd Font Mono";
+  font-size: 14px;
+  line-height: 1;
+  font-style: normal;
+  display: inline-block;
+}
 
 /* Design tokens: copied from docs/design/mockup.css. Light on :root, dark via prefers-color-scheme / [data-theme=dark]. */
 :root {
@@ -40,7 +54,7 @@
   --term-fg: #ede7ff;
   --term-dim: #9d90c9;
   --display: "Lilita One", "Arial Rounded MT Bold", system-ui, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --mono: "JetBrains Mono", "Symbols Nerd Font Mono", ui-monospace, monospace;
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --pat-confetti: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 34q10-14 20 0t20 0t20 0' stroke='%23FF2D95' stroke-width='6'/%3E%3Cpath d='M98 150q10-14 20 0t20 0' stroke='%2322D3EE' stroke-width='6'/%3E%3Cpath d='M118 22l10 12 10-12 10 12 10-12' stroke='%238B3DFF' stroke-width='5'/%3E%3Cpath d='M20 120l10-10M38 104l10-10M150 92l12 6M70 168l14-4M86 96l6 12' stroke='%23160B2E' stroke-width='4'/%3E%3C/g%3E%3Cpolygon points='78,40 100,80 56,80' fill='%2322D3EE' stroke='%23160B2E' stroke-width='3'/%3E%3Ccircle cx='150' cy='70' r='13' fill='%23FFE14D' stroke='%23160B2E' stroke-width='3'/%3E%3Crect x='30' y='136' width='24' height='24' transform='rotate(20 42 148)' fill='%23FF2D95' stroke='%23160B2E' stroke-width='3'/%3E%3Ccircle cx='120' cy='118' r='5' fill='%238B3DFF'/%3E%3Ccircle cx='16' cy='76' r='4' fill='%23160B2E'/%3E%3C/svg%3E");
   --pat-zebra: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%2322D3EE'/%3E%3Cg fill='%23160B2E'%3E%3Cpath d='M0 14C30 0 46 30 76 12S112 18 120 8V20C100 34 84 22 70 30S24 18 0 28Z'/%3E%3Cpath d='M0 52C22 40 40 64 64 48S104 58 120 44V56C98 72 84 58 62 66S20 56 0 66Z'/%3E%3Cpath d='M0 92C26 80 46 104 74 86S108 96 120 84V96C96 112 82 98 60 106S22 96 0 106Z'/%3E%3C/g%3E%3Cpath d='M40 40l8 8M96 70l-6 8' stroke='%23FF2D95' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E");

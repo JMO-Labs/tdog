@@ -159,9 +159,8 @@
   box-shadow: var(--shadow-md);
   transform: none;
 }
-.ws .icon-btn svg {
-  width: 20px;
-  height: 20px;
+.ws .icon-btn .nf {
+  font-size: 20px;
   display: block;
 }
 .panes {
@@ -255,9 +254,8 @@
   font-weight: 600;
   flex: none;
 }
-.chip svg {
-  width: 14px;
-  height: 14px;
+.chip .nf {
+  font-size: 14px;
 }
 .kbd-chip {
   cursor: pointer;

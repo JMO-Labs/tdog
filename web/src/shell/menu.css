@@ -49,9 +49,8 @@
   opacity: 0.55;
   cursor: default;
 }
-.mm-menu svg {
-  width: 16px;
-  height: 16px;
+.mm-menu .nf {
+  font-size: 16px;
   flex: none;
 }
 .mm-gap {
@@ -67,7 +66,7 @@
   font-size: 12px;
   font-weight: 500;
 }
-.mm-menu button > svg:last-child:not(:first-child) {
+.mm-menu button > .nf:last-child:not(:first-child) {
   margin-left: auto;
 }
 .mm-sep {

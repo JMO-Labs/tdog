@@ -124,9 +124,9 @@ describe("palette menu look", () => {
     });
     render(<CommandPalette defaultOpen />);
     const opt = screen.getByRole("option");
-    expect(opt.querySelector('svg[data-icon="gear"]')).toBeTruthy();
+    expect(opt.querySelector('[data-icon="gear"]')).toBeTruthy();
     expect(opt.querySelector("kbd")?.textContent).toBe("⌘,");
-    expect(document.querySelector(".cmdk-filter svg")).toBeTruthy();
+    expect(document.querySelector(".cmdk-filter .nf")).toBeTruthy();
     expect(screen.getByText("↑↓ move · ↵ run")).toBeTruthy();
     expect(screen.getByRole("combobox").getAttribute("aria-controls")).toBe(
       "cmdk-list",
@@ -150,9 +150,9 @@ describe("palette rows", () => {
     registerCommand({ id: "b", title: "Beta", danger: true, run: vi.fn() });
     render(<CommandPalette defaultOpen />);
     const [a, b] = screen.getAllByRole("option");
-    expect(a.querySelector(".cmdk-icon svg")).toBeTruthy();
+    expect(a.querySelector(".cmdk-icon .nf")).toBeTruthy();
     expect(b.querySelector(".cmdk-icon")).toBeTruthy();
-    expect(b.querySelector(".cmdk-icon svg")).toBeNull();
+    expect(b.querySelector(".cmdk-icon .nf")).toBeNull();
     expect(b.className).toBe("danger");
     expect(a.className).toBe("");
   });

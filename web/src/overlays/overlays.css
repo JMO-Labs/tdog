@@ -69,9 +69,8 @@
   border-bottom: 1px solid var(--line);
   background: var(--surface-2);
 }
-.cmdk-filter svg {
-  width: 14px;
-  height: 14px;
+.cmdk-filter .nf {
+  font-size: 14px;
   opacity: 0.6;
   flex-shrink: 0;
 }
@@ -150,9 +149,8 @@
 .cmdk [role="option"].danger {
   color: var(--danger, #c2185b);
 }
-.cmdk-title svg {
-  width: 14px;
-  height: 14px;
+.cmdk-title .nf {
+  font-size: 14px;
   opacity: 0.7;
   flex-shrink: 0;
 }
