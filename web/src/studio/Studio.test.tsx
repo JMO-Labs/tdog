@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { json, mockFetch } from "../auth/testutil";
+vi.mock("./TerminalPreview", () => ({ TerminalPreview: () => null }));
 import { Studio } from "./Studio";
 
 function Host() {

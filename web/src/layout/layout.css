@@ -51,9 +51,20 @@
   box-sizing: border-box;
   border: 2px solid var(--line);
   border-radius: calc(14px * var(--radius-scale));
-  /* no overflow:hidden here: popovers in the head must not be clipped */
+  /* not clipped: popovers in the head must stay visible */
   background: var(--term-bg);
-  box-shadow: 6px 6px 0 var(--shadow);
+  isolation: isolate; /* effects/z-index stay inside this pane */
+  position: relative;
+}
+/* inset only: shadows and rings must never paint onto neighbours; drawn on
+   a pseudo-element so they sit above the opaque head and body */
+.pane::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset -4px -4px 0 var(--shadow);
 }
 /* a scene background shows through; the pane's own layer/theme tints it */
 .scene-view:has(> [data-scene-bg]) .pane {
@@ -61,9 +72,11 @@
 }
 .pane[data-focused="true"] {
   border-color: var(--accent, #6cf);
+}
+.pane[data-focused="true"]::after {
   box-shadow:
-    0 0 0 3px var(--accent, #6cf),
-    6px 6px 0 3px var(--shadow);
+    inset 0 0 0 3px var(--accent, #6cf),
+    inset -4px -4px 0 var(--shadow);
 }
 .pane-head {
   display: flex;

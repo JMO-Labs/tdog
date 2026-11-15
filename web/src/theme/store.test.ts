@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { themeStore, toTerminalTheme } from "./store";
-import { THEMES } from "./registry";
+import { THEMES, findTheme } from "./registry";
 
 const KEY = "tdog.theme.id";
 beforeEach(() => {
@@ -55,9 +55,16 @@ describe("themeStore", () => {
     off();
   });
   it("forces data-theme to appearance when no light variant", () => {
-    themeStore.select("wetwired");
-    themeStore.setScheme("light");
-    expect(document.documentElement.dataset.theme).toBe("dark");
+    // Every bundled theme ships a light variant; register a dark-only one.
+    const { light: _light, ...darkOnly } = THEMES[0];
+    THEMES.push({ ...darkOnly, id: "dark-only-test" });
+    try {
+      themeStore.select("dark-only-test");
+      themeStore.setScheme("light");
+      expect(document.documentElement.dataset.theme).toBe("dark");
+    } finally {
+      THEMES.pop();
+    }
   });
   it("uses the light variant when shipped", () => {
     themeStore.select("memphis-pop");
@@ -68,6 +75,78 @@ describe("themeStore", () => {
     );
     themeStore.setScheme("system");
     expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
+  });
+  it("toggle swaps terminal bg/fg between dark and light variants", () => {
+    for (const t of THEMES.filter((x) => x.light)) {
+      themeStore.select(t.id);
+      themeStore.setScheme("dark");
+      const d = themeStore.terminal();
+      themeStore.setScheme("light");
+      const l = themeStore.terminal();
+      expect(d.background, t.id).toBe(t.terminal.palette.bg);
+      expect(d.foreground, t.id).toBe(t.terminal.palette.fg);
+      expect(l.background, t.id).toBe(t.light!.terminal.palette.bg);
+      expect(l.foreground, t.id).toBe(t.light!.terminal.palette.fg);
+      expect(l.background, t.id).not.toBe(d.background);
+    }
+  });
+  it("toggle swaps terminal bg/fg for a light-first theme", () => {
+    const base = findTheme("memphis-pop")!;
+    const dark = base.terminal.palette;
+    const lightPal = { ...dark, bg: "#fafafa", fg: "#111111" };
+    THEMES.push({
+      ...base,
+      id: "light-first-test",
+      appearance: "light",
+      terminal: { ...base.terminal, palette: lightPal },
+      light: { terminal: { palette: dark }, chrome: base.chrome },
+    });
+    try {
+      themeStore.select("light-first-test");
+      themeStore.setScheme("light");
+      expect(themeStore.terminal().background).toBe("#fafafa");
+      expect(themeStore.terminal().foreground).toBe("#111111");
+      themeStore.setScheme("dark");
+      expect(themeStore.terminal().background).toBe(dark.bg);
+      expect(themeStore.terminal().foreground).toBe(dark.fg);
+      expect(document.documentElement.dataset.theme).toBe("dark");
+    } finally {
+      THEMES.pop();
+    }
+  });
+  it("toggle swaps terminal bg/fg for a dark-first theme", () => {
+    const base = findTheme("memphis-pop")!;
+    themeStore.select("memphis-pop");
+    themeStore.setScheme("dark");
+    expect(themeStore.terminal().background).toBe(base.terminal.palette.bg);
+    themeStore.setScheme("light");
+    expect(themeStore.terminal().background).toBe(
+      base.light!.terminal.palette.bg,
+    );
+  });
+  it("system follows prefers-color-scheme changes live", () => {
+    let matches = false;
+    let fire: () => void = () => {};
+    vi.stubGlobal("matchMedia", () => ({
+      get matches() {
+        return matches;
+      },
+      addEventListener: (_: string, cb: () => void) => (fire = cb),
+      removeEventListener: () => {},
+    }));
+    try {
+      themeStore.reset();
+      themeStore.select("memphis-pop");
+      const before = themeStore.terminal().background;
+      matches = true;
+      fire();
+      expect(themeStore.terminal().background).toBe(
+        findTheme("memphis-pop")!.light!.terminal.palette.bg,
+      );
+      expect(themeStore.terminal().background).not.toBe(before);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
   it("preview applies live and revert restores, without persisting", () => {
     themeStore.preview("night-market");

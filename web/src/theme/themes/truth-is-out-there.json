@@ -118,5 +118,46 @@
         }
       ]
     }
+  },
+  "light": {
+    "terminal": {
+      "palette": {
+        "fg": "#0c2a10",
+        "bg": "#eef5ea",
+        "cursor": "#7a5f00",
+        "selection": "#bfe0bf",
+        "ansi": [
+          "#3f6b40",
+          "#a8321a",
+          "#1a7a28",
+          "#7a6200",
+          "#0f6a48",
+          "#2a7a3a",
+          "#0a6a56",
+          "#1a331c",
+          "#355a36",
+          "#9a2a14",
+          "#146a20",
+          "#6a5400",
+          "#0a5a3c",
+          "#206a2e",
+          "#085a48",
+          "#000000"
+        ]
+      }
+    },
+    "chrome": {
+      "tokens": {
+        "bg": "#dfead9",
+        "surface": "#f4faf0",
+        "fg": "#0c2a10",
+        "pink": "#2a7a2a",
+        "cyan": "#0a6a56",
+        "yellow": "#7a6200",
+        "link": "#1a7a28",
+        "term-bg": "#eef5ea",
+        "term-fg": "#0c2a10"
+      }
+    }
   }
 }

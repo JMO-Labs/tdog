@@ -11,6 +11,7 @@ let cb: {
   reconnectRef?: { current: (() => void) | null };
 } = {};
 const reconnect = vi.fn();
+vi.mock("../studio/TerminalPreview", () => ({ TerminalPreview: () => null }));
 vi.mock("../TerminalPane", () => ({
   TerminalPane: (p: typeof cb) => {
     cb = p;

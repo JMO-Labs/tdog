@@ -415,3 +415,18 @@
 .preset-list-wrap .preset-list {
   justify-content: center;
 }
+
+.tab-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--accent, #6cf);
+  vertical-align: middle;
+}
+.tab-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

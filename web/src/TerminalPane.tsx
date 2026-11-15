@@ -29,7 +29,12 @@ import { THEMES } from "./theme/registry";
 import { TerminalMenu } from "./terminal/TerminalMenu";
 import { usePaneOps } from "./layout/paneOps";
 import { killScene } from "./terminal/sessions";
-import { panePreset, resolveSession } from "./presets/panes";
+import {
+  paneTheme,
+  panePreset,
+  resolveSession,
+  setPaneTheme,
+} from "./presets/panes";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -115,11 +120,15 @@ export function TerminalPane({
   theme =
     override ??
     theme ??
+    (sceneKey ? paneTheme(sceneKey) : undefined) ??
     (typeof presetTheme === "string" ? presetTheme : undefined);
   const fontRef = useRef<Resolved>({});
   fontRef.current = resolved;
   const themeRef = useRef(theme);
   themeRef.current = theme;
+  useEffect(() => {
+    if (sceneKey && theme) titleStore.set(sceneKey, { theme });
+  }, [sceneKey, theme]);
   const renderer = useRef<TerminalRenderer | null>(null);
   const host = useRef<HTMLDivElement>(null);
   const session = useRef<TerminalSession | null>(null);
@@ -371,6 +380,7 @@ export function TerminalPane({
             position: "absolute",
             inset: 0,
             pointerEvents: "none",
+            overflow: "hidden",
             backgroundImage: motifUrl,
             opacity: motifPct / 100,
           }}
@@ -401,7 +411,12 @@ export function TerminalPane({
           onSelectAll={() => renderer.current?.selectAll?.()}
           onClear={() => sceneKey && clearScrollback(sceneKey)}
           onSplit={(d) => ops?.split(d)}
-          onTheme={setOverride}
+          onTheme={(t) => {
+            setOverride(t);
+            // Stored per pane so reload and "Save scene" keep the choice.
+            // ponytail: "default" (undefined) is not persisted; add clearPaneTheme if reload must forget it.
+            if (sceneKey && t) setPaneTheme(sceneKey, t);
+          }}
           onRename={ops?.rename}
           onKill={() => sceneKey && void killScene(sceneKey)}
           onClose={() => ops?.close()}

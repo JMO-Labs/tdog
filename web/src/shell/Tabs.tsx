@@ -13,6 +13,12 @@ type Props = {
   /** A pane header was dropped on this scene tab. */
   onDropPane?: (paneId: string, scene: string) => void;
   onKill: (id: string) => void;
+  /** Scene ids with unsaved changes against their saved preset. */
+  dirty?: Set<string>;
+  onSave?: (id: string) => void;
+  onSaveAs?: (id: string) => void;
+  /** Offer the saved scenes to open in a new tab. */
+  onOpenSaved?: () => void;
 };
 
 /** Scene tab strip: sliding pill, inline rename, drag reorder, close, add. */
@@ -108,6 +114,14 @@ export function Tabs(p: Props) {
                 }}
               >
                 {s.name}
+                {p.dirty?.has(s.id) && (
+                  <span
+                    className="tab-dot"
+                    role="img"
+                    aria-label="Unsaved changes"
+                    title="Unsaved changes"
+                  />
+                )}
               </button>
             )}
             <button
@@ -127,15 +141,42 @@ export function Tabs(p: Props) {
           role="menu"
           style={{ left: menu.x, top: menu.y }}
           onMouseLeave={() => setMenu(null)}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) setMenu(null);
+          }}
         >
+          {(
+            [
+              ["Save", p.onSave],
+              ["Save as…", p.onSaveAs],
+            ] as const
+          ).map(([label, fn]) => (
+            <button
+              key={label}
+              role="menuitem"
+              autoFocus={label === "Save"}
+              className="btn"
+              onClick={() => {
+                fn?.(menu.id);
+                setMenu(null);
+              }}
+            >
+              {label}
+            </button>
+          ))}
           <button
             role="menuitem"
             className="btn"
-            autoFocus
-            onBlur={(e) => {
-              if (!e.currentTarget.parentElement?.contains(e.relatedTarget))
-                setMenu(null);
+            onClick={() => {
+              p.onOpenSaved?.();
+              setMenu(null);
             }}
+          >
+            New scene from saved…
+          </button>
+          <button
+            role="menuitem"
+            className="btn"
             onClick={() => {
               p.onClose(menu.id);
               setMenu(null);
@@ -146,7 +187,6 @@ export function Tabs(p: Props) {
           <button
             role="menuitem"
             className="btn danger"
-            onBlur={() => setMenu(null)}
             onClick={() => {
               p.onKill(menu.id);
               setMenu(null);
