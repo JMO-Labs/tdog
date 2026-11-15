@@ -67,6 +67,10 @@ export const COPY = {
   "kill.hold": { fun: "Hold to nuke", plain: "Hold to confirm" },
   "kill.done": { fun: "Killed {n} shells.", plain: "Killed {n} shells." },
   "kill.done1": { fun: "Killed 1 shell.", plain: "Killed 1 shell." },
+  "scene.gone": {
+    fun: "{name} is gone. All its shells were killed.",
+    plain: "Closed {name}: all its shells were killed.",
+  },
   "conn.tracking": {
     fun: "Adjusting tracking…",
     plain: "Connection lost. Reconnecting…",
