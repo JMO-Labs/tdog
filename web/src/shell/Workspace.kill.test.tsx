@@ -25,6 +25,13 @@ vi.mock("../TerminalPane", () => ({
 }));
 const toast = vi.fn();
 vi.mock("../overlays/toast", () => ({ useToast: () => toast }));
+const killedPanes: Set<string> = new Set();
+vi.mock("../terminal/killed", () => ({
+  isKilled: (p: string) => killedPanes.has(p),
+  markKilled: vi.fn((p: string) => killedPanes.add(p)),
+  clearKilled: vi.fn((p: string) => killedPanes.delete(p)),
+  subscribeKilled: vi.fn(() => () => {}),
+}));
 
 import { Workspace } from "./Workspace";
 import { clearCommands } from "../overlays/commands";
@@ -33,6 +40,7 @@ beforeEach(() => {
   localStorage.clear();
   killScene.mockClear();
   toast.mockClear();
+  killedPanes.clear();
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
 });
 afterEach(() => {
