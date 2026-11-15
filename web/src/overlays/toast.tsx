@@ -8,30 +8,12 @@ import {
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ENTER, EXIT, pickVariant } from "../motion/variants";
+import { SLANG } from "../copy/copy";
 import "./overlays.css";
 
-export type ToastKind = "success" | "fail" | "warn" | "info";
+export { SLANG };
 
-// From SLANG in docs/design/mockup.js. Info has no pool: it falls back to success.
-export const SLANG: Record<Exclude<ToastKind, "info">, string[]> = {
-  success: [
-    "Radical!",
-    "Bodacious!",
-    "Booyah!",
-    "All that and a bag of chips",
-    "Da bomb",
-    "Phat!",
-  ],
-  fail: [
-    "Bummer.",
-    "As if!",
-    "Not!",
-    "Talk to the hand",
-    "Psych!",
-    "Whatever.",
-  ],
-  warn: ["Whoa.", "Duuude.", "Don't have a cow"],
-};
+export type ToastKind = "success" | "fail" | "warn" | "info";
 
 export function pickHeadline(
   kind: ToastKind,

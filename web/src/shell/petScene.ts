@@ -1,3 +1,4 @@
+import type { CopyKey } from "../copy/copy";
 import type { PetView } from "./petEngine";
 import {
   type Cell,
@@ -12,7 +13,7 @@ import {
 export interface Scene {
   cells: Cell[];
   mini: "face" | "sleep";
-  caption: string;
+  caption: CopyKey;
   /** Mini-egg eyes. */
   eyes: string;
   mouth: boolean;
@@ -47,7 +48,7 @@ export function petScene(
     cells.push(...spr(sprite("poop"), 26 - i * 6, 19));
     if (a) cells.push(...spr(sprite("stink"), 26 - i * 6, 16));
   }
-  const out = (me: Cell[], caption: string, eyes: string, mouth = false) => ({
+  const out = (me: Cell[], caption: CopyKey, eyes: string, mouth = false) => ({
     cells: cells.concat(me),
     mini: "face" as const,
     caption,
@@ -64,17 +65,13 @@ export function petScene(
       cells.push(...spr(bone, x + 15, y + 8));
       return out(
         face(a ? "closed" : "open", { mouth: !a }, x, y),
-        "Dogbert is eating.",
+        "pet.eat",
         "open",
         true,
       );
     }
     case "full":
-      return out(
-        face("closed", {}, x + (a ? 1 : -1), y),
-        "Dogbert is full. No thanks.",
-        "open",
-      );
+      return out(face("closed", {}, x + (a ? 1 : -1), y), "pet.full", "open");
     case "play": {
       const bx = 30 - ((at * 2) % 34);
       const by = 12 + Math.abs(((at * 3) % 8) - 4);
@@ -86,7 +83,7 @@ export function petScene(
           clampX(bx - 6),
           y - up(a),
         ),
-        "Dogbert is playing fetch.",
+        "pet.play",
         "happy",
       );
     }
@@ -94,13 +91,13 @@ export function petScene(
       const sweep = 31 - at * 4;
       for (let yy = 0; yy < 24; yy++) cells.push([sweep, yy]);
       cells.push(...spr(sprite("spark"), x - 4, y - 3));
-      return out(face("happy", {}, x, y), "All clean.", "happy");
+      return out(face("happy", {}, x, y), "pet.clean", "happy");
     }
     case "startle":
       cells.push(...spr(sprite("bang"), x + 15, y - 2));
       return out(
         face("shock", { mouth: true }, x, y - (at < 2 ? up(2) : 0)),
-        "Dogbert jumped. Something went wrong.",
+        "pet.startle",
         "shock",
       );
     case "celebrate":
@@ -110,13 +107,13 @@ export function petScene(
       );
       return out(
         face("happy", { mouth: true, tail: a ? 2 : 1 }, x, y - up(a * 2)),
-        "Dogbert is celebrating. Tests passed.",
+        "pet.celebrate",
         "happy",
       );
     case "yawn":
       return out(
         face("closed", { mouth: true }, x, y),
-        "Dogbert yawns.",
+        "pet.yawn",
         "closed",
         true,
       );
@@ -124,15 +121,11 @@ export function petScene(
       cells.push(...spr(sprite("sun"), 1, 1));
       return out(
         face(at < 4 ? "closed" : "happy", { mouth: at < 4, legs: 1 }, x, y),
-        "Good morning. Dogbert is stretching.",
+        "pet.stretch",
         at < 4 ? "closed" : "happy",
       );
     case "grumpy":
-      return out(
-        face("sad", {}, x, y),
-        "Dogbert woke up. It is the middle of the night.",
-        "sad",
-      );
+      return out(face("sad", {}, x, y), "pet.grumpy", "sad");
   }
   if (v.asleep) {
     cells.push(
@@ -144,9 +137,7 @@ export function petScene(
       mini: "sleep",
       eyes: "closed",
       mouth: false,
-      caption: v.night
-        ? "Dogbert is asleep. It is night."
-        : "Dogbert is asleep. Shells are quiet.",
+      caption: v.night ? "pet.night" : "pet.asleep",
     };
   }
   if (v.happy === 0) {
@@ -154,30 +145,17 @@ export function petScene(
       ...spr(sprite("cloud"), x + 3, 1),
       ...spr(sprite("rain"), x + 3, 3 + a),
     );
-    return out(
-      face("", { nose: false }, x, y),
-      "Dogbert is sulking. Try playing fetch.",
-      "sad",
-    );
+    return out(face("", { nose: false }, x, y), "pet.sulk", "sad");
   }
   if (v.typing)
-    return out(
-      face("up", { tail: a ? 2 : 1 }, x, y),
-      "Dogbert is watching you type.",
-      "open",
-    );
+    return out(face("up", { tail: a ? 2 : 1 }, x, y), "pet.typing", "open");
   if (v.reading)
     return out(
       face(t % 4 < 2 ? "left" : "right", {}, x, y - (v.hop ? up(1) : 0)),
-      "Dogbert is reading your output.",
+      "pet.reading",
       "open",
     );
-  if (v.hunger === 0)
-    return out(
-      face("sad", {}, x, y),
-      "Dogbert is hungry. Press A to feed.",
-      "sad",
-    );
+  if (v.hunger === 0) return out(face("sad", {}, x, y), "pet.hungry", "sad");
   const px = reduced ? x : wander(t);
   const blink = t % 40 === 0;
   const eyes = blink
@@ -187,9 +165,5 @@ export function petScene(
         ? "right"
         : "left"
       : "open";
-  return out(
-    face(eyes, { legs: a }, px, y),
-    "Dogbert is wandering around.",
-    "open",
-  );
+  return out(face(eyes, { legs: a }, px, y), "pet.wander", "open");
 }

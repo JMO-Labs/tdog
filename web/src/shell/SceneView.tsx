@@ -4,6 +4,7 @@ import { SplitView } from "../layout/SplitView";
 import { leaves } from "../layout/tree";
 import { useLayout } from "../layout/useLayout";
 import type { Scene } from "./scenes";
+import { useCopy } from "../copy/copy";
 import { useToast } from "../overlays/toast";
 import { EmptyPresets } from "../presets/EmptyPresets";
 import { preparePane } from "../presets/launch";
@@ -35,6 +36,7 @@ export function SceneView({
   onMoveScene: (id: string, from: string, to: string) => void;
 }) {
   const layout = useLayout(scene);
+  const c = useCopy();
   const toast = useToast();
   const fromPreset = async (name: string) => {
     const id = await preparePane(name, toast);
@@ -81,10 +83,10 @@ export function SceneView({
         ) : (
           <div className="empty" data-testid="empty-panes">
             <Mascot />
-            <p className="empty-big">No panes.</p>
-            <p className="muted">Every shell is closed.</p>
+            <p className="empty-big">{c("empty.noPanes")}</p>
+            <p className="muted">{c("empty.noPanesHint")}</p>
             <button className="btn reconnect" onClick={layout.reset}>
-              New pane
+              {c("empty.newPane")}
             </button>
             <EmptyPresets onPick={(n) => void fromPreset(n)} />
           </div>

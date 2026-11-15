@@ -1,3 +1,4 @@
+import type { CopyKey } from "../copy/copy";
 // Sign-on sequence: idle → dialing → verifying → connected → done.
 export type Phase = "idle" | "dialing" | "verifying" | "connected" | "done";
 export const initial: Phase = "idle";
@@ -7,12 +8,7 @@ const ORDER: Phase[] = ["idle", "dialing", "verifying", "connected", "done"];
 export const next = (p: Phase): Phase =>
   ORDER[Math.min(ORDER.indexOf(p) + 1, ORDER.length - 1)];
 
-export const label = (p: (typeof STEPS)[number]): string =>
-  ({
-    dialing: "Dialing…",
-    verifying: "Verifying password…",
-    connected: "Connected!",
-  })[p];
+export const labelKey = (p: (typeof STEPS)[number]): CopyKey => `signon.${p}`;
 
 /** Whether step `s` is lit at phase `p`. */
 export const lit = (p: Phase, s: Phase): boolean =>
