@@ -117,3 +117,16 @@ test("resize callback fires with cols and rows; no-op before registration", () =
   m.term.handlers.resize({ cols: 90, rows: 20 });
   expect(cb).toHaveBeenCalledWith(90, 20);
 });
+
+test("setFont applies family and size and refits; no-op without args", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  m.fit.mockClear();
+  r.setFont();
+  expect(m.fit).not.toHaveBeenCalled();
+  r.setFont("Fira Code");
+  expect(m.term.options.fontFamily).toBe("Fira Code");
+  expect(m.fit).toHaveBeenCalledTimes(1);
+  r.setFont(undefined, 16);
+  expect(m.term.options.fontSize).toBe(16);
+  expect(m.fit).toHaveBeenCalledTimes(2);
+});
