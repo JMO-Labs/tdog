@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { roving } from "../layout/roving";
+import { Icon } from "../shell/icons";
 import "../layout/layout.css";
 
 export interface TerminalMenuProps {
@@ -31,8 +32,11 @@ const mod = mac ? "⌘" : "Ctrl+Shift+";
 /** Right-click menu for one terminal: the pane `⋯` menu's sibling. */
 export function TerminalMenu(p: TerminalMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const filterInputRef = useRef<HTMLInputElement>(null);
   const [pos, setPos] = useState({ x: p.x, y: p.y });
   const [sub, setSub] = useState(false);
+  const [filter, setFilter] = useState("");
+
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -41,8 +45,17 @@ export function TerminalMenu(p: TerminalMenuProps) {
       x: Math.max(0, Math.min(p.x, window.innerWidth - r.width)),
       y: Math.max(0, Math.min(p.y, window.innerHeight - r.height)),
     });
-    el.querySelector<HTMLElement>("[role=menuitem]:not(:disabled)")?.focus();
-  }, [p.x, p.y]);
+    if (!filter) {
+      el.querySelector<HTMLElement>("[role=menuitem]:not(:disabled)")?.focus();
+    }
+  }, [p.x, p.y, filter]);
+
+  useLayoutEffect(() => {
+    if (filter && filterInputRef.current) {
+      filterInputRef.current.focus();
+    }
+  }, [filter]);
+
   useLayoutEffect(() => {
     const away = (e: Event) => {
       if (!ref.current?.contains(e.target as Node)) p.onDismiss();
@@ -56,6 +69,12 @@ export function TerminalMenu(p: TerminalMenuProps) {
       p.onDismiss(refocus);
       f();
     };
+
+  const matchesFilter = (label: string): boolean => {
+    if (!filter) return true;
+    return label.toLowerCase().includes(filter.toLowerCase());
+  };
+
   const item = (
     label: string,
     f: () => void,
@@ -65,17 +84,22 @@ export function TerminalMenu(p: TerminalMenuProps) {
       danger?: boolean;
       refocus?: boolean;
     } = {},
-  ) => (
-    <button
-      role="menuitem"
-      disabled={o.disabled}
-      className={o.danger ? "danger" : undefined}
-      onClick={run(f, o.refocus)}
-    >
-      <span>{label}</span>
-      {o.key && <kbd className="menu-key">{o.key}</kbd>}
-    </button>
-  );
+  ) => {
+    if (filter && !matchesFilter(label)) return null;
+
+    return (
+      <button
+        role="menuitem"
+        disabled={o.disabled}
+        className={o.danger ? "danger" : undefined}
+        onClick={run(f, o.refocus)}
+      >
+        <span>{label}</span>
+        {o.key && <kbd className="menu-key">{o.key}</kbd>}
+      </button>
+    );
+  };
+
   return (
     <div
       ref={ref}
@@ -87,23 +111,67 @@ export function TerminalMenu(p: TerminalMenuProps) {
       onKeyDown={(e) => {
         if (e.key === "Escape") {
           e.stopPropagation();
+          if (filter) {
+            setFilter("");
+            return;
+          }
           p.onDismiss();
-        } else if (e.key === "Tab") e.preventDefault();
-        else
+        } else if (e.key === "Tab") {
+          e.preventDefault();
+        } else if (
+          e.key.length === 1 &&
+          !e.ctrlKey &&
+          !e.metaKey &&
+          !e.altKey &&
+          !filter &&
+          e.target === ref.current
+        ) {
+          // Type to filter
+          setFilter(e.key);
+          e.preventDefault();
+        } else if (filter && e.target === filterInputRef.current) {
+          if (e.key === "ArrowDown" || e.key === "Enter") {
+            e.preventDefault();
+            const first = ref.current?.querySelector<HTMLElement>(
+              "[role=menuitem]:not(:disabled)",
+            );
+            if (first) first.focus();
+          }
+        } else {
           roving(
             e,
             "[role=menuitem]:not(:disabled)",
             { ArrowDown: 1, ArrowUp: -1, Home: "home", End: "end" },
             true,
           );
+        }
       }}
     >
+      {filter && (
+        <label className="term-filter">
+          <Icon name="search" />
+          <input
+            ref={filterInputRef}
+            type="text"
+            placeholder="Filter actions"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setFilter("");
+              }
+            }}
+            aria-label="Filter actions"
+          />
+          <span className="term-filter-hint">Esc</span>
+        </label>
+      )}
       {item("Copy", p.onCopy, { disabled: !p.hasSelection })}
       {item("Paste", p.onPaste, { key: `${mod}V` })}
       {item("Select all", p.onSelectAll)}
       {item("Clear", p.onClear)}
-      <hr role="separator" />
-      {p.onBroadcast && (
+      {!filter && <hr role="separator" />}
+      {p.onBroadcast && matchesFilter("Broadcast input") && (
         <button
           role="menuitem"
           className={p.isBroadcasting ? "checked" : undefined}
@@ -118,22 +186,24 @@ export function TerminalMenu(p: TerminalMenuProps) {
           {p.isBroadcasting && <span aria-hidden="true">✓</span>}
         </button>
       )}
-      <hr role="separator" />
+      {!filter && <hr role="separator" />}
       {item("Split right", () => p.onSplit("row"))}
       {item("Split down", () => p.onSplit("col"))}
-      <button
-        role="menuitem"
-        aria-haspopup="menu"
-        aria-expanded={sub}
-        onClick={() => setSub((v) => !v)}
-        onKeyDown={(e) => {
-          if (e.key === "ArrowRight") setSub(true);
-        }}
-      >
-        <span>Theme for this terminal</span>
-        <span aria-hidden="true">▸</span>
-      </button>
-      {sub && (
+      {matchesFilter("Theme for this terminal") && (
+        <button
+          role="menuitem"
+          aria-haspopup="menu"
+          aria-expanded={sub && !filter}
+          onClick={() => (filter ? p.onDismiss(true) : setSub((v) => !v))}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowRight" && !filter) setSub(true);
+          }}
+        >
+          <span>Theme for this terminal</span>
+          {!filter && <span aria-hidden="true">▸</span>}
+        </button>
+      )}
+      {sub && !filter && (
         <div
           role="menu"
           aria-label="Theme for this terminal"

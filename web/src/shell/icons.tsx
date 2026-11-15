@@ -29,6 +29,7 @@ const P = {
   briefcase:
     '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  search: '<circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/>',
 };
 export type IconName = keyof typeof P;
 

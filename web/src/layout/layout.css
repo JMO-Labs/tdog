@@ -325,3 +325,36 @@
   font: inherit;
   font-size: 0.85em;
 }
+
+/* Terminal menu filter */
+.term-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.term-filter svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.term-filter input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+}
+
+.term-filter-hint {
+  font-size: 10px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
