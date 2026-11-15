@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
 import { Sheet } from "../overlays/Sheet";
@@ -65,6 +65,16 @@ export function Workspace({
   const [leafMap, setLeafMap] = useState<Record<string, string[]>>({});
   const [closing, setClosing] = useState<string | null>(null);
   const [kill, setKill] = useState<string | null>(null); // "all" or scene id
+  // Per-pane open state lives here: dockview remounts panes when splits collapse.
+  const [paneOpen, setPaneOpen] = useState<Record<string, PaneOpen>>({});
+  const onPaneOpen = useCallback(
+    (id: string, open: boolean) =>
+      setPaneOpen((m) => ({
+        ...m,
+        [id]: { open, everOpen: open || (m[id]?.everOpen ?? false) },
+      })),
+    [],
+  );
   const toast = useToast();
   useEffect(() => saveScenes(sc), [sc]);
   const onLeaves = useCallback(
@@ -91,7 +101,7 @@ export function Workspace({
         delete rest[id];
         return rest;
       });
-      setSc((s) => closeScene(s, id));
+      setSc((s) => closeScene(s, id, newId("sc")));
     },
     [leafMap],
   );
@@ -109,11 +119,18 @@ export function Workspace({
     else finishClose(id);
   };
 
+  const closeActive = useRef<() => void>(() => {});
+  closeActive.current = () => requestClose(sc.active);
+
   const killTargets = (scope: string | null) =>
     (scope === "all"
       ? Object.values(leafMap).flat()
       : (leafMap[scope ?? ""] ?? [])
     ).filter((p) => paneOpen[p]?.open);
+  const closingName = sc.scenes.find((x) => x.id === closing)?.name ?? "";
+  const closingCount = closing
+    ? (leafMap[closing] ?? []).filter((p) => paneOpen[p]?.open).length
+    : 0;
   const runKill = async () => {
     const targets = killTargets(kill);
     setKill(null);
@@ -129,16 +146,6 @@ export function Workspace({
   );
   const onLatency = useCallback(
     (id: string, ms: number) => setLatencies((m) => ({ ...m, [id]: ms })),
-    [],
-  );
-  // Per-pane open state lives here: dockview remounts panes when splits collapse.
-  const [paneOpen, setPaneOpen] = useState<Record<string, PaneOpen>>({});
-  const onPaneOpen = useCallback(
-    (id: string, open: boolean) =>
-      setPaneOpen((m) => ({
-        ...m,
-        [id]: { open, everOpen: open || (m[id]?.everOpen ?? false) },
-      })),
     [],
   );
   const onOutput = useCallback(
@@ -217,6 +224,12 @@ export function Workspace({
         group: "Scenes",
         shortcut: "⌘T",
         run: add,
+      }),
+      registerCommand({
+        id: "scene:close",
+        title: "Close scene",
+        group: "Scenes",
+        run: () => closeActive.current(),
       }),
       registerCommand({
         id: "signout",
@@ -390,10 +403,13 @@ export function Workspace({
 
       <Dialog
         open={closing !== null}
-        title="Close scene?"
+        title={`Close ${closingName}?`}
         onClose={() => setClosing(null)}
       >
-        <p>This scene has running shells. Closing it hangs them up.</p>
+        <p>
+          Ends {closingCount} shell{closingCount === 1 ? "" : "s"} in it.
+          Unsaved work in them is gone.
+        </p>
         <div className="dialog-actions">
           <button className="btn" onClick={() => setClosing(null)}>
             Keep

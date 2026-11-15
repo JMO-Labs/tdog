@@ -66,7 +66,7 @@ test("Escape on the close-scene dialog keeps the scene", async () => {
   act(() => opens[first](true));
   fireEvent.click(screen.getByRole("button", { name: "New scene" }));
   fireEvent.click(screen.getByRole("button", { name: "Close scene scene 1" }));
-  fireEvent.keyDown(screen.getByRole("dialog", { name: "Close scene?" }), {
+  fireEvent.keyDown(screen.getByRole("dialog", { name: "Close scene 1?" }), {
     key: "Escape",
   });
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());

@@ -124,15 +124,14 @@ export function Tabs(p: Props) {
                 )}
               </button>
             )}
-            {p.scenes.length > 1 && (
-              <button
-                className="tab-x"
-                aria-label={`Close scene ${s.name}`}
-                onClick={() => p.onClose(s.id)}
-              >
-                ×
-              </button>
-            )}
+            <button
+              className="tab-x"
+              aria-label={`Close scene ${s.name}`}
+              data-active={s.id === p.active || undefined}
+              onClick={() => p.onClose(s.id)}
+            >
+              ×
+            </button>
           </div>
         ))}
       </nav>
@@ -174,6 +173,16 @@ export function Tabs(p: Props) {
             }}
           >
             New scene from saved…
+          </button>
+          <button
+            role="menuitem"
+            className="btn"
+            onClick={() => {
+              p.onClose(menu.id);
+              setMenu(null);
+            }}
+          >
+            Close scene
           </button>
           <button
             role="menuitem"
