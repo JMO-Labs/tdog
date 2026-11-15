@@ -14,6 +14,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 )
 
 // randToken returns a random hex string of n bytes.
@@ -42,16 +44,25 @@ type installState struct {
 
 // Store manages plugins under $TDOG_DATA/plugins.
 type Store struct {
-	dir string
+	dir      string
+	stagedMu sync.Mutex
+	staged   map[string]*stagedBundle
+	now      func() time.Time
 }
 
 // New returns a store rooted at dataDir/plugins.
 func New(dataDir string) *Store {
-	return &Store{dir: filepath.Join(dataDir, "plugins")}
+	return &Store{
+		dir:    filepath.Join(dataDir, "plugins"),
+		staged: make(map[string]*stagedBundle),
+		now:    time.Now,
+	}
 }
 
 const maxZipSize = 2 << 20 // 2 MB uncompressed
 const maxZipEntries = 20
+const maxStagedBundles = 20
+const stagedTTL = 10 * time.Minute
 
 var errBadZip = errors.New("invalid zip archive")
 
@@ -62,14 +73,11 @@ type StagedManifest struct {
 	Token    string    `json:"token"`
 }
 
-// staged holds temporary bundles during the two-phase install.
-// In production this would use temp files or Redis; for now memory is fine.
-var staged = make(map[string]*stagedBundle)
-
 type stagedBundle struct {
 	manifest  *Manifest
 	sha256    string
 	jsContent []byte
+	created   time.Time
 }
 
 // Inspect parses a manifest and JS from raw bytes (zip or individual files).
@@ -98,8 +106,27 @@ func (s *Store) Inspect(raw []byte) (*StagedManifest, string, error) {
 		return nil, "", errors.New("manifest and entry.js required")
 	}
 
+	s.stagedMu.Lock()
+	defer s.stagedMu.Unlock()
+
+	// Sweep expired entries and check capacity
+	now := s.now()
+	for token, bundle := range s.staged {
+		if now.Sub(bundle.created) > stagedTTL {
+			delete(s.staged, token)
+		}
+	}
+	if len(s.staged) >= maxStagedBundles {
+		return nil, "", errors.New("too many staged bundles; try again later")
+	}
+
 	token := randToken(32)
-	staged[token] = &stagedBundle{manifest: manifest, sha256: checksum, jsContent: jsContent}
+	s.staged[token] = &stagedBundle{
+		manifest:  manifest,
+		sha256:    checksum,
+		jsContent: jsContent,
+		created:   now,
+	}
 
 	return &StagedManifest{
 		Manifest: manifest,
@@ -199,11 +226,20 @@ func extractFromZip(zr *zip.Reader) (*Manifest, []byte, error) {
 // grant must match manifest.Permissions exactly.
 // For updates, grant may be fewer or equal permissions; more requires re-approval.
 func (s *Store) Install(token string, grant []string) error {
-	sb, ok := staged[token]
+	s.stagedMu.Lock()
+	sb, ok := s.staged[token]
 	if !ok {
+		s.stagedMu.Unlock()
 		return errors.New("invalid or expired token")
 	}
-	defer delete(staged, token)
+	// Check TTL
+	if s.now().Sub(sb.created) > stagedTTL {
+		delete(s.staged, token)
+		s.stagedMu.Unlock()
+		return errors.New("token expired")
+	}
+	delete(s.staged, token)
+	s.stagedMu.Unlock()
 
 	if !PermEqual(grant, sb.manifest.Permissions) {
 		return errors.New("granted permissions do not match manifest")

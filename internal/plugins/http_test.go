@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/JMO-Labs/tdog/internal/audit"
 )
@@ -313,4 +314,97 @@ func buildZip(t *testing.T, m *Manifest, jsContent []byte) []byte {
 
 	zw.Close()
 	return buf.Bytes()
+}
+
+func TestSSRFRejectsPrivateIPLiterals(t *testing.T) {
+	dir := t.TempDir()
+	store := New(dir)
+	audit := audit.New(filepath.Join(dir, "audit.log"))
+	handler := NewHTTPHandler(store, audit)
+
+	mux := http.NewServeMux()
+	handler.Register(mux)
+
+	tests := []struct {
+		url string
+		ok  bool
+	}{
+		{"https://127.0.0.1/plugin.zip", false},
+		{"https://192.168.1.1/plugin.zip", false},
+		{"https://10.0.0.1/plugin.zip", false},
+		{"https://169.254.1.1/plugin.zip", false},
+		{"https://[::1]/plugin.zip", false},
+	}
+
+	for _, tt := range tests {
+		w := httptest.NewRecorder()
+		body := []byte(`{"url":"` + tt.url + `"}`)
+		req := httptest.NewRequest("POST", "/api/plugins/inspect", bytes.NewReader(body))
+		mux.ServeHTTP(w, req)
+
+		if tt.ok && w.Code != 200 {
+			t.Errorf("url %q: got %d, want 200", tt.url, w.Code)
+		} else if !tt.ok && w.Code == 200 {
+			t.Errorf("url %q: should be rejected", tt.url)
+		}
+	}
+}
+
+func TestStagedBundleCapacity(t *testing.T) {
+	dir := t.TempDir()
+	store := New(dir)
+
+	m := Manifest{
+		ID:          "test-plugin",
+		Name:        "Test",
+		Version:     "1.0.0",
+		Author:      "Author",
+		Description: "Desc",
+		Entry:       "index.js",
+	}
+
+	// Fill up the staged bundles to capacity
+	for i := 0; i < maxStagedBundles; i++ {
+		raw := buildZip(t, &m, []byte("code"))
+		_, _, err := store.Inspect(raw)
+		if err != nil {
+			t.Fatalf("fill %d: %v", i, err)
+		}
+	}
+
+	// One more should fail
+	raw := buildZip(t, &m, []byte("code"))
+	_, _, err := store.Inspect(raw)
+	if err == nil {
+		t.Error("should reject when at capacity")
+	}
+}
+
+func TestStagedBundleTTL(t *testing.T) {
+	dir := t.TempDir()
+	store := New(dir)
+
+	m := Manifest{
+		ID:          "test-plugin",
+		Name:        "Test",
+		Version:     "1.0.0",
+		Author:      "Author",
+		Description: "Desc",
+		Entry:       "index.js",
+	}
+
+	raw := buildZip(t, &m, []byte("code"))
+	_, token, err := store.Inspect(raw)
+	if err != nil {
+		t.Fatalf("Inspect: %v", err)
+	}
+
+	// Move time forward past TTL
+	store.now = func() time.Time { return time.Now().Add(11 * time.Minute) }
+
+	// Install should fail with expired token
+	err = store.Install(token, m.Permissions)
+	if err == nil {
+		t.Error("should reject expired token")
+	}
 }

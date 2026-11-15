@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/JMO-Labs/tdog/internal/audit"
+	"github.com/JMO-Labs/tdog/internal/netguard"
 )
 
 const (
@@ -77,6 +78,14 @@ func (h *HTTPHandler) handleInspect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Reject IP literals in URLs (prevent SSRF to private IPs)
+	if ip := net.ParseIP(u.Hostname()); ip != nil {
+		if !netguard.PublicIP(ip) {
+			jerr(w, 403, "target address not allowed")
+			return
+		}
+	}
+
 	ctx, cancel := context.WithTimeout(r.Context(), fetchTimeout)
 	defer cancel()
 
@@ -101,7 +110,12 @@ func (h *HTTPHandler) handleInspect(w http.ResponseWriter, r *http.Request) {
 
 	sm, _, err := h.store.Inspect(raw)
 	if err != nil {
-		jerr(w, 400, fmt.Sprintf("invalid plugin: %v", err))
+		if err.Error() == "too many staged bundles; try again later" {
+			w.Header().Set("Retry-After", "60")
+			jerr(w, 429, "too many staged bundles; try again later")
+		} else {
+			jerr(w, 400, fmt.Sprintf("invalid plugin: %v", err))
+		}
 		return
 	}
 
@@ -165,7 +179,12 @@ func (h *HTTPHandler) inspectMultipart(w http.ResponseWriter, r *http.Request) {
 	raw := buf.Bytes()
 	sm, _, err := h.store.Inspect(raw)
 	if err != nil {
-		jerr(w, 400, fmt.Sprintf("invalid plugin: %v", err))
+		if err.Error() == "too many staged bundles; try again later" {
+			w.Header().Set("Retry-After", "60")
+			jerr(w, 429, "too many staged bundles; try again later")
+		} else {
+			jerr(w, 400, fmt.Sprintf("invalid plugin: %v", err))
+		}
 		return
 	}
 
@@ -275,13 +294,23 @@ func (h *HTTPHandler) handleEntry(w http.ResponseWriter, r *http.Request) {
 
 // fetchClient returns an HTTP client that only fetches from public IPs.
 func (h *HTTPHandler) fetchClient() *http.Client {
-	d := &net.Dialer{Timeout: 10 * time.Second}
+	d := &net.Dialer{
+		Timeout: 10 * time.Second,
+		Control: netguard.DialControl(netguard.PublicIP),
+	}
 	return &http.Client{
 		Timeout:   fetchTimeout,
 		Transport: &http.Transport{DialContext: d.DialContext, Proxy: nil},
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) >= 3 || (req.URL.Scheme != "https") {
+			if len(via) >= 3 {
 				return errors.New("redirect refused")
+			}
+			if req.URL.Scheme != "https" {
+				return errors.New("https required")
+			}
+			// Reject IP literals on redirects too
+			if ip := net.ParseIP(req.URL.Hostname()); ip != nil && !netguard.PublicIP(ip) {
+				return errors.New("target address not allowed")
 			}
 			return nil
 		},
