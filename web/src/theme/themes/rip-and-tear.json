@@ -31,24 +31,97 @@
       "shape": "block",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "vt323",
+    "effects": [
+      {
+        "id": "grain",
+        "intensity": 0.5
+      },
+      {
+        "id": "vignette",
+        "intensity": 0.5
+      }
+    ]
   },
   "chrome": {
     "tokens": {
       "bg": "#0e0605",
-      "surface": "#2a1a12",
+      "surface": "#3a2a1e",
       "fg": "#e0cfc0",
       "muted": "#a08a78",
-      "link": "#5fe040"
+      "link": "#5fe040",
+      "line": "#7a5434",
+      "shadow": "#1a0e08"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
-      "border": 1
+      "radius": 0.3,
+      "shadow": "bevel",
+      "border": 2
     },
     "pattern": "zigzag",
-    "boot": "drop",
-    "costume": "none"
+    "boot": "post",
+    "costume": {
+      "name": "armoured helmet",
+      "rows": [
+        "......##......",
+        "...########...",
+        "..##########..",
+        ".####....####.",
+        ".####....####.",
+        ".###......###."
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 32],
+      "tile": [64, 32],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 6 L10 10 L16 8 L26 16 L34 14 L44 22 L64 20",
+          "stroke": "#8a2a0a",
+          "fill": "none"
+        },
+        {
+          "type": "path",
+          "d": "M26 16 L24 26 L30 32",
+          "stroke": "#c4501a",
+          "fill": "none"
+        },
+        {
+          "type": "path",
+          "d": "M44 22 L50 30",
+          "stroke": "#8a2a0a",
+          "fill": "none"
+        },
+        {
+          "type": "circle",
+          "cx": 4,
+          "cy": 28,
+          "r": 1.5,
+          "fill": "#7a5434"
+        },
+        {
+          "type": "circle",
+          "cx": 60,
+          "cy": 4,
+          "r": 1.5,
+          "fill": "#7a5434"
+        },
+        {
+          "type": "circle",
+          "cx": 36,
+          "cy": 4,
+          "r": 1.5,
+          "fill": "#7a5434"
+        },
+        {
+          "type": "circle",
+          "cx": 12,
+          "cy": 22,
+          "r": 1.5,
+          "fill": "#7a5434"
+        }
+      ]
+    }
   }
 }
