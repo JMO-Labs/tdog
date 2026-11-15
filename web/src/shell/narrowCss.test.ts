@@ -25,3 +25,10 @@ test("status bar never hides overflow on phones", () => {
   const xs = shell.slice(shell.indexOf("@media (max-width: 479px)"));
   expect(xs).not.toMatch(/overflow-x:\s*hidden/);
 });
+
+test("status bar items keep the 24px bar on phones", () => {
+  expect(shell).toMatch(
+    /\.status \.kbd-chip,\s*\.status \.sb-item\s*\{[^}]*min-height: 0/,
+  );
+  expect(shell).not.toContain(".status .chip:not(.kbd-chip)");
+});

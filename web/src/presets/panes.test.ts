@@ -1,6 +1,8 @@
 import { beforeEach, expect, test } from "vitest";
 import {
   panePreset,
+  sceneArt,
+  setSceneArt,
   paneZoom,
   setPaneZoom,
   panePresets,
@@ -63,4 +65,21 @@ test("pane zoom persists per pane and 0 clears it", () => {
   setPaneZoom("p1", 0);
   expect(paneZoom("p1")).toBe(0);
   expect(localStorage.getItem("tdog.paneZoom")).toBe('{"p2":-1}');
+});
+
+test("sceneArt persists", () => {
+  expect(sceneArt("s1")).toBe(false);
+  setSceneArt("s1", true);
+  expect(sceneArt("s1")).toBe(true);
+  expect(localStorage.getItem("tdog.sceneArt")).toBe('{"s1":true}');
+  setSceneArt("s1", false);
+  expect(sceneArt("s1")).toBe(false);
+  expect(localStorage.getItem("tdog.sceneArt")).toBeNull();
+});
+
+test("sceneArt treats malformed JSON as all off", () => {
+  localStorage.setItem("tdog.sceneArt", "{nope");
+  expect(sceneArt("s1")).toBe(false);
+  setSceneArt("s1", true);
+  expect(sceneArt("s1")).toBe(true);
 });

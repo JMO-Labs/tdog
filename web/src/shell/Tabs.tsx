@@ -1,6 +1,9 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { dragPane, draggedPane } from "../layout/dnd";
 import { ActionMenu, type MenuItem } from "../components/menu/ActionMenu";
+import { usePref } from "../settings/prefs";
+import { setSceneArt } from "../presets/panes";
+import { useSceneArt } from "../terminal/useSceneArt";
 import type { Scene } from "./scenes";
 
 type Props = {
@@ -25,10 +28,8 @@ type Props = {
   broadcastAll?: (id: string) => boolean;
 };
 
-/** Scene tab strip: sliding pill, inline rename, drag reorder, close, add. */
+/** Scene tab strip: underlined active tab, inline rename, drag reorder, close, add. */
 export function Tabs(p: Props) {
-  const pill = useRef<HTMLSpanElement>(null);
-  const wraps = useRef<Record<string, HTMLDivElement | null>>({});
   const drag = useRef<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -38,15 +39,9 @@ export function Tabs(p: Props) {
     x: number;
     y: number;
   } | null>(null);
-  const names = p.scenes.map((s) => s.name).join("\n");
 
-  useLayoutEffect(() => {
-    const t = wraps.current[p.active];
-    const el = pill.current;
-    if (!t || !el) return;
-    el.style.width = `${t.offsetWidth}px`;
-    el.style.transform = `translateX(${t.offsetLeft - 3}px)`;
-  }, [p.active, names, editing]);
+  const [serious] = usePref("serious");
+  const art = useSceneArt(menu?.id ?? "");
 
   const commit = (id: string) => {
     setEditing(null);
@@ -56,13 +51,9 @@ export function Tabs(p: Props) {
   return (
     <div className="tabs-row">
       <nav className="tabs" role="tablist" aria-label="Scenes">
-        <span ref={pill} className="tab-pill" aria-hidden="true" />
         {p.scenes.map((s, i) => (
           <div
             key={s.id}
-            ref={(el) => {
-              wraps.current[s.id] = el;
-            }}
             className="tab-wrap"
             data-drop={hot === s.id || undefined}
             draggable={editing !== s.id}
@@ -104,7 +95,7 @@ export function Tabs(p: Props) {
               />
             ) : (
               <button
-                className="tab"
+                className={s.id === p.active ? "tab on" : "tab"}
                 role="tab"
                 aria-selected={s.id === p.active}
                 onClick={() => p.onSelect(s.id)}
@@ -183,6 +174,18 @@ export function Tabs(p: Props) {
                   ],
                 ]
               : []),
+            ...(serious
+              ? []
+              : [
+                  [
+                    {
+                      label: "Theme art in this scene",
+                      isRadio: true,
+                      checked: art,
+                      onSelect: () => setSceneArt(menu.id, !art),
+                    },
+                  ],
+                ]),
             [
               {
                 label: "Close scene",

@@ -4,7 +4,6 @@ import { findTheme } from "./registry";
 type Spec = [
   id: string,
   effects: string[],
-  costume: string,
   cursor: string,
   blink: boolean,
   font: string,
@@ -18,7 +17,6 @@ const SPECS: Spec[] = [
   [
     "wetwired",
     ["glow", "scanlines"],
-    "vr visor",
     "bar",
     true,
     "share-tech-mono",
@@ -27,22 +25,10 @@ const SPECS: Spec[] = [
     1,
     "rain",
   ],
-  [
-    "sewer-squad",
-    [],
-    "bandana eye mask",
-    "block",
-    true,
-    "space-mono",
-    1.5,
-    "hard",
-    3,
-    "wipe",
-  ],
+  ["sewer-squad", [], "block", true, "space-mono", 1.5, "hard", 3, "wipe"],
   [
     "wake-up-neo",
     ["glyph-rain", "glow"],
-    "tiny shades",
     "block",
     true,
     "share-tech-mono",
@@ -54,7 +40,6 @@ const SPECS: Spec[] = [
   [
     "section-9",
     ["glow", "vignette"],
-    "headset",
     "bar",
     true,
     "ibm-plex-mono",
@@ -66,7 +51,6 @@ const SPECS: Spec[] = [
   [
     "mainframe",
     ["glow"],
-    "visor ring",
     "block",
     true,
     "share-tech-mono",
@@ -81,7 +65,6 @@ describe("theme flavour pack 2", () => {
   for (const [
     id,
     fx,
-    cos,
     cur,
     blink,
     font,
@@ -95,8 +78,6 @@ describe("theme flavour pack 2", () => {
       expect(t.terminal.effects.map((e) => e.id).sort()).toEqual(
         [...fx].sort(),
       );
-      const c = t.chrome.costume;
-      expect(c === "none" ? c : c.name).toBe(cos);
       expect(t.terminal.cursor).toEqual({ shape: cur, blink });
       expect(t.terminal.font).toBe(font);
       expect(t.chrome.shape).toEqual({ radius, shadow, border });

@@ -19,47 +19,46 @@ describe("pane chrome css", () => {
   it(".pane does not clip popovers", () => {
     expect(rule(".pane")).not.toMatch(/overflow\s*:\s*hidden/);
   });
-  it("rounds head and body instead; body clips", () => {
-    expect(rule(".pane-head")).toMatch(/border-radius:\s*12px 12px 0 0/);
-    expect(rule(".pane-body")).toMatch(/border-radius:\s*0 0 12px 12px/);
+  it("hairline: no pane radius, body clips", () => {
+    expect(rule(".pane")).toMatch(/border-radius:\s*0/);
+    expect(rule(".pane")).toMatch(/border:\s*0/);
     expect(rule(".pane-body")).toMatch(/overflow\s*:\s*hidden/);
   });
-  it("header is 28px max and never wraps", () => {
-    expect(rule(".pane-head")).toMatch(/height:\s*28px/);
+  it("header is 26px and never wraps", () => {
+    expect(rule(".pane-head")).toMatch(/height:\s*26px/);
     expect(rule(".pane-head")).toMatch(/flex-wrap:\s*nowrap/);
   });
-  it("split buttons show on hover/focus only", () => {
-    expect(rule(".pane-head .pane-split")).toMatch(/display:\s*none/);
-    expect(css).toMatch(/\.pane-head:hover \.pane-split/);
-    expect(css).toMatch(/\.pane-head:focus-within \.pane-split/);
+  it("title truncates instead of overflowing the header", () => {
+    const t = rule(".pane-head .title");
+    expect(t).toMatch(/min-width:\s*0/);
+    expect(t).toMatch(/flex:\s*1 1 0/);
+    expect(t).toMatch(/overflow:\s*hidden/);
+    expect(t).toMatch(/text-overflow:\s*ellipsis/);
+    expect(t).toMatch(/white-space:\s*nowrap/);
+    expect(rule(".pane-actions")).toMatch(/flex:\s*none/);
+    expect(rule(".pane-head .chip.broadcast")).toMatch(
+      /background:\s*transparent/,
+    );
+  });
+  it("actions hide by opacity only and show on hover/active/focus", () => {
+    expect(rule(".pane-actions")).toMatch(/opacity:\s*0/);
+    expect(css).not.toMatch(/visibility:\s*hidden/);
+    expect(css).toMatch(/\.pane:hover \.pane-actions/);
+    expect(css).toMatch(/\.pane:focus-within \.pane-actions/);
+    expect(css).toMatch(/\.pane\[data-active="true"\] \.pane-actions/);
   });
   it(".pane border and shadow stay inside its own cell", () => {
     const all =
       rule(".pane") +
-      rule('.pane[data-focused="true"]') +
-      rule(".pane::after") +
-      rule('.pane[data-focused="true"]::after');
+      rule(".pane-head") +
+      rule('.pane[data-active="true"] .pane-head');
     // no outward (non-inset) shadow or spread ring may paint onto neighbours
     for (const layer of all.match(/box-shadow:[^;]*;/g) ?? [])
       for (const part of layer.replace("box-shadow:", "").split(/,(?![^(]*\))/))
         expect(part.trim()).toMatch(/^inset\b/);
   });
-  it("ring and shadow paint above children via ::after", () => {
-    const base = rule(".pane");
-    expect(base).toMatch(/position\s*:\s*relative/);
-    expect(base).not.toMatch(/box-shadow/); // would sit under the opaque head
-    const after = rule(".pane::after");
-    expect(after).toMatch(/content\s*:\s*""/);
-    expect(after).toMatch(/position\s*:\s*absolute/);
-    expect(after).toMatch(/inset\s*:\s*0/);
-    expect(after).toMatch(/pointer-events\s*:\s*none/);
-    expect(after).toMatch(/box-shadow\s*:\s*inset -4px -4px 0 var\(--shadow\)/);
-    expect(rule('.pane[data-focused="true"]::after')).toMatch(
-      /inset 0 0 0 3px var\(--accent/,
-    );
-  });
   it("theme vars cannot make a whole shadow layer outward", () => {
-    const all = rule(".pane") + rule(".pane::after");
+    const all = rule(".pane");
     expect(all).not.toMatch(/box-shadow\s*:\s*var\(/);
   });
   it(".pane is isolated so effect layers cannot escape", () => {

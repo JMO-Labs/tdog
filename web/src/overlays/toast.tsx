@@ -86,7 +86,7 @@ export function ToastProvider({
           {items.map((t) => (
             <motion.div
               key={t.id}
-              className={`toast ${t.kind}`}
+              className={`toast float ${t.kind}`}
               style={{ rotate: `${t.tilt}deg` }}
               initial={Object.fromEntries(
                 Object.entries(enter.keyframes).map(([k, a]) => [k, a[0]]),

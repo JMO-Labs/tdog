@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Icon } from "../shell/icons";
 import { Button, IconButton } from "../components/ui/button";
 import { Field } from "../components/ui/field";
 import { Input } from "../components/ui/input";
@@ -7,16 +8,7 @@ import { Select } from "../components/ui/select";
 import { Slider } from "../components/ui/slider";
 import { Switch } from "../components/ui/switch";
 
-const X = (
-  <svg viewBox="0 0 20 20" aria-hidden="true">
-    <path
-      d="M5 5l10 10M15 5L5 15"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
-    />
-  </svg>
-);
+const X = <Icon name="close" />;
 
 function Panel({ theme }: { theme: "light" | "dark" }) {
   const [on, setOn] = useState(true);

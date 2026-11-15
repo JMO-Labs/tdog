@@ -80,3 +80,17 @@ describe("toasts", () => {
     expect(screen.queryByText("saved ok")).toBeNull();
   });
 });
+
+describe("toast surface", () => {
+  it("carries the float class", () => {
+    render(
+      <ToastProvider>
+        <Fire kind="info" />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByText("go"));
+    expect(screen.getByText("saved ok").closest(".toast")!.classList).toContain(
+      "float",
+    );
+  });
+});

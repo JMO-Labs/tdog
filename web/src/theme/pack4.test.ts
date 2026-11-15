@@ -10,7 +10,6 @@ const SPEC: [
   string,
   Eff,
   string,
-  string,
   [number, string][],
 ][] = [
   [
@@ -19,7 +18,6 @@ const SPEC: [
     "ibm-plex-mono",
     "post",
     [["scanlines", 0.2]],
-    "headset mic",
     "orbit",
     [[0, "soft"]],
   ],
@@ -33,7 +31,6 @@ const SPEC: [
       ["vignette", 0.5],
       ["grain", 0.5],
     ],
-    "bubble space helmet",
     "hazard",
     [[0, "hard"]],
   ],
@@ -43,7 +40,6 @@ const SPEC: [
     "space-mono",
     "drop",
     [["grain", 0.5]],
-    "glass dome helmet",
     "saucer",
     [[1.2, "hard"]],
   ],
@@ -53,7 +49,6 @@ const SPEC: [
     "jetbrains-mono",
     "cartridge",
     [["scanlines", 0.5]],
-    "pixel cap",
     "brick",
     [[0, "hard"]],
   ],
@@ -66,23 +61,13 @@ const SPEC: [
       ["grain", 0.5],
       ["vignette", 0.5],
     ],
-    "armoured helmet",
     "lava",
     [[0.3, "bevel"]],
   ],
 ];
 
 describe("theme flavour pack 4", () => {
-  for (const [
-    id,
-    cur,
-    font,
-    boot,
-    fx,
-    costume,
-    _m,
-    [[radius, shadow]],
-  ] of SPEC) {
+  for (const [id, cur, font, boot, fx, _m, [[radius, shadow]]] of SPEC) {
     it(`${id} fills every v2 field`, () => {
       const t = findTheme(id)!;
       const { id: _id, ...data } = t;
@@ -96,13 +81,10 @@ describe("theme flavour pack 4", () => {
       );
       expect(t.chrome.shape.radius).toBe(radius);
       expect(t.chrome.shape.shadow).toBe(shadow);
-      const c = t.chrome.costume;
-      expect(c).not.toBe("none");
-      if (c !== "none") expect(c.name).toBe(costume);
       expect(t.chrome.motif!.shapes.length).toBeGreaterThan(1);
     });
   }
-  it("themes stay original: no source names in costume/motif data", () => {
+  it("themes stay original: no source names in motif data", () => {
     for (const [id] of SPEC) {
       const s = JSON.stringify(findTheme(id)!.chrome);
       expect(s).not.toMatch(/apollo|doom|halo|zelda|mario/i);

@@ -40,6 +40,7 @@
     ]
   },
   "chrome": {
+    "accent": "#ffb347",
     "tokens": {
       "bg": "#081518",
       "surface": "#0f2b30",
@@ -60,7 +61,6 @@
     },
     "pattern": "zigzag",
     "boot": "drop",
-    "costume": "none",
     "motif": {
       "viewBox": [0, 0, 60, 60],
       "tile": [60, 60],
@@ -180,7 +180,8 @@
         "term-bg": "#f3ebd8",
         "term-fg": "#0b2a30",
         "term-dim": "#4a6a6e"
-      }
+      },
+      "accent": "#b45f00"
     }
   }
 }

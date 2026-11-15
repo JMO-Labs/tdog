@@ -1,5 +1,4 @@
 /** Data-only theme format (spec §8/§9). No JS, no raw CSS: hex colors and allowlisted ids only. */
-import { validCostumeRows } from "../shell/petSprites";
 
 export const CHROME_TOKENS = [
   "bg",
@@ -55,12 +54,6 @@ export const SHADOWS = ["hard", "soft", "bevel", "glow", "none"] as const;
 export const CURSOR_SHAPES = ["block", "bar", "underline"] as const;
 export const MOTIF_SHAPES = ["path", "circle", "rect", "polygon"] as const;
 
-/** Costume pixels (max 14x6, '#'/'.') and the noun used in "Dogbert put on a <name>." */
-export interface Costume {
-  name: string;
-  rows: string[];
-}
-
 export interface TerminalColors {
   fg: string;
   bg: string;
@@ -110,25 +103,17 @@ export interface ChromeScope {
   };
   pattern: Pattern;
   boot: (typeof BOOTS)[number];
-  /** Dogbert costume: pixel rows over the head, or "none". */
-  costume: "none" | Costume;
   motif?: Motif;
+  /** Hairline accent (hex); falls back to the pink token. */
+  accent?: string;
+  /** Surface tint (hex), mixed in at tintPct (0-5; higher is clamped on apply). */
+  tint?: string;
+  tintPct?: number;
 }
-function costume(v: unknown, at: string): string | null {
-  if (v === "none") return null;
-  if (!isObj(v) || unknownKeys(v, ["name", "rows"]).length)
-    return `${at} must be "none" or {name, rows}`;
-  if (typeof v.name !== "string" || !/^[a-z][a-z ]{0,23}$/.test(v.name))
-    return `${at}.name must be 1-24 lowercase letters`;
-  return validCostumeRows(v.rows)
-    ? null
-    : `${at}.rows must be 1-6 rows of 1-14 '#' or '.'`;
-}
-
 /** Light variant: colors only. */
 export interface ThemeVariant {
   terminal: { palette: TerminalColors };
-  chrome: { tokens: Tokens };
+  chrome: Pick<ChromeScope, "tokens" | "accent" | "tint" | "tintPct">;
 }
 export interface ThemeData {
   name: string;
@@ -271,8 +256,10 @@ function chrome(v: unknown, at: string): string | null {
     "shape",
     "pattern",
     "boot",
-    "costume",
     "motif",
+    "accent",
+    "tint",
+    "tintPct",
   ]);
   if (extra.length) return `${at}: unknown key ${extra[0]}`;
   const s = v.shape;
@@ -284,8 +271,11 @@ function chrome(v: unknown, at: string): string | null {
   if (v.pattern !== "none" && !oneOf(PATTERNS, v.pattern))
     return `${at}.pattern is not allowed`;
   if (!oneOf(BOOTS, v.boot)) return `${at}.boot is not allowed`;
-  const c = costume(v.costume, `${at}.costume`);
-  if (c) return c;
+  for (const k of ["accent", "tint"])
+    if (v[k] !== undefined && !isHex(v[k]))
+      return `${at}.${k} must be a hex color`;
+  if (v.tintPct !== undefined && !isNum(v.tintPct, 0, 5))
+    return `${at}.tintPct must be 0..5`;
   return (
     tokens(v.tokens, `${at}.tokens`) ??
     (v.motif === undefined ? null : motif(v.motif, `${at}.motif`))
@@ -300,8 +290,16 @@ function light(v: unknown): string | null {
   const c = v.chrome;
   if (!isObj(t) || unknownKeys(t, ["palette"]).length)
     return "light.terminal must be {palette}";
-  if (!isObj(c) || unknownKeys(c, ["tokens"]).length)
-    return "light.chrome must be {tokens}";
+  if (
+    !isObj(c) ||
+    unknownKeys(c, ["tokens", "accent", "tint", "tintPct"]).length
+  )
+    return "light.chrome must be {tokens, accent?, tint?, tintPct?}";
+  for (const k of ["accent", "tint"])
+    if (c[k] !== undefined && !isHex(c[k]))
+      return `light.chrome.${k} must be a hex color`;
+  if (c.tintPct !== undefined && !isNum(c.tintPct, 0, 5))
+    return "light.chrome.tintPct must be 0..5";
   return (
     palette(t.palette, "light.terminal.palette") ??
     tokens(c.tokens, "light.chrome.tokens")

@@ -22,11 +22,8 @@ describe("theme flavour pack 5", () => {
         expect(t.chrome.shape.shadow).toBe(shadow);
         expect(t.chrome.boot).toBe(boot);
       });
-      it("has an original motif and a costume", () => {
+      it("has an original motif", () => {
         expect(t.chrome.motif!.shapes.length).toBeGreaterThanOrEqual(3);
-        expect(t.chrome.costume).not.toBe("none");
-        const c = t.chrome.costume as { rows: string[] };
-        expect(c.rows.some((r) => r.includes("#"))).toBe(true);
       });
       it("stays schema valid", () => {
         const { id: _i, ...d } = t as any;
@@ -34,16 +31,6 @@ describe("theme flavour pack 5", () => {
       });
     });
   }
-  it("names the costumes", () => {
-    const n = (id: string) => (findTheme(id)!.chrome.costume as any).name;
-    expect(PACK.map(([id]) => n(id))).toEqual([
-      "explorer cap",
-      "headphones",
-      "hard hat",
-      "propeller cap",
-      "slime drip",
-    ]);
-  });
   it("llama skin scanlines are low", () => {
     const fx = findTheme("llama-skin")!.terminal.effects[0];
     expect(fx.intensity).toBeLessThanOrEqual(0.3);

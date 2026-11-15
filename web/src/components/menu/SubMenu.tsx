@@ -57,7 +57,7 @@ export function SubMenu(props: {
   return (
     <div
       ref={ref}
-      className="menu-submenu"
+      className="menu-submenu float"
       role="menu"
       aria-label={props.label}
       style={pos as React.CSSProperties}

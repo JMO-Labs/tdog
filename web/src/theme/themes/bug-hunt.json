@@ -40,6 +40,7 @@
     ]
   },
   "chrome": {
+    "accent": "#e03a2f",
     "tokens": {
       "bg": "#14170d",
       "surface": "#2a2e1c",
@@ -59,15 +60,6 @@
     },
     "pattern": "zebra",
     "boot": "post",
-    "costume": {
-      "name": "combat helmet",
-      "rows": [
-        "....######....",
-        "..##########..",
-        ".############.",
-        "##############"
-      ]
-    },
     "motif": {
       "viewBox": [0, 0, 48, 48],
       "tile": [48, 48],
@@ -144,7 +136,8 @@
         "link": "#7a5c00",
         "term-bg": "#ece6cc",
         "term-fg": "#1d2014"
-      }
+      },
+      "accent": "#b02a20"
     }
   }
 }

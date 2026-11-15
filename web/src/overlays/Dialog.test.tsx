@@ -67,3 +67,14 @@ describe("Dialog / Sheet", () => {
     expect(document.activeElement).toBe(gear);
   });
 });
+
+describe("Dialog surface", () => {
+  it("card carries the float class", () => {
+    render(
+      <Dialog open title="Sure?" onClose={() => {}}>
+        body
+      </Dialog>,
+    );
+    expect(screen.getByRole("dialog").classList).toContain("float");
+  });
+});

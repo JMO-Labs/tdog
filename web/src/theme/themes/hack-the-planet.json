@@ -93,6 +93,7 @@
     }
   },
   "chrome": {
+    "accent": "#ff2bd6",
     "tokens": {
       "bg": "#05020a",
       "surface": "#120a1e",
@@ -117,10 +118,6 @@
     },
     "pattern": "zigzag",
     "boot": "dialup",
-    "costume": {
-      "name": "visor shades",
-      "rows": ["############", "#####..#####", ".####..####."]
-    },
     "motif": {
       "viewBox": [0, 0, 64, 64],
       "tile": [64, 64],
@@ -215,7 +212,8 @@
         "term-bg": "#f6f0ff",
         "term-fg": "#0a5a30",
         "term-dim": "#5a6a60"
-      }
+      },
+      "accent": "#c4129e"
     }
   }
 }

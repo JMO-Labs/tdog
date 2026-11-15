@@ -6,17 +6,14 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgb(22 11 46 / 0.6);
+  background: rgb(0 0 0 / 0.5);
 }
 .dialog {
   width: min(480px, 100%);
   max-height: 90vh;
   overflow: auto;
-  border: calc(2px * var(--border-width)) solid var(--line);
-  border-radius: calc(16px * var(--radius-scale));
   background: var(--surface);
   color: var(--fg);
-  box-shadow: var(--shadow-lg);
   padding: 18px;
   outline: none;
 }
@@ -43,6 +40,7 @@
   max-height: none;
   border-radius: calc(16px * var(--radius-scale)) 0 0
     calc(16px * var(--radius-scale));
+  border: 1.5px solid var(--line);
   border-right: 0;
 }
 .cmdk {
@@ -55,11 +53,6 @@
   margin-top: 12vh;
   background: var(--surface);
   color: var(--fg);
-  border: 2px solid var(--line);
-  border-radius: calc(12px * var(--radius-scale));
-  box-shadow:
-    var(--shadow-sm),
-    0 12px 28px rgb(8 4 24 / 0.45);
 }
 .cmdk-filter {
   display: flex;
@@ -69,9 +62,8 @@
   border-bottom: 1px solid var(--line);
   background: var(--surface-2);
 }
-.cmdk-filter svg {
-  width: 14px;
-  height: 14px;
+.cmdk-filter .nf {
+  font-size: 14px;
   opacity: 0.6;
   flex-shrink: 0;
 }
@@ -148,11 +140,10 @@
   flex-shrink: 0;
 }
 .cmdk [role="option"].danger {
-  color: var(--danger, #c2185b);
+  color: var(--danger);
 }
-.cmdk-title svg {
-  width: 14px;
-  height: 14px;
+.cmdk-title .nf {
+  font-size: 14px;
   opacity: 0.7;
   flex-shrink: 0;
 }
@@ -199,16 +190,14 @@
 .toast {
   pointer-events: auto;
   width: min(320px, calc(100vw - 32px));
-  border: calc(2px * var(--border-width)) solid var(--line);
-  border-radius: calc(14px * var(--radius-scale));
   padding: 12px 16px;
-  box-shadow: 5px 5px 0 var(--ink);
-  color: var(--ink);
+  color: var(--fg);
   cursor: pointer;
 }
 .toast b {
   display: block;
-  font: 400 22px/1.1 var(--display);
+  font: inherit;
+  font-weight: 700;
 }
 .toast p {
   margin: 2px 0 0;
@@ -216,33 +205,42 @@
   font-weight: 600;
 }
 .toast.success {
-  background: var(--cyan);
+  --bar: #2e9e5b;
 }
 .toast.fail {
-  background: var(--pink);
+  --bar: var(--danger);
 }
 .toast.warn {
-  background: var(--yellow);
+  --bar: #c98a00;
 }
 .toast.info {
-  background: var(--purple);
-  color: #fff;
+  --bar: var(--accent);
+}
+.toast.success,
+.toast.fail,
+.toast.warn,
+.toast.info,
+html[data-serious] .toast.success,
+html[data-serious] .toast.fail,
+html[data-serious] .toast.warn,
+html[data-serious] .toast.info {
+  border-left: 4px solid var(--bar);
 }
 .tip {
   position: fixed;
   z-index: 90;
   pointer-events: none;
-  background: var(--ink);
-  color: #fff;
-  border: calc(2px * var(--border-width)) solid var(--ink);
-  border-radius: calc(8px * var(--radius-scale));
+  background: var(--fg);
+  color: var(--bg);
+  border: 0;
+  border-radius: 4px;
   padding: 5px 9px;
   font-size: 12px;
   font-weight: 700;
   display: flex;
   gap: 8px;
   align-items: center;
-  box-shadow: 3px 3px 0 var(--pink);
+  box-shadow: none;
   white-space: nowrap;
 }
 .tip kbd,
@@ -266,12 +264,13 @@
     width: 100vw;
     border-radius: 0;
   }
-  .cmdk {
+  .cmdk.float {
     width: 100%;
     margin-top: 0;
     border-radius: 0 0 16px 16px;
     border-left: 0;
     border-right: 0;
+    box-shadow: none;
   }
   .cmdk [role="option"] {
     height: 40px;

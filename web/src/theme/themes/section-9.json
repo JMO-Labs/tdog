@@ -86,6 +86,7 @@
     }
   },
   "chrome": {
+    "accent": "#ff6a4d",
     "tokens": {
       "bg": "#050c1e",
       "surface": "#0c1a38",
@@ -110,10 +111,6 @@
     },
     "pattern": "none",
     "boot": "post",
-    "costume": {
-      "name": "headset",
-      "rows": ["..........#...", "..######..#...", ".##......###.."]
-    },
     "motif": {
       "viewBox": [0, 0, 32, 32],
       "tile": [32, 32],
@@ -201,7 +198,8 @@
         "term-bg": "#e8f1f4",
         "term-fg": "#07122a",
         "term-dim": "#4a6580"
-      }
+      },
+      "accent": "#c2361a"
     }
   }
 }

@@ -3,7 +3,6 @@ import { findTheme } from "./registry";
 
 type Row = [
   string, // id
-  string, // costume
   string, // cursor shape
   string, // font
   string, // shadow
@@ -14,7 +13,6 @@ type Row = [
 const PACK: Row[] = [
   [
     "dial-up-paranoia",
-    "headset",
     "underline",
     "courier-prime",
     "bevel",
@@ -24,7 +22,6 @@ const PACK: Row[] = [
   ],
   [
     "black-box",
-    "fedora",
     "underline",
     "courier-prime",
     "soft",
@@ -34,7 +31,6 @@ const PACK: Row[] = [
   ],
   [
     "virtual-mind",
-    "vr helmet",
     "block",
     "space-mono",
     "glow",
@@ -42,21 +38,12 @@ const PACK: Row[] = [
     "rain",
     ["glow", "flicker"],
   ],
-  ["multipass", "hair tuft", "bar", "space-mono", "hard", 1.5, "drop", []],
-  [
-    "bug-hunt",
-    "combat helmet",
-    "block",
-    "ibm-plex-mono",
-    "hard",
-    0,
-    "post",
-    ["grain"],
-  ],
+  ["multipass", "bar", "space-mono", "hard", 1.5, "drop", []],
+  ["bug-hunt", "block", "ibm-plex-mono", "hard", 0, "post", ["grain"]],
 ];
 
 describe("theme flavour pack 3", () => {
-  for (const [id, costume, cursor, font, shadow, radius, boot, fx] of PACK) {
+  for (const [id, cursor, font, shadow, radius, boot, fx] of PACK) {
     it(`${id} fills the v2 fields`, () => {
       const t = findTheme(id)!;
       expect(t.terminal.cursor.shape).toBe(cursor);
@@ -66,7 +53,6 @@ describe("theme flavour pack 3", () => {
       expect(t.chrome.boot).toBe(boot);
       expect(t.terminal.effects.map((e) => e.id)).toEqual(fx);
       expect(t.terminal.effects.every((e) => e.intensity <= 0.5)).toBe(true);
-      expect(t.chrome.costume).toMatchObject({ name: costume });
       expect(t.chrome.motif!.shapes.length).toBeGreaterThan(1);
     });
   }

@@ -40,18 +40,13 @@ const type = (code: string) =>
     clipboardData: { getData: () => code },
   });
 
-test("serious mode and pet persist and apply immediately", async () => {
+test("serious mode persists and apply immediately", async () => {
   await mount({ "GET /api/session": session(false) });
   expect(sw(/serious/i).getAttribute("aria-checked")).toBe("false");
   fireEvent.click(sw(/serious/i));
   expect(sw(/serious/i).getAttribute("aria-checked")).toBe("true");
   expect(localStorage.getItem("tdog.serious")).toBe("1");
   expect(getPref("serious")).toBe(true);
-  fireEvent.click(sw(/pet/i));
-  expect(localStorage.getItem("tdog.pet")).toBe("0");
-  expect(getPref("pet")).toBe(false);
-  act(() => setPref("pet", true));
-  expect(sw(/pet/i).getAttribute("aria-checked")).toBe("true");
 });
 
 test("enable 2FA: enroll, confirm, show recovery codes", async () => {
@@ -262,13 +257,6 @@ test("boot animation toggle defaults on and persists", async () => {
   fireEvent.click(sw(/boot animation/i));
   expect(localStorage.getItem("tdog.boot")).toBe("0");
   expect(getPref("boot")).toBe(false);
-});
-
-test("Dress up Dogbert defaults on and persists", () => {
-  localStorage.clear();
-  expect(getPref("dress")).toBe(true);
-  setPref("dress", false);
-  expect(localStorage.getItem("tdog.dress")).toBe("0");
 });
 
 test("terminal motif slider persists opacity and applies immediately", async () => {

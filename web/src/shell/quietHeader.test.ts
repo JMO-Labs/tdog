@@ -10,39 +10,36 @@ const rule = (sel: string) => {
   return m ? m[1] : "";
 };
 
-test("header is plain surface with a 4px accent strip", () => {
+test("header is a hairline bar with no motif strip", () => {
   const h = rule(".ws-head");
   expect(h).toContain("background: var(--surface)");
-  expect(h).not.toContain("--pattern");
-  expect(h).not.toContain("border-bottom");
-  const s = rule(".ws-head::after");
-  expect(s).toContain("height: 4px");
-  for (const t of ["pink", "cyan", "yellow", "purple"])
-    expect(s).toContain(`var(--${t})`);
-  expect(s).toContain("repeating-linear-gradient");
+  expect(h).toContain("border-bottom: 1px solid var(--line)");
+  expect(css).not.toContain("--header-motif");
+  expect(rule(".ws-head::after")).toBe("");
 });
 
-test("wordmark is quiet", () => {
+test("wordmark has an accent shadow, off in serious mode", () => {
   const w = rule(".ws-head .wordmark.small");
-  expect(w).toContain("color: var(--fg)");
-  expect(w).toContain("text-shadow: 2px 2px 0 var(--pink)");
-  expect(w).toContain("animation: none");
-  expect(w).toContain("-webkit-text-stroke: 0");
+  expect(w).toContain("text-shadow: 1.5px 1.5px 0 var(--accent)");
+  expect(rule("html[data-serious] .ws-head .wordmark.small")).toContain(
+    "text-shadow: none",
+  );
 });
 
-test("tabs are flat with a flat yellow pill", () => {
-  const t = rule(".tabs");
-  expect(t).toContain("background: var(--surface-2)");
-  expect(t).not.toContain("box-shadow: 4px");
+test("active tab is fg with a 2px accent underline", () => {
   expect(rule(".tab")).toContain("color: var(--muted)");
-  const p = rule(".tab-pill");
-  expect(p).toContain("calc(1.5px * var(--border-width)) solid var(--line)");
-  expect(p).toContain("background: var(--yellow)");
-  expect(p).not.toContain("gradient");
+  expect(rule(".tab.on")).toContain("color: var(--fg)");
+  expect(rule(".tab.on::after")).toContain("height: 2px");
+  expect(rule(".tab.on::after")).toContain("var(--accent)");
+});
+
+test("status bar is 24px and plain", () => {
+  const s = rule(".status");
+  expect(s).toContain("height: 24px");
+  expect(s).toContain("gap: 14px");
 });
 
 test("header icon buttons are ghost", () => {
   expect(rule(".ws-head .icon-btn")).toContain("box-shadow: none");
   expect(rule(".ws-head .icon-btn:hover")).toContain("var(--surface-2)");
-  expect(rule(".ws-head .icon-btn.danger:hover")).toContain("var(--pink)");
 });

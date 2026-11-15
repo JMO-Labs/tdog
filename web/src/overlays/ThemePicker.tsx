@@ -171,7 +171,7 @@ export function ThemePicker({
       title="Theme"
       onClose={close}
       closable
-      className="dialog theme-picker"
+      className="dialog theme-picker float"
     >
       <div onKeyDown={onKeyDown}>
         <input

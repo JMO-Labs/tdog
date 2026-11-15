@@ -8,12 +8,6 @@
   overflow: hidden;
   background: var(--surface);
   color: var(--fg);
-  border: 2px solid var(--line);
-  border-radius: calc(12px * var(--radius-scale));
-  /* Sticker shadow plus a soft drop so it lifts off dark terminals too. */
-  box-shadow:
-    var(--shadow-sm),
-    0 12px 28px rgb(8 4 24 / 0.45);
 }
 
 /* Filter input at top */
@@ -27,9 +21,8 @@
   background: var(--surface-2);
 }
 
-.menu-filter svg {
-  width: 14px;
-  height: 14px;
+.menu-filter .nf {
+  font-size: 14px;
   opacity: 0.6;
   flex-shrink: 0;
 }
@@ -73,10 +66,8 @@
   flex-shrink: 0;
 }
 
-.menu-icon-btn svg {
-  width: 16px;
-  height: 16px;
-  stroke-width: 1.7;
+.menu-icon-btn .nf {
+  font-size: 16px;
 }
 
 .menu-icon-btn:hover:not(:disabled) {
@@ -148,7 +139,7 @@
 }
 
 .menu-item.danger {
-  color: var(--danger, #c2185b);
+  color: var(--danger);
 }
 
 .menu-label {
@@ -200,9 +191,6 @@
   overflow-y: auto;
   background: var(--surface);
   color: var(--fg);
-  border: 2px solid var(--line);
-  border-radius: calc(10px * var(--radius-scale));
-  box-shadow: var(--shadow-sm);
   z-index: 70;
 }
 
@@ -253,9 +241,8 @@
   margin-right: 8px;
   opacity: 0.8;
 }
-.menu-row-icon svg {
-  width: 15px;
-  height: 15px;
+.menu-row-icon .nf {
+  font-size: 15px;
 }
 .menu-label mark {
   background: none;

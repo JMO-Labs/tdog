@@ -14,6 +14,20 @@ describe("validateTheme", () => {
   it("accepts a good theme", () => {
     expect(validateTheme(ok()).ok).toBe(true);
   });
+  it("validates optional accent, tint and tintPct", () => {
+    const t = ok();
+    Object.assign(t.chrome, { accent: "#112233", tint: "#445566", tintPct: 5 });
+    expect(validateTheme(t).ok).toBe(true);
+    for (const bad of [
+      { accent: "red" },
+      { tint: "#12" },
+      { tintPct: 6 },
+      { tintPct: -1 },
+    ])
+      expect(validateTheme({ ...t, chrome: { ...t.chrome, ...bad } }).ok).toBe(
+        false,
+      );
+  });
   it("rejects unknown keys at every level", () => {
     for (const mutate of [
       (t: any) => (t.css = "body{}"),
@@ -209,32 +223,8 @@ describe("theme format v2", () => {
       bad((t) => (t.terminal.effects = [{ id: "evil", intensity: 1 }])),
     ).toBe(false);
     expect(bad((t) => (t.chrome.boot = "evil"))).toBe(false);
-    expect(bad((t) => (t.chrome.costume = "evil"))).toBe(false);
-    expect(bad((t) => (t.chrome.costume = { name: "hat", rows: ["#x"] }))).toBe(
-      false,
-    );
-    expect(bad((t) => (t.chrome.costume = { name: "hat", rows: [] }))).toBe(
-      false,
-    );
-    expect(bad((t) => (t.chrome.costume = { name: "", rows: ["#"] }))).toBe(
-      false,
-    );
-    expect(
-      bad((t) => (t.chrome.costume = { name: "hat", rows: ["#"], x: 1 })),
-    ).toBe(false);
     expect(bad((t) => (t.chrome.shape.shadow = "url(x)"))).toBe(false);
     expect(bad((t) => (t.terminal.cursor.shape = "star"))).toBe(false);
-  });
-  it("accepts a costume", () => {
-    expect(
-      bad(
-        (t) =>
-          (t.chrome.costume = {
-            name: "safari hat",
-            rows: ["..##..", "######"],
-          }),
-      ),
-    ).toBe(true);
   });
   it("range-checks numbers", () => {
     expect(

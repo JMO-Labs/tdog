@@ -75,6 +75,7 @@
     }
   },
   "chrome": {
+    "accent": "#ff6a3d",
     "tokens": {
       "bg": "#000308",
       "surface": "#06101c",
@@ -99,10 +100,6 @@
     },
     "pattern": "none",
     "boot": "tracker",
-    "costume": {
-      "name": "visor ring",
-      "rows": ["..##########..", ".#..........#.", ".#..........#."]
-    },
     "motif": {
       "viewBox": [0, 0, 32, 32],
       "tile": [32, 32],
@@ -183,7 +180,8 @@
         "term-bg": "#eef6fc",
         "term-fg": "#0a1c33",
         "term-dim": "#43607d"
-      }
+      },
+      "accent": "#b83a14"
     }
   }
 }

@@ -16,7 +16,6 @@ export function PaneSlot({
   onOpenChange,
   onClosed,
   onSize,
-  onOutput,
   onLatency,
   theme,
 }: {
@@ -31,7 +30,6 @@ export function PaneSlot({
   onOpenChange: (id: string, open: boolean) => void;
   onClosed?: () => void;
   onSize: (id: string, cols: number, rows: number) => void;
-  onOutput: (data?: Uint8Array) => void;
   onLatency: (id: string, ms: number) => void;
 }) {
   const c = useCopy();
@@ -56,7 +54,6 @@ export function PaneSlot({
         visible={visible}
         onClosed={onClosed}
         onSize={onSz}
-        onOutput={onOutput}
         onLatency={onLat}
         onOpenChange={onOpen}
         reconnectRef={reconnectRef}

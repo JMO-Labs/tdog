@@ -21,6 +21,7 @@ import { bgSpec } from "./backgrounds/spec";
 import { EffectsOverlay } from "./effects/EffectsOverlay";
 import { useActiveEffects } from "./effects/useActiveEffects";
 import { titleStore } from "./terminal/titles";
+import { SceneArtContext } from "./terminal/useSceneArt";
 import { useMotifOpacity, usePref } from "./settings/prefs";
 import { resolvePreset, type Resolved } from "./presets/api";
 import { EndedPanel } from "./terminal/EndedPanel";
@@ -51,6 +52,7 @@ export { applyFont };
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
+const NO_FX: never[] = [];
 
 export function TerminalPane({
   theme,
@@ -176,17 +178,19 @@ export function TerminalPane({
 
   sceneRef.current = sceneId;
 
-  const [effects, setEffects] = useState(() => themeStore.effects(theme));
+  const art = useContext(SceneArtContext);
+  const [themeFx, setEffects] = useState(() => themeStore.effects(theme));
   useEffect(() => {
     const sync = () => setEffects(themeStore.effects(theme));
     sync();
     return themeStore.subscribe(sync);
   }, [theme]);
+  const effects = art ? themeFx : NO_FX;
   const rainBehind = useActiveEffects(effects).some(
     (e) => e.id === "glyph-rain",
   );
   const [motifPct] = useMotifOpacity();
-  const motifUrl = motifPct > 0 ? themeStore.terminalMotif(theme) : null;
+  const motifUrl = art && motifPct > 0 ? themeStore.terminalMotif(theme) : null;
   const motifOn = motifUrl !== null;
   /** Something paints behind the text: the renderer must be transparent. */
   const sceneBg = useContext(SceneBgContext);
@@ -338,7 +342,13 @@ export function TerminalPane({
           openMenu(r.left + 16, r.top + 16);
         }
       }}
-      style={{ position: "relative", height: "100%", background: bg }}
+      style={{
+        position: "relative",
+        height: "100%",
+        boxSizing: "border-box",
+        padding: 8,
+        background: bg,
+      }}
     >
       <BackgroundLayer spec={paneBg} />
       {motifUrl && (

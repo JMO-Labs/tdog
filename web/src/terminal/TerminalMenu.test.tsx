@@ -146,9 +146,16 @@ test("typing filters into labelled rows, strip actions included", () => {
   fireEvent.change(screen.getByRole("textbox", { name: "Filter actions" }), {
     target: { value: "sp" },
   });
-  const rows = screen.getAllByRole("menuitem").map((b) => b.textContent);
+  const rows = screen
+    .getAllByRole("menuitem")
+    .map((b) =>
+      (b.textContent ?? "").replace(
+        /[\uE000-\uF8FF]|[\u{F0000}-\u{FFFFD}]/gu,
+        "",
+      ),
+    );
   expect(rows).toEqual(expect.arrayContaining(["Split right", "Split down"]));
-  expect(rows.every((r) => /sp/i.test(r ?? ""))).toBe(true);
+  expect(rows.every((r) => /sp/i.test(r))).toBe(true);
 });
 
 test("filtering reaches submenu items and runs them", () => {

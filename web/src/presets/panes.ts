@@ -112,3 +112,35 @@ export function setPaneZoom(pane: string, steps: number): void {
     /* storage unavailable: zoom lasts until reload */
   }
 }
+
+/** Scenes that opted in to theme art (terminal motif + effects); default off. */
+const ART_KEY = "tdog.sceneArt";
+const artListeners = new Set<() => void>();
+export const subscribeSceneArt = (l: () => void) => (
+  artListeners.add(l),
+  () => void artListeners.delete(l)
+);
+function readArt(): Record<string, true> {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(ART_KEY) ?? "{}");
+    return v && typeof v === "object" && !Array.isArray(v)
+      ? (v as Record<string, true>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+export const sceneArt = (scene: string): boolean => readArt()[scene] === true;
+export function setSceneArt(scene: string, on: boolean): void {
+  const all = readArt();
+  if (on) all[scene] = true;
+  else delete all[scene];
+  try {
+    if (Object.keys(all).length)
+      localStorage.setItem(ART_KEY, JSON.stringify(all));
+    else localStorage.removeItem(ART_KEY);
+  } catch {
+    /* storage unavailable: the toggle just doesn't persist */
+  }
+  artListeners.forEach((l) => l());
+}

@@ -19,10 +19,8 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
   const c = useCopy();
   const [totp, setTotp] = useState(false);
   const [serious, setSerious] = usePref("serious");
-  const [pet, setPet] = usePref("pet");
   const [confirm, setConfirm] = useState(false);
   const [motif, setMotif] = useMotifOpacity();
-  const [dress, setDress] = usePref("dress");
   const fx = useFx();
   const [boot, setBoot] = usePref("boot");
   const [perf, setPerf] = usePref("perf");
@@ -86,20 +84,6 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
           checked={serious}
           onChange={setSerious}
         />
-      </div>
-      <div className="row">
-        <div>
-          <b id="sw-pet">Status bar pet</b>
-          <p className="muted">Sleeps when shells idle, wakes on output.</p>
-        </div>
-        <Switch labelledBy="sw-pet" checked={pet} onChange={setPet} />
-      </div>
-      <div className="row">
-        <div>
-          <b id="sw-dress">Dress up Dogbert</b>
-          <p className="muted">Wears the costume of the active theme.</p>
-        </div>
-        <Switch labelledBy="sw-dress" checked={dress} onChange={setDress} />
       </div>
       <div className="row">
         <div>

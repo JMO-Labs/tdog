@@ -44,7 +44,6 @@ import { clearCommands } from "../overlays/commands";
 
 beforeEach(() => {
   vi.useFakeTimers();
-  // Pin to midday: the pet engine sleeps at night (22:00-07:00).
   vi.setSystemTime(new Date(2026, 5, 1, 12));
   localStorage.clear();
 });
@@ -87,19 +86,16 @@ test("status bar shows live cols×rows and opens palette", () => {
   expect(screen.getByRole("combobox")).toBeTruthy();
 });
 
-test("pet sleeps after 5min idle, wakes on output, click hides", () => {
+test("stale pet and dress prefs in storage are ignored", () => {
+  localStorage.setItem("tdog.pet", "1");
+  localStorage.setItem("tdog.dress", "1");
+  const err = vi.spyOn(console, "error").mockImplementation(() => {});
   render(<Workspace />);
-  const pet = () => screen.getByTestId("pet");
-  act(() => cb.onOutput?.());
-  expect(pet().className).toContain("awake");
-  act(() => void vi.advanceTimersByTime(5 * 60e3 + 1000));
-  expect(pet().className).toContain("sleep");
-  act(() => cb.onOutput?.());
-  act(() => void vi.advanceTimersByTime(600));
-  expect(pet().className).toContain("awake");
-  fireEvent.click(pet());
-  fireEvent.click(screen.getByRole("button", { name: "Hide pet" }));
   expect(screen.queryByTestId("pet")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+  expect(screen.queryByRole("menuitem", { name: /Dogbert/ })).toBeNull();
+  expect(err).not.toHaveBeenCalled();
+  err.mockRestore();
 });
 
 test("closed session shows the empty state", () => {
@@ -142,16 +138,12 @@ test("empty state offers a visible Reconnect action", () => {
   expect(reconnect).toHaveBeenCalledTimes(1);
 });
 
-test("⌘, opens settings; hiding the pet persists", () => {
+test("⌘, opens settings", () => {
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("x")));
   render(<Workspace onSignedOut={() => {}} />);
   fireEvent.keyDown(document, { key: ",", metaKey: true });
   expect(screen.getByRole("dialog", { name: "Settings" })).toBeTruthy();
   fireEvent.keyDown(document, { key: "Escape" });
-  fireEvent.click(screen.getByTestId("pet"));
-  fireEvent.click(screen.getByRole("button", { name: "Hide pet" }));
-  expect(localStorage.getItem("tdog.pet")).toBe("0");
-  expect(screen.queryByTestId("pet")).toBeNull();
 });
 
 test("Settings button opens the sheet; Escape closes it", () => {
@@ -224,4 +216,16 @@ test("⌘. opens Studio", () => {
   render(<Workspace />);
   fireEvent.keyDown(document, { key: ".", metaKey: true });
   expect(screen.getByRole("dialog", { name: "Studio" })).toBeTruthy();
+});
+
+test("status bar shows host, shell, size and latency as plain items", () => {
+  const { container } = render(<Workspace />);
+  act(() => cb.onSize!(80, 24));
+  act(() => cb.onLatency!(12));
+  const bar = container.querySelector("footer.status")!;
+  expect(bar.querySelectorAll(".chip")).toHaveLength(0);
+  expect(bar.textContent).toContain("container");
+  expect(bar.textContent).toContain("80×24");
+  expect(bar.textContent).toContain("12 ms");
+  expect(bar.textContent).toContain("⌘K");
 });

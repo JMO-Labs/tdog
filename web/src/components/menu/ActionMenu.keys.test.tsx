@@ -73,3 +73,12 @@ test("hovering a submenu item opens it; clicking keeps it open", () => {
   fireEvent.click(parent);
   expect(parent.getAttribute("aria-expanded")).toBe("true");
 });
+
+test("menu and submenu roots carry the floating-surface class", () => {
+  render(<ActionMenu x={0} y={0} groups={groups()} onDismiss={() => {}} />);
+  expect(document.querySelector(".action-menu")!.classList).toContain("float");
+  fireEvent.keyDown(screen.getByRole("menuitem", { name: "Layouts" }), {
+    key: "ArrowRight",
+  });
+  expect(document.querySelector(".menu-submenu")!.classList).toContain("float");
+});

@@ -57,7 +57,9 @@
     padding-left: max(10px, env(safe-area-inset-left, 0px));
     padding-right: max(10px, env(safe-area-inset-right, 0px));
   }
-  .status .chip:not(.kbd-chip) {
+  /* The status bar stays 24px tall. */
+  .status .kbd-chip,
+  .status .sb-item {
     min-height: 0;
     min-width: 0;
   }
@@ -70,7 +72,6 @@
   .status .spacer {
     min-width: 0;
   }
-  .status .pet-egg,
   .status .kbd-chip {
     flex: none;
   }

@@ -67,6 +67,7 @@
     }
   },
   "chrome": {
+    "accent": "#ff6b9d",
     "tokens": {
       "bg": "#07051a",
       "surface": "#130d33",
@@ -91,10 +92,6 @@
     },
     "pattern": "none",
     "boot": "rain",
-    "costume": {
-      "name": "vr visor",
-      "rows": ["..##########..", ".############.", ".##.######.##."]
-    },
     "motif": {
       "viewBox": [0, 0, 32, 32],
       "tile": [32, 32],
@@ -163,7 +160,8 @@
         "term-bg": "#f1eeff",
         "term-fg": "#140c3a",
         "term-dim": "#5a54a0"
-      }
+      },
+      "accent": "#b0124e"
     }
   }
 }
