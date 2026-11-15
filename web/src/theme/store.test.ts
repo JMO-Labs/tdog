@@ -50,7 +50,7 @@ describe("themeStore", () => {
     themeStore.select("night-market");
     const s = document.documentElement.style;
     expect(s.getPropertyValue("--bg")).toMatch(/^#/);
-    expect(s.getPropertyValue("--pattern")).toBe("var(--pat-zigzag)");
+    expect(s.getPropertyValue("--pattern")).toMatch(/^url\("data:image\/svg/);
     expect(fn).toHaveBeenCalled();
     off();
   });

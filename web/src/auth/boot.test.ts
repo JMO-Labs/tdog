@@ -21,7 +21,7 @@ test("variant follows the page theme; unknown falls back to drop", () => {
   expect(bootFor("wake-up-neo", false)).toBe("rain");
   expect(bootFor("mainframe", false)).toBe("post");
   expect(bootFor("dial-up-paranoia", false)).toBe("dialup");
-  expect(bootFor("truth-is-out-there", false)).toBe("rewind");
+  expect(bootFor("truth-is-out-there", false)).toBe("tracker");
   expect(bootFor("cartridge-blast", false)).toBe("cartridge");
   expect(bootFor("slime-time", false)).toBe("wipe");
   expect(bootFor("memphis-pop", false)).toBe("drop");

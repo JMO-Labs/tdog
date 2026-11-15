@@ -28,11 +28,20 @@
       ]
     },
     "cursor": {
-      "shape": "block",
+      "shape": "underline",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "courier-prime",
+    "effects": [
+      {
+        "id": "vignette",
+        "intensity": 0.5
+      },
+      {
+        "id": "grain",
+        "intensity": 0.3
+      }
+    ]
   },
   "chrome": {
     "tokens": {
@@ -46,11 +55,68 @@
     },
     "shape": {
       "radius": 1,
-      "shadow": "hard",
+      "shadow": "soft",
       "border": 1
     },
     "pattern": "none",
-    "boot": "rewind",
-    "costume": "none"
+    "boot": "tracker",
+    "costume": {
+      "name": "tinfoil hat",
+      "rows": [
+        "......##......",
+        ".....####.....",
+        "....######....",
+        "...########...",
+        "..##########.."
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 60, 60],
+      "tile": [60, 60],
+      "shapes": [
+        {
+          "type": "polygon",
+          "points": "4,4 30,22 14,34",
+          "fill": "yellow"
+        },
+        {
+          "type": "rect",
+          "x": 34,
+          "y": 8,
+          "width": 22,
+          "height": 5,
+          "fill": "fg"
+        },
+        {
+          "type": "rect",
+          "x": 34,
+          "y": 18,
+          "width": 14,
+          "height": 5,
+          "fill": "fg"
+        },
+        {
+          "type": "polygon",
+          "points": "30,40 46,40 54,58 22,58",
+          "fill": "cyan"
+        },
+        {
+          "type": "rect",
+          "x": 32,
+          "y": 34,
+          "width": 12,
+          "height": 4,
+          "fill": "fg"
+        },
+        {
+          "type": "rect",
+          "x": 4,
+          "y": 46,
+          "width": 12,
+          "height": 5,
+          "fill": "fg"
+        }
+      ]
+    }
   }
 }
