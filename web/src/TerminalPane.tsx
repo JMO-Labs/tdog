@@ -14,6 +14,7 @@ import { fontFamily, loadFont } from "./theme/fonts";
 import { whenFamilyReady } from "./theme/serverFonts";
 import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
+import { PaneIntro } from "./terminal/PaneIntro";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
 import { PaneOverlayHost, usePaneOverlayHost } from "./overlays/pane";
@@ -506,6 +507,7 @@ export function TerminalPane({
       />
       <EffectsOverlay effects={effects} />
       <ConnectionGag phase={phase} onReconnect={connect} />
+      <PaneIntro theme={theme} />
       {(killed ||
         (state.status === "closed" && state.exitCode !== undefined)) && (
         <EndedPanel

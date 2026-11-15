@@ -10,7 +10,7 @@ const col = (i: number) =>
     (_, j) => GLYPHS[(i * 7 + j * 3) % GLYPHS.length],
   ).join("\n");
 
-function Scene({ v }: { v: Exclude<BootId, "drop"> }) {
+export function Scene({ v }: { v: Exclude<BootId, "drop"> }) {
   const c = useCopy();
   switch (v) {
     case "tracker":
