@@ -185,6 +185,44 @@
   background: var(--surface-2);
 }
 
+/* Submenu */
+.menu-item-with-sub {
+  position: relative;
+}
+
+.menu-submenu {
+  position: absolute;
+  top: 0;
+  min-width: 160px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--surface);
+  color: var(--fg);
+  border: 2px solid var(--line);
+  border-radius: calc(10px * var(--radius-scale));
+  box-shadow: var(--shadow-sm);
+  z-index: 70;
+}
+
+.menu-submenu .menu-item {
+  padding: 0 10px;
+}
+
+.menu-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.menu-dot svg {
+  width: 10px;
+  height: 10px;
+}
+
 /* Screen reader only */
 .sr-only {
   position: absolute;

@@ -6,6 +6,7 @@ export interface MenuItem {
   label: string;
   icon?: IconName;
   shortcut?: string;
+  tooltip?: string;
   disabled?: boolean;
   danger?: boolean;
   checked?: boolean;
@@ -20,12 +21,31 @@ export interface ActionMenuProps {
   strip?: MenuItem[];
   groups: MenuItem[][];
   onDismiss: (refocus?: boolean) => void;
+  ariaLabel?: string;
+}
+
+/** Pure function: flip submenu left if it would overflow right. */
+export function flipSubmenuPosition(
+  parentRect: DOMRect,
+  submenuWidth: number,
+): { left?: number; right?: number } {
+  const RIGHT_THRESHOLD = 200; // pixels from right edge before flipping
+  const parentRight = parentRect.right;
+  const windowRight = window.innerWidth;
+
+  if (windowRight - parentRight < RIGHT_THRESHOLD + submenuWidth) {
+    // Flip to left side
+    return { right: windowRight - parentRect.left };
+  }
+  // Default: open to the right
+  return { left: parentRect.right };
 }
 
 export function ActionMenu(props: ActionMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x: props.x, y: props.y });
   const [filter, setFilter] = useState("");
+  const [openSub, setOpenSub] = useState<string | null>(null);
   const filterInputRef = useRef<HTMLInputElement>(null);
 
   // Reposition menu to stay in viewport
@@ -65,6 +85,7 @@ export function ActionMenu(props: ActionMenuProps) {
 
   const run = (item: MenuItem, refocus = true) => {
     if (item.disabled) return;
+    if (item.submenu) return; // Submenu items don't close menu
     props.onDismiss(refocus);
     item.onSelect?.();
   };
@@ -72,6 +93,10 @@ export function ActionMenu(props: ActionMenuProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Escape") {
       e.stopPropagation();
+      if (openSub) {
+        setOpenSub(null);
+        return;
+      }
       if (filter) {
         setFilter("");
         return;
@@ -86,7 +111,8 @@ export function ActionMenu(props: ActionMenuProps) {
       !e.ctrlKey &&
       !e.metaKey &&
       !e.altKey &&
-      !filter
+      !filter &&
+      !openSub
     ) {
       setFilter(e.key);
       e.preventDefault();
@@ -129,10 +155,21 @@ export function ActionMenu(props: ActionMenuProps) {
     } else if (e.key === "End") {
       e.preventDefault();
       items[items.length - 1]?.focus();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      const item = allVisibleItems()[i];
+      if (item?.submenu) {
+        setOpenSub(item.label);
+      }
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      if (openSub) {
+        setOpenSub(null);
+      }
     } else if (e.key === "Enter" && i >= 0) {
       e.preventDefault();
       const item = allVisibleItems()[i];
-      if (item) run(item, true);
+      if (item && !item.submenu) run(item, true);
     }
   };
 
@@ -168,12 +205,54 @@ export function ActionMenu(props: ActionMenuProps) {
     return visible;
   };
 
+  const renderItem = (item: MenuItem) => {
+    if (filter && !item.label.toLowerCase().includes(filter.toLowerCase())) {
+      return null;
+    }
+
+    const isRadio = item.isRadio ?? item.checked !== undefined;
+
+    return (
+      <button
+        key={item.label}
+        role={
+          item.submenu ? "menuitem" : isRadio ? "menuitemradio" : "menuitem"
+        }
+        aria-checked={isRadio ? item.checked : undefined}
+        aria-haspopup={item.submenu ? "menu" : undefined}
+        disabled={item.disabled}
+        className={`menu-item ${item.danger ? "danger" : ""}`}
+        title={item.tooltip}
+        onClick={() => {
+          if (item.submenu) {
+            setOpenSub(openSub === item.label ? null : item.label);
+          } else {
+            run(item);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (item.submenu && e.key === "ArrowRight") {
+            e.preventDefault();
+            setOpenSub(item.label);
+          }
+        }}
+      >
+        <span className="menu-label">{item.label}</span>
+        {item.shortcut && (
+          <span className="menu-shortcut">{item.shortcut}</span>
+        )}
+        {isRadio && item.checked && <span className="menu-check">✓</span>}
+        {item.submenu && <span className="menu-arrow">›</span>}
+      </button>
+    );
+  };
+
   return (
     <div
       ref={ref}
       className="action-menu pop-card"
       role="menu"
-      aria-label="Actions"
+      aria-label={props.ariaLabel || "Actions"}
       style={{ left: pos.x, top: pos.y }}
       onContextMenu={(e) => e.preventDefault()}
       onKeyDown={handleKeyDown}
@@ -217,11 +296,11 @@ export function ActionMenu(props: ActionMenuProps) {
                   role="menuitem"
                   className="menu-icon-btn"
                   disabled={item.disabled}
-                  title={item.label}
+                  title={item.tooltip || item.label}
+                  aria-label={item.label}
                   onClick={() => run(item)}
                 >
                   {item.icon && <Icon name={item.icon} />}
-                  <span className="sr-only">{item.label}</span>
                 </button>
               );
             })}
@@ -248,34 +327,17 @@ export function ActionMenu(props: ActionMenuProps) {
           return (
             <div key={gi}>
               {gi > 0 && <hr role="separator" className="menu-sep" />}
-              {visibleInGroup.map((item, ii) => {
-                const isRadio = item.isRadio ?? item.checked !== undefined;
+              {visibleInGroup.map((item) => {
+                const rendered = renderItem(item);
+                if (!rendered) return null;
 
                 return (
-                  <button
-                    key={ii}
-                    role={
-                      item.submenu
-                        ? "menuitem"
-                        : isRadio
-                          ? "menuitemradio"
-                          : "menuitem"
-                    }
-                    aria-checked={isRadio ? item.checked : undefined}
-                    aria-haspopup={item.submenu ? "menu" : undefined}
-                    disabled={item.disabled}
-                    className={`menu-item ${item.danger ? "danger" : ""}`}
-                    onClick={() => run(item)}
-                  >
-                    <span className="menu-label">{item.label}</span>
-                    {item.shortcut && (
-                      <span className="menu-shortcut">{item.shortcut}</span>
+                  <div key={item.label} className="menu-item-with-sub">
+                    {rendered}
+                    {item.submenu && openSub === item.label && !filter && (
+                      <SubMenu items={item.submenu} onSelect={run} />
                     )}
-                    {isRadio && item.checked && (
-                      <span className="menu-check">✓</span>
-                    )}
-                    {item.submenu && <span className="menu-arrow">›</span>}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -290,6 +352,63 @@ export function ActionMenu(props: ActionMenuProps) {
           <span>⌘K all commands</span>
         </div>
       )}
+    </div>
+  );
+}
+
+function SubMenu(props: {
+  items: MenuItem[];
+  onSelect: (item: MenuItem, refocus?: boolean) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left?: number; right?: number }>({
+    left: 0,
+  });
+
+  useLayoutEffect(() => {
+    const parent = ref.current?.parentElement?.querySelector("[role=menuitem]");
+    if (!parent) return;
+    const rect = parent.getBoundingClientRect();
+    setPos(flipSubmenuPosition(rect, 160));
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="menu-submenu"
+      role="menu"
+      style={pos as React.CSSProperties}
+      onKeyDown={(e) => {
+        if (e.key === "Escape" || e.key === "ArrowLeft") {
+          e.stopPropagation();
+        }
+      }}
+    >
+      {props.items.map((item) => {
+        const isRadio = item.isRadio ?? item.checked !== undefined;
+        return (
+          <button
+            key={item.label}
+            role={isRadio ? "menuitemradio" : "menuitem"}
+            aria-checked={isRadio ? item.checked : undefined}
+            disabled={item.disabled}
+            className={`menu-item ${item.danger ? "danger" : ""}`}
+            title={item.tooltip}
+            onClick={() => props.onSelect(item, true)}
+          >
+            <span className="menu-label">{item.label}</span>
+            {item.shortcut && (
+              <span className="menu-shortcut">{item.shortcut}</span>
+            )}
+            {isRadio && item.checked && <span className="menu-check">✓</span>}
+            {item.icon && (
+              <span className="menu-dot">
+                <Icon name={item.icon} />
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
