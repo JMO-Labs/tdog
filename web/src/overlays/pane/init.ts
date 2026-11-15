@@ -3,6 +3,7 @@ import { registerCommand } from "../commands";
 import { registerPaneOverlay } from "./registry";
 import { openFocusedPaneOverlay } from "./focusedPane";
 import { showScreenOverlay } from "./ShowScreen";
+import { unicodeInputOverlay } from "./unicode/index";
 import {
   hintsOverlay,
   hintsOpenUrlOverlay,
@@ -24,6 +25,22 @@ export function initPaneOverlays() {
     group: "Overlays",
     run: () => {
       openFocusedPaneOverlay("show-screen");
+    },
+  });
+
+  registerPaneOverlay({
+    id: "insert-unicode",
+    title: "Insert unicode character",
+    render: unicodeInputOverlay,
+  });
+
+  registerCommand({
+    id: "overlay.insert-unicode",
+    title: "Insert unicode character",
+    shortcut: "⌘⌃Space",
+    group: "Overlays",
+    run: () => {
+      openFocusedPaneOverlay("insert-unicode");
     },
   });
 
@@ -62,7 +79,7 @@ export function initPaneOverlays() {
   registerCommand({
     id: "overlay.hints",
     title: "Hints",
-    shortcut: "Cmd+Shift+E",
+    shortcut: "⌘⇧E",
     group: "Hints",
     run: () => {
       openFocusedPaneOverlay("hints");
