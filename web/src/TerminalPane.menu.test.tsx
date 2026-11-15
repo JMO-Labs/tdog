@@ -36,7 +36,11 @@ vi.mock("./terminal/session", () => ({
     dispose() {}
   },
 }));
-vi.mock("./terminal/sessions", () => ({ killScene: m.kill }));
+vi.mock("./terminal/sessions", () => ({
+  killScene: m.kill,
+  findSessionId: async () => undefined,
+  sessionExists: async () => false,
+}));
 vi.mock("./terminal/paneActions", () => ({
   clearScrollback: m.clear,
   registerClear: () => () => {},
