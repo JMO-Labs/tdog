@@ -102,12 +102,8 @@ test("stays inside the viewport", async () => {
   setup({ x: window.innerWidth - 10, y: window.innerHeight - 10 });
   const m = screen.getByRole("menu", { name: "Terminal menu" });
   await waitFor(() => {
-    expect(parseInt(m.style.left)).toBeLessThanOrEqual(
-      window.innerWidth - 200,
-    );
-    expect(parseInt(m.style.top)).toBeLessThanOrEqual(
-      window.innerHeight - 300,
-    );
+    expect(parseInt(m.style.left)).toBeLessThanOrEqual(window.innerWidth - 200);
+    expect(parseInt(m.style.top)).toBeLessThanOrEqual(window.innerHeight - 300);
   });
 });
 
