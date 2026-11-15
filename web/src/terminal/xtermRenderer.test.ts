@@ -277,3 +277,16 @@ test("cellGeometry returns null when cols or rows is zero", () => {
 
   expect(r.cellGeometry()).toBeNull();
 });
+
+test("zoom adds steps to the font size and survives font changes", async () => {
+  const { XtermRenderer, zoomed } = await import("./xtermRenderer");
+  expect([zoomed(14, 2), zoomed(14, -20), zoomed(14, 99)]).toEqual([16, 6, 40]);
+  const r = new XtermRenderer(document.createElement("div"));
+  r.setFont(undefined, 14);
+  r.setZoom(3);
+  expect(m.term.options.fontSize).toBe(17);
+  r.setFont(undefined, 12);
+  expect(m.term.options.fontSize).toBe(15);
+  r.setZoom(0);
+  expect(m.term.options.fontSize).toBe(12);
+});

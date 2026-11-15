@@ -22,6 +22,10 @@ export interface TerminalMenuProps {
   onBroadcast?: () => void;
   onBroadcastAll?: () => void;
   onDiff?: () => void;
+  /** Zoom steps for this pane (0 = theme size). */
+  zoom?: number;
+  /** +1 / -1 to zoom, 0 to reset. */
+  onZoom?: (delta: number) => void;
   /** `refocus: false` leaves focus alone (the action takes it). */
   onDismiss: (refocus?: boolean) => void;
 }
@@ -103,6 +107,28 @@ export function TerminalMenu(p: TerminalMenuProps) {
           ]
         : []),
     ],
+    // Zoom stays open so it can be clicked repeatedly.
+    p.onZoom
+      ? [
+          {
+            label: "Zoom in",
+            keepOpen: true,
+            onSelect: () => p.onZoom?.(1),
+          },
+          {
+            label: "Zoom out",
+            keepOpen: true,
+            onSelect: () => p.onZoom?.(-1),
+          },
+          {
+            label: "Reset zoom",
+            hint: p.zoom ? `${p.zoom > 0 ? "+" : ""}${p.zoom}` : undefined,
+            disabled: !p.zoom,
+            keepOpen: true,
+            onSelect: () => p.onZoom?.(0),
+          },
+        ]
+      : [],
     [
       ...(p.onBroadcast
         ? [

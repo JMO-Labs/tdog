@@ -44,6 +44,8 @@ import {
   panePreset,
   resolveSession,
   setPaneTheme,
+  paneZoom,
+  setPaneZoom,
 } from "./presets/panes";
 import {
   registerPaneInput,
@@ -144,6 +146,14 @@ export function TerminalPane({
   const [resolved, setResolved] = useState<Resolved>({});
   const presetTheme = resolved.theme?.value;
   const [override, setOverride] = useState<string | undefined>();
+  // Per-pane zoom steps on top of the theme/preset font size.
+  const [zoom, setZoom] = useState(() => (paneId ? paneZoom(paneId) : 0));
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  useEffect(() => {
+    renderer.current?.setZoom?.(zoom);
+    if (paneId) setPaneZoom(paneId, zoom);
+  }, [zoom, paneId]);
   theme ??= paneId ? paneTheme(paneId) : undefined;
   theme ??= typeof presetTheme === "string" ? presetTheme : undefined;
   // The theme picker previews on the focused pane only.
@@ -386,6 +396,7 @@ export function TerminalPane({
       session.current = s;
       renderer.current = r;
 
+      r.setZoom?.(zoomRef.current);
       // Register this pane for receiving broadcast input
       if (keyRef.current && sceneRef.current) {
         registerPaneInput(sceneRef.current, keyRef.current, (data) => {
@@ -571,6 +582,8 @@ export function TerminalPane({
           onBroadcast={broadcast?.toggle}
           onBroadcastAll={broadcast?.toggleAll}
           onDiff={() => openOverlay("diff")}
+          zoom={zoom}
+          onZoom={(d) => setZoom((z) => (d === 0 ? 0 : z + d))}
           onKill={() => paneId && void killScene(paneId)}
           onClose={() => ops?.close()}
           onDismiss={closeMenu}

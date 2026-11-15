@@ -95,10 +95,20 @@ export class XtermRenderer implements TerminalRenderer {
     this.term.options.cursorStyle = c.shape;
     this.term.options.cursorBlink = c.blink;
   }
+  /** Size before zoom; zoom is added on top so font changes keep it. */
+  private baseSize = 0;
+  private zoom = 0;
   setFont(family?: string, size?: number): void {
     if (family) this.term.options.fontFamily = family;
-    if (size) this.term.options.fontSize = size;
+    if (size) this.baseSize = size;
+    if (size) this.term.options.fontSize = zoomed(size, this.zoom);
     if (family || size) this.fit.fit();
+  }
+  setZoom(steps: number): void {
+    this.baseSize ||= this.term.options.fontSize ?? 15;
+    this.zoom = steps;
+    this.term.options.fontSize = zoomed(this.baseSize, steps);
+    this.fit.fit();
   }
   getSelection(): string {
     return this.term.getSelection();
@@ -176,3 +186,7 @@ export class XtermRenderer implements TerminalRenderer {
     this.term.dispose();
   }
 }
+
+/** Font size with zoom steps applied, kept readable (6..40 px). */
+export const zoomed = (base: number, steps: number): number =>
+  Math.min(40, Math.max(6, base + steps));

@@ -89,3 +89,26 @@ export function setPaneTheme(pane: string, theme: string): void {
     /* storage unavailable: the pane keeps its preset theme */
   }
 }
+
+/** Per-pane zoom steps (1px each), kept across reloads. */
+const ZOOM_KEY = "tdog.paneZoom";
+export function paneZoom(pane: string): number {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(ZOOM_KEY) ?? "{}")?.[
+      pane
+    ];
+    return typeof v === "number" ? v : 0;
+  } catch {
+    return 0;
+  }
+}
+export function setPaneZoom(pane: string, steps: number): void {
+  try {
+    const all = JSON.parse(localStorage.getItem(ZOOM_KEY) ?? "{}");
+    if (steps) all[pane] = steps;
+    else delete all[pane];
+    localStorage.setItem(ZOOM_KEY, JSON.stringify(all));
+  } catch {
+    /* storage unavailable: zoom lasts until reload */
+  }
+}
