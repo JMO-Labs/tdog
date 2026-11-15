@@ -35,6 +35,7 @@ import {
 } from "./terminal/killed";
 import { THEMES } from "./theme/registry";
 import { TerminalMenu } from "./terminal/TerminalMenu";
+import { usePaneCommands } from "./terminal/usePaneCommands";
 import { usePaneOps } from "./layout/paneOps";
 import { killScene } from "./terminal/sessions";
 import {
@@ -454,6 +455,14 @@ export function TerminalPane({
     if (t)
       void Promise.resolve(navigator.clipboard.writeText(t)).catch(() => {});
   };
+  usePaneCommands(!!ops?.focused, {
+    copy,
+    paste: () => void paste(),
+    selectAll: () => renderer.current?.selectAll?.(),
+    diff: () => openOverlay("diff"),
+    showScreen: () => openOverlay("show-screen"),
+    kill: () => paneId && void killScene(paneId),
+  });
   // Serious mode forces Plain everywhere: no per-pane theme choice.
   const themes = (serious ? [] : THEMES).map((t) => ({
     id: t.id,

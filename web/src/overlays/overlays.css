@@ -87,6 +87,11 @@
   font: inherit;
   font-size: 13px;
 }
+.cmdk-filter input:focus,
+.cmdk-filter input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
 .cmdk-hint,
 .cmdk-help {
   font-size: 10px;
@@ -134,6 +139,16 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+.cmdk-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.cmdk [role="option"].danger {
+  color: var(--danger, #c2185b);
 }
 .cmdk-title svg {
   width: 14px;

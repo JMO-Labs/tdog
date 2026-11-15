@@ -134,6 +134,30 @@ describe("palette menu look", () => {
   });
 });
 
+describe("palette rows", () => {
+  it("keeps label text intact when highlighted, in one inline span", () => {
+    registerCommand({ id: "h", title: "Hints: open URL", run: vi.fn() });
+    render(<CommandPalette defaultOpen />);
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "spl" },
+    });
+    const label = screen.getByRole("option").querySelector(".cmdk-label")!;
+    expect(label.textContent).toBe("Hints: open URL");
+    expect(label.querySelectorAll("mark").length).toBe(3);
+  });
+  it("reserves the icon slot on every row and marks danger rows", () => {
+    registerCommand({ id: "a", title: "Alpha", icon: "gear", run: vi.fn() });
+    registerCommand({ id: "b", title: "Beta", danger: true, run: vi.fn() });
+    render(<CommandPalette defaultOpen />);
+    const [a, b] = screen.getAllByRole("option");
+    expect(a.querySelector(".cmdk-icon svg")).toBeTruthy();
+    expect(b.querySelector(".cmdk-icon")).toBeTruthy();
+    expect(b.querySelector(".cmdk-icon svg")).toBeNull();
+    expect(b.className).toBe("danger");
+    expect(a.className).toBe("");
+  });
+});
+
 describe("fuzzyMatch", () => {
   it("matches subsequences case-insensitively", () => {
     expect(fuzzyMatch("nt", "New Terminal")).toBe(true);

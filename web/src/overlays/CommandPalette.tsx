@@ -143,11 +143,14 @@ export function CommandPalette({
                     role="option"
                     aria-label={c.title}
                     aria-selected={i === sel}
+                    className={c.danger ? "danger" : undefined}
                     onMouseMove={() => setSel(i)}
                     onClick={() => run(i)}
                   >
                     <span className="cmdk-title">
-                      {c.icon && <Icon name={c.icon} />}
+                      <span className="cmdk-icon">
+                        {c.icon && <Icon name={c.icon} />}
+                      </span>
                       {c.swatch && (
                         <span className="swatch" aria-hidden="true">
                           {c.icon && <Icon name={c.icon} />}
@@ -156,7 +159,9 @@ export function CommandPalette({
                           ))}
                         </span>
                       )}
-                      <Highlight text={c.title} query={query} />
+                      <span className="cmdk-label">
+                        <Highlight text={c.title} query={query} />
+                      </span>
                     </span>
                     {c.shortcut && <kbd>{c.shortcut}</kbd>}
                   </li>

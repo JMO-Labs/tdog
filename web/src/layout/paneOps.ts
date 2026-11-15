@@ -6,6 +6,8 @@ export interface PaneOps {
   split: (dir: Dir) => void;
   rename?: () => void;
   close: () => void;
+  /** True while this pane is the focused one of the visible scene. */
+  focused?: boolean;
 }
 
 export const PaneOpsContext = createContext<PaneOps | null>(null);

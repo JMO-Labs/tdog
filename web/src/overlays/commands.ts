@@ -6,6 +6,8 @@ export type Command = {
   shortcut?: string;
   /** Palette section heading (sentence case). */
   group?: string;
+  /** Danger styling (kill/close). */
+  danger?: boolean;
   /** Optional leading icon. */
   icon?: IconName;
   /** Five colours shown as a swatch (theme rows). */
@@ -71,7 +73,13 @@ export function matchIndices(query: string, text: string): number[] | null {
   return out;
 }
 
-export const GROUP_ORDER = ["Scenes", "Panes", "Themes", "Account"];
+export const GROUP_ORDER = [
+  "Scenes",
+  "Panes",
+  "This pane",
+  "Themes",
+  "Account",
+];
 export type Section = { heading: string; items: Command[] };
 
 /** Group commands for display; recents lead when the query is empty. */

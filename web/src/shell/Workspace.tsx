@@ -258,7 +258,7 @@ export function Workspace({
       }),
       registerCommand({
         id: "scene:new",
-        icon: "briefcase",
+        icon: "plus",
         title: "New scene",
         group: "Scenes",
         shortcut: "⌘T",
@@ -267,6 +267,7 @@ export function Workspace({
       registerCommand({
         id: "scene:close",
         icon: "close",
+        danger: true,
         title: "Close scene",
         group: "Scenes",
         run: () => closeActive.current(),
@@ -296,7 +297,6 @@ export function Workspace({
       }),
       registerCommand({
         id: "broadcast:stop",
-        icon: "power",
         title: "Stop broadcasting",
         group: "Panes",
         run: () => {
