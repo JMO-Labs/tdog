@@ -6,6 +6,7 @@ export interface TerminalMenuProps {
   x: number;
   y: number;
   hasSelection: boolean;
+  isBroadcasting?: boolean;
   themes: { id: string; name: string }[];
   onCopy: () => void;
   onPaste: () => void;
@@ -17,6 +18,8 @@ export interface TerminalMenuProps {
   onKill: () => void;
   onClose: () => void;
   onShowScreen?: () => void;
+  onBroadcast?: () => void;
+  onDiff?: () => void;
   /** `refocus: false` leaves focus alone (the action takes it). */
   onDismiss: (refocus?: boolean) => void;
 }
@@ -100,6 +103,22 @@ export function TerminalMenu(p: TerminalMenuProps) {
       {item("Select all", p.onSelectAll)}
       {item("Clear", p.onClear)}
       <hr role="separator" />
+      {p.onBroadcast && (
+        <button
+          role="menuitem"
+          className={p.isBroadcasting ? "checked" : undefined}
+          onClick={
+            (() => {
+              p.onDismiss();
+              p.onBroadcast?.();
+            }) as () => void
+          }
+        >
+          <span>Broadcast input</span>
+          {p.isBroadcasting && <span aria-hidden="true">✓</span>}
+        </button>
+      )}
+      <hr role="separator" />
       {item("Split right", () => p.onSplit("row"))}
       {item("Split down", () => p.onSplit("col"))}
       <button
@@ -141,6 +160,7 @@ export function TerminalMenu(p: TerminalMenuProps) {
       {p.onRename && item("Rename", p.onRename, { refocus: false })}
       {p.onShowScreen &&
         item("Show screen text", p.onShowScreen, { refocus: false })}
+      {p.onDiff && item("Diff files", p.onDiff, { refocus: false })}
       {item("Kill shell", p.onKill, { danger: true })}
       {item("Close pane", p.onClose, { danger: true })}
     </div>

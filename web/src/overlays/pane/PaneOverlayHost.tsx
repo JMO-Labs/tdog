@@ -10,6 +10,8 @@ export interface PaneOverlayHostProps {
   onClose?: () => void;
   /** Filled with this host's `open`, for the pane's own menu. */
   handle?: { current: PaneOverlayHostHandle };
+  sessionId?: string;
+  cwd?: string;
 }
 
 export interface PaneOverlayHostHandle {
@@ -20,6 +22,8 @@ export const PaneOverlayHost = ({
   renderer,
   onClose: onCloseCallback,
   handle,
+  sessionId,
+  cwd,
 }: PaneOverlayHostProps) => {
   const [overlayId, setOverlayId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -65,8 +69,10 @@ export const PaneOverlayHost = ({
         close();
       },
       close,
+      sessionId,
+      cwd,
     };
-  }, [overlayId, renderer, close]);
+  }, [overlayId, renderer, close, sessionId, cwd]);
 
   // Handle keyboard: Esc closes, Tab traps focus, no other keys reach xterm
   useEffect(() => {

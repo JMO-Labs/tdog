@@ -91,7 +91,7 @@ test("with a sceneKey, reconnects to the live session id after reload", async ()
       json: async () => [{ id: "sess-9", scene: "pane-x" }],
     })),
   );
-  render(<TerminalPane sceneKey="pane-x" />);
+  render(<TerminalPane sceneKey="pane-x" sceneId="test-scene" />);
   await waitFor(() => expect(h.sockets.length).toBeGreaterThan(n));
   const url = new URL(h.sockets[h.sockets.length - 1].url);
   expect(url.searchParams.get("scene")).toBe("pane-x");

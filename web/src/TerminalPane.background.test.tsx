@@ -69,7 +69,7 @@ beforeEach(() => {
 });
 
 test("a preset background renders behind the terminal with its opacity", async () => {
-  render(<TerminalPane sceneKey="p1" />);
+  render(<TerminalPane sceneKey="p1" sceneId="test-scene" />);
   const layer = await screen.findByTestId("bg-layer");
   expect(layer.style.opacity).toBe("0.6");
   const pane = screen.getByTestId("terminal-pane");
@@ -79,7 +79,7 @@ test("a preset background renders behind the terminal with its opacity", async (
 test("performance mode drops the pane background", async () => {
   setPref("perf", true);
   const f = fetch as unknown as ReturnType<typeof vi.fn>;
-  render(<TerminalPane sceneKey="p1" />);
+  render(<TerminalPane sceneKey="p1" sceneId="test-scene" />);
   await waitFor(() => expect(f).toHaveBeenCalled());
   expect(screen.queryByTestId("bg-layer")).toBeNull();
 });

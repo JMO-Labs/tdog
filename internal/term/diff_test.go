@@ -117,9 +117,10 @@ func TestDiffMultipleChanges(t *testing.T) {
 	var deletes, adds int
 	for _, hunk := range hunks {
 		for _, line := range hunk.Lines {
-			if line.Op == "-" {
+			switch line.Op {
+			case "-":
 				deletes++
-			} else if line.Op == "+" {
+			case "+":
 				adds++
 			}
 		}

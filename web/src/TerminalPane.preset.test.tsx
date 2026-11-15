@@ -89,13 +89,13 @@ test("preset theme and font apply to that pane only and launch via ?preset=", as
     "fetch",
     vi.fn(async () => new Response(JSON.stringify(resolved), { status: 200 })),
   );
-  render(<TerminalPane sceneKey="p1" />);
+  render(<TerminalPane sceneKey="p1" sceneId="test-scene" />);
   await waitFor(() => expect(h.themeIds).toContain("mtv-neon"));
   await waitFor(() => expect(h.fonts).toContainEqual(["Fira Code", 16]));
   await waitFor(() => expect(h.urls[0]).toContain("preset=app-dev"));
 
   h.themeIds.length = 0;
-  render(<TerminalPane sceneKey="p2" />);
+  render(<TerminalPane sceneKey="p2" sceneId="test-scene" />);
   await waitFor(() => expect(h.themeIds.length).toBeGreaterThan(0));
   expect(h.themeIds).not.toContain("mtv-neon");
 });
@@ -106,7 +106,7 @@ test("a preset font family wins over a late-loading theme font", async () => {
     "fetch",
     vi.fn(async () => new Response(JSON.stringify(resolved), { status: 200 })),
   );
-  render(<TerminalPane sceneKey="p3" />);
+  render(<TerminalPane sceneKey="p3" sceneId="test-scene" />);
   await waitFor(() => expect(h.fonts).toContainEqual(["Fira Code", 16]));
   await waitFor(() => expect(h.fontLoaded).not.toBeNull());
   h.fontLoaded!();
