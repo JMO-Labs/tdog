@@ -7,7 +7,7 @@ import { SettingsPanel } from "../settings/SettingsPanel";
 import { usePref } from "../settings/prefs";
 import { THEMES } from "../theme/registry";
 import { themeStore } from "../theme/store";
-import { useThemeMode } from "../theme/useThemeMode";
+import { MODES, useThemeMode } from "../theme/useThemeMode";
 import { Dialog } from "../overlays/Dialog";
 import { useToast } from "../overlays/toast";
 import { KillDialog } from "./KillDialog";
@@ -32,13 +32,12 @@ import {
 import { Pet, usePetAwake } from "./pet";
 import { usePetEngine } from "./usePetEngine";
 import { Tabs } from "./Tabs";
-import { OverflowMenu } from "./OverflowMenu";
-import { useMaxWidth } from "./useBreakpoint";
+import { MainMenu, type MenuGroup } from "./MainMenu";
 import "./shell.css";
 import "./narrow.css";
+import "./menu.css";
 
 type Size = { cols: number; rows: number };
-const noop = () => {};
 /** Latency above this gets the dial-up icon. */
 const SLOW_MS = 150;
 
@@ -49,7 +48,7 @@ export function Workspace({
   onClosed?: () => void;
   onSignedOut?: () => void;
 }) {
-  const { mode, cycle } = useThemeMode();
+  const { mode, cycle, set: setMode } = useThemeMode();
   const [sizes, setSizes] = useState<Record<string, Size>>({});
   const [latencies, setLatencies] = useState<Record<string, number>>({});
   const shellName = useShellName();
@@ -58,6 +57,7 @@ export function Workspace({
   const [petShown, setPetShown] = usePref("pet");
   const [settings, setSettings] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [menu, setMenu] = useState(false);
   const awake = usePetAwake(stamp);
   const engine = usePetEngine();
   const [sc, setSc] = useState(loadScenes);
@@ -158,6 +158,12 @@ export function Workspace({
       if (e.key === ",") {
         e.preventDefault();
         setSettings(true);
+      } else if (e.shiftKey && e.key.toLowerCase() === "m") {
+        e.preventDefault();
+        setMenu((o) => !o);
+      } else if (e.shiftKey && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setKill("all");
       } else if (e.key === "t" && !e.shiftKey && !e.altKey) {
         e.preventDefault();
         add();
@@ -223,14 +229,45 @@ export function Workspace({
     return () => offs.forEach((f) => f());
   }, [cycle, signOut, add]);
 
-  const themeLabel = `Theme: ${mode[0].toUpperCase()}${mode.slice(1)}`;
+  const menuGroups: MenuGroup[] = [
+    [
+      {
+        label: "Theme…",
+        icon: "system",
+        shortcut: "⌘K",
+        onSelect: () => setPalette(true),
+      },
+      {
+        label: "Appearance",
+        icon: "light",
+        submenu: MODES.map((m) => ({
+          label: `${m[0].toUpperCase()}${m.slice(1)}`,
+          checked: m === mode,
+          onSelect: () => setMode(m),
+        })),
+      },
+    ],
+    [
+      {
+        label: "Studio",
+        icon: "brush",
+        hint: "Coming in v0.4",
+        disabled: true,
+      },
+      {
+        label: "Settings",
+        icon: "gear",
+        shortcut: "⌘,",
+        onSelect: () => setSettings(true),
+      },
+    ],
+    [{ label: "Sign out", icon: "signout", onSelect: signOut }],
+  ];
   // Status bar follows the focused pane, else the first one.
   const ids = leafMap[sc.active] ?? [];
   const shown = focused && ids.includes(focused) ? focused : ids[0];
   const size = shown ? sizes[shown] : undefined;
   const latency = shown !== undefined ? (latencies[shown] ?? null) : null;
-
-  const narrow = useMaxWidth(639);
 
   return (
     <div className="ws">
@@ -250,61 +287,20 @@ export function Workspace({
           onDropPane={dropOnTab}
         />
         <div className="spacer" />
-        {narrow ? (
-          <OverflowMenu
-            items={[
-              {
-                label: "Studio",
-                icon: "brush",
-                hint: "Coming in v0.4",
-                disabled: true,
-                onSelect: noop,
-              },
-              { label: "Theme", icon: mode, onSelect: cycle },
-              {
-                label: "Kill all shells",
-                icon: "power",
-                danger: true,
-                onSelect: () => setKill("all"),
-              },
-            ]}
-          />
-        ) : (
-          <>
-            <IconButton
-              label="Studio"
-              tip="Coming in v0.4"
-              aria-disabled="true"
-              onClick={noop}
-            >
-              <Icon name="brush" />
-            </IconButton>
-            <IconButton
-              label="Theme"
-              tip={themeLabel}
-              shortcut="⇧⌘L"
-              onClick={cycle}
-            >
-              <Icon name={mode} />
-            </IconButton>
-          </>
-        )}
+        <MainMenu
+          groups={menuGroups}
+          open={menu}
+          onOpenChange={setMenu}
+          shortcut="⇧⌘M"
+        />
         <IconButton
-          label="Settings"
-          shortcut="⌘,"
-          onClick={() => setSettings(true)}
+          label="Kill all shells"
+          shortcut="⇧⌘K"
+          variant="danger"
+          onClick={() => setKill("all")}
         >
-          <Icon name="gear" />
+          <Icon name="power" />
         </IconButton>
-        {!narrow && (
-          <IconButton
-            label="Kill all shells"
-            variant="danger"
-            onClick={() => setKill("all")}
-          >
-            <Icon name="power" />
-          </IconButton>
-        )}
       </header>
 
       <main className="panes">

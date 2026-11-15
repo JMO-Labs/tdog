@@ -21,6 +21,11 @@ const P = {
   layout:
     '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 4v16M10 12h11"/>',
   more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  chevron: '<path d="M9 6l6 6-6 6"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+  signout:
+    '<path d="M9 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M16 8l4 4-4 4M20 12H9"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
 };
 export type IconName = keyof typeof P;
