@@ -321,6 +321,7 @@ export function TerminalPane({
             position: "absolute",
             inset: 0,
             pointerEvents: "none",
+            overflow: "hidden",
             backgroundImage: motifUrl,
             opacity: motifPct / 100,
           }}

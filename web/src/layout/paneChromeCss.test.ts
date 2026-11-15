@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -59,5 +59,22 @@ describe("pane chrome css", () => {
   });
   it(".pane is isolated so effect layers cannot escape", () => {
     expect(rule(".pane")).toMatch(/isolation\s*:\s*isolate/);
+  });
+  it("no other stylesheet or theme restyles .pane outward", () => {
+    const walk = (d: string): string[] =>
+      readdirSync(d).flatMap((f) => {
+        const p = join(d, f);
+        return statSync(p).isDirectory() ? walk(p) : [p];
+      });
+    const src = join(__dirname, "..");
+    for (const f of walk(src).filter((f) => /\.(css|json)$/.test(f))) {
+      if (f.endsWith("layout/layout.css")) continue;
+      const text = readFileSync(f, "utf8");
+      expect(text, f).not.toMatch(/\.pane(?![-\w])/);
+    }
+  });
+  it("effect layers are clipped to the pane", () => {
+    const fx = readFileSync(join(__dirname, "../effects/effects.css"), "utf8");
+    expect(/\.fx-root\s*\{[^}]*overflow:\s*hidden/.test(fx)).toBe(true);
   });
 });
