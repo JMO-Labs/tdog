@@ -2,43 +2,159 @@
   "name": "Liquid Metal",
   "description": "Inspired by Terminator 2: chrome greys and red HUD accents on cold steel.",
   "appearance": "dark",
-  "pattern": "none",
-  "font": "JetBrains Mono",
   "terminal": {
-    "fg": "#d5dde5",
-    "bg": "#12171c",
-    "cursor": "#ff2a2a",
-    "selection": "#3a4856",
-    "ansi": [
-      "#7d8b99",
-      "#ff4a4a",
-      "#5fd28a",
-      "#e0b84a",
-      "#6fa3e0",
-      "#c58ae0",
-      "#58c8d8",
-      "#d5dde5",
-      "#9aa8b6",
-      "#ff7373",
-      "#8ae6ad",
-      "#f0d27a",
-      "#9bc2f0",
-      "#dcaef0",
-      "#8adbe8",
-      "#ffffff"
-    ]
+    "palette": {
+      "fg": "#d5dde5",
+      "bg": "#12171c",
+      "cursor": "#ff2a2a",
+      "selection": "#3a4856",
+      "ansi": [
+        "#7d8b99",
+        "#ff4a4a",
+        "#5fd28a",
+        "#e0b84a",
+        "#6fa3e0",
+        "#c58ae0",
+        "#58c8d8",
+        "#d5dde5",
+        "#9aa8b6",
+        "#ff7373",
+        "#8ae6ad",
+        "#f0d27a",
+        "#9bc2f0",
+        "#dcaef0",
+        "#8adbe8",
+        "#ffffff"
+      ]
+    },
+    "cursor": {
+      "shape": "bar",
+      "blink": true
+    },
+    "font": "share-tech-mono",
+    "effects": [
+      {
+        "id": "glow",
+        "intensity": 0.2
+      }
+    ],
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 6,
+          "stroke": "fg"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 13,
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 20,
+          "stroke": "fg"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 27,
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 2,
+          "fill": "fg"
+        },
+        {
+          "type": "path",
+          "d": "M4 60 Q16 52 28 60 T52 60",
+          "stroke": "muted"
+        }
+      ]
+    }
   },
   "chrome": {
-    "bg": "#0c1014",
-    "surface": "#1a2128",
-    "surface-2": "#252e37",
-    "fg": "#d5dde5",
-    "muted": "#8d9ba9",
-    "line": "#05070a",
-    "shadow": "#ff2a2a",
-    "link": "#ff5a5a",
-    "term-bg": "#12171c",
-    "term-fg": "#d5dde5",
-    "term-dim": "#8d9ba9"
+    "tokens": {
+      "bg": "#0c1014",
+      "surface": "#1a2128",
+      "surface-2": "#252e37",
+      "fg": "#d5dde5",
+      "muted": "#8d9ba9",
+      "line": "#05070a",
+      "shadow": "#ff2a2a",
+      "link": "#ff5a5a",
+      "term-bg": "#12171c",
+      "term-fg": "#d5dde5",
+      "term-dim": "#8d9ba9"
+    },
+    "shape": {
+      "radius": 0.2,
+      "shadow": "bevel",
+      "border": 1
+    },
+    "pattern": "none",
+    "boot": "post",
+    "costume": {
+      "name": "tiny shades",
+      "rows": ["##########", ".##....##."]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 6,
+          "stroke": "fg"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 13,
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 20,
+          "stroke": "fg"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 27,
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 32,
+          "r": 2,
+          "fill": "fg"
+        },
+        {
+          "type": "path",
+          "d": "M4 60 Q16 52 28 60 T52 60",
+          "stroke": "muted"
+        }
+      ]
+    }
   }
 }

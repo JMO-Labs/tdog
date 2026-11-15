@@ -6,7 +6,25 @@ tmp=$(mktemp -d)
 
 go test -json -coverprofile="$tmp/go.out" ./... > "$tmp/go.json"
 go_rc=$?
-grep -h '"Action":"fail"' "$tmp/go.json" | head -20
+# Print the output of failed Go tests (and package-level output, e.g. panics).
+python3 - "$tmp/go.json" <<'PY'
+import json, sys
+from collections import defaultdict
+out, failed = defaultdict(list), []
+for line in open(sys.argv[1]):
+    try:
+        ev = json.loads(line)
+    except ValueError:
+        continue
+    key = (ev.get("Package", ""), ev.get("Test") or "")
+    if ev.get("Action") == "output":
+        out[key].append(ev.get("Output", ""))
+    elif ev.get("Action") == "fail":
+        failed.append(key)
+for key in failed:
+    print("=== FAIL %s %s" % key)
+    print("".join(out[key][-200:]), end="")
+PY
 
 (cd web && npm ci --silent && npx vitest run --coverage)
 web_rc=$?

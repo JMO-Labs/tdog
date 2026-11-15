@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/JMO-Labs/tdog/internal/frame"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -50,9 +51,15 @@ func scriptedSSHD(t *testing.T, hostKey ssh.Signer, mode string) (host, port str
 							switch r.Type {
 							case "pty-req":
 								_ = r.Reply(mode != "nopty", nil)
+							case "exec":
+								_ = r.Reply(mode != "noexec", nil)
 							case "shell":
 								_ = r.Reply(mode != "noshell", nil)
 								if mode == "exit0" {
+									// Exit only after the client sent input, i.e. after the
+									// websocket attached; exiting earlier races attach and
+									// the session ends without an exit control.
+									_, _ = ch.Read(make([]byte, 1))
 									_, _ = ch.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
 									_ = ch.Close()
 								}
@@ -98,7 +105,13 @@ func TestSSHStageFailuresReportError(t *testing.T) {
 func TestSSHCleanExitReportsZero(t *testing.T) {
 	cfg, _, hostKey := sshSetup(t)
 	cfg.Host, cfg.Port = scriptedSSHD(t, hostKey, "exit0")
-	v := ctlOf(t, cfg)
+	c, ctx := sshDial(t, cfg)
+	send(t, ctx, c, frame.Input, "x")
+	_, ctl := readUntil(t, ctx, c, "")
+	var v map[string]any
+	if err := json.Unmarshal(ctl, &v); err != nil {
+		t.Fatalf("ctl %q: %v", ctl, err)
+	}
 	if v["type"] != "exit" || v["code"] != float64(0) {
 		t.Fatalf("ctl %v", v)
 	}

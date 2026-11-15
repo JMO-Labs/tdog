@@ -22,6 +22,11 @@ export interface TerminalTheme {
   brightWhite?: string;
 }
 
+export interface CursorStyle {
+  shape: "block" | "bar" | "underline";
+  blink: boolean;
+}
+
 export interface TerminalRenderer {
   /** Write bytes; `cb` fires once the renderer has processed them (flow control). */
   write(data: Uint8Array, cb?: () => void): void;
@@ -30,6 +35,13 @@ export interface TerminalRenderer {
   size(): { cols: number; rows: number };
   onInput(cb: (data: Uint8Array) => void): void;
   onResize(cb: (cols: number, rows: number) => void): void;
+  /** Shell title changes (OSC 0/2). Optional: renderers may not support it. */
+  onTitle?(cb: (title: string) => void): void;
+  /** Shell cwd reports (OSC 7), already decoded to a path. */
+  onCwd?(cb: (cwd: string) => void): void;
   setTheme(theme: TerminalTheme): void;
+  setCursor(c: CursorStyle): void;
+  /** Set font family and/or size, then refit. Unset values keep the current one. */
+  setFont?(family?: string, size?: number): void;
   dispose(): void;
 }

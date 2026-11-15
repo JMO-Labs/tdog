@@ -2,47 +2,150 @@
   "name": "Cartridge Blast",
   "description": "Primary red, green, blue and yellow on charcoal, inspired by 64-bit consoles.",
   "appearance": "dark",
-  "pattern": "zigzag",
-  "font": "JetBrains Mono",
   "terminal": {
-    "fg": "#f0f0f0",
-    "bg": "#1c1c20",
-    "cursor": "#ffd400",
-    "selection": "#3a3a48",
-    "ansi": [
-      "#8c8c99",
-      "#ff4040",
-      "#3ddc5a",
-      "#ffd400",
-      "#4a8dff",
-      "#d070ff",
-      "#35d0e0",
-      "#f0f0f0",
-      "#b0b0bc",
-      "#ff7070",
-      "#7aea8e",
-      "#ffe44d",
-      "#80b0ff",
-      "#e0a0ff",
-      "#80e4ee",
-      "#ffffff"
-    ]
+    "palette": {
+      "fg": "#f0f0f0",
+      "bg": "#1c1c20",
+      "cursor": "#ffd400",
+      "selection": "#3a3a48",
+      "ansi": [
+        "#8c8c99",
+        "#ff4040",
+        "#3ddc5a",
+        "#ffd400",
+        "#4a8dff",
+        "#d070ff",
+        "#35d0e0",
+        "#f0f0f0",
+        "#b0b0bc",
+        "#ff7070",
+        "#7aea8e",
+        "#ffe44d",
+        "#80b0ff",
+        "#e0a0ff",
+        "#80e4ee",
+        "#ffffff"
+      ]
+    },
+    "cursor": {
+      "shape": "block",
+      "blink": false
+    },
+    "font": "press-start-2p",
+    "effects": []
   },
   "chrome": {
-    "bg": "#141417",
-    "surface": "#26262c",
-    "surface-2": "#33333c",
-    "fg": "#f0f0f0",
-    "muted": "#a8a8b4",
-    "line": "#000000",
-    "shadow": "#ff4040",
-    "link": "#4a8dff",
-    "pink": "#ff4040",
-    "cyan": "#4a8dff",
-    "yellow": "#ffd400",
-    "purple": "#3ddc5a",
-    "term-bg": "#1c1c20",
-    "term-fg": "#f0f0f0",
-    "term-dim": "#8c8c99"
+    "tokens": {
+      "bg": "#141417",
+      "surface": "#26262c",
+      "surface-2": "#33333c",
+      "fg": "#f0f0f0",
+      "muted": "#a8a8b4",
+      "line": "#000000",
+      "shadow": "#ff4040",
+      "link": "#4a8dff",
+      "pink": "#ff4040",
+      "cyan": "#4a8dff",
+      "yellow": "#ffd400",
+      "purple": "#3ddc5a",
+      "term-bg": "#1c1c20",
+      "term-fg": "#f0f0f0",
+      "term-dim": "#8c8c99"
+    },
+    "shape": {
+      "radius": 0.9,
+      "shadow": "hard",
+      "border": 3
+    },
+    "pattern": "zigzag",
+    "boot": "cartridge",
+    "costume": {
+      "name": "propeller cap",
+      "rows": [
+        "..#####..#####",
+        ".......#......",
+        "...########...",
+        "..##########..",
+        "##############"
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 48, 48],
+      "tile": [48, 48],
+      "shapes": [
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 6,
+          "r": 3,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 18,
+          "r": 3,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 4,
+          "cy": 12,
+          "r": 3,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 16,
+          "cy": 12,
+          "r": 3,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 36,
+          "cy": 12,
+          "r": 7,
+          "fill": "muted"
+        },
+        {
+          "type": "rect",
+          "x": 34,
+          "y": 18,
+          "width": 4,
+          "height": 16,
+          "fill": "muted"
+        },
+        {
+          "type": "rect",
+          "x": 28,
+          "y": 34,
+          "width": 16,
+          "height": 4,
+          "fill": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 38,
+          "r": 2,
+          "stroke": "line"
+        },
+        {
+          "type": "circle",
+          "cx": 18,
+          "cy": 38,
+          "r": 2,
+          "stroke": "line"
+        },
+        {
+          "type": "circle",
+          "cx": 14,
+          "cy": 44,
+          "r": 2,
+          "stroke": "line"
+        }
+      ]
+    }
   }
 }

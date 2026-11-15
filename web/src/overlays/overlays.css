@@ -12,17 +12,27 @@
   width: min(480px, 100%);
   max-height: 90vh;
   overflow: auto;
-  border: 2px solid var(--line);
-  border-radius: 16px;
+  border: calc(2px * var(--border-width)) solid var(--line);
+  border-radius: calc(16px * var(--radius-scale));
   background: var(--surface);
   color: var(--fg);
-  box-shadow: 6px 6px 0 var(--shadow);
+  box-shadow: var(--shadow-lg);
   padding: 18px;
   outline: none;
 }
 .overlay-title {
   margin: 0 0 10px;
   font: 400 26px/1.1 var(--display);
+}
+.overlay-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.overlay-head .overlay-title {
+  margin: 0;
 }
 .dialog.sheet {
   position: fixed;
@@ -31,7 +41,8 @@
   bottom: 0;
   width: min(420px, 100vw);
   max-height: none;
-  border-radius: 16px 0 0 16px;
+  border-radius: calc(16px * var(--radius-scale)) 0 0
+    calc(16px * var(--radius-scale));
   border-right: 0;
 }
 .cmdk {
@@ -54,10 +65,55 @@
   justify-content: space-between;
   gap: 10px;
   padding: 9px 12px;
-  border-radius: 9px;
-  border: 2px solid transparent;
+  border-radius: calc(9px * var(--radius-scale));
+  border: calc(2px * var(--border-width)) solid transparent;
   cursor: pointer;
   font-weight: 600;
+}
+.cmdk-group {
+  display: block;
+  padding: 0;
+  border: 0;
+  cursor: default;
+  font-weight: inherit;
+}
+.cmdk-group ul {
+  max-height: none;
+  overflow: visible;
+}
+.cmdk-heading {
+  padding: 6px 12px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.65;
+}
+.cmdk-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cmdk mark {
+  background: none;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+.cmdk .swatch {
+  display: inline-flex;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.cmdk .swatch i {
+  width: 10px;
+  height: 14px;
+}
+.cmdk-empty {
+  display: block;
+  padding: 9px 12px;
+  cursor: default;
+  font-weight: 400;
+  opacity: 0.7;
 }
 .cmdk li[aria-selected="true"] {
   background: var(--yellow);
@@ -77,8 +133,8 @@
 .toast {
   pointer-events: auto;
   width: min(320px, calc(100vw - 32px));
-  border: 2px solid var(--line);
-  border-radius: 14px;
+  border: calc(2px * var(--border-width)) solid var(--line);
+  border-radius: calc(14px * var(--radius-scale));
   padding: 12px 16px;
   box-shadow: 5px 5px 0 var(--ink);
   color: var(--ink);
@@ -112,8 +168,8 @@
   pointer-events: none;
   background: var(--ink);
   color: #fff;
-  border: 2px solid var(--ink);
-  border-radius: 8px;
+  border: calc(2px * var(--border-width)) solid var(--ink);
+  border-radius: calc(8px * var(--radius-scale));
   padding: 5px 9px;
   font-size: 12px;
   font-weight: 700;
@@ -127,9 +183,30 @@
 .cmdk kbd {
   background: var(--yellow);
   color: var(--ink);
-  border: 2px solid var(--ink);
-  border-radius: 5px;
+  border: calc(2px * var(--border-width)) solid var(--ink);
+  border-radius: calc(5px * var(--radius-scale));
   padding: 0 5px;
   font: inherit;
   font-size: 11px;
+}
+
+/* Phones: palette and sheets fill the width. */
+@media (max-width: 639px) {
+  .overlay-backdrop {
+    padding: 0;
+  }
+  .dialog.sheet {
+    width: 100vw;
+    border-radius: 0;
+  }
+  .cmdk {
+    width: 100%;
+    margin-top: 0;
+    border-radius: 0 0 16px 16px;
+    border-left: 0;
+    border-right: 0;
+  }
+  .cmdk li {
+    min-height: 40px;
+  }
 }

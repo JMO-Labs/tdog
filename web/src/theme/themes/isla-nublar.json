@@ -2,47 +2,155 @@
   "name": "Isla Nublar",
   "description": "Inspired by Jurassic Park: park yellow and red, jungle green, workstation blues.",
   "appearance": "dark",
-  "pattern": "none",
-  "font": "JetBrains Mono",
   "terminal": {
-    "fg": "#e6efe4",
-    "bg": "#0e1f17",
-    "cursor": "#f2c200",
-    "selection": "#1f4a7a",
-    "ansi": [
-      "#7a9a86",
-      "#e8503c",
-      "#4fc27a",
-      "#f2c200",
-      "#5a9ae0",
-      "#c07ad0",
-      "#4fc8c0",
-      "#e6efe4",
-      "#96b4a0",
-      "#ff7a64",
-      "#7fe0a0",
-      "#ffdc4a",
-      "#8abaf0",
-      "#d9a0e6",
-      "#7fe0da",
-      "#ffffff"
-    ]
+    "palette": {
+      "fg": "#e6efe4",
+      "bg": "#0e1f17",
+      "cursor": "#f2c200",
+      "selection": "#1f4a7a",
+      "ansi": [
+        "#7a9a86",
+        "#e8503c",
+        "#4fc27a",
+        "#f2c200",
+        "#5a9ae0",
+        "#c07ad0",
+        "#4fc8c0",
+        "#e6efe4",
+        "#96b4a0",
+        "#ff7a64",
+        "#7fe0a0",
+        "#ffdc4a",
+        "#8abaf0",
+        "#d9a0e6",
+        "#7fe0da",
+        "#ffffff"
+      ]
+    },
+    "cursor": {
+      "shape": "underline",
+      "blink": true
+    },
+    "font": "ibm-plex-mono",
+    "effects": [
+      {
+        "id": "vignette",
+        "intensity": 0.5
+      }
+    ],
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M8 60 Q20 30 52 8",
+          "stroke": "link"
+        },
+        {
+          "type": "path",
+          "d": "M18 46 L10 40 M24 38 L16 30 M32 30 L26 22 M40 22 L36 14",
+          "stroke": "link"
+        },
+        {
+          "type": "path",
+          "d": "M18 46 L28 48 M24 38 L34 40 M32 30 L42 32 M40 22 L50 22",
+          "stroke": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 52,
+          "cy": 46,
+          "r": 3,
+          "fill": "#ffb000"
+        },
+        {
+          "type": "circle",
+          "cx": 12,
+          "cy": 14,
+          "r": 2,
+          "fill": "#ffb000"
+        },
+        {
+          "type": "circle",
+          "cx": 40,
+          "cy": 58,
+          "r": 2,
+          "fill": "#ffb000"
+        }
+      ]
+    }
   },
   "chrome": {
-    "bg": "#0a1610",
-    "surface": "#14291e",
-    "surface-2": "#1c3828",
-    "fg": "#e6efe4",
-    "muted": "#96b4a0",
-    "line": "#040a07",
-    "shadow": "#f2c200",
-    "link": "#5a9ae0",
-    "pink": "#e8503c",
-    "cyan": "#5a9ae0",
-    "yellow": "#f2c200",
-    "purple": "#2e5f9a",
-    "term-bg": "#0e1f17",
-    "term-fg": "#e6efe4",
-    "term-dim": "#96b4a0"
+    "tokens": {
+      "bg": "#0a1610",
+      "surface": "#14291e",
+      "surface-2": "#1c3828",
+      "fg": "#e6efe4",
+      "muted": "#96b4a0",
+      "line": "#040a07",
+      "shadow": "#f2c200",
+      "link": "#5a9ae0",
+      "pink": "#e8503c",
+      "cyan": "#5a9ae0",
+      "yellow": "#f2c200",
+      "purple": "#2e5f9a",
+      "term-bg": "#0e1f17",
+      "term-fg": "#e6efe4",
+      "term-dim": "#96b4a0"
+    },
+    "shape": {
+      "radius": 0.75,
+      "shadow": "soft",
+      "border": 1
+    },
+    "pattern": "none",
+    "boot": "post",
+    "costume": {
+      "name": "safari hat",
+      "rows": ["....####....", "...######...", ".##########."]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M8 60 Q20 30 52 8",
+          "stroke": "link"
+        },
+        {
+          "type": "path",
+          "d": "M18 46 L10 40 M24 38 L16 30 M32 30 L26 22 M40 22 L36 14",
+          "stroke": "link"
+        },
+        {
+          "type": "path",
+          "d": "M18 46 L28 48 M24 38 L34 40 M32 30 L42 32 M40 22 L50 22",
+          "stroke": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 52,
+          "cy": 46,
+          "r": 3,
+          "fill": "#ffb000"
+        },
+        {
+          "type": "circle",
+          "cx": 12,
+          "cy": 14,
+          "r": 2,
+          "fill": "#ffb000"
+        },
+        {
+          "type": "circle",
+          "cx": 40,
+          "cy": 58,
+          "r": 2,
+          "fill": "#ffb000"
+        }
+      ]
+    }
   }
 }

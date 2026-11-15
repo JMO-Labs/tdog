@@ -2,42 +2,107 @@
   "name": "Bug Hunt",
   "description": "Olive drab, propaganda red and khaki. Inspired by Starship Troopers.",
   "appearance": "dark",
-  "pattern": "zebra",
-  "font": "Courier Prime",
   "terminal": {
-    "fg": "#e3dcc0",
-    "bg": "#1d2014",
-    "cursor": "#e03a2f",
-    "selection": "#4a5230",
-    "ansi": [
-      "#8f946f",
-      "#ee5a4d",
-      "#a6c46a",
-      "#d9b857",
-      "#8aa6bf",
-      "#c98aa0",
-      "#7fbfa8",
-      "#e3dcc0",
-      "#acb08b",
-      "#ff8479",
-      "#c4de8c",
-      "#ecd283",
-      "#adc3d6",
-      "#e0aabd",
-      "#a3d6c4",
-      "#f6f1dc"
+    "palette": {
+      "fg": "#e3dcc0",
+      "bg": "#1d2014",
+      "cursor": "#e03a2f",
+      "selection": "#4a5230",
+      "ansi": [
+        "#8f946f",
+        "#ee5a4d",
+        "#a6c46a",
+        "#d9b857",
+        "#8aa6bf",
+        "#c98aa0",
+        "#7fbfa8",
+        "#e3dcc0",
+        "#acb08b",
+        "#ff8479",
+        "#c4de8c",
+        "#ecd283",
+        "#adc3d6",
+        "#e0aabd",
+        "#a3d6c4",
+        "#f6f1dc"
+      ]
+    },
+    "cursor": {
+      "shape": "block",
+      "blink": true
+    },
+    "font": "vt323",
+    "effects": [
+      {
+        "id": "grain",
+        "intensity": 0.4
+      }
     ]
   },
   "chrome": {
-    "bg": "#14170d",
-    "surface": "#2a2e1c",
-    "surface-2": "#363b24",
-    "fg": "#e3dcc0",
-    "muted": "#a9aa8a",
-    "line": "#080a05",
-    "shadow": "#e03a2f",
-    "link": "#d9b857",
-    "term-bg": "#1d2014",
-    "term-fg": "#e3dcc0"
+    "tokens": {
+      "bg": "#14170d",
+      "surface": "#2a2e1c",
+      "surface-2": "#363b24",
+      "fg": "#e3dcc0",
+      "muted": "#a9aa8a",
+      "line": "#080a05",
+      "shadow": "#e03a2f",
+      "link": "#d9b857",
+      "term-bg": "#1d2014",
+      "term-fg": "#e3dcc0"
+    },
+    "shape": {
+      "radius": 0,
+      "shadow": "hard",
+      "border": 1
+    },
+    "pattern": "zebra",
+    "boot": "post",
+    "costume": {
+      "name": "combat helmet",
+      "rows": [
+        "....######....",
+        "..##########..",
+        ".############.",
+        "##############"
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 48, 48],
+      "tile": [48, 48],
+      "shapes": [
+        {
+          "type": "polygon",
+          "points": "0,0 12,0 0,12",
+          "fill": "shadow"
+        },
+        {
+          "type": "polygon",
+          "points": "24,0 36,0 12,24 0,24 0,12",
+          "fill": "surface-2"
+        },
+        {
+          "type": "circle",
+          "cx": 34,
+          "cy": 34,
+          "r": 3,
+          "fill": "surface-2"
+        },
+        {
+          "type": "rect",
+          "x": 31,
+          "y": 37,
+          "width": 6,
+          "height": 5,
+          "fill": "surface-2"
+        },
+        {
+          "type": "path",
+          "d": "M30 33 L24 30 M38 33 L44 30 M30 36 L24 40 M38 36 L44 40",
+          "stroke": "surface-2"
+        }
+      ]
+    }
   }
 }

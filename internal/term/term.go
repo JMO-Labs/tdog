@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/JMO-Labs/tdog/internal/audit"
+	"github.com/JMO-Labs/tdog/internal/config"
 	"github.com/JMO-Labs/tdog/internal/frame"
 	"github.com/coder/websocket"
 	"github.com/creack/pty"
@@ -24,14 +25,18 @@ import (
 const (
 	flushAfter = 4 * time.Millisecond
 	flushSize  = 16 * 1024
-	hupGrace   = 2 * time.Second
+	hupGrace   = 3 * time.Second
 )
 
 // Config selects and parameterises the shell targets.
 type Config struct {
-	Shell string        // container target shell; "" means $SHELL, then /bin/sh
+	Shell string        // container target shell; "" means $SHELL, bash, then /bin/sh
 	SSH   SSHConfig     // ssh-host target
 	Audit *audit.Logger // nil = off
+
+	Presets    *config.Store // preset store for ?preset=; nil = presets off
+	Registry   *Registry     // shared session registry; nil = private one
+	Scrollback int           // per-session scrollback bytes when Registry is nil; 0 = 1 MiB
 }
 
 // Handler returns the /ws/term handler with SSH settings from the environment.
@@ -46,18 +51,47 @@ func HandlerAudit(shell string, l *audit.Logger) http.Handler {
 // NewHandler serves /ws/term; ?target=ssh-host|container picks the target
 // (default container). Callers must wrap it with authentication.
 func NewHandler(cfg Config) http.Handler {
-	shell := cfg.Shell
-	if shell == "" {
-		shell = os.Getenv("SHELL")
-	}
-	if shell == "" {
-		shell = "/bin/sh"
-	}
+	l := newLauncher(cfg)
+	reg := l.reg
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		target := r.URL.Query().Get("target")
-		if target != "" && target != "ssh-host" && target != "container" {
-			http.Error(w, "unknown target", http.StatusBadRequest)
+		q := r.URL.Query()
+		target := q.Get("target")
+		persistent := q.Get("persistent") == "1"
+		if msg := checkTarget(target, persistent); msg != "" {
+			http.Error(w, msg, http.StatusBadRequest)
 			return
+		}
+		scene := q.Get("scene")
+		if len(scene) > maxSceneLen {
+			http.Error(w, "scene too long", http.StatusBadRequest)
+			return
+		}
+		var existing *Session
+		if id := q.Get("id"); id != "" {
+			if existing = reg.get(id); existing == nil {
+				http.Error(w, "unknown session", http.StatusNotFound)
+				return
+			}
+		}
+		spec, line := Spec{Target: target, Persistent: persistent}, ""
+		if name := q.Get("preset"); name != "" && existing == nil {
+			var err error
+			if spec, err = loadSpec(cfg.Presets, name, q.Get("override")); err == nil {
+				if msg := checkTarget(spec.Target, spec.Persistent); msg != "" {
+					err = errors.New(msg)
+				}
+			}
+			if err == nil {
+				line, err = BuildLine(spec.Pre, spec.Command, spec.Post)
+			}
+			if err != nil {
+				code := http.StatusBadRequest
+				if errors.Is(err, config.ErrNotFound) {
+					code = http.StatusNotFound
+				}
+				http.Error(w, err.Error(), code)
+				return
+			}
 		}
 		c, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 			CompressionMode: websocket.CompressionDisabled,
@@ -66,12 +100,61 @@ func NewHandler(cfg Config) http.Handler {
 			return // Accept already replied (includes Origin check).
 		}
 		defer func() { _ = c.CloseNow() }()
-		if target == "ssh-host" {
-			serveSSH(c, cfg.SSH, cfg.Audit)
-			return
+		sess := existing
+		if sess == nil {
+			var err error
+			if sess, err = l.start(scene, spec, line); err != nil {
+				if spec.Target == "ssh-host" {
+					sshFail(c, err.Error())
+				} else {
+					_ = c.Close(websocket.StatusInternalError, err.Error())
+				}
+				return
+			}
 		}
-		serve(c, shell, cfg.Audit)
+		sess.serve(c)
 	})
+}
+
+// launcher starts shells for the handler and for scene starts.
+type launcher struct {
+	shell string
+	ssh   SSHConfig
+	run   CmdRunner
+	reg   *Registry
+}
+
+func newLauncher(cfg Config) *launcher {
+	shell := pickShell(cfg.Shell, os.Getenv("SHELL"), lookPath)
+	reg := cfg.Registry
+	if reg == nil {
+		reg = NewRegistry(cfg.Audit, cfg.Scrollback)
+	}
+	return &launcher{shell: shell, ssh: cfg.SSH, run: sshRunner(cfg.SSH), reg: reg}
+}
+
+// start spawns sp's shell, types line into it and registers it under scene.
+func (l *launcher) start(scene string, sp Spec, line string) (*Session, error) {
+	target := sp.Target
+	if target == "" {
+		target = "container"
+	}
+	id := newID()
+	spawn := func() (*session, error) { return spawnPTYIn(l.shell, expandHome(sp.Cwd), sp.Env) }
+	if target == "ssh-host" {
+		spawn = func() (*session, error) { return spawnSSHCmd(l.ssh, sp.shellCmd()) }
+		if sp.Persistent {
+			spawn = func() (*session, error) { return spawnTmuxCmd(l.ssh, l.run, id, sp.tmuxCmd(id)) }
+		}
+	}
+	s, err := spawn()
+	if err != nil {
+		return nil, err
+	}
+	if line != "" { // typed like a keyboard would; the pty buffers it until the shell reads
+		_, _ = s.w.Write([]byte(line + "\r"))
+	}
+	return l.reg.add(id, target, scene, s, l.reg.onCloseFn(sp, l.shell, l.ssh, id, target)), nil
 }
 
 // session is a running shell, whatever its target.
@@ -79,25 +162,51 @@ type session struct {
 	r      io.Reader               // shell output
 	w      io.Writer               // shell input
 	resize func(cols, rows uint16) // window size change
-	wait   <-chan int              // receives the exit code once
-	kill   func()                  // hang up the shell (socket went away)
+	wait   *waiter                 // exit state
+	kill   func()                  // hang up the shell; returns once it exited
 	close  func()                  // release resources
+	pid    int                     // 0 when unknown (ssh)
 }
 
-func serve(c *websocket.Conn, shell string, l *audit.Logger) {
-	cmd := exec.Command(shell)
-	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
+// waiter publishes a process exit: done closes after code is set.
+type waiter struct {
+	done chan struct{}
+	code int
+}
+
+func newWaiter() *waiter { return &waiter{done: make(chan struct{})} }
+
+func (w *waiter) finish(code int) {
+	w.code = code
+	close(w.done)
+}
+
+// checkTarget returns why (target, persistent) is invalid, or "".
+func checkTarget(target string, persistent bool) string {
+	switch {
+	case persistent && target != "ssh-host":
+		return "persistent requires the ssh-host target"
+	case target != "" && target != "ssh-host" && target != "container":
+		return "unknown target"
+	}
+	return ""
+}
+
+// spawnPTYIn starts shell in dir ("" = inherit) with env added. Preset env
+// is applied after the bash prompt cleanup, so an explicit PS1 still wins.
+func spawnPTYIn(shell, dir string, env map[string]string) (*session, error) {
+	cmd := exec.Command(shell, shellArgs(shell)...)
+	cmd.Dir = dir
+	cmd.Env = shellEnv(shell, os.Environ())
+	for k, v := range env {
+		cmd.Env = append(cmd.Env, k+"="+v)
+	}
 	ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Rows: 24, Cols: 80})
 	if err != nil {
 		log.Printf("term: start %s: %v", shell, err)
-		_ = c.Close(websocket.StatusInternalError, "pty start failed")
-		return
+		return nil, errors.New("pty start failed")
 	}
-	pid := cmd.Process.Pid
-	l.Log(audit.Entry{Event: "term_start", Target: "container", PID: pid})
-	defer l.Log(audit.Entry{Event: "term_end", Target: "container", PID: pid})
-
-	waitCh := make(chan int, 1)
+	w := newWaiter()
 	go func() {
 		err := cmd.Wait()
 		code := 0
@@ -108,78 +217,27 @@ func serve(c *websocket.Conn, shell string, l *audit.Logger) {
 				code = 128 + int(ee.Sys().(syscall.WaitStatus).Signal())
 			}
 		}
-		waitCh <- code
+		w.finish(code)
 	}()
-	runSession(c, &session{
-		r: ptmx, w: ptmx,
+	pid := cmd.Process.Pid
+	return &session{
+		r: ptmx, w: ptmx, pid: pid, wait: w,
 		resize: func(cols, rows uint16) { _ = pty.Setsize(ptmx, &pty.Winsize{Rows: rows, Cols: cols}) },
-		wait:   waitCh,
 		// pty.Start sets Setsid, so pgid == pid.
-		kill:  func() { hangup(cmd.Process.Pid, waitCh) },
+		kill:  func() { hangup(pid, w.done) },
 		close: func() { _ = ptmx.Close() },
-	})
-}
-
-// runSession pumps frames between the socket and s until either side ends.
-func runSession(c *websocket.Conn, s *session) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	defer s.close()
-
-	// Client → shell. On socket close, hang up the shell.
-	go func() {
-		defer cancel()
-		pumpInput(ctx, func(ctx context.Context) ([]byte, error) {
-			_, data, err := c.Read(ctx)
-			return data, err
-		}, s.w, s.resize, func(f []byte) error { return c.Write(ctx, websocket.MessageBinary, f) })
-	}()
-
-	// Shell → chunks.
-	chunks := make(chan []byte, 64)
-	go func() {
-		defer close(chunks)
-		buf := make([]byte, flushSize)
-		for {
-			n, err := s.r.Read(buf)
-			if n > 0 {
-				b := append([]byte(nil), buf[:n]...)
-				select {
-				case chunks <- b:
-				case <-ctx.Done():
-					return
-				}
-			}
-			if err != nil {
-				return
-			}
-		}
-	}()
-
-	write := func(f []byte) error { return c.Write(ctx, websocket.MessageBinary, f) }
-	exited := pumpOutput(ctx, write, chunks)
-
-	if !exited { // socket went away first
-		_ = c.CloseNow()
-		s.kill()
-		return
-	}
-	code := <-s.wait
-	wctx, wcancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer wcancel()
-	_ = c.Write(wctx, websocket.MessageBinary, frame.ExitControl(code))
-	_ = c.Close(websocket.StatusNormalClosure, "exit")
+	}, nil
 }
 
 // hangup sends SIGHUP to the process group and escalates to SIGKILL if it
 // has not exited within hupGrace (e.g. a shell or child ignoring SIGHUP).
-func hangup(pid int, waitCh <-chan int) {
+func hangup(pid int, done <-chan struct{}) {
 	_ = syscall.Kill(-pid, syscall.SIGHUP)
 	select {
-	case <-waitCh:
+	case <-done:
 	case <-time.After(hupGrace):
 		_ = syscall.Kill(-pid, syscall.SIGKILL)
-		<-waitCh
+		<-done
 	}
 }
 

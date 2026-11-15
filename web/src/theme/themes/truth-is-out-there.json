@@ -2,39 +2,121 @@
   "name": "Truth Is Out There",
   "description": "Night-vision green with a flashlight-yellow cursor on black. Inspired by The X-Files.",
   "appearance": "dark",
-  "pattern": "none",
-  "font": "JetBrains Mono",
   "terminal": {
-    "fg": "#b8ffb0",
-    "bg": "#020702",
-    "cursor": "#ffe94d",
-    "selection": "#12401a",
-    "ansi": [
-      "#5fa860",
-      "#ff7a59",
-      "#5dff6a",
-      "#ffe94d",
-      "#58c88a",
-      "#8fe8a0",
-      "#4dffc3",
-      "#b8ffb0",
-      "#7fc880",
-      "#ff9d82",
-      "#8dff95",
-      "#fff08a",
-      "#7fe0aa",
-      "#b4f5bf",
-      "#8bffd8",
-      "#e6ffe2"
+    "palette": {
+      "fg": "#b8ffb0",
+      "bg": "#020702",
+      "cursor": "#ffe94d",
+      "selection": "#12401a",
+      "ansi": [
+        "#5fa860",
+        "#ff7a59",
+        "#5dff6a",
+        "#ffe94d",
+        "#58c88a",
+        "#8fe8a0",
+        "#4dffc3",
+        "#b8ffb0",
+        "#7fc880",
+        "#ff9d82",
+        "#8dff95",
+        "#fff08a",
+        "#7fe0aa",
+        "#b4f5bf",
+        "#8bffd8",
+        "#e6ffe2"
+      ]
+    },
+    "cursor": {
+      "shape": "underline",
+      "blink": true
+    },
+    "font": "courier-prime",
+    "effects": [
+      {
+        "id": "vignette",
+        "intensity": 0.5
+      },
+      {
+        "id": "grain",
+        "intensity": 0.3
+      }
     ]
   },
   "chrome": {
-    "bg": "#020702",
-    "surface": "#07130a",
-    "fg": "#b8ffb0",
-    "pink": "#6fd66f",
-    "cyan": "#4dffc3",
-    "yellow": "#ffe94d",
-    "link": "#5dff6a"
+    "tokens": {
+      "bg": "#020702",
+      "surface": "#07130a",
+      "fg": "#b8ffb0",
+      "pink": "#6fd66f",
+      "cyan": "#4dffc3",
+      "yellow": "#ffe94d",
+      "link": "#5dff6a"
+    },
+    "shape": {
+      "radius": 1,
+      "shadow": "soft",
+      "border": 1
+    },
+    "pattern": "none",
+    "boot": "tracker",
+    "costume": {
+      "name": "tinfoil hat",
+      "rows": [
+        "......##......",
+        ".....####.....",
+        "....######....",
+        "...########...",
+        "..##########.."
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 60, 60],
+      "tile": [60, 60],
+      "shapes": [
+        {
+          "type": "polygon",
+          "points": "4,4 30,22 14,34",
+          "fill": "yellow"
+        },
+        {
+          "type": "rect",
+          "x": 34,
+          "y": 8,
+          "width": 22,
+          "height": 5,
+          "fill": "fg"
+        },
+        {
+          "type": "rect",
+          "x": 34,
+          "y": 18,
+          "width": 14,
+          "height": 5,
+          "fill": "fg"
+        },
+        {
+          "type": "polygon",
+          "points": "30,40 46,40 54,58 22,58",
+          "fill": "cyan"
+        },
+        {
+          "type": "rect",
+          "x": 32,
+          "y": 34,
+          "width": 12,
+          "height": 4,
+          "fill": "fg"
+        },
+        {
+          "type": "rect",
+          "x": 4,
+          "y": 46,
+          "width": 12,
+          "height": 5,
+          "fill": "fg"
+        }
+      ]
+    }
   }
 }

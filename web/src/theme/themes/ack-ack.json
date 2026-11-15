@@ -2,37 +2,120 @@
   "name": "Ack Ack",
   "description": "Pulp green, saucer silver and ray-gun red. Inspired by Mars Attacks!",
   "appearance": "dark",
-  "pattern": "none",
-  "font": "JetBrains Mono",
   "terminal": {
-    "fg": "#d4e8c8",
-    "bg": "#0c1a0e",
-    "cursor": "#ff3030",
-    "selection": "#2a4a2a",
-    "ansi": [
-      "#7a9a7a",
-      "#ff4040",
-      "#6adf5a",
-      "#e8d84a",
-      "#6aa0e0",
-      "#d070d0",
-      "#50d8c0",
-      "#d4e8c8",
-      "#9ab89a",
-      "#ff7070",
-      "#9af088",
-      "#f4ea80",
-      "#98c0f0",
-      "#e098e0",
-      "#80ece0",
-      "#f4f8f0"
+    "palette": {
+      "fg": "#d4e8c8",
+      "bg": "#0c1a0e",
+      "cursor": "#ff3030",
+      "selection": "#2a4a2a",
+      "ansi": [
+        "#7a9a7a",
+        "#ff4040",
+        "#6adf5a",
+        "#e8d84a",
+        "#6aa0e0",
+        "#d070d0",
+        "#50d8c0",
+        "#d4e8c8",
+        "#9ab89a",
+        "#ff7070",
+        "#9af088",
+        "#f4ea80",
+        "#98c0f0",
+        "#e098e0",
+        "#80ece0",
+        "#f4f8f0"
+      ]
+    },
+    "cursor": {
+      "shape": "block",
+      "blink": true
+    },
+    "font": "space-mono",
+    "effects": [
+      {
+        "id": "grain",
+        "intensity": 0.5
+      }
     ]
   },
   "chrome": {
-    "bg": "#071009",
-    "surface": "#14281a",
-    "fg": "#d4e8c8",
-    "muted": "#88a888",
-    "link": "#6adf5a"
+    "tokens": {
+      "bg": "#071009",
+      "surface": "#14281a",
+      "fg": "#d4e8c8",
+      "muted": "#88a888",
+      "link": "#6adf5a"
+    },
+    "shape": {
+      "radius": 1.2,
+      "shadow": "hard",
+      "border": 3
+    },
+    "pattern": "none",
+    "boot": "drop",
+    "costume": {
+      "name": "glass dome helmet",
+      "rows": [
+        ".......#......",
+        "....######....",
+        "..##......##..",
+        ".#..........#.",
+        "#............#",
+        "##############"
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 32],
+      "tile": [64, 32],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M8 14 A10 7 0 0 1 28 14 Z",
+          "fill": "#24402a"
+        },
+        {
+          "type": "path",
+          "d": "M2 16 Q18 12 34 16 Q18 21 2 16 Z",
+          "fill": "#2f5a36"
+        },
+        {
+          "type": "circle",
+          "cx": 11,
+          "cy": 17,
+          "r": 1,
+          "fill": "#9ad88a"
+        },
+        {
+          "type": "circle",
+          "cx": 18,
+          "cy": 18,
+          "r": 1,
+          "fill": "#9ad88a"
+        },
+        {
+          "type": "circle",
+          "cx": 25,
+          "cy": 17,
+          "r": 1,
+          "fill": "#9ad88a"
+        },
+        {
+          "type": "polygon",
+          "points": "14,20 22,20 28,32 8,32",
+          "fill": "#1f3a24"
+        },
+        {
+          "type": "path",
+          "d": "M44 6 A6 4 0 0 1 56 6 Z",
+          "fill": "#24402a"
+        },
+        {
+          "type": "path",
+          "d": "M40 7 Q50 5 60 7 Q50 10 40 7 Z",
+          "fill": "#2f5a36"
+        }
+      ]
+    }
   }
 }

@@ -6,7 +6,25 @@ import {
   useSyncExternalStore,
 } from "react";
 import { Modal } from "./Modal";
-import { fuzzyMatch, getCommands, subscribeCommands } from "./commands";
+import {
+  getCommands,
+  getRecents,
+  groupCommands,
+  matchIndices,
+  recordRecent,
+  subscribeCommands,
+  type Command,
+} from "./commands";
+
+function Highlight({ text, query }: { text: string; query: string }) {
+  const idx = new Set(matchIndices(query, text) ?? []);
+  if (!idx.size) return <>{text}</>;
+  return (
+    <>
+      {[...text].map((ch, i) => (idx.has(i) ? <mark key={i}>{ch}</mark> : ch))}
+    </>
+  );
+}
 
 export function CommandPalette({
   defaultOpen = false,
@@ -30,9 +48,17 @@ export function CommandPalette({
   const [query, setQuery] = useState("");
   const [sel, setSel] = useState(0);
   const all = useSyncExternalStore(subscribeCommands, getCommands);
-  const list = useMemo(
-    () => all.filter((c) => fuzzyMatch(query, c.title)),
-    [all, query],
+  const [recents, setRecents] = useState<string[]>(getRecents);
+  useEffect(() => {
+    if (open) setRecents(getRecents());
+  }, [open]);
+  const sections = useMemo(
+    () => groupCommands(all, query, recents),
+    [all, query, recents],
+  );
+  const list: Command[] = useMemo(
+    () => sections.flatMap((s) => s.items),
+    [sections],
   );
   const close = () => {
     setOpen(false);
@@ -58,6 +84,7 @@ export function CommandPalette({
     const c = list[i];
     if (!c) return;
     close();
+    recordRecent(c.id);
     c.run();
   };
   return (
@@ -95,19 +122,44 @@ export function CommandPalette({
         }}
       />
       <ul id="cmdk-list" role="listbox">
-        {list.map((c, i) => (
-          <li
-            key={c.id}
-            id={`cmdk-${c.id}`}
-            role="option"
-            aria-selected={i === sel}
-            onMouseMove={() => setSel(i)}
-            onClick={() => run(i)}
-          >
-            {c.title}
-            {c.shortcut && <kbd>{c.shortcut}</kbd>}
+        {sections.map((sec) => (
+          <li key={sec.heading} role="presentation" className="cmdk-group">
+            <div className="cmdk-heading">{sec.heading}</div>
+            <ul role="group" aria-label={sec.heading}>
+              {sec.items.map((c) => {
+                const i = list.indexOf(c);
+                return (
+                  <li
+                    key={c.id}
+                    id={`cmdk-${c.id}`}
+                    role="option"
+                    aria-label={c.title}
+                    aria-selected={i === sel}
+                    onMouseMove={() => setSel(i)}
+                    onClick={() => run(i)}
+                  >
+                    <span className="cmdk-title">
+                      {c.swatch && (
+                        <span className="swatch" aria-hidden="true">
+                          {c.swatch.map((col, k) => (
+                            <i key={k} style={{ background: col }} />
+                          ))}
+                        </span>
+                      )}
+                      <Highlight text={c.title} query={query} />
+                    </span>
+                    {c.shortcut && <kbd>{c.shortcut}</kbd>}
+                  </li>
+                );
+              })}
+            </ul>
           </li>
         ))}
+        {list.length === 0 && (
+          <li role="presentation" className="cmdk-empty">
+            No commands match ‘{query}’.
+          </li>
+        )}
       </ul>
     </Modal>
   );

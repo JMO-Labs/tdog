@@ -22,7 +22,7 @@
 }
 .card {
   background: var(--surface);
-  border: 2px solid var(--line);
+  border: calc(2px * var(--border-width)) solid var(--line);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-hard-lg);
   padding: 28px;
@@ -40,11 +40,32 @@
 }
 .auth-card .muted {
   margin: 0;
+  font-size: 14px;
+}
+.auth-card .field-hint {
+  font-size: 13px;
+}
+.auth-card .btn:not(.sm) {
+  font-size: 15px;
 }
 .auth-card .btn.wide {
   width: 100%;
 }
+.token-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.auth-card .token-row .btn {
+  padding: 8px 12px;
+  font-size: 13px;
+}
 .corner {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  line-height: 1;
   position: fixed;
   top: 16px;
   right: 16px;
@@ -70,9 +91,6 @@
   background-clip: text;
   -webkit-text-stroke: 0.045em var(--ink);
   paint-order: stroke fill;
-  filter: drop-shadow(0.03em 0.03em 0 var(--ink))
-    drop-shadow(0.05em 0.05em 0 var(--purple))
-    drop-shadow(0.02em 0.02em 0 var(--ink));
   animation: scan 6s linear infinite;
 }
 .wordmark span {
@@ -80,6 +98,14 @@
   background: inherit;
   -webkit-background-clip: text;
   background-clip: text;
+  /* Each letter carries its own shadow so it renders whole while it falls. */
+  -webkit-text-stroke: 0.045em var(--ink);
+  paint-order: stroke fill;
+  will-change: transform;
+  backface-visibility: hidden;
+  filter: drop-shadow(0.03em 0.03em 0 var(--ink))
+    drop-shadow(0.05em 0.05em 0 var(--purple))
+    drop-shadow(0.02em 0.02em 0 var(--ink));
 }
 .wordmark.big {
   font-size: clamp(72px, 18vw, 150px);
@@ -95,8 +121,8 @@
 }
 .tape {
   height: 16px;
-  border: 2px solid var(--line);
-  border-radius: 99px;
+  border: calc(2px * var(--border-width)) solid var(--line);
+  border-radius: calc(99px * var(--radius-scale));
   background: var(--surface-2);
   overflow: hidden;
   margin-top: -6px;
@@ -145,7 +171,7 @@
   background: #120a26;
   color: var(--yellow);
   border: 10px solid #3a2a6b;
-  border-radius: 28px;
+  border-radius: calc(28px * var(--radius-scale));
   box-shadow:
     10px 10px 0 var(--ink),
     inset 0 0 40px rgb(34 211 238 / 0.3);
@@ -161,7 +187,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 18px;
+  border-radius: calc(18px * var(--radius-scale));
   pointer-events: none;
   background: repeating-linear-gradient(
     0deg,
@@ -268,8 +294,8 @@
 .step-ico {
   width: 34px;
   height: 34px;
-  border: 2px solid var(--line);
-  border-radius: 10px;
+  border: calc(2px * var(--border-width)) solid var(--line);
+  border-radius: calc(10px * var(--radius-scale));
   background: var(--surface-2);
 }
 .steps li.on .step-ico {

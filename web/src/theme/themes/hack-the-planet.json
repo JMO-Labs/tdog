@@ -2,47 +2,173 @@
   "name": "Hack the Planet",
   "description": "Inspired by Hackers: neon magenta, cyan and green on black.",
   "appearance": "dark",
-  "pattern": "zigzag",
-  "font": "JetBrains Mono",
   "terminal": {
-    "fg": "#39ff88",
-    "bg": "#05020a",
-    "cursor": "#ff2bd6",
-    "selection": "#4a1060",
-    "ansi": [
-      "#8a7aa8",
-      "#ff3b8f",
-      "#39ff88",
-      "#fff23a",
-      "#5a8bff",
-      "#ff2bd6",
-      "#19e6ff",
-      "#e8e0ff",
-      "#a898c8",
-      "#ff6ab0",
-      "#7dffb0",
-      "#fff77a",
-      "#8aabff",
-      "#ff6ae6",
-      "#6df0ff",
-      "#ffffff"
-    ]
+    "palette": {
+      "fg": "#39ff88",
+      "bg": "#05020a",
+      "cursor": "#ff2bd6",
+      "selection": "#4a1060",
+      "ansi": [
+        "#8a7aa8",
+        "#ff3b8f",
+        "#39ff88",
+        "#fff23a",
+        "#5a8bff",
+        "#ff2bd6",
+        "#19e6ff",
+        "#e8e0ff",
+        "#a898c8",
+        "#ff6ab0",
+        "#7dffb0",
+        "#fff77a",
+        "#8aabff",
+        "#ff6ae6",
+        "#6df0ff",
+        "#ffffff"
+      ]
+    },
+    "cursor": {
+      "shape": "block",
+      "blink": true
+    },
+    "font": "share-tech-mono",
+    "effects": [
+      {
+        "id": "glow",
+        "intensity": 0.4
+      },
+      {
+        "id": "glyph-rain",
+        "intensity": 0.25
+      }
+    ],
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 12 H20 L28 20 H64",
+          "stroke": "cyan"
+        },
+        {
+          "type": "path",
+          "d": "M0 40 H12 L20 48 V64",
+          "stroke": "pink"
+        },
+        {
+          "type": "path",
+          "d": "M36 0 V24 L44 32 H64",
+          "stroke": "link"
+        },
+        {
+          "type": "rect",
+          "x": 18,
+          "y": 10,
+          "width": 4,
+          "height": 4,
+          "fill": "cyan"
+        },
+        {
+          "type": "rect",
+          "x": 62,
+          "y": 30,
+          "width": 4,
+          "height": 4,
+          "fill": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 56,
+          "r": 3,
+          "stroke": "pink"
+        },
+        {
+          "type": "path",
+          "d": "M-8 58 H4 M-4 54 H6 M-6 62 H2",
+          "stroke": "pink"
+        }
+      ]
+    }
   },
   "chrome": {
-    "bg": "#05020a",
-    "surface": "#120a1e",
-    "surface-2": "#1c1030",
-    "fg": "#e8e0ff",
-    "muted": "#a898c8",
-    "line": "#000000",
-    "shadow": "#ff2bd6",
-    "link": "#19e6ff",
-    "pink": "#ff2bd6",
-    "cyan": "#19e6ff",
-    "yellow": "#fff23a",
-    "purple": "#9a5bff",
-    "term-bg": "#05020a",
-    "term-fg": "#39ff88",
-    "term-dim": "#7a9a88"
+    "tokens": {
+      "bg": "#05020a",
+      "surface": "#120a1e",
+      "surface-2": "#1c1030",
+      "fg": "#e8e0ff",
+      "muted": "#a898c8",
+      "line": "#000000",
+      "shadow": "#ff2bd6",
+      "link": "#19e6ff",
+      "pink": "#ff2bd6",
+      "cyan": "#19e6ff",
+      "yellow": "#fff23a",
+      "purple": "#9a5bff",
+      "term-bg": "#05020a",
+      "term-fg": "#39ff88",
+      "term-dim": "#7a9a88"
+    },
+    "shape": {
+      "radius": 0.125,
+      "shadow": "glow",
+      "border": 1
+    },
+    "pattern": "zigzag",
+    "boot": "dialup",
+    "costume": {
+      "name": "visor shades",
+      "rows": ["############", "#####..#####", ".####..####."]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 12 H20 L28 20 H64",
+          "stroke": "cyan"
+        },
+        {
+          "type": "path",
+          "d": "M0 40 H12 L20 48 V64",
+          "stroke": "pink"
+        },
+        {
+          "type": "path",
+          "d": "M36 0 V24 L44 32 H64",
+          "stroke": "link"
+        },
+        {
+          "type": "rect",
+          "x": 18,
+          "y": 10,
+          "width": 4,
+          "height": 4,
+          "fill": "cyan"
+        },
+        {
+          "type": "rect",
+          "x": 62,
+          "y": 30,
+          "width": 4,
+          "height": 4,
+          "fill": "link"
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 56,
+          "r": 3,
+          "stroke": "pink"
+        },
+        {
+          "type": "path",
+          "d": "M-8 58 H4 M-4 54 H6 M-6 62 H2",
+          "stroke": "pink"
+        }
+      ]
+    }
   }
 }

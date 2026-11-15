@@ -42,9 +42,15 @@ func newSigner(t *testing.T) (ssh.Signer, []byte) {
 // fakeSSHD is an in-process server: pty-req + shell; echoes input as "got:<line>",
 // reports window-change as "size:<rows>x<cols>", and "exit N" ends with status N.
 type fakeSSHD struct {
-	addr     string
+	addr string
+
+	// execOut and execExit are the stdout and status of one-shot exec requests.
+	execOut  string
+	execExit byte
+
 	mu       sync.Mutex
-	closedCh chan struct{} // closed when the session channel closes
+	execs    []string
+	closedCh chan struct{}
 }
 
 func startFakeSSHD(t *testing.T, hostKey ssh.Signer) *fakeSSHD {
@@ -86,6 +92,8 @@ func (d *fakeSSHD) handle(nc net.Conn, cfg *ssh.ServerConfig) {
 				switch r.Type {
 				case "pty-req", "shell":
 					_ = r.Reply(true, nil)
+				case "exec":
+					d.exec(ch, r)
 				case "window-change":
 					rows := int(r.Payload[4])<<24 | int(r.Payload[5])<<16 | int(r.Payload[6])<<8 | int(r.Payload[7])
 					cols := int(r.Payload[0])<<24 | int(r.Payload[1])<<16 | int(r.Payload[2])<<8 | int(r.Payload[3])
@@ -121,8 +129,10 @@ func (d *fakeSSHD) handle(nc net.Conn, cfg *ssh.ServerConfig) {
 
 func sshDial(t *testing.T, cfg SSHConfig) (*websocket.Conn, context.Context) {
 	t.Helper()
-	srv := httptest.NewServer(NewHandler(Config{Shell: "/bin/sh", SSH: cfg}))
+	testReg = NewRegistry(nil, 0)
+	srv := httptest.NewServer(NewHandler(Config{Shell: "/bin/sh", SSH: cfg, Registry: testReg}))
 	t.Cleanup(srv.Close)
+	t.Cleanup(testReg.KillAll)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	t.Cleanup(cancel)
 	c, _, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(srv.URL, "http")+"?target=ssh-host", nil)
@@ -168,12 +178,13 @@ func TestSSHEchoResizeExit(t *testing.T) {
 	}
 }
 
-func TestSSHSocketCloseClosesChannel(t *testing.T) {
+func TestSSHKillClosesChannel(t *testing.T) {
 	cfg, d, _ := sshSetup(t)
 	c, ctx := sshDial(t, cfg)
 	send(t, ctx, c, frame.Input, "hi\n")
 	readUntil(t, ctx, c, "got:hi")
 	_ = c.CloseNow()
+	testReg.KillAll() // a dropped socket no longer ends the session
 	select {
 	case <-d.closedCh:
 	case <-time.After(5 * time.Second):
@@ -236,4 +247,27 @@ func TestSSHConfigFromEnvDefaults(t *testing.T) {
 		cfg.KeyPath != "/data/ssh/id_ed25519" || cfg.KnownHostsPath != "/data/ssh/known_hosts" {
 		t.Fatalf("%+v", cfg)
 	}
+}
+
+// exec serves an exec request: "tmux new" stays open like the shell, anything
+// else prints execOut and exits with execExit.
+func (d *fakeSSHD) exec(ch ssh.Channel, r *ssh.Request) {
+	n := int(r.Payload[0])<<24 | int(r.Payload[1])<<16 | int(r.Payload[2])<<8 | int(r.Payload[3])
+	cmd := string(r.Payload[4 : 4+n])
+	d.mu.Lock()
+	d.execs = append(d.execs, cmd)
+	d.mu.Unlock()
+	_ = r.Reply(true, nil)
+	if strings.HasPrefix(cmd, "tmux new") || strings.HasPrefix(cmd, "hang") {
+		return
+	}
+	_, _ = ch.Write([]byte(d.execOut))
+	_, _ = ch.SendRequest("exit-status", false, []byte{0, 0, 0, d.execExit})
+	_ = ch.Close()
+}
+
+func (d *fakeSSHD) execLog() []string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return append([]string(nil), d.execs...)
 }

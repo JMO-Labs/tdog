@@ -2,74 +2,258 @@
   "name": "Pocket Monochrome",
   "description": "Four shades of handheld-screen green, nothing else. Inspired by 4-shade handheld screens.",
   "appearance": "dark",
-  "pattern": "none",
-  "font": "JetBrains Mono",
   "terminal": {
-    "fg": "#9bbc0f",
-    "bg": "#0f380f",
-    "cursor": "#9bbc0f",
-    "selection": "#306230",
-    "ansi": [
-      "#8bac0f",
-      "#9bbc0f",
-      "#8bac0f",
-      "#9bbc0f",
-      "#8bac0f",
-      "#9bbc0f",
-      "#8bac0f",
-      "#9bbc0f",
-      "#8bac0f",
-      "#9bbc0f",
-      "#8bac0f",
-      "#9bbc0f",
-      "#8bac0f",
-      "#9bbc0f",
-      "#8bac0f",
-      "#9bbc0f"
+    "palette": {
+      "fg": "#9bbc0f",
+      "bg": "#0f380f",
+      "cursor": "#9bbc0f",
+      "selection": "#306230",
+      "ansi": [
+        "#8bac0f",
+        "#9bbc0f",
+        "#8bac0f",
+        "#9bbc0f",
+        "#8bac0f",
+        "#9bbc0f",
+        "#8bac0f",
+        "#9bbc0f",
+        "#8bac0f",
+        "#9bbc0f",
+        "#8bac0f",
+        "#9bbc0f",
+        "#8bac0f",
+        "#9bbc0f",
+        "#8bac0f",
+        "#9bbc0f"
+      ]
+    },
+    "cursor": {
+      "shape": "block",
+      "blink": true
+    },
+    "font": "press-start-2p",
+    "effects": [
+      {
+        "id": "scanlines",
+        "intensity": 0.5
+      }
     ]
   },
   "chrome": {
-    "bg": "#0f380f",
-    "surface": "#0f380f",
-    "fg": "#9bbc0f",
-    "muted": "#8bac0f",
-    "line": "#306230",
-    "shadow": "#306230",
-    "link": "#9bbc0f"
+    "tokens": {
+      "bg": "#0f380f",
+      "surface": "#0f380f",
+      "fg": "#9bbc0f",
+      "muted": "#8bac0f",
+      "line": "#306230",
+      "shadow": "#306230",
+      "link": "#9bbc0f"
+    },
+    "shape": {
+      "radius": 0,
+      "shadow": "hard",
+      "border": 1
+    },
+    "pattern": "none",
+    "boot": "cartridge",
+    "costume": {
+      "name": "pixel cap",
+      "rows": [
+        "....######....",
+        "...########...",
+        "..##########..",
+        "##############",
+        "####.........."
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 32],
+      "tile": [64, 32],
+      "shapes": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 0,
+          "width": 16,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 16,
+          "y": 0,
+          "width": 16,
+          "height": 8,
+          "fill": "#8bac0f"
+        },
+        {
+          "type": "rect",
+          "x": 32,
+          "y": 0,
+          "width": 16,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 48,
+          "y": 0,
+          "width": 16,
+          "height": 8,
+          "fill": "#9bbc0f"
+        },
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 8,
+          "width": 8,
+          "height": 8,
+          "fill": "#8bac0f"
+        },
+        {
+          "type": "rect",
+          "x": 8,
+          "y": 8,
+          "width": 16,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 24,
+          "y": 8,
+          "width": 16,
+          "height": 8,
+          "fill": "#9bbc0f"
+        },
+        {
+          "type": "rect",
+          "x": 40,
+          "y": 8,
+          "width": 16,
+          "height": 8,
+          "fill": "#8bac0f"
+        },
+        {
+          "type": "rect",
+          "x": 56,
+          "y": 8,
+          "width": 8,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 16,
+          "width": 16,
+          "height": 8,
+          "fill": "#9bbc0f"
+        },
+        {
+          "type": "rect",
+          "x": 16,
+          "y": 16,
+          "width": 16,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 32,
+          "y": 16,
+          "width": 16,
+          "height": 8,
+          "fill": "#8bac0f"
+        },
+        {
+          "type": "rect",
+          "x": 48,
+          "y": 16,
+          "width": 16,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 24,
+          "width": 8,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 8,
+          "y": 24,
+          "width": 16,
+          "height": 8,
+          "fill": "#8bac0f"
+        },
+        {
+          "type": "rect",
+          "x": 24,
+          "y": 24,
+          "width": 16,
+          "height": 8,
+          "fill": "#306230"
+        },
+        {
+          "type": "rect",
+          "x": 40,
+          "y": 24,
+          "width": 16,
+          "height": 8,
+          "fill": "#9bbc0f"
+        },
+        {
+          "type": "rect",
+          "x": 56,
+          "y": 24,
+          "width": 8,
+          "height": 8,
+          "fill": "#8bac0f"
+        }
+      ]
+    }
   },
   "light": {
     "terminal": {
-      "fg": "#0f380f",
-      "bg": "#9bbc0f",
-      "cursor": "#0f380f",
-      "selection": "#8bac0f",
-      "ansi": [
-        "#0f380f",
-        "#306230",
-        "#0f380f",
-        "#306230",
-        "#0f380f",
-        "#306230",
-        "#0f380f",
-        "#306230",
-        "#0f380f",
-        "#306230",
-        "#0f380f",
-        "#306230",
-        "#0f380f",
-        "#306230",
-        "#0f380f",
-        "#306230"
-      ]
+      "palette": {
+        "fg": "#0f380f",
+        "bg": "#9bbc0f",
+        "cursor": "#0f380f",
+        "selection": "#8bac0f",
+        "ansi": [
+          "#0f380f",
+          "#306230",
+          "#0f380f",
+          "#306230",
+          "#0f380f",
+          "#306230",
+          "#0f380f",
+          "#306230",
+          "#0f380f",
+          "#306230",
+          "#0f380f",
+          "#306230",
+          "#0f380f",
+          "#306230",
+          "#0f380f",
+          "#306230"
+        ]
+      }
     },
     "chrome": {
-      "bg": "#9bbc0f",
-      "surface": "#8bac0f",
-      "fg": "#0f380f",
-      "muted": "#306230",
-      "line": "#0f380f",
-      "shadow": "#306230",
-      "link": "#0f380f"
+      "tokens": {
+        "bg": "#9bbc0f",
+        "surface": "#8bac0f",
+        "fg": "#0f380f",
+        "muted": "#306230",
+        "line": "#0f380f",
+        "shadow": "#306230",
+        "link": "#0f380f"
+      }
     }
   }
 }

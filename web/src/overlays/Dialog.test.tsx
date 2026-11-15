@@ -47,4 +47,23 @@ describe("Dialog / Sheet", () => {
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     expect(onClose).toHaveBeenCalled();
   });
+  it("sheet has a close button and returns focus to the opener", () => {
+    const onClose = vi.fn();
+    const Host = ({ open }: { open: boolean }) => (
+      <>
+        <button>gear</button>
+        <Sheet open={open} title="Settings" onClose={onClose}>
+          body
+        </Sheet>
+      </>
+    );
+    const { rerender } = render(<Host open={false} />);
+    const gear = screen.getByText("gear");
+    gear.focus();
+    rerender(<Host open />);
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    rerender(<Host open={false} />);
+    expect(document.activeElement).toBe(gear);
+  });
 });

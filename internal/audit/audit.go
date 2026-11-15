@@ -19,11 +19,16 @@ const (
 
 // Entry is one audit record.
 type Entry struct {
-	Time   time.Time `json:"time"`
-	Event  string    `json:"event"`
-	IP     string    `json:"ip,omitempty"`
-	Target string    `json:"target,omitempty"`
-	PID    int       `json:"pid,omitempty"`
+	Time    time.Time `json:"time"`
+	Event   string    `json:"event"`
+	IP      string    `json:"ip,omitempty"`
+	Target  string    `json:"target,omitempty"`
+	PID     int       `json:"pid,omitempty"`
+	Session string    `json:"session,omitempty"`
+	Scene   string    `json:"scene,omitempty"`
+	Count   *int      `json:"count,omitempty"`  // shells affected (kill events)
+	Output  string    `json:"output,omitempty"` // on_close hook output (clipped)
+	Error   string    `json:"error,omitempty"`  // on_close failure or timeout
 }
 
 // Logger appends entries to a file. A nil *Logger is a no-op.

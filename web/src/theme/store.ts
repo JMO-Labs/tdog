@@ -1,6 +1,13 @@
 import type { TerminalTheme } from "../terminal/renderer";
 import { DEFAULT_THEME_ID, THEMES, findTheme, type Theme } from "./registry";
-import type { TerminalColors, ThemeVariant } from "./schema";
+import { motifSvg } from "./motif";
+import { shapeVars } from "./shape";
+import {
+  CHROME_TOKENS,
+  type Effect,
+  type TerminalColors,
+  type ThemeVariant,
+} from "./schema";
 
 export type Scheme = "system" | "light" | "dark";
 const KEY = "tdog.theme.id";
@@ -60,6 +67,19 @@ function variant(t: Theme): ThemeVariant {
   return light && t.light ? t.light : t;
 }
 
+/** Theme tokens merged over computed CSS defaults, so unset tokens still resolve. */
+function resolveTokens(tokens: Record<string, string>): Record<string, string> {
+  const cs = getComputedStyle(document.documentElement);
+  const resolved: Record<string, string> = {};
+  for (const k of CHROME_TOKENS) {
+    const v = tokens[k] ?? cs.getPropertyValue(`--${k}`).trim();
+    if (v) resolved[k] = v;
+  }
+  return resolved;
+}
+
+const pretty = (n: number) => String(Math.round(n * 1000) / 1000);
+
 function apply() {
   const t = current();
   const el = document.documentElement;
@@ -69,9 +89,18 @@ function apply() {
     el.style.setProperty(p, v);
     applied.push(p);
   };
-  for (const [k, v] of Object.entries(variant(t).chrome)) set(`--${k}`, v);
-  if (t.pattern !== "confetti")
-    set("--pattern", t.pattern === "none" ? "none" : `var(--pat-${t.pattern})`);
+  const tokens = variant(t).chrome.tokens;
+  for (const [k, v] of Object.entries(tokens)) set(`--${k}`, v);
+  const { shape, pattern, motif } = t.chrome;
+  for (const [k, v] of Object.entries(shapeVars(shape))) set(k, v);
+  if (pattern !== "confetti")
+    set("--pattern", pattern === "none" ? "none" : `var(--pat-${pattern})`);
+  if (motif) {
+    const url = `url("${motifSvg(motif, resolveTokens(tokens))}")`;
+    set("--header-motif", url);
+    // Auth backdrop and empty panes read --pattern: the motif replaces confetti there.
+    set("--pattern", url);
+  }
   // A theme with a light variant follows the scheme; others pin their appearance.
   if (t.light) {
     if (scheme === "system") el.removeAttribute("data-theme");
@@ -85,7 +114,29 @@ function apply() {
 export const themeStore = {
   get: current,
   /** Renderer colors for the active theme and scheme. */
-  terminal: (): TerminalTheme => toTerminalTheme(variant(current()).terminal),
+  terminal: (themeId?: string | null): TerminalTheme =>
+    toTerminalTheme(
+      variant((themeId ? findTheme(themeId) : undefined) ?? current()).terminal
+        .palette,
+    ),
+  /** Cursor and font id for a pane's theme (defaults to the page theme). */
+  scope(themeId?: string | null) {
+    const { cursor, font } = (
+      (themeId ? findTheme(themeId) : undefined) ?? current()
+    ).terminal;
+    return { cursor, font };
+  },
+  /** Screen effects declared by a terminal theme (data only). */
+  effects: (themeId?: string | null): Effect[] =>
+    ((themeId ? findTheme(themeId) : undefined) ?? current()).terminal.effects,
+  /** Terminal motif as a CSS url() for a pane's theme, or null when it has none. */
+  terminalMotif: (themeId?: string | null): string | null => {
+    const t = (themeId ? findTheme(themeId) : undefined) ?? current();
+    const m = t.terminal.motif;
+    if (!m) return null;
+    const tokens = variant(t).chrome.tokens as Record<string, string>;
+    return `url("${motifSvg(m, resolveTokens(tokens))}")`;
+  },
   subscribe(l: () => void) {
     listeners.add(l);
     return () => void listeners.delete(l);

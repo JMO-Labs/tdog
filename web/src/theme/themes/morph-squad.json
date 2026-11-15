@@ -2,41 +2,107 @@
   "name": "Morph Squad",
   "description": "Five bold team accents on a dark command deck. Inspired by Power Rangers.",
   "appearance": "dark",
-  "pattern": "none",
-  "font": "JetBrains Mono",
   "terminal": {
-    "fg": "#eceff4",
-    "bg": "#0d0f16",
-    "cursor": "#ff3b3b",
-    "selection": "#2a3350",
-    "ansi": [
-      "#8b93a7",
-      "#ff4d4d",
-      "#3ddc84",
-      "#ffd23f",
-      "#4d8dff",
-      "#ff7ac8",
-      "#5aa2ff",
-      "#eceff4",
-      "#a9b0c2",
-      "#ff7b7b",
-      "#7aeaa8",
-      "#ffe27a",
-      "#7fb0ff",
-      "#ffa3da",
-      "#8cc0ff",
-      "#ffffff"
+    "palette": {
+      "fg": "#eceff4",
+      "bg": "#0d0f16",
+      "cursor": "#ff3b3b",
+      "selection": "#2a3350",
+      "ansi": [
+        "#8b93a7",
+        "#ff4d4d",
+        "#3ddc84",
+        "#ffd23f",
+        "#4d8dff",
+        "#ff7ac8",
+        "#5aa2ff",
+        "#eceff4",
+        "#a9b0c2",
+        "#ff7b7b",
+        "#7aeaa8",
+        "#ffe27a",
+        "#7fb0ff",
+        "#ffa3da",
+        "#8cc0ff",
+        "#ffffff"
+      ]
+    },
+    "cursor": {
+      "shape": "block",
+      "blink": true
+    },
+    "font": "share-tech-mono",
+    "effects": [
+      {
+        "id": "glow",
+        "intensity": 0.25
+      }
     ]
   },
   "chrome": {
-    "bg": "#0d0f16",
-    "surface": "#161a26",
-    "fg": "#eceff4",
-    "pink": "#ff7ac8",
-    "cyan": "#4d8dff",
-    "yellow": "#ffd23f",
-    "purple": "#ff4d4d",
-    "link": "#4d8dff",
-    "ink": "#05060a"
+    "tokens": {
+      "bg": "#0d0f16",
+      "surface": "#161a26",
+      "fg": "#eceff4",
+      "pink": "#ff7ac8",
+      "cyan": "#4d8dff",
+      "yellow": "#ffd23f",
+      "purple": "#ff4d4d",
+      "link": "#4d8dff",
+      "ink": "#05060a"
+    },
+    "shape": {
+      "radius": 1,
+      "shadow": "hard",
+      "border": 1
+    },
+    "pattern": "none",
+    "boot": "drop",
+    "costume": {
+      "name": "visor",
+      "rows": [
+        "..##########..",
+        ".############.",
+        "##............",
+        "##.##########.",
+        ".############."
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 60, 60],
+      "tile": [60, 60],
+      "shapes": [
+        {
+          "type": "polygon",
+          "points": "14,2 6,18 13,18 9,30 22,12 14,12",
+          "fill": "yellow"
+        },
+        {
+          "type": "polygon",
+          "points": "40,4 46,10 40,16 34,10",
+          "fill": "pink"
+        },
+        {
+          "type": "polygon",
+          "points": "52,16 58,22 52,28 46,22",
+          "fill": "cyan"
+        },
+        {
+          "type": "polygon",
+          "points": "34,30 40,36 34,42 28,36",
+          "fill": "yellow"
+        },
+        {
+          "type": "polygon",
+          "points": "52,38 58,44 52,50 46,44",
+          "fill": "purple"
+        },
+        {
+          "type": "polygon",
+          "points": "20,44 26,50 20,56 14,50",
+          "fill": "fg"
+        }
+      ]
+    }
   }
 }

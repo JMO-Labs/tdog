@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
@@ -18,6 +19,8 @@ vi.mock("./terminal/xtermRenderer", () => ({
     write() {}
     resize() {}
     setTheme() {}
+    setCursor() {}
+    setFont() {}
     dispose() {}
   },
 }));
@@ -39,6 +42,7 @@ vi.stubGlobal(
   "ResizeObserver",
   class {
     observe() {}
+    unobserve() {}
     disconnect() {}
   },
 );
@@ -78,6 +82,8 @@ test("?renderer=restty mounts the restty renderer", async () => {
       write() {}
       resize() {}
       setTheme() {}
+      setCursor() {}
+      setFont() {}
       dispose() {}
     },
   }));
@@ -124,8 +130,12 @@ async function signOutEverywhere(serious: boolean) {
   const { container } = render(<App />);
   await screen.findByTestId("terminal-pane");
   fireEvent.keyDown(document, { key: ",", metaKey: true });
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Sign out everywhere" }),
+  );
+  const d = await screen.findByRole("dialog", { name: /sign out everywhere/i });
   await act(async () => {
-    fireEvent.click(await screen.findByText("Sign out everywhere"));
+    fireEvent.click(within(d).getByRole("button", { name: "Sign out" }));
   });
   return container;
 }

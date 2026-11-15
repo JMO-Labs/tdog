@@ -2,46 +2,121 @@
   "name": "Wetwired",
   "description": "Cyber-blue wireframe in a violet haze. Inspired by Johnny Mnemonic.",
   "appearance": "dark",
-  "pattern": "none",
   "terminal": {
-    "fg": "#e6eeff",
-    "bg": "#0a0720",
-    "cursor": "#4dc8ff",
-    "selection": "#3a2a8a",
-    "ansi": [
-      "#8a85c8",
-      "#ff6b9d",
-      "#5fe3a1",
-      "#ffd866",
-      "#4da3ff",
-      "#b28cff",
-      "#4dd8ff",
-      "#e6eeff",
-      "#a9a4e0",
-      "#ff94b8",
-      "#8ff0c0",
-      "#ffe699",
-      "#8cc4ff",
-      "#cdb2ff",
-      "#8ce8ff",
-      "#ffffff"
-    ]
+    "palette": {
+      "fg": "#e6eeff",
+      "bg": "#0a0720",
+      "cursor": "#4dc8ff",
+      "selection": "#3a2a8a",
+      "ansi": [
+        "#8a85c8",
+        "#ff6b9d",
+        "#5fe3a1",
+        "#ffd866",
+        "#4da3ff",
+        "#b28cff",
+        "#4dd8ff",
+        "#e6eeff",
+        "#a9a4e0",
+        "#ff94b8",
+        "#8ff0c0",
+        "#ffe699",
+        "#8cc4ff",
+        "#cdb2ff",
+        "#8ce8ff",
+        "#ffffff"
+      ]
+    },
+    "cursor": {
+      "shape": "bar",
+      "blink": true
+    },
+    "font": "share-tech-mono",
+    "effects": [
+      {
+        "id": "glow",
+        "intensity": 0.5
+      },
+      {
+        "id": "scanlines",
+        "intensity": 0.3
+      }
+    ],
+    "motif": {
+      "viewBox": [0, 0, 32, 32],
+      "tile": [32, 32],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 8H32M0 16H32M0 24H32M8 0V32M16 0V32M24 0V32",
+          "stroke": "cyan"
+        },
+        {
+          "type": "path",
+          "d": "M2 30C8 22 12 26 16 18S26 14 30 4",
+          "stroke": "pink"
+        },
+        {
+          "type": "circle",
+          "cx": 16,
+          "cy": 18,
+          "r": 1.5,
+          "fill": "pink"
+        }
+      ]
+    }
   },
   "chrome": {
-    "bg": "#07051a",
-    "surface": "#130d33",
-    "surface-2": "#1d1450",
-    "fg": "#e6eeff",
-    "muted": "#a9a4e0",
-    "line": "#02010a",
-    "shadow": "#7a4dff",
-    "link": "#4dc8ff",
-    "pink": "#ff6b9d",
-    "cyan": "#4dd8ff",
-    "yellow": "#ffd866",
-    "purple": "#b28cff",
-    "term-bg": "#0a0720",
-    "term-fg": "#e6eeff",
-    "term-dim": "#8a85c8"
+    "tokens": {
+      "bg": "#07051a",
+      "surface": "#130d33",
+      "surface-2": "#1d1450",
+      "fg": "#e6eeff",
+      "muted": "#a9a4e0",
+      "line": "#02010a",
+      "shadow": "#7a4dff",
+      "link": "#4dc8ff",
+      "pink": "#ff6b9d",
+      "cyan": "#4dd8ff",
+      "yellow": "#ffd866",
+      "purple": "#b28cff",
+      "term-bg": "#0a0720",
+      "term-fg": "#e6eeff",
+      "term-dim": "#8a85c8"
+    },
+    "shape": {
+      "radius": 0,
+      "shadow": "glow",
+      "border": 1
+    },
+    "pattern": "none",
+    "boot": "rain",
+    "costume": {
+      "name": "vr visor",
+      "rows": ["..##########..", ".############.", ".##.######.##."]
+    },
+    "motif": {
+      "viewBox": [0, 0, 32, 32],
+      "tile": [32, 32],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 8H32M0 16H32M0 24H32M8 0V32M16 0V32M24 0V32",
+          "stroke": "cyan"
+        },
+        {
+          "type": "path",
+          "d": "M2 30C8 22 12 26 16 18S26 14 30 4",
+          "stroke": "pink"
+        },
+        {
+          "type": "circle",
+          "cx": 16,
+          "cy": 18,
+          "r": 1.5,
+          "fill": "pink"
+        }
+      ]
+    }
   }
 }

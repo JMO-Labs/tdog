@@ -2,72 +2,95 @@
   "name": "Ninety-Five",
   "description": "Inspired by mid-90s desktop OSes: teal desktop, grey bevel chrome, navy title bars.",
   "appearance": "dark",
-  "pattern": "none",
-  "font": "JetBrains Mono",
   "terminal": {
-    "fg": "#e8e8e8",
-    "bg": "#101828",
-    "cursor": "#ffffff",
-    "selection": "#000080",
-    "ansi": [
-      "#808080",
-      "#ff6b6b",
-      "#4fd16b",
-      "#e6d34a",
-      "#6b8cff",
-      "#d06bd0",
-      "#3fc8c8",
-      "#d8d8d8",
-      "#9a9a9a",
-      "#ff9494",
-      "#7fe896",
-      "#f5e87a",
-      "#94acff",
-      "#e694e6",
-      "#7addde",
-      "#ffffff"
-    ]
-  },
-  "chrome": {
-    "bg": "#006868",
-    "surface": "#c0c0c0",
-    "surface-2": "#dfdfdf",
-    "fg": "#000000",
-    "muted": "#404040",
-    "line": "#000000",
-    "shadow": "#404040",
-    "link": "#000080",
-    "term-bg": "#101828",
-    "term-fg": "#e8e8e8",
-    "term-dim": "#9a9a9a"
-  },
-  "light": {
-    "terminal": {
-      "fg": "#000000",
-      "bg": "#c0c0c0",
-      "cursor": "#000080",
-      "selection": "#9fb4d9",
+    "palette": {
+      "fg": "#e8e8e8",
+      "bg": "#101828",
+      "cursor": "#ffffff",
+      "selection": "#000080",
       "ansi": [
-        "#555555",
-        "#a80000",
-        "#006400",
-        "#6b5200",
-        "#000080",
-        "#800080",
-        "#006060",
-        "#202020",
-        "#404040",
-        "#b00000",
-        "#00600a",
-        "#5c4600",
-        "#0000a0",
-        "#900090",
-        "#005a5a",
-        "#000000"
+        "#808080",
+        "#ff6b6b",
+        "#4fd16b",
+        "#e6d34a",
+        "#6b8cff",
+        "#d06bd0",
+        "#3fc8c8",
+        "#d8d8d8",
+        "#9a9a9a",
+        "#ff9494",
+        "#7fe896",
+        "#f5e87a",
+        "#94acff",
+        "#e694e6",
+        "#7addde",
+        "#ffffff"
       ]
     },
-    "chrome": {
-      "bg": "#008080",
+    "cursor": {
+      "shape": "underline",
+      "blink": true
+    },
+    "font": "vt323",
+    "effects": [],
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 24,
+          "width": 64,
+          "height": 10,
+          "fill": "surface-2",
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 27,
+          "y": 24,
+          "width": 10,
+          "height": 40,
+          "fill": "surface-2",
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 22,
+          "y": 19,
+          "width": 20,
+          "height": 20,
+          "fill": "surface",
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 25,
+          "y": 22,
+          "width": 14,
+          "height": 14,
+          "fill": "link"
+        },
+        {
+          "type": "path",
+          "d": "M0 24 L64 24",
+          "stroke": "fg"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 29,
+          "r": 3,
+          "fill": "surface-2",
+          "stroke": "line"
+        }
+      ]
+    }
+  },
+  "chrome": {
+    "tokens": {
+      "bg": "#006868",
       "surface": "#c0c0c0",
       "surface-2": "#dfdfdf",
       "fg": "#000000",
@@ -75,9 +98,123 @@
       "line": "#000000",
       "shadow": "#404040",
       "link": "#000080",
-      "term-bg": "#c0c0c0",
-      "term-fg": "#000000",
-      "term-dim": "#404040"
+      "term-bg": "#101828",
+      "term-fg": "#e8e8e8",
+      "term-dim": "#9a9a9a"
+    },
+    "shape": {
+      "radius": 0,
+      "shadow": "bevel",
+      "border": 1
+    },
+    "pattern": "none",
+    "boot": "post",
+    "costume": {
+      "name": "wizard hat",
+      "rows": [
+        "......#.....",
+        ".....###....",
+        "....#####...",
+        "...#######..",
+        "############"
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 64],
+      "tile": [64, 64],
+      "shapes": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 24,
+          "width": 64,
+          "height": 10,
+          "fill": "surface-2",
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 27,
+          "y": 24,
+          "width": 10,
+          "height": 40,
+          "fill": "surface-2",
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 22,
+          "y": 19,
+          "width": 20,
+          "height": 20,
+          "fill": "surface",
+          "stroke": "line"
+        },
+        {
+          "type": "rect",
+          "x": 25,
+          "y": 22,
+          "width": 14,
+          "height": 14,
+          "fill": "link"
+        },
+        {
+          "type": "path",
+          "d": "M0 24 L64 24",
+          "stroke": "fg"
+        },
+        {
+          "type": "circle",
+          "cx": 32,
+          "cy": 29,
+          "r": 3,
+          "fill": "surface-2",
+          "stroke": "line"
+        }
+      ]
+    }
+  },
+  "light": {
+    "terminal": {
+      "palette": {
+        "fg": "#000000",
+        "bg": "#c0c0c0",
+        "cursor": "#000080",
+        "selection": "#9fb4d9",
+        "ansi": [
+          "#555555",
+          "#a80000",
+          "#006400",
+          "#6b5200",
+          "#000080",
+          "#800080",
+          "#006060",
+          "#202020",
+          "#404040",
+          "#b00000",
+          "#00600a",
+          "#5c4600",
+          "#0000a0",
+          "#900090",
+          "#005a5a",
+          "#000000"
+        ]
+      }
+    },
+    "chrome": {
+      "tokens": {
+        "bg": "#008080",
+        "surface": "#c0c0c0",
+        "surface-2": "#dfdfdf",
+        "fg": "#000000",
+        "muted": "#404040",
+        "line": "#000000",
+        "shadow": "#404040",
+        "link": "#000080",
+        "term-bg": "#c0c0c0",
+        "term-fg": "#000000",
+        "term-dim": "#404040"
+      }
     }
   }
 }

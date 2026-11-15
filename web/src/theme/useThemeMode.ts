@@ -22,18 +22,26 @@ function write(mode: ThemeMode) {
   }
 }
 
+// Every hook instance (header, settings drawer) follows the same mode.
+const peers = new Set<(m: ThemeMode) => void>();
+
 export function useThemeMode() {
   const [mode, setMode] = useState<ThemeMode>(read);
 
   useEffect(() => themeStore.setScheme(mode), [mode]);
-
-  const cycle = useCallback(() => {
-    setMode((m) => {
-      const next = MODES[(MODES.indexOf(m) + 1) % MODES.length];
-      write(next);
-      return next;
-    });
+  useEffect(() => {
+    peers.add(setMode);
+    return () => void peers.delete(setMode);
   }, []);
 
-  return { mode, cycle };
+  const set = useCallback((next: ThemeMode) => {
+    write(next);
+    peers.forEach((p) => p(next));
+  }, []);
+
+  const cycle = useCallback(() => {
+    set(MODES[(MODES.indexOf(mode) + 1) % MODES.length]);
+  }, [mode, set]);
+
+  return { mode, cycle, set };
 }
