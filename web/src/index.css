@@ -218,7 +218,6 @@ html[data-serious] .mascot {
   border-radius: 8px;
   box-shadow: 3px 3px 0 var(--accent);
 }
-html[data-serious] .float,
 [data-serious] .float {
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
   border-color: var(--line);

@@ -220,17 +220,17 @@
   position: fixed;
   z-index: 90;
   pointer-events: none;
-  background: var(--ink);
-  color: #fff;
-  border: calc(2px * var(--border-width)) solid var(--ink);
-  border-radius: calc(8px * var(--radius-scale));
+  background: var(--fg);
+  color: var(--bg);
+  border: 0;
+  border-radius: 4px;
   padding: 5px 9px;
   font-size: 12px;
   font-weight: 700;
   display: flex;
   gap: 8px;
   align-items: center;
-  box-shadow: 3px 3px 0 var(--pink);
+  box-shadow: none;
   white-space: nowrap;
 }
 .tip kbd,
@@ -254,12 +254,13 @@
     width: 100vw;
     border-radius: 0;
   }
-  .cmdk {
+  .cmdk.float {
     width: 100%;
     margin-top: 0;
     border-radius: 0 0 16px 16px;
     border-left: 0;
     border-right: 0;
+    box-shadow: none;
   }
   .cmdk [role="option"] {
     height: 40px;

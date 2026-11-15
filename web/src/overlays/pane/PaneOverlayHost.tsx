@@ -173,7 +173,7 @@ export const PaneOverlayHost = ({
           <div className="pane-overlay-backdrop" onClick={close}>
             <div
               ref={containerRef}
-              className="pane-overlay-container"
+              className="pane-overlay-container float"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
                 if (e.key === "Escape") e.stopPropagation();
