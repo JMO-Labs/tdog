@@ -9,6 +9,7 @@ export const FrameType = {
 export type Decoded =
   | { kind: "output"; data: Uint8Array }
   | { kind: "exit"; code: number }
+  | { kind: "killed" }
   | { kind: "pong"; t: number }
   | { kind: "unknown" };
 
@@ -64,6 +65,7 @@ export function decodeFrame(buf: ArrayBuffer): Decoded {
       if (m?.type === "exit" && typeof m.code === "number") {
         return { kind: "exit", code: m.code };
       }
+      if (m?.type === "killed") return { kind: "killed" };
       if (m?.type === "pong" && typeof m.t === "number") {
         return { kind: "pong", t: m.t };
       }
