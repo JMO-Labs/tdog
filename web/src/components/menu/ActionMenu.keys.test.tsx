@@ -53,3 +53,23 @@ test("keepOpen items run without closing the menu", () => {
   expect(kept).toHaveBeenCalled();
   expect(onDismiss).not.toHaveBeenCalled();
 });
+
+test("renders on <body>, outside the pane that opened it", () => {
+  const { container } = render(
+    <div style={{ isolation: "isolate" }}>
+      <ActionMenu x={0} y={0} groups={groups()} onDismiss={() => {}} />
+    </div>,
+  );
+  const menu = screen.getByRole("menu");
+  expect(container.contains(menu)).toBe(false);
+  expect(menu.parentElement).toBe(document.body);
+});
+
+test("hovering a submenu item opens it; clicking keeps it open", () => {
+  render(<ActionMenu x={0} y={0} groups={groups()} onDismiss={() => {}} />);
+  const parent = screen.getByRole("menuitem", { name: /Layouts/ });
+  fireEvent.pointerEnter(parent);
+  expect(parent.getAttribute("aria-expanded")).toBe("true");
+  fireEvent.click(parent);
+  expect(parent.getAttribute("aria-expanded")).toBe("true");
+});

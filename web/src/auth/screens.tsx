@@ -11,8 +11,7 @@ import { useCopy } from "../copy/copy";
 import { MIN_PASSWORD } from "./constants";
 import { OtpBoxes } from "./otp";
 import { AuthShell } from "./shell";
-import { DialUp, NoNo } from "./SignOn";
-import { celebrate } from "./celebrate";
+import { Loading, NoNo } from "./SignOn";
 import { useToast } from "../overlays/toast";
 import { tape } from "./tape";
 import { Button } from "../components/ui/button";
@@ -104,9 +103,8 @@ export function LoginScreen(props: {
         />
       )}
       {dialing && (
-        <DialUp
+        <Loading
           onDone={() => {
-            celebrate();
             toast("success", c("auth.signedIn"));
             props.onDone();
           }}
@@ -290,9 +288,8 @@ export function SetupScreen(props: { onDone: (signedIn: boolean) => void }) {
         </Button>
       </form>
       {dialing && (
-        <DialUp
+        <Loading
           onDone={() => {
-            celebrate();
             toast("success", c("auth.created"));
             props.onDone(true);
           }}

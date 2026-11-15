@@ -228,12 +228,6 @@ export const COPY = {
     fun: "Full tape. Totally tubular.",
     plain: "Strong password.",
   },
-  "signon.dialing": { fun: "Dialing…", plain: "Connecting…" },
-  "signon.verifying": {
-    fun: "Verifying password…",
-    plain: "Verifying password…",
-  },
-  "signon.connected": { fun: "Connected!", plain: "Connected." },
   "signon.denied": { fun: "Ah ah ah!", plain: "Access denied." },
 } satisfies Record<string, Variants>;
 

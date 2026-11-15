@@ -19,7 +19,7 @@ vi.mock("../auth/api", async (orig) => ({
 }));
 vi.mock("../auth/SignOn", () => ({
   NoNo: ({ detail }: { detail: string }) => <p>{detail}</p>,
-  DialUp: ({ onDone }: { onDone: () => void }) => (
+  Loading: ({ onDone }: { onDone: () => void }) => (
     <button onClick={onDone}>dial</button>
   ),
 }));

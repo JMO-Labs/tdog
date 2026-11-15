@@ -6,13 +6,13 @@ import { timing } from "./signon";
 vi.mock("../TerminalPane", () => ({ TerminalPane: () => <p>term</p> }));
 import { App } from "../App";
 
-const real = { step: 650, reducedStep: 150, hold: 1400, nono: 2400 };
+const real = { load: 450, nono: 2400 };
 beforeEach(() => {
   Object.assign(timing, real);
   vi.useFakeTimers({ shouldAdvanceTime: true });
 });
 afterEach(() => {
-  Object.assign(timing, { step: 0, reducedStep: 0, hold: 0, nono: 0 });
+  Object.assign(timing, { load: 0, nono: 0 });
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
@@ -39,7 +39,7 @@ test("wrong password pops the CRT, auto-dismisses after 2.4s", async () => {
   expect(screen.queryByText("Ah ah ah!")).toBeNull();
 });
 
-test("successful login runs dial-up, then toast and app", async () => {
+test("successful login shows a loading bar, then toast and app", async () => {
   vi.stubGlobal(
     "fetch",
     mockFetch({
@@ -51,11 +51,9 @@ test("successful login runs dial-up, then toast and app", async () => {
   await screen.findByText("Welcome back");
   pw("right");
   fireEvent.submit(document.querySelector("form")!);
-  expect(await screen.findByText("Dialing…")).toBeTruthy();
-  for (let i = 0; i < 3; i++)
-    await act(() => vi.advanceTimersByTimeAsync(650 + 10));
-  expect(screen.getByRole("img", { name: /waving/ })).toBeTruthy();
-  await act(() => vi.advanceTimersByTimeAsync(1500));
+  expect(await screen.findByRole("progressbar")).toBeTruthy();
+  expect(document.querySelector(".confetti-canvas")).toBeNull();
+  await act(() => vi.advanceTimersByTimeAsync(460));
   expect(screen.getByText("term")).toBeTruthy();
   expect(screen.getByText(/Signed in/)).toBeTruthy();
 });
@@ -71,10 +69,8 @@ async function loginThenSignOut(logoutRes: Response) {
   await screen.findByText("Welcome back");
   pw("right");
   fireEvent.submit(document.querySelector("form")!);
-  await screen.findByText("Dialing…");
-  for (let i = 0; i < 3; i++)
-    await act(() => vi.advanceTimersByTimeAsync(650 + 10));
-  await act(() => vi.advanceTimersByTimeAsync(1500));
+  await screen.findByRole("progressbar");
+  await act(() => vi.advanceTimersByTimeAsync(460));
   await screen.findByText("term");
   act(() => {
     dispatchEvent(new Event("tdog:signout"));
