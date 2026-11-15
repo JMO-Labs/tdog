@@ -401,3 +401,16 @@ func TestInvalidUTF8(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestBackspaceInCmd(t *testing.T) {
+	p, _ := newTest()
+	evs := p.Feed([]byte("\x1b]133;A\x07\x1b]133;B\x07t\btrue\n\x1b]133;C\x07"))
+	if len(evs) == 0 || evs[0].Cmd != "true" {
+		t.Fatalf("got %+v", evs)
+	}
+	p, _ = newTest()
+	evs = p.Feed([]byte("\x1b]133;A\x07\x1b]133;B\x07\u00e9\bx\n\x1b]133;C\x07"))
+	if len(evs) == 0 || evs[0].Cmd != "x" {
+		t.Fatalf("multibyte: got %+v", evs)
+	}
+}

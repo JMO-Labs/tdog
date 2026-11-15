@@ -1,6 +1,9 @@
 package journal
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
 type state uint8
 
@@ -146,6 +149,16 @@ func (p *Parser) text(c byte) {
 		return
 	}
 	if p.markers && p.phase == phCmd {
+		if c == '\b' { // zle redraws as "t\btrue": backspace drops the last rune
+			for n := len(p.cmd); n > 0; {
+				n--
+				if utf8.RuneStart(p.cmd[n]) {
+					p.cmd = p.cmd[:n]
+					break
+				}
+			}
+			return
+		}
 		if (c >= 0x20 && c != 0x7f || c == '\t' || c == '\n') && len(p.cmd) < maxCmd {
 			p.cmd = append(p.cmd, c)
 		}
