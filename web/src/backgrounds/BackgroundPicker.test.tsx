@@ -78,6 +78,38 @@ test("paste a URL", async () => {
   expect(f).toHaveBeenCalledWith("/api/assets/url", expect.anything());
 });
 
+test("Choose a file button opens the hidden input and uploads", async () => {
+  const { f } = setup([]);
+  fireEvent.click(screen.getByRole("radio", { name: "Uploads" }));
+  const input = screen.getByLabelText("Choose a file") as HTMLInputElement;
+  expect(input.tagName).toBe("INPUT");
+  const click = vi.spyOn(input, "click");
+  fireEvent.click(screen.getByRole("button", { name: "Choose a file" }));
+  expect(click).toHaveBeenCalled();
+  fireEvent.change(input, {
+    target: { files: [new File(["x"], "a.png", { type: "image/png" })] },
+  });
+  await screen.findByRole("button", { name: "Use image ab12" });
+  expect(f).toHaveBeenCalledWith(
+    "/api/assets",
+    expect.objectContaining({ method: "POST" }),
+  );
+});
+
+test("failed URL fetch keeps the pasted URL", async () => {
+  setup([], (m, u) =>
+    m === "POST" && u === "/api/assets/url"
+      ? json({ error: "bad url" }, 400)
+      : undefined,
+  );
+  fireEvent.click(screen.getByRole("radio", { name: "Uploads" }));
+  const box = screen.getByLabelText("Image URL") as HTMLInputElement;
+  fireEvent.change(box, { target: { value: "https://x.test/a.png" } });
+  fireEvent.click(screen.getByRole("button", { name: "Fetch" }));
+  await screen.findByRole("alert");
+  expect(box.value).toBe("https://x.test/a.png");
+});
+
 test("upload failure shows the message", async () => {
   setup([], (m) =>
     m === "POST" ? json({ error: "asset too large" }, 413) : undefined,

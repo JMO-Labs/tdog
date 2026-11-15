@@ -1,4 +1,4 @@
-import { useEffect, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { SegmentedControl } from "../components/ui/segmented";
@@ -104,19 +104,22 @@ function Uploads({
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [doomed, setDoomed] = useState<Asset | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     listAssets().then(setAssets, (e: Error) => setError(e.message));
   }, []);
 
-  const add = async (make: () => Promise<Asset>) => {
+  const add = async (make: () => Promise<Asset>): Promise<boolean> => {
     setBusy(true);
     setError("");
     try {
       const a = await make();
       setAssets((l) => [a, ...l.filter((x) => x.id !== a.id)]);
+      return true;
     } catch (e) {
       setError((e as Error).message);
+      return false;
     } finally {
       setBusy(false);
     }
@@ -147,26 +150,29 @@ function Uploads({
         onDrop={onDrop}
       >
         <p>Drop an image or video here</p>
-        <label className="bgp-file">
-          <span>or choose a file</span>
-          <input
-            type="file"
-            accept="image/*,video/*"
-            aria-label="Choose a file"
-            onChange={(e) => {
-              for (const f of Array.from(e.target.files ?? []))
-                void add(() => uploadAsset(f));
-              e.target.value = "";
-            }}
-          />
-        </label>
+        <input
+          ref={fileRef}
+          type="file"
+          className="bgp-file-input"
+          accept="image/*,video/*"
+          aria-label="Choose a file"
+          tabIndex={-1}
+          onChange={(e) => {
+            for (const f of Array.from(e.target.files ?? []))
+              void add(() => uploadAsset(f));
+            e.target.value = "";
+          }}
+        />
+        <Button onClick={() => fileRef.current?.click()}>Choose a file</Button>
       </div>
       <form
         className="bgp-url"
         onSubmit={(e) => {
           e.preventDefault();
           if (url.trim())
-            void add(() => assetFromUrl(url.trim())).then(() => setUrl(""));
+            void add(() => assetFromUrl(url.trim())).then((ok) => {
+              if (ok) setUrl("");
+            });
         }}
       >
         <Input
