@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { initial, next, STEPS, label } from "./signon";
+import { text } from "../copy/copy";
+import { initial, next, STEPS, labelKey } from "./signon";
 
 describe("sign-on state machine", () => {
   it("walks dialing → verifying → connected → done", () => {
@@ -13,10 +14,13 @@ describe("sign-on state machine", () => {
     expect(next("done")).toBe("done");
   });
   it("labels the three steps", () => {
-    expect(STEPS.map(label)).toEqual([
-      "Dialing…",
+    const t = (serious: boolean) =>
+      STEPS.map((s) => text(labelKey(s), serious));
+    expect(t(false)).toEqual(["Dialing…", "Verifying password…", "Connected!"]);
+    expect(t(true)).toEqual([
+      "Connecting…",
       "Verifying password…",
-      "Connected!",
+      "Connected.",
     ]);
   });
 });

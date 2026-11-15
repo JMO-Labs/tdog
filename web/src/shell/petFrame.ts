@@ -1,3 +1,4 @@
+import type { CopyKey } from "../copy/copy";
 import type { PetView } from "./petEngine";
 import { petScene } from "./petScene";
 import { type Cell, type Rows, SPR, face, lying, spr } from "./petSprites";
@@ -17,7 +18,7 @@ export interface Frame {
   pose: "awake" | "sleep";
   cells: Cell[];
   mini: "face" | "sleep";
-  caption: string;
+  caption: CopyKey;
   /** Mini-egg expression. */
   eyes?: string;
   mouth?: boolean;
@@ -45,7 +46,7 @@ export function petFrame({
       pose: "sleep",
       cells: [...lying(10, 15, costume), ...spr(SPR.z, 25, 9 - ((t >> 1) % 4))],
       mini: "sleep",
-      caption: "Dogbert is asleep. Shells are quiet.",
+      caption: "pet.asleep",
     };
   }
   const eyes = reduced ? "open" : t % 4 < 2 ? "left" : "right";
@@ -53,7 +54,7 @@ export function petFrame({
     pose: "awake",
     cells: face(eyes, { legs: a, costume }, 10, 9),
     mini: "face",
-    caption: "Dogbert is reading your output.",
+    caption: "pet.reading",
   };
 }
 

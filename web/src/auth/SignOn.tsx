@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from "react";
+import { useCopy } from "../copy/copy";
 import { Mascot } from "./Mascot";
-import { initial, label, lit, next, STEPS, timing, type Phase } from "./signon";
+import {
+  initial,
+  labelKey,
+  lit,
+  next,
+  STEPS,
+  timing,
+  type Phase,
+} from "./signon";
 import { prefersReducedMotion } from "../motion/confetti";
 
 /** Wrong-password CRT: shown ~2.4 s, then calls onDone. */
@@ -11,6 +20,7 @@ export function NoNo({
   detail: string;
   onDone: () => void;
 }) {
+  const c = useCopy();
   const done = useRef(onDone);
   done.current = onDone;
   useEffect(() => {
@@ -20,7 +30,7 @@ export function NoNo({
   return (
     <div className="crt" role="alert">
       <Mascot pose="nono" />
-      <p className="crt-big">Ah ah ah!</p>
+      <p className="crt-big">{c("signon.denied")}</p>
       <p className="crt-small">{detail}</p>
     </div>
   );
@@ -28,6 +38,7 @@ export function NoNo({
 
 /** Dial-up overlay; calls onDone after Connected! has been shown. */
 export function DialUp({ onDone }: { onDone: () => void }) {
+  const c = useCopy();
   const [phase, setPhase] = useState<Phase>(initial);
   const done = useRef(onDone);
   done.current = onDone;
@@ -51,7 +62,7 @@ export function DialUp({ onDone }: { onDone: () => void }) {
           {STEPS.map((s) => (
             <li key={s} className={lit(phase, s) ? "on" : undefined}>
               <span className="step-ico" aria-hidden="true" />
-              {label(s)}
+              {c(labelKey(s))}
             </li>
           ))}
         </ol>

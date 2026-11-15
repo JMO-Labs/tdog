@@ -1,3 +1,4 @@
+import { useCopy } from "../copy/copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
@@ -79,6 +80,7 @@ export function Workspace({
     [],
   );
   const toast = useToast();
+  const c = useCopy();
   useEffect(() => saveScenes(sc), [sc]);
   const onLeaves = useCallback(
     (scene: string, ids: string[]) =>
@@ -138,7 +140,7 @@ export function Workspace({
     setKill(null);
     const done = await Promise.all(targets.map((p) => killScene(p)));
     const n = done.reduce((a, b) => a + b, 0);
-    toast("success", `Killed ${n} shell${n === 1 ? "" : "s"}.`);
+    toast("success", c(n === 1 ? "kill.done1" : "kill.done", { n }));
   };
 
   const onSize = useCallback(
@@ -378,11 +380,7 @@ export function Workspace({
           <span
             data-testid="latency"
             className={`chip num hide-xs${latency > SLOW_MS ? " slow" : ""}`}
-            title={
-              latency > SLOW_MS
-                ? "Dial-up speeds. Typing may feel sluggish."
-                : undefined
-            }
+            title={latency > SLOW_MS ? c("conn.slow") : undefined}
           >
             <Icon name={latency > SLOW_MS ? "modem" : "bolt"} />
             {latency} ms

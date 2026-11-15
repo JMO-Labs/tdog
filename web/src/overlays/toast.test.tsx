@@ -47,6 +47,23 @@ describe("toasts", () => {
     );
     expect(pickHeadline("info", true, () => 0)).toBe("");
   });
+  it.each(["success", "fail", "warn", "info"] as const)(
+    "serious mode shows no slang for %s",
+    (kind) => {
+      expect(pickHeadline(kind, true, () => 0)).toBe("");
+      const { container } = render(
+        <ToastProvider serious>
+          <Fire kind={kind} />
+        </ToastProvider>,
+      );
+      fireEvent.click(screen.getByText("go"));
+      const shown = (
+        container.ownerDocument.body.textContent ?? ""
+      ).toLowerCase();
+      for (const w of [...SLANG.success, ...SLANG.fail, ...SLANG.warn])
+        expect(shown).not.toContain(w.toLowerCase());
+    },
+  );
   it("dismisses on click", async () => {
     render(
       <ToastProvider>
