@@ -111,3 +111,12 @@ test("clicking outside dismisses", async () => {
   fireEvent.pointerDown(document.body);
   expect(p.onDismiss).toHaveBeenCalled();
 });
+
+test("only advertises shortcuts that really work (Paste)", () => {
+  setup({ hasSelection: true });
+  const hint = (n: RegExp) =>
+    screen.getByRole("menuitem", { name: n }).querySelector("kbd");
+  expect(hint(/^Paste/)).not.toBeNull();
+  expect(hint(/^Copy/)).toBeNull();
+  expect(hint(/^Select all/)).toBeNull();
+});

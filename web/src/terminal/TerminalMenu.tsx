@@ -21,6 +21,7 @@ export interface TerminalMenuProps {
 }
 
 const mac = typeof navigator !== "undefined" && /Mac/.test(navigator.platform);
+// Only Paste has a real shortcut (native); Ctrl+Shift+C/A belong to the browser.
 const mod = mac ? "⌘" : "Ctrl+Shift+";
 
 /** Right-click menu for one terminal: the pane `⋯` menu's sibling. */
@@ -93,9 +94,9 @@ export function TerminalMenu(p: TerminalMenuProps) {
           );
       }}
     >
-      {item("Copy", p.onCopy, { key: `${mod}C`, disabled: !p.hasSelection })}
+      {item("Copy", p.onCopy, { disabled: !p.hasSelection })}
       {item("Paste", p.onPaste, { key: `${mod}V` })}
-      {item("Select all", p.onSelectAll, { key: `${mod}A` })}
+      {item("Select all", p.onSelectAll)}
       {item("Clear", p.onClear)}
       <hr role="separator" />
       {item("Split right", () => p.onSplit("row"))}
