@@ -5,6 +5,7 @@ import { Modal } from "../overlays/Modal";
 import { BackgroundPicker } from "../backgrounds/BackgroundPicker";
 import type { BgSpec } from "../backgrounds/spec";
 import { FontsSection } from "./FontsSection";
+import { SceneDesigner } from "./SceneDesigner";
 import { Cassette } from "./Cassette";
 import { ThemeGallery } from "./ThemeGallery";
 import { TerminalDesigner } from "./TerminalDesigner";
@@ -14,12 +15,14 @@ import "./studio.css";
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** Launch a saved scene preset in a new scene tab. */
+  onOpenScene?: (name: string) => Promise<void>;
   /** Open a saved terminal preset as a pane (closes the Studio). */
   onTry?: (preset: string) => void;
 };
 
 /** Full-screen Studio: nav + settings search (sections are placeholders). */
-export function Studio({ open, onClose, onTry }: Props) {
+export function Studio({ open, onClose, onOpenScene, onTry }: Props) {
   const [current, setCurrent] = useState(
     () => sectionFromHash(location.hash) ?? SECTIONS[0].id,
   );
@@ -165,6 +168,8 @@ export function Studio({ open, onClose, onTry }: Props) {
               <h3>{section.label}</h3>
               <BackgroundPicker value={bg} onChange={setBg} />
             </section>
+          ) : section.id === "scene" ? (
+            <SceneDesigner onOpenScene={onOpenScene ?? (async () => {})} />
           ) : section.id === "fonts" ? (
             <FontsSection />
           ) : section.id === "themes" ? (

@@ -43,5 +43,15 @@ export interface TerminalRenderer {
   setCursor(c: CursorStyle): void;
   /** Set font family and/or size, then refit. Unset values keep the current one. */
   setFont?(family?: string, size?: number): void;
+  /** Selected text, or "" when nothing is selected. */
+  getSelection?(): string;
+  selectAll?(): void;
+  /** Send text as a paste (bracketed when the app asked for it). */
+  paste?(text: string): void;
+  focus?(): void;
+  /** Viewport x/y just below the cursor cell, or null when unknown. */
+  cursorRect?(): { x: number; y: number } | null;
+  /** True while the running app has asked for mouse events (vim, htop). */
+  mouseReporting?(): boolean;
   dispose(): void;
 }

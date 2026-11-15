@@ -73,6 +73,33 @@ export class XtermRenderer implements TerminalRenderer {
     if (size) this.term.options.fontSize = size;
     if (family || size) this.fit.fit();
   }
+  getSelection(): string {
+    return this.term.getSelection();
+  }
+  selectAll(): void {
+    this.term.selectAll();
+  }
+  paste(text: string): void {
+    this.term.paste(text);
+  }
+  focus(): void {
+    this.term.focus();
+  }
+  cursorRect(): { x: number; y: number } | null {
+    const screen = this.term.element?.querySelector(".xterm-screen");
+    if (!screen) return null;
+    const b = screen.getBoundingClientRect();
+    const { cols, rows } = this.term;
+    if (!cols || !rows) return null;
+    const { cursorX, cursorY } = this.term.buffer.active;
+    return {
+      x: b.left + (cursorX * b.width) / cols,
+      y: b.top + ((cursorY + 1) * b.height) / rows,
+    };
+  }
+  mouseReporting(): boolean {
+    return this.term.modes.mouseTrackingMode !== "none";
+  }
   dispose(): void {
     this.term.dispose();
   }

@@ -23,7 +23,7 @@ import { EffectsOverlay } from "./effects/EffectsOverlay";
 import { useActiveEffects } from "./effects/useActiveEffects";
 import { titleStore } from "./terminal/titles";
 import { useMotifOpacity, usePref } from "./settings/prefs";
-import { registerClear } from "./terminal/paneActions";
+import { clearScrollback, registerClear } from "./terminal/paneActions";
 import { resolvePreset, type Resolved } from "./presets/api";
 import { EndedPanel } from "./terminal/EndedPanel";
 import {
@@ -32,7 +32,16 @@ import {
   markKilled,
   subscribeKilled,
 } from "./terminal/killed";
-import { paneTheme, panePreset, resolveSession } from "./presets/panes";
+import { THEMES } from "./theme/registry";
+import { TerminalMenu } from "./terminal/TerminalMenu";
+import { usePaneOps } from "./layout/paneOps";
+import { killScene } from "./terminal/sessions";
+import {
+  paneTheme,
+  panePreset,
+  resolveSession,
+  setPaneTheme,
+} from "./presets/panes";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -114,12 +123,13 @@ export function TerminalPane({
   const preset = sceneKey ? panePreset(sceneKey) : undefined;
   const [resolved, setResolved] = useState<Resolved>({});
   const presetTheme = resolved.theme?.value;
+  const [override, setOverride] = useState<string | undefined>();
   theme ??= sceneKey ? paneTheme(sceneKey) : undefined;
   theme ??= typeof presetTheme === "string" ? presetTheme : undefined;
   // The theme picker previews on the focused pane only.
   const [, bump] = useReducer((n: number) => n + 1, 0);
   useEffect(() => themeStore.subscribe(bump), []);
-  theme = themeStore.paneTheme(sceneKey, theme);
+  theme = override ?? themeStore.paneTheme(sceneKey, theme);
   const fontRef = useRef<Resolved>({});
   fontRef.current = resolved;
   const themeRef = useRef(theme);
@@ -322,11 +332,51 @@ export function TerminalPane({
     };
   }, [connect, applyScope, sceneKey, paintTheme, preset]);
 
+  const ops = usePaneOps();
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const openMenu = (x: number, y: number) => setMenu({ x, y });
+  const closeMenu = (refocus = true) => {
+    setMenu(null);
+    if (refocus) renderer.current?.focus?.();
+  };
+  const paste = async () => {
+    try {
+      renderer.current?.paste?.(await navigator.clipboard.readText());
+    } catch {
+      toast(
+        "fail",
+        "Allow clipboard access in your browser to paste here, or press Ctrl+Shift+V.",
+      );
+    }
+  };
+  const copy = () => {
+    const t = renderer.current?.getSelection?.() ?? "";
+    if (t)
+      void Promise.resolve(navigator.clipboard.writeText(t)).catch(() => {});
+  };
+  const themes = THEMES.map((t) => ({ id: t.id, name: t.name }));
   const bg =
     sceneBg && !perf ? "transparent" : themeStore.terminal(theme).background;
   return (
     <div
       data-testid="terminal-pane"
+      onContextMenuCapture={(e) => {
+        // Apps that track the mouse keep right-clicks unless Shift is held.
+        if (renderer.current?.mouseReporting?.() && !e.shiftKey) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openMenu(e.clientX, e.clientY);
+      }}
+      onKeyDownCapture={(e) => {
+        if (e.key === "ContextMenu" || (e.key === "F10" && e.shiftKey)) {
+          e.preventDefault();
+          e.stopPropagation();
+          const c = renderer.current?.cursorRect?.();
+          if (c) return openMenu(c.x, c.y);
+          const r = e.currentTarget.getBoundingClientRect();
+          openMenu(r.left + 16, r.top + 16);
+        }
+      }}
       style={{ position: "relative", height: "100%", background: bg }}
     >
       <BackgroundLayer spec={paneBg} />
@@ -357,6 +407,28 @@ export function TerminalPane({
           killed={killed}
           exitCode={state.status === "closed" ? state.exitCode : undefined}
           onStart={killed ? startNew : connect}
+        />
+      )}
+      {menu && (
+        <TerminalMenu
+          {...menu}
+          hasSelection={!!renderer.current?.getSelection?.()}
+          themes={themes}
+          onCopy={copy}
+          onPaste={() => void paste()}
+          onSelectAll={() => renderer.current?.selectAll?.()}
+          onClear={() => sceneKey && clearScrollback(sceneKey)}
+          onSplit={(d) => ops?.split(d)}
+          onTheme={(t) => {
+            setOverride(t);
+            // Stored per pane so reload and "Save scene" keep the choice.
+            // ponytail: "default" (undefined) is not persisted; add clearPaneTheme if reload must forget it.
+            if (sceneKey && t) setPaneTheme(sceneKey, t);
+          }}
+          onRename={ops?.rename}
+          onKill={() => sceneKey && void killScene(sceneKey)}
+          onClose={() => ops?.close()}
+          onDismiss={closeMenu}
         />
       )}
     </div>
