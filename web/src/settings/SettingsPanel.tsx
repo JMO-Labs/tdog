@@ -9,7 +9,7 @@ import { Switch } from "./Switch";
 import { TwoFactor } from "./TwoFactor";
 import { EFFECT_IDS, FX_LABELS } from "../effects/resolve";
 import { setFx, setFxOn, useFx } from "../effects/store";
-import { useMotifOpacity, usePref } from "./prefs";
+import { setPref, useMotifOpacity, usePref } from "./prefs";
 import "./settings.css";
 
 /** Body of the settings sheet. Uses only existing /api endpoints. */
@@ -116,6 +116,21 @@ export function SettingsPanel({ onSignedOut }: { onSignedOut: () => void }) {
           </p>
         </div>
         <Switch labelledBy="sw-perf" checked={perf} onChange={setPerf} />
+      </div>
+      <h3>Rendering</h3>
+      <div className="row">
+        <div>
+          <b id="sw-images">Inline images</b>
+          <p className="muted">
+            Enable sixel and iTerm2 inline image protocol. Tools like chafa,
+            img2sixel, and kitten icat will display images.
+          </p>
+        </div>
+        <Switch
+          labelledBy="sw-images"
+          checked={usePref("images")[0]}
+          onChange={(v) => setPref("images", v)}
+        />
       </div>
       <h3>Screen effects</h3>
       <div className="row">

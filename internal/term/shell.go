@@ -68,7 +68,7 @@ func shellArgs(shell string) []string {
 	return nil
 }
 
-// shellEnv returns base plus TERM, without inherited prompt variables for bash.
+// shellEnv returns base plus TERM and COLORTERM, without inherited prompt variables for bash.
 func shellEnv(shell string, base []string) []string {
 	env := append([]string{}, base...)
 	if filepath.Base(shell) == "bash" {
@@ -80,7 +80,7 @@ func shellEnv(shell string, base []string) []string {
 		}
 		env = kept
 	}
-	return append(env, "TERM=xterm-256color")
+	return append(env, "TERM=xterm-256color", "COLORTERM=truecolor")
 }
 
 // ShellInfoHandler reports the container shell's basename as {"shell":"bash"}.

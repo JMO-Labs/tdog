@@ -272,6 +272,13 @@ export function TerminalPane({
     if (settled) renderer.current?.resize();
   }, [settled]);
 
+  const [images] = usePref("images");
+  const imagesRef = useRef(images);
+  imagesRef.current = images;
+  useEffect(() => {
+    renderer.current?.setInlineImages?.(images);
+  }, [images]);
+
   useEffect(() => {
     const el = host.current!;
     let cleanup = () => {};
@@ -293,6 +300,8 @@ export function TerminalPane({
       );
       session.current = s;
       renderer.current = r;
+      // The images effect ran before this async renderer existed: apply now.
+      void r.setInlineImages?.(imagesRef.current);
       r.onTitle?.((title) => {
         if (keyRef.current) titleStore.set(keyRef.current, { title });
       });
