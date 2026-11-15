@@ -1,84 +1,69 @@
-import { useCallback } from "react";
-import { isKilled } from "../terminal/killed";
+import { useCallback, useEffect, useRef } from "react";
+import { isKilled, subscribeKilled } from "../terminal/killed";
 import { killScene } from "../terminal/sessions";
 import { clearLayout } from "../layout/store";
 import { clearScene } from "../broadcast/store";
 import { newId } from "../layout/tree";
-import { closeScene } from "./scenes";
+import { closeScene, type Scene, type SceneState } from "./scenes";
 import type { CopyKey } from "../copy/copy";
 import type { ToastKind } from "../overlays/toast";
 
+type SetState<T> = (f: (prev: T) => T) => void;
+
 /**
- * Hook for killing shells and removing scenes when all panes are killed.
+ * Kills shells and removes a scene once every pane in it has been killed,
+ * whatever did the killing (pane menu, right-click, tab menu, kill all, or
+ * the server's "killed" signal). Shells that exit on their own don't count.
  */
 export function useSceneKill(
   leafMap: Record<string, string[]>,
-  paneOpen: Record<string, { open: boolean; everOpen: boolean }>,
-  setSc: (f: (s: any) => any) => void,
-  setLeafMap: (f: (m: any) => any) => void,
+  scenes: Scene[],
+  setSc: SetState<SceneState>,
+  setLeafMap: SetState<Record<string, string[]>>,
   toast: (kind: ToastKind, detail: string) => void,
   c: (key: CopyKey, vars?: Record<string, string | number>) => string,
 ) {
-  /** Check if all panes in a scene are killed. */
-  const allPanesKilled = useCallback(
-    (sceneId: string): boolean => {
-      const panes = leafMap[sceneId] ?? [];
-      return panes.length > 0 && panes.every((p) => isKilled(p));
-    },
-    [leafMap],
-  );
-
-  /** Remove a scene without re-killing panes (for internal cleanup). */
+  /** Remove a scene's tab and state without killing anything. */
   const removeSceneCleanup = useCallback(
     (id: string) => {
       clearLayout(id);
       clearScene(id);
-      setLeafMap((m: Record<string, string[]>) => {
+      setLeafMap((m) => {
         const rest = { ...m };
         delete rest[id];
         return rest;
       });
-      setSc((s: any) => closeScene(s, id, newId("sc")));
+      setSc((s) => closeScene(s, id, newId("sc")));
     },
     [setSc, setLeafMap],
   );
 
-  /** Execute the kill and handle scene cleanup. */
+  const live = useRef({ leafMap, scenes, removeSceneCleanup, toast, c });
+  live.current = { leafMap, scenes, removeSceneCleanup, toast, c };
+
+  const sweep = useCallback(() => {
+    const { leafMap: m, scenes: all, removeSceneCleanup: rm } = live.current;
+    for (const [id, panes] of Object.entries(m)) {
+      if (panes.length === 0 || !panes.every(isKilled)) continue;
+      const name = all.find((s) => s.id === id)?.name ?? id;
+      rm(id);
+      live.current.toast("info", live.current.c("scene.gone", { name }));
+    }
+  }, []);
+
+  // React to every kill, and to layouts that load with all panes already
+  // killed (reload after a kill must not bring the tab back).
+  useEffect(() => subscribeKilled(sweep), [sweep]);
+  useEffect(sweep, [leafMap, sweep]);
+
+  /** Kill these panes' shells; scene removal follows from the kill marks. */
   const runKill = useCallback(
     async (targets: string[]) => {
       const done = await Promise.all(targets.map((p) => killScene(p)));
       const n = done.reduce((a, b) => a + b, 0);
-
-      // After killing, check which scenes have all panes killed and remove them
-      let closedCount = 0;
-      const targetSceneIds = new Set(
-        Object.entries(leafMap)
-          .filter(([_, panes]) => panes.some((p) => targets.includes(p)))
-          .map(([sceneId]) => sceneId),
-      );
-
-      // Remove scenes where all panes are now killed
-      targetSceneIds.forEach((sceneId) => {
-        if (allPanesKilled(sceneId)) {
-          removeSceneCleanup(sceneId);
-          closedCount++;
-        }
-      });
-
-      // Toast: report killed shells and closed scenes
-      if (closedCount > 0) {
-        toast(
-          "success",
-          c(closedCount === 1 ? "scene.closed1" : "scene.closed", {
-            n,
-            closed: closedCount,
-          }),
-        );
-      } else {
-        toast("success", c(n === 1 ? "kill.done1" : "kill.done", { n }));
-      }
+      toast("success", c(n === 1 ? "kill.done1" : "kill.done", { n }));
     },
-    [leafMap, allPanesKilled, removeSceneCleanup, toast, c],
+    [toast, c],
   );
 
   return { removeSceneCleanup, runKill };

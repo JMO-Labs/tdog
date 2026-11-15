@@ -115,7 +115,7 @@ export function Workspace({
   const dirty = useDirtyScenes(sc.scenes.map((x) => x.id));
   const { removeSceneCleanup, runKill: runKillImpl } = useSceneKill(
     leafMap,
-    paneOpen,
+    sc.scenes,
     setSc,
     setLeafMap,
     toast,
