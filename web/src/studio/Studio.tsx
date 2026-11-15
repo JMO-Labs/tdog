@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Modal } from "../overlays/Modal";
+import { FontsSection } from "./FontsSection";
 import { Cassette } from "./Cassette";
 import { SECTIONS, filterSections, hashFor, sectionFromHash } from "./sections";
 import "./studio.css";
@@ -128,6 +129,8 @@ export function Studio({ open, onClose }: Props) {
             ) : (
               <p className="studio-none">No settings match “{query.trim()}”.</p>
             )
+          ) : section.id === "fonts" ? (
+            <FontsSection />
           ) : (
             <section className="studio-empty">
               <h3>{section.label}</h3>

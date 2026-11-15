@@ -47,11 +47,13 @@ test("nav lists sections, switching updates hash and empty state", async () => {
     "Backgrounds",
     "Fonts",
   ]);
-  fireEvent.click(nav().getByRole("button", { name: "Fonts" }));
-  expect(location.hash).toBe("#studio/fonts");
-  expect(screen.getByRole("heading", { name: "Fonts" })).toBeTruthy();
+  fireEvent.click(nav().getByRole("button", { name: "Themes" }));
+  expect(location.hash).toBe("#studio/themes");
+  expect(screen.getByRole("heading", { name: "Themes" })).toBeTruthy();
   expect(screen.getByRole("img", { name: "Cassette" })).toBeTruthy();
   expect(screen.getByText("Coming in v0.4")).toBeTruthy();
+  fireEvent.click(nav().getByRole("button", { name: "Fonts" }));
+  expect(location.hash).toBe("#studio/fonts");
   const fonts = nav().getByRole("button", { name: "Fonts" });
   expect(fonts.getAttribute("aria-current")).toBe("page");
 });

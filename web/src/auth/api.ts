@@ -57,12 +57,13 @@ export async function apiPost(
 ): Promise<Response> {
   const headers: Record<string, string> = {};
   if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const form = body instanceof FormData;
+  if (body !== undefined && !form) headers["Content-Type"] = "application/json";
   const r = await fetch(path, {
     method: "POST",
     credentials: "same-origin",
     headers,
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    ...(body === undefined ? {} : { body: form ? body : JSON.stringify(body) }),
   });
   if (r.status === 401 && !opts.keep401) onUnauthorized?.();
   return r;
