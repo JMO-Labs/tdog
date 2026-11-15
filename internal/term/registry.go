@@ -72,12 +72,13 @@ func (r *Registry) addID(id, target, scene string, s *session) *Session {
 func (r *Registry) add(id, target, scene string, s *session, onClose func()) *Session {
 	sess := &Session{
 		id: id, scene: scene, target: target, started: time.Now().UTC(),
-		s: s, reg: r, ring: newRing(r.scrollback), onClose: onClose,
+		s: s, reg: r, ring: newRing(r.scrollback), onClose: onClose, j: newJrnl(),
 	}
 	r.mu.Lock()
 	r.sessions[sess.id] = sess
 	r.mu.Unlock()
 	r.audit.Log(audit.Entry{Event: "term_start", Target: target, PID: s.pid, Session: sess.id})
+	sess.j.start()
 	go sess.pump()
 	return sess
 }

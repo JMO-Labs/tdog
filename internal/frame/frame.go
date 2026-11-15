@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/JMO-Labs/tdog/internal/journal"
 )
 
 // Type is the 1-byte frame type prefix.
@@ -17,6 +19,7 @@ const (
 	Input   Type = 0x01 // client → server: keystrokes
 	Resize  Type = 0x02 // client → server: JSON {"cols","rows"}
 	Control Type = 0x03 // either way: JSON
+	Journal Type = 0x04 // server → client: JSON array of journal.Event
 )
 
 // Encode returns type byte + payload.
@@ -32,7 +35,7 @@ func Decode(b []byte) (Type, []byte, error) {
 		return 0, nil, errors.New("frame: empty")
 	}
 	t := Type(b[0])
-	if t > Control {
+	if t > Journal {
 		return 0, nil, fmt.Errorf("frame: unknown type 0x%02x", b[0])
 	}
 	return t, b[1:], nil
@@ -101,4 +104,10 @@ func KilledControl() []byte {
 		Type string `json:"type"`
 	}{"killed"})
 	return Encode(Control, p)
+}
+
+// EncodeJournal builds a Journal frame carrying evs as a JSON array.
+func EncodeJournal(evs []journal.Event) []byte {
+	p, _ := json.Marshal(evs)
+	return Encode(Journal, p)
 }

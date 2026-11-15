@@ -24,6 +24,7 @@ type Session struct {
 	killed bool // ended by a kill request; clients get a "killed" control
 
 	onClose func() // preset on_close hook; nil when none
+	j       *jrnl  // session journal; nil when absent
 }
 
 // attachment is one socket's live view of a session.
@@ -53,6 +54,7 @@ func (s *Session) pump() {
 		}
 	}
 	<-s.s.wait.done
+	s.j.stop()
 	s.mu.Lock()
 	s.exited = true
 	if s.att != nil {
@@ -75,6 +77,7 @@ func (s *Session) feed(b []byte) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.ring.write(b)
+	s.j.feed(b)
 	if s.att == nil {
 		return
 	}
@@ -142,7 +145,7 @@ func (s *Session) serve(c *websocket.Conn) {
 		pumpInput(ioctx, func(ctx context.Context) ([]byte, error) {
 			_, data, err := c.Read(ioctx)
 			return data, err
-		}, s.s.w, s.s.resize, write)
+		}, s.s.w, s.s.resize, write, s.j.control)
 	}()
 
 	if write(frame.SessionControl(s.id)) != nil {
@@ -156,6 +159,7 @@ func (s *Session) serve(c *websocket.Conn) {
 		replay = replay[n:]
 	}
 
+	go s.j.stream(a.ctx, write)
 	if pumpOutput(a.ctx, write, a.ch) { // shell exited
 		wctx, wcancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer wcancel()

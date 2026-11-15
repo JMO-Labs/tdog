@@ -26,6 +26,8 @@ const (
 	flushAfter = 4 * time.Millisecond
 	flushSize  = 16 * 1024
 	hupGrace   = 3 * time.Second
+
+	journalCap = 16 << 20 // per-session journal buffer bytes
 )
 
 // Config selects and parameterises the shell targets.
@@ -284,9 +286,9 @@ func pumpOutput(ctx context.Context, write func(frame []byte) error, chunks <-ch
 
 // pumpInput decodes client frames and applies them: Input is written to w,
 // Resize calls resize, and a ping control frame is answered with a pong via
-// reply (may be nil). Undecodable or unknown frames are skipped. It returns
+// reply (may be nil); other control payloads go to ctl (may be nil). Undecodable or unknown frames are skipped. It returns
 // on a read error or a failed write.
-func pumpInput(ctx context.Context, read func(context.Context) ([]byte, error), w io.Writer, resize func(cols, rows uint16), reply func([]byte) error) {
+func pumpInput(ctx context.Context, read func(context.Context) ([]byte, error), w io.Writer, resize func(cols, rows uint16), reply func([]byte) error, ctl func([]byte)) {
 	for {
 		data, err := read(ctx)
 		if err != nil {
@@ -308,6 +310,8 @@ func pumpInput(ctx context.Context, read func(context.Context) ([]byte, error), 
 		case frame.Control:
 			if pong, ok := frame.Pong(p); ok && reply != nil {
 				_ = reply(pong)
+			} else if ctl != nil {
+				ctl(p)
 			}
 		}
 	}
