@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { TerminalSession, type SessionState } from "./terminal/session";
 import type { TerminalRenderer, TerminalTheme } from "./terminal/renderer";
 import { themeStore } from "./theme/store";
@@ -8,10 +8,13 @@ import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
+import { BackgroundLayer } from "./backgrounds/BackgroundLayer";
+import { SceneBgContext } from "./backgrounds/SceneBackground";
+import { bgSpec } from "./backgrounds/spec";
 import { EffectsOverlay } from "./effects/EffectsOverlay";
 import { useActiveEffects } from "./effects/useActiveEffects";
 import { titleStore } from "./terminal/titles";
-import { useMotifOpacity } from "./settings/prefs";
+import { useMotifOpacity, usePref } from "./settings/prefs";
 import { registerClear } from "./terminal/paneActions";
 import { resolvePreset, type Resolved } from "./presets/api";
 import { panePreset, resolveSession } from "./presets/panes";
@@ -148,7 +151,11 @@ export function TerminalPane({
   const motifUrl = motifPct > 0 ? themeStore.terminalMotif(theme) : null;
   const motifOn = motifUrl !== null;
   /** Something paints behind the text: the renderer must be transparent. */
-  const clear = motifOn || rainBehind;
+  const sceneBg = useContext(SceneBgContext);
+  const [perf] = usePref("perf");
+  const paneBg = bgSpec(resolved);
+  const hasBg = !perf && paneBg !== null;
+  const clear = motifOn || rainBehind || hasBg || (sceneBg && !perf);
   const clearRef = useRef(clear);
   clearRef.current = clear;
   /** Renderer colours; transparent background while a motif or rain shows through. */
@@ -269,12 +276,14 @@ export function TerminalPane({
     };
   }, [connect, applyScope, sceneKey, paintTheme, preset]);
 
-  const bg = themeStore.terminal(theme).background;
+  const bg =
+    sceneBg && !perf ? "transparent" : themeStore.terminal(theme).background;
   return (
     <div
       data-testid="terminal-pane"
       style={{ position: "relative", height: "100%", background: bg }}
     >
+      <BackgroundLayer spec={paneBg} />
       {motifUrl && (
         <div
           data-testid="terminal-motif"
