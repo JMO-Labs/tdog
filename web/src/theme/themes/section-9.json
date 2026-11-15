@@ -28,11 +28,62 @@
       ]
     },
     "cursor": {
-      "shape": "block",
+      "shape": "bar",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "ibm-plex-mono",
+    "effects": [
+      {
+        "id": "glow",
+        "intensity": 0.4
+      },
+      {
+        "id": "vignette",
+        "intensity": 0.5
+      }
+    ],
+    "motif": {
+      "viewBox": [0, 0, 32, 32],
+      "tile": [32, 32],
+      "shapes": [
+        {
+          "type": "polygon",
+          "points": "8,2 16,2 20,9 16,16 8,16 4,9",
+          "stroke": "muted"
+        },
+        {
+          "type": "polygon",
+          "points": "24,16 32,16 36,23 32,30 24,30 20,23",
+          "stroke": "muted"
+        },
+        {
+          "type": "polygon",
+          "points": "-8,16 0,16 4,23 0,30 -8,30 -12,23",
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 12,
+          "cy": 9,
+          "r": 1,
+          "fill": "yellow"
+        },
+        {
+          "type": "circle",
+          "cx": 28,
+          "cy": 23,
+          "r": 1,
+          "fill": "cyan"
+        },
+        {
+          "type": "circle",
+          "cx": 6,
+          "cy": 27,
+          "r": 0.8,
+          "fill": "pink"
+        }
+      ]
+    }
   },
   "chrome": {
     "tokens": {
@@ -53,15 +104,57 @@
       "term-dim": "#7a9ab8"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
+      "radius": 0.125,
+      "shadow": "none",
       "border": 1
     },
     "pattern": "none",
-    "boot": "drop",
+    "boot": "post",
     "costume": {
-      "name": "visor",
-      "rows": ["..########..", ".##########."]
+      "name": "headset",
+      "rows": ["..........#...", "..######..#...", ".##......###.."]
+    },
+    "motif": {
+      "viewBox": [0, 0, 32, 32],
+      "tile": [32, 32],
+      "shapes": [
+        {
+          "type": "polygon",
+          "points": "8,2 16,2 20,9 16,16 8,16 4,9",
+          "stroke": "muted"
+        },
+        {
+          "type": "polygon",
+          "points": "24,16 32,16 36,23 32,30 24,30 20,23",
+          "stroke": "muted"
+        },
+        {
+          "type": "polygon",
+          "points": "-8,16 0,16 4,23 0,30 -8,30 -12,23",
+          "stroke": "muted"
+        },
+        {
+          "type": "circle",
+          "cx": 12,
+          "cy": 9,
+          "r": 1,
+          "fill": "yellow"
+        },
+        {
+          "type": "circle",
+          "cx": 28,
+          "cy": 23,
+          "r": 1,
+          "fill": "cyan"
+        },
+        {
+          "type": "circle",
+          "cx": 6,
+          "cy": 27,
+          "r": 0.8,
+          "fill": "pink"
+        }
+      ]
     }
   }
 }

@@ -31,8 +31,44 @@
       "shape": "block",
       "blink": true
     },
-    "font": "jetbrains-mono",
-    "effects": []
+    "font": "share-tech-mono",
+    "effects": [
+      {
+        "id": "glyph-rain",
+        "intensity": 0.6
+      },
+      {
+        "id": "glow",
+        "intensity": 0.4
+      }
+    ],
+    "motif": {
+      "viewBox": [0, 0, 32, 32],
+      "tile": [32, 32],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M4 0V10M4 13V18M12 6V22M12 25V30M20 0V6M20 9V16M28 10V24",
+          "stroke": "link"
+        },
+        {
+          "type": "rect",
+          "x": 3,
+          "y": 19,
+          "width": 2,
+          "height": 3,
+          "fill": "fg"
+        },
+        {
+          "type": "rect",
+          "x": 19,
+          "y": 17,
+          "width": 2,
+          "height": 3,
+          "fill": "fg"
+        }
+      ]
+    }
   },
   "chrome": {
     "tokens": {
@@ -53,12 +89,42 @@
       "term-dim": "#3fae5c"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
+      "radius": 0,
+      "shadow": "none",
       "border": 1
     },
     "pattern": "none",
     "boot": "rain",
-    "costume": "none"
+    "costume": {
+      "name": "tiny shades",
+      "rows": [".####....####.", "..##......##.."]
+    },
+    "motif": {
+      "viewBox": [0, 0, 32, 32],
+      "tile": [32, 32],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M4 0V10M4 13V18M12 6V22M12 25V30M20 0V6M20 9V16M28 10V24",
+          "stroke": "link"
+        },
+        {
+          "type": "rect",
+          "x": 3,
+          "y": 19,
+          "width": 2,
+          "height": 3,
+          "fill": "fg"
+        },
+        {
+          "type": "rect",
+          "x": 19,
+          "y": 17,
+          "width": 2,
+          "height": 3,
+          "fill": "fg"
+        }
+      ]
+    }
   }
 }
