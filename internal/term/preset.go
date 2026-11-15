@@ -183,6 +183,7 @@ func (sp Spec) tmuxCmd(id string) string {
 	for _, k := range sp.envKeys() {
 		cmd += " -e " + shQuote(k+"="+sp.Env[k])
 	}
+	cmd += " \\; set -g allow-passthrough on"
 	if sp.Cwd != "" {
 		cmd = "cd " + cdArg(sp.Cwd) + " && " + cmd
 	}

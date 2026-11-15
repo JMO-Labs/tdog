@@ -78,5 +78,7 @@ export interface TerminalRenderer {
   screenLines?(): ScreenLine[];
   /** Cell geometry: dimensions and offsets for layout. Optional: for overlays. */
   cellGeometry?(): CellGeometry | null;
+  /** Enable/disable inline images (sixel/iTerm2). Optional: renderers may not support it. */
+  setInlineImages?(enabled: boolean): void;
   dispose(): void;
 }

@@ -7,6 +7,19 @@ import path from "node:path";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": path.resolve(__dirname, "src") } },
+  build: {
+    rollupOptions: {
+      output: {
+        // Ensure xterm.js addon-image worker lands in dist root for correct path resolution
+        assetFileNames: (info) => {
+          if (info.name?.includes("xterm") && info.name?.endsWith(".js")) {
+            return "[name].[ext]";
+          }
+          return "assets/[name].[hash][ext]";
+        },
+      },
+    },
+  },
   test: {
     environment: "jsdom",
     setupFiles: ["src/setupTests.ts"],

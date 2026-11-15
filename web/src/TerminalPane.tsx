@@ -23,7 +23,7 @@ import { bgSpec } from "./backgrounds/spec";
 import { EffectsOverlay } from "./effects/EffectsOverlay";
 import { useActiveEffects } from "./effects/useActiveEffects";
 import { titleStore } from "./terminal/titles";
-import { useMotifOpacity, usePref } from "./settings/prefs";
+import { useMotifOpacity, usePref } from "./settings/prefs"; // ponytail: inline-images feature, delete after v0.6
 import { clearScrollback, registerClear } from "./terminal/paneActions";
 import { resolvePreset, type Resolved } from "./presets/api";
 import { EndedPanel } from "./terminal/EndedPanel";
@@ -271,6 +271,11 @@ export function TerminalPane({
     settledRef.current = settled;
     if (settled) renderer.current?.resize();
   }, [settled]);
+
+  const [images] = usePref("images");
+  useEffect(() => {
+    renderer.current?.setInlineImages?.(images);
+  }, [images]);
 
   useEffect(() => {
     const el = host.current!;
