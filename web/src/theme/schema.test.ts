@@ -134,6 +134,16 @@ describe("bundled themes", () => {
     ])
       expect(THEMES.find((t) => t.id === id)?.light, id).toBeDefined();
   });
+  it("ships a light variant for the dark-only pack", () => {
+    for (const id of [
+      "night-market",
+      "rip-and-tear",
+      "section-9",
+      "sewer-squad",
+      "sim-grid",
+    ])
+      expect(THEMES.find((t) => t.id === id)?.light, id).toBeDefined();
+  });
   for (const t of THEMES) {
     describe(t.id, () => {
       it("is schema valid", () => {
