@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "../components/ui/button";
 import { CommandPalette } from "../overlays/CommandPalette";
 import { Sheet } from "../overlays/Sheet";
@@ -89,7 +89,7 @@ export function Workspace({
         delete rest[id];
         return rest;
       });
-      setSc((s) => closeScene(s, id));
+      setSc((s) => closeScene(s, id, newId("sc")));
     },
     [leafMap],
   );
@@ -107,11 +107,18 @@ export function Workspace({
     else finishClose(id);
   };
 
+  const closeActive = useRef<() => void>(() => {});
+  closeActive.current = () => requestClose(sc.active);
+
   const killTargets = (scope: string | null) =>
     (scope === "all"
       ? Object.values(leafMap).flat()
       : (leafMap[scope ?? ""] ?? [])
     ).filter((p) => paneOpen[p]?.open);
+  const closingName = sc.scenes.find((x) => x.id === closing)?.name ?? "";
+  const closingCount = closing
+    ? (leafMap[closing] ?? []).filter((p) => paneOpen[p]?.open).length
+    : 0;
   const runKill = async () => {
     const targets = killTargets(kill);
     setKill(null);
@@ -212,6 +219,12 @@ export function Workspace({
         group: "Scenes",
         shortcut: "⌘T",
         run: add,
+      }),
+      registerCommand({
+        id: "scene:close",
+        title: "Close scene",
+        group: "Scenes",
+        run: () => closeActive.current(),
       }),
       registerCommand({
         id: "signout",
@@ -371,10 +384,13 @@ export function Workspace({
 
       <Dialog
         open={closing !== null}
-        title="Close scene?"
+        title={`Close ${closingName}?`}
         onClose={() => setClosing(null)}
       >
-        <p>This scene has running shells. Closing it hangs them up.</p>
+        <p>
+          Ends {closingCount} shell{closingCount === 1 ? "" : "s"} in it.
+          Unsaved work in them is gone.
+        </p>
         <div className="dialog-actions">
           <button className="btn" onClick={() => setClosing(null)}>
             Keep

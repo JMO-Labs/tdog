@@ -280,8 +280,13 @@
   margin-left: -8px;
   opacity: 0.5;
 }
-.tab-x:hover {
+.tab-x:hover,
+.tab-x:focus-visible,
+.tab-x[data-active] {
   opacity: 1;
+}
+.tab-wrap:not(:hover):not(:focus-within) .tab-x:not([data-active]) {
+  opacity: 0;
 }
 .tab-edit {
   font: inherit;
