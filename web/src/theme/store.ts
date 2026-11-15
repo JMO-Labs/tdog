@@ -93,9 +93,9 @@ function resolveTokens(tokens: Record<string, string>): Record<string, string> {
 
 const NAMED_COLORS = ["pink", "cyan", "yellow", "purple"] as const;
 
-/** Accent for a theme: its chrome.accent, else the pink token. */
-export function themeAccent(t: Theme): string {
-  return t.chrome.accent ?? t.chrome.tokens.pink ?? "";
+/** Accent for a theme in a variant (default: the active one): variant, then base accent, then variant pink. */
+export function themeAccent(t: Theme, v: ThemeVariant = variant(t)): string {
+  return v.chrome.accent ?? t.chrome.accent ?? v.chrome.tokens.pink ?? "";
 }
 
 /** Readable text on an accent: white or near-black by relative luminance. */
@@ -121,7 +121,10 @@ function apply() {
     applied.push(p);
   };
   const tokens = variant(t).chrome.tokens;
-  const { pattern, motif, tint, tintPct } = t.chrome;
+  const vc = variant(t).chrome;
+  const { pattern, motif } = t.chrome;
+  const tint = vc.tint ?? t.chrome.tint;
+  const tintPct = vc.tintPct ?? t.chrome.tintPct;
   const accent = themeAccent(t);
   if (accent) {
     set("--accent", accent);

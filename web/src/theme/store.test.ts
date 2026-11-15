@@ -65,6 +65,33 @@ describe("themeStore", () => {
     ).toBe("#123456");
     expect(themeAccent({ ...base, chrome })).toBe("#abcdef");
   });
+  it("accent follows the active variant", () => {
+    const base = findTheme("memphis-pop")!;
+    THEMES.push({
+      ...base,
+      id: "variant-test",
+      chrome: {
+        ...base.chrome,
+        accent: undefined,
+        tokens: { pink: "#111111" },
+      },
+      light: {
+        terminal: base.light!.terminal,
+        chrome: { tokens: { pink: "#eeeeee" } },
+      },
+    });
+    try {
+      const s = document.documentElement.style;
+      themeStore.select("variant-test");
+      themeStore.setScheme("light");
+      expect(s.getPropertyValue("--accent")).toBe("#eeeeee");
+      expect(s.getPropertyValue("--pink")).toBe("#eeeeee");
+      themeStore.setScheme("dark");
+      expect(s.getPropertyValue("--accent")).toBe("#111111");
+    } finally {
+      THEMES.pop();
+    }
+  });
   it("serious mode accent is the plain theme's accent", () => {
     const base = findTheme("memphis-pop")!;
     THEMES.push({

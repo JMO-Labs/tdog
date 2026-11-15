@@ -133,7 +133,7 @@ function costume(v: unknown, at: string): string | null {
 /** Light variant: colors only. */
 export interface ThemeVariant {
   terminal: { palette: TerminalColors };
-  chrome: { tokens: Tokens };
+  chrome: Pick<ChromeScope, "tokens" | "accent" | "tint" | "tintPct">;
 }
 export interface ThemeData {
   name: string;
@@ -313,8 +313,16 @@ function light(v: unknown): string | null {
   const c = v.chrome;
   if (!isObj(t) || unknownKeys(t, ["palette"]).length)
     return "light.terminal must be {palette}";
-  if (!isObj(c) || unknownKeys(c, ["tokens"]).length)
-    return "light.chrome must be {tokens}";
+  if (
+    !isObj(c) ||
+    unknownKeys(c, ["tokens", "accent", "tint", "tintPct"]).length
+  )
+    return "light.chrome must be {tokens, accent?, tint?, tintPct?}";
+  for (const k of ["accent", "tint"])
+    if (c[k] !== undefined && !isHex(c[k]))
+      return `light.chrome.${k} must be a hex color`;
+  if (c.tintPct !== undefined && !isNum(c.tintPct, 0, 5))
+    return "light.chrome.tintPct must be 0..5";
   return (
     palette(t.palette, "light.terminal.palette") ??
     tokens(c.tokens, "light.chrome.tokens")
