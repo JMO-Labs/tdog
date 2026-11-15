@@ -76,13 +76,16 @@ export function AuthShell({ children }: { children: ReactNode }) {
         {ICON[mode]}
       </IconButton>
       <div className="auth-stack">
-        <h1 className="wordmark big" aria-label="tdog" ref={mark}>
-          {LETTERS.map((l) => (
-            <span key={l} aria-hidden="true">
-              {l}
-            </span>
-          ))}
-        </h1>
+        <div className="brand">
+          <span className="logo-mark big" aria-hidden="true" />
+          <h1 className="wordmark big" aria-label="tdog" ref={mark}>
+            {LETTERS.map((l) => (
+              <span key={l} aria-hidden="true">
+                {l}
+              </span>
+            ))}
+          </h1>
+        </div>
         <div ref={card}>{children}</div>
       </div>
     </main>
