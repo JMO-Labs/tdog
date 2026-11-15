@@ -20,8 +20,7 @@
     max(12px, env(safe-area-inset-left, 0px));
   background: var(--surface);
   border-bottom: 1px solid var(--line);
-  font-family:
-    "JetBrains Mono", "Symbols Nerd Font Mono", ui-monospace, monospace;
+  font-family: var(--mono);
 }
 .wordmark {
   font-family: inherit;
@@ -64,7 +63,6 @@ html[data-serious] .ws-head .wordmark.small {
   color: var(--muted);
 }
 .ws-head .icon-btn:hover {
-  transform: none;
   background: var(--surface-2);
   color: var(--fg);
   box-shadow: none;
@@ -74,6 +72,7 @@ html[data-serious] .ws-head .wordmark.small {
   gap: 2px;
   position: relative;
   flex: none;
+  overflow-x: auto;
 }
 .tab {
   position: relative;
@@ -105,7 +104,6 @@ html[data-serious] .ws-head .wordmark.small {
   opacity: 0.5;
   cursor: not-allowed;
   box-shadow: var(--shadow-md);
-  transform: none;
 }
 .ws .icon-btn:not(.sm) .nf {
   font-size: 20px;
@@ -244,9 +242,6 @@ html[data-serious] .ws-head .wordmark.small {
   align-items: center;
   gap: 8px;
   min-width: 0;
-}
-.tabs {
-  overflow-x: auto;
 }
 .tab-wrap {
   position: relative;

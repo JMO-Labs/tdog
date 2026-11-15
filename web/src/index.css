@@ -28,6 +28,7 @@
   --yellow: #ffe14d;
   --purple: #8b3dff;
   --ink: #160b2e;
+  --danger: #d93a4a;
   --accent: var(--pink);
   --accent-ink: #fff;
   --bg: color-mix(
@@ -186,11 +187,9 @@ body {
   font: 14px/1.5 var(--mono);
 }
 :focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 3px var(--bg),
-    0 0 0 6px var(--cyan),
-    0 0 18px 4px rgb(34 211 238 / 0.55) !important;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 [hidden] {
   display: none !important;

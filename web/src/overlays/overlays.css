@@ -6,7 +6,7 @@
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgb(22 11 46 / 0.6);
+  background: rgb(0 0 0 / 0.5);
 }
 .dialog {
   width: min(480px, 100%);
@@ -140,7 +140,7 @@
   flex-shrink: 0;
 }
 .cmdk [role="option"].danger {
-  color: var(--danger, #c2185b);
+  color: var(--danger);
 }
 .cmdk-title .nf {
   font-size: 14px;
@@ -191,12 +191,13 @@
   pointer-events: auto;
   width: min(320px, calc(100vw - 32px));
   padding: 12px 16px;
-  color: var(--ink);
+  color: var(--fg);
   cursor: pointer;
 }
 .toast b {
   display: block;
-  font: 400 22px/1.1 var(--display);
+  font: inherit;
+  font-weight: 700;
 }
 .toast p {
   margin: 2px 0 0;
@@ -204,17 +205,26 @@
   font-weight: 600;
 }
 .toast.success {
-  background: var(--cyan);
+  --bar: #2e9e5b;
 }
 .toast.fail {
-  background: var(--pink);
+  --bar: var(--danger);
 }
 .toast.warn {
-  background: var(--yellow);
+  --bar: #c98a00;
 }
 .toast.info {
-  background: var(--purple);
-  color: #fff;
+  --bar: var(--accent);
+}
+.toast.success,
+.toast.fail,
+.toast.warn,
+.toast.info,
+html[data-serious] .toast.success,
+html[data-serious] .toast.fail,
+html[data-serious] .toast.warn,
+html[data-serious] .toast.info {
+  border-left: 4px solid var(--bar);
 }
 .tip {
   position: fixed;

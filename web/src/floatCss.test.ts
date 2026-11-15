@@ -45,13 +45,32 @@ describe("floating surface css", () => {
   );
 
   it(".tip has no offset shadow", () => {
-    for (const b of baseBodies(css("./overlays/overlays.css"), ".tip"))
-      expect(b).not.toMatch(/box-shadow:\s*(?!none)\S/);
+    const bodies = baseBodies(css("./overlays/overlays.css"), ".tip");
+    expect(bodies.length).toBeGreaterThan(0);
+    for (const b of bodies) expect(b).not.toMatch(/box-shadow:\s*(?!none)\S/);
   });
 
   it("serious mode drops the offset shadow", () => {
     expect(css("./index.css")).toMatch(
       /\[data-serious\] \.float\s*\{[^}]*box-shadow: 0 8px/,
     );
+  });
+
+  it("toast kinds set no background fill", () => {
+    const src = css("./overlays/overlays.css");
+    for (const k of ["success", "fail", "warn", "info"]) {
+      const bodies = baseBodies(src, `.toast.${k}`);
+      expect(bodies.length).toBeGreaterThan(0);
+      for (const b of bodies) expect(b).not.toMatch(/background/);
+    }
+  });
+
+  it(".icon-btn hover/active rules never transform", () => {
+    const src = css("./components/ui/ui.css");
+    const rules = [...src.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter((m) =>
+      /\.icon-btn[^,{]*:(hover|active)/.test(m[1]!),
+    );
+    expect(rules.length).toBeGreaterThan(0);
+    for (const m of rules) expect(m[2]).not.toMatch(/transform/);
   });
 });

@@ -17,14 +17,19 @@
   padding: 10px 18px;
   font-weight: 800;
 }
-.btn:hover,
-.icon-btn:hover {
+.btn:hover {
   transform: translate(-2px, -2px) rotate(-0.6deg);
   box-shadow: var(--shadow-lg);
 }
-.btn:active,
-.icon-btn:active {
+.btn:active {
   transform: translate(4px, 4px) scale(0.96, 0.92);
+  box-shadow: var(--shadow-press);
+  transition-duration: 0.06s;
+}
+.icon-btn:hover {
+  box-shadow: var(--shadow-lg);
+}
+.icon-btn:active {
   box-shadow: var(--shadow-press);
   transition-duration: 0.06s;
 }
@@ -82,8 +87,8 @@
   color: var(--muted);
 }
 .icon-btn.danger:hover {
-  background: color-mix(in srgb, var(--danger, #c0392b) 12%, transparent);
-  color: var(--danger, #c0392b);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
 }
 .icon-btn .nf {
   font-size: 20px;
@@ -274,9 +279,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .btn:hover,
-  .icon-btn:hover,
-  .btn:active,
-  .icon-btn:active {
+  .btn:active {
     transform: none;
   }
 }

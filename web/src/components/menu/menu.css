@@ -139,7 +139,7 @@
 }
 
 .menu-item.danger {
-  color: var(--danger, #c2185b);
+  color: var(--danger);
 }
 
 .menu-label {

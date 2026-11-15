@@ -74,7 +74,7 @@
   flex: 1;
 }
 .bgp-error {
-  color: var(--danger, #e5484d);
+  color: var(--danger);
   margin: 0;
 }
 .bgp-preview {
