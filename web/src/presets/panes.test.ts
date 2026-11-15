@@ -37,3 +37,10 @@ test("scenePreset stores per scene tab and survives corrupt JSON", () => {
   localStorage.setItem("tdog.scenePresets", "{x");
   expect(scenePreset("t1")).toBeUndefined();
 });
+
+test("paneTheme round-trips", async () => {
+  const { paneTheme, setPaneTheme } = await import("./panes");
+  setPaneTheme("p1", "ack-ack");
+  expect(paneTheme("p1")).toBe("ack-ack");
+  expect(paneTheme("p2")).toBeUndefined();
+});

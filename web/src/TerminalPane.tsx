@@ -25,7 +25,7 @@ import {
   markKilled,
   subscribeKilled,
 } from "./terminal/killed";
-import { panePreset, resolveSession } from "./presets/panes";
+import { paneTheme, panePreset, resolveSession } from "./presets/panes";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -107,11 +107,15 @@ export function TerminalPane({
   const preset = sceneKey ? panePreset(sceneKey) : undefined;
   const [resolved, setResolved] = useState<Resolved>({});
   const presetTheme = resolved.theme?.value;
+  theme ??= sceneKey ? paneTheme(sceneKey) : undefined;
   theme ??= typeof presetTheme === "string" ? presetTheme : undefined;
   const fontRef = useRef<Resolved>({});
   fontRef.current = resolved;
   const themeRef = useRef(theme);
   themeRef.current = theme;
+  useEffect(() => {
+    if (sceneKey && theme) titleStore.set(sceneKey, { theme });
+  }, [sceneKey, theme]);
   const renderer = useRef<TerminalRenderer | null>(null);
   const host = useRef<HTMLDivElement>(null);
   const session = useRef<TerminalSession | null>(null);
