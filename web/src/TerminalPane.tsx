@@ -412,7 +412,11 @@ export function TerminalPane({
     if (t)
       void Promise.resolve(navigator.clipboard.writeText(t)).catch(() => {});
   };
-  const themes = THEMES.map((t) => ({ id: t.id, name: t.name }));
+  const themes = THEMES.map((t) => ({
+    id: t.id,
+    name: t.name,
+    swatch: t.terminal.palette.cursor ?? t.terminal.palette.fg,
+  }));
   const bg =
     sceneBg && !perf ? "transparent" : themeStore.terminal(theme).background;
   return (
@@ -479,6 +483,7 @@ export function TerminalPane({
           hasSelection={!!renderer.current?.getSelection?.()}
           isBroadcasting={broadcast?.isBroadcasting}
           themes={themes}
+          currentTheme={override}
           onCopy={copy}
           onPaste={() => void paste()}
           onSelectAll={() => renderer.current?.selectAll?.()}

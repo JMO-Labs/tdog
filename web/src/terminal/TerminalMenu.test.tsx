@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  within,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { TerminalMenu, type TerminalMenuProps } from "./TerminalMenu";
 
@@ -77,12 +83,21 @@ test("Esc dismisses", () => {
   expect(p.onDismiss).toHaveBeenCalled();
 });
 
-test("theme submenu picks a theme", async () => {
+test("theme submenu picks a theme and ticks the current one", async () => {
   const p = setup();
   fireEvent.click(
     screen.getByRole("menuitem", { name: /Theme for this terminal/ }),
   );
-  fireEvent.click(screen.getByRole("menuitem", { name: "Alpha" }));
+  const sub = await screen.findByRole("menu", {
+    name: "Theme for this terminal",
+  });
+  // No pane theme yet: "Page default" is the checked radio.
+  expect(
+    within(sub)
+      .getByRole("menuitemradio", { name: "Page default" })
+      .getAttribute("aria-checked"),
+  ).toBe("true");
+  fireEvent.click(within(sub).getByRole("menuitemradio", { name: "Alpha" }));
   expect(p.onTheme).toHaveBeenCalledWith("a");
 });
 
@@ -114,9 +129,45 @@ test("clicking outside dismisses", async () => {
 
 test("only advertises shortcuts that really work (Paste)", () => {
   setup({ hasSelection: true });
-  const hint = (n: RegExp) =>
-    screen.getByRole("menuitem", { name: n }).querySelector("kbd");
-  expect(hint(/^Paste/)).not.toBeNull();
-  expect(hint(/^Copy/)).toBeNull();
-  expect(hint(/^Select all/)).toBeNull();
+  // Strip items show shortcuts in title/tooltip attribute
+  const buttons = screen.getAllByRole("menuitem");
+  const pasteBtn = buttons.find((el) => el.title?.includes("Paste"));
+  const copyBtn = buttons.find((el) => el.title?.includes("Copy"));
+
+  // Paste should have a shortcut in its tooltip (⌘V or Ctrl+Shift+V)
+  expect(pasteBtn?.title ?? "").toMatch(/Paste.*(⌘V|Ctrl\+Shift\+V)/);
+  // Copy should not have a keyboard shortcut (it's not the native Paste)
+  expect(copyBtn?.title ?? "").not.toMatch(/(⌘|Ctrl)/);
+});
+
+test("typing filters into labelled rows, strip actions included", () => {
+  setup();
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "s" });
+  fireEvent.change(screen.getByRole("textbox", { name: "Filter actions" }), {
+    target: { value: "sp" },
+  });
+  const rows = screen.getAllByRole("menuitem").map((b) => b.textContent);
+  expect(rows).toEqual(expect.arrayContaining(["Split right", "Split down"]));
+  expect(rows.every((r) => /sp/i.test(r ?? ""))).toBe(true);
+});
+
+test("filtering reaches submenu items and runs them", () => {
+  const p = setup();
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "a" });
+  fireEvent.change(screen.getByRole("textbox", { name: "Filter actions" }), {
+    target: { value: "alpha" },
+  });
+  fireEvent.click(
+    screen.getByRole("menuitem", { name: "Theme for this terminal › Alpha" }),
+  );
+  expect(p.onTheme).toHaveBeenCalledWith("a");
+});
+
+test("no match says so", () => {
+  setup();
+  fireEvent.keyDown(screen.getByRole("menu"), { key: "z" });
+  fireEvent.change(screen.getByRole("textbox", { name: "Filter actions" }), {
+    target: { value: "zzz" },
+  });
+  expect(screen.getByText("No matching actions")).toBeTruthy();
 });

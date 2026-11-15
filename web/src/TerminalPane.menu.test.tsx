@@ -137,12 +137,21 @@ test("picking a theme repaints the pane even when a theme prop is set", async ()
   await vi.waitFor(() => expect(m.r).toBeTruthy());
   await new Promise((r) => setTimeout(r, 0));
   fireEvent.contextMenu(screen.getByTestId("terminal-pane"));
-  fireEvent.click(
-    screen.getByRole("menuitem", { name: /Theme for this terminal/ }),
-  );
+  const themeBtn = screen.getByRole("menuitem", {
+    name: /Theme for this terminal/,
+  });
+  fireEvent.click(themeBtn);
+
+  // Wait for submenu to render
+  const themeSubmenu = await screen.findByRole("menu", {
+    name: "Theme for this terminal",
+  });
+  expect(themeSubmenu).toBeTruthy();
+
   m.r.setTheme.mockClear();
   spy.mockClear();
-  fireEvent.click(screen.getByRole("menuitem", { name: b.name }));
+  const themeName = screen.getByRole("menuitemradio", { name: b.name });
+  fireEvent.click(themeName);
   await vi.waitFor(() => expect(m.r.setTheme).toHaveBeenCalled());
   expect(spy).toHaveBeenCalledWith(b.id);
   spy.mockRestore();
