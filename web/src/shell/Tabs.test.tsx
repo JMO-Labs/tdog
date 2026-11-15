@@ -37,3 +37,20 @@ test("context menu Close scene closes that scene and the menu", () => {
   expect(fns.onKill).not.toHaveBeenCalled();
   expect(screen.queryByRole("menu")).toBeNull();
 });
+
+test("Close item blur keeps the menu open when focus moves inside it", () => {
+  setup();
+  fireEvent.contextMenu(screen.getByRole("tab", { name: "alpha" }));
+  const closeItem = screen.getByRole("menuitem", { name: "Close scene" });
+  const killItem = screen.getByRole("menuitem", { name: "Kill scene" });
+  fireEvent.blur(closeItem, { relatedTarget: killItem });
+  expect(screen.getByRole("menu")).toBeTruthy();
+});
+
+test("Close item blur dismisses the menu when focus leaves it", () => {
+  setup();
+  fireEvent.contextMenu(screen.getByRole("tab", { name: "alpha" }));
+  const closeItem = screen.getByRole("menuitem", { name: "Close scene" });
+  fireEvent.blur(closeItem, { relatedTarget: null });
+  expect(screen.queryByRole("menu")).toBeNull();
+});
