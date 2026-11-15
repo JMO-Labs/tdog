@@ -32,6 +32,7 @@ export function memJournal(): JournalDB {
   return {
     apply: (pane, sid, evs) =>
       q(pane, async () => {
+        if (wiped) return;
         let m = meta.get(pane);
         if (m?.sid !== sid) m = { sid, hwm: 0 };
         for (const ev of evs) {
@@ -66,8 +67,15 @@ const req = <T>(r: IDBRequest<T>) =>
     r.onerror = () => bad(r.error);
   });
 
+/** Set by wipeJournal; journal stays off until resumeJournal (next sign-in). */
+let wiped = false;
+export function resumeJournal(): void {
+  wiped = false;
+}
+
 let opened: Promise<IDBDatabase> | undefined;
 function open(): Promise<IDBDatabase> {
+  if (wiped) return Promise.reject(new Error("journal wiped"));
   opened ??= new Promise<IDBDatabase>((ok, bad) => {
     const o = indexedDB.open(DB, 1);
     o.onupgradeneeded = () => {
@@ -99,6 +107,7 @@ export function idbJournal(): JournalDB {
   return {
     apply: (pane, sid, evs) =>
       q(pane, async () => {
+        if (wiped) return;
         const t = (await open()).transaction(["records", "meta"], "readwrite");
         const recs = t.objectStore("records");
         const meta = t.objectStore("meta");
@@ -152,6 +161,8 @@ export function idbJournal(): JournalDB {
 
 /** Delete the whole journal database (explicit sign-out only). */
 export async function wipeJournal(): Promise<void> {
+  wiped = true;
+  shared = undefined;
   if (typeof indexedDB === "undefined") return;
   try {
     const db = await opened;
@@ -169,6 +180,7 @@ export async function wipeJournal(): Promise<void> {
 let shared: JournalDB | null | undefined;
 /** Process-wide db, or null where IndexedDB is unavailable. */
 export function journalDB(): JournalDB | null {
+  if (wiped) return null;
   if (shared === undefined)
     shared = typeof indexedDB === "undefined" ? null : idbJournal();
   return shared;
