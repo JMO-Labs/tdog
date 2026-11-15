@@ -32,6 +32,7 @@ vi.mock("./theme/store", () => ({
       return { background: "#000" };
     },
     terminalMotif: () => null,
+    effects: () => [],
     subscribe: () => () => {},
     scope: () => ({ cursor: { shape: "block", blink: true }, font: "vt323" }),
   },

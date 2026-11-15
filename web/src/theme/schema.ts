@@ -38,6 +38,8 @@ export const EFFECTS = [
   "grain",
   "flicker",
   "vignette",
+  "glyph-rain",
+  "tracking",
 ] as const;
 export const BOOTS = [
   "drop",

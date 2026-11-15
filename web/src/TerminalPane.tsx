@@ -7,6 +7,9 @@ import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
+import { EffectsOverlay } from "./effects/EffectsOverlay";
+import { useActiveEffects } from "./effects/useActiveEffects";
+import { titleStore } from "./terminal/titles";
 import { useMotifOpacity } from "./settings/prefs";
 import { registerClear } from "./terminal/paneActions";
 import { resolvePreset, type Resolved } from "./presets/api";
@@ -24,9 +27,9 @@ async function createRenderer(el: HTMLElement): Promise<TerminalRenderer> {
   return new XtermRenderer(el);
 }
 
-/** Clear the background when a motif is painted behind the text. */
-function terminalPaint(t: TerminalTheme, motif: boolean): TerminalTheme {
-  return motif ? { ...t, background: "rgba(0,0,0,0)" } : t;
+/** Clear the background when a motif or effect is painted behind the text. */
+function terminalPaint(t: TerminalTheme, clear: boolean): TerminalTheme {
+  return clear ? { ...t, background: "rgba(0,0,0,0)" } : t;
 }
 
 function applyFont(r: TerminalRenderer | null, f: Resolved) {
@@ -123,15 +126,26 @@ export function TerminalPane({
   const hooks = useRef({ onSize, onOutput, onLatency });
   hooks.current = { onSize, onOutput, onLatency };
 
+  const [effects, setEffects] = useState(() => themeStore.effects(theme));
+  useEffect(() => {
+    const sync = () => setEffects(themeStore.effects(theme));
+    sync();
+    return themeStore.subscribe(sync);
+  }, [theme]);
+  const rainBehind = useActiveEffects(effects).some(
+    (e) => e.id === "glyph-rain",
+  );
   const [motifPct] = useMotifOpacity();
   const motifUrl = motifPct > 0 ? themeStore.terminalMotif(theme) : null;
   const motifOn = motifUrl !== null;
-  const motifOnRef = useRef(motifOn);
-  motifOnRef.current = motifOn;
-  /** Renderer colours; transparent background while a motif shows through. */
+  /** Something paints behind the text: the renderer must be transparent. */
+  const clear = motifOn || rainBehind;
+  const clearRef = useRef(clear);
+  clearRef.current = clear;
+  /** Renderer colours; transparent background while a motif or rain shows through. */
   const paintTheme = useCallback(
     () =>
-      terminalPaint(themeStore.terminal(themeRef.current), motifOnRef.current),
+      terminalPaint(themeStore.terminal(themeRef.current), clearRef.current),
     [],
   );
 
@@ -156,7 +170,7 @@ export function TerminalPane({
     if (!r) return;
     r.setTheme(paintTheme());
     applyScope(r);
-  }, [theme, visible, motifOn, paintTheme, applyScope]);
+  }, [theme, visible, clear, paintTheme, applyScope]);
   useEffect(() => {
     applyFont(renderer.current, resolved);
   }, [resolved]);
@@ -206,6 +220,12 @@ export function TerminalPane({
       );
       session.current = s;
       renderer.current = r;
+      r.onTitle?.((title) => {
+        if (keyRef.current) titleStore.set(keyRef.current, { title });
+      });
+      r.onCwd?.((cwd) => {
+        if (keyRef.current) titleStore.set(keyRef.current, { cwd });
+      });
       // ED 3: erase scrollback only; works the same in both renderers.
       const offClear = sceneKey
         ? registerClear(sceneKey, () =>
@@ -235,6 +255,7 @@ export function TerminalPane({
     return () => {
       cancelled = true;
       cleanup();
+      if (keyRef.current) titleStore.remove(keyRef.current);
     };
   }, [connect, applyScope, sceneKey, paintTheme, preset]);
 
@@ -257,7 +278,12 @@ export function TerminalPane({
           }}
         />
       )}
-      <div ref={host} style={{ position: "relative", height: "100%" }} />
+      <EffectsOverlay layer="behind" effects={effects} />
+      <div
+        ref={host}
+        style={{ position: "relative", zIndex: 1, height: "100%" }}
+      />
+      <EffectsOverlay effects={effects} />
       <ConnectionGag phase={phase} onReconnect={connect} />
       {state.status === "closed" && state.exitCode !== undefined && (
         <div

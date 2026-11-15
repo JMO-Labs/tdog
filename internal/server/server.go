@@ -54,6 +54,7 @@ func NewSecuredPresets(ui fs.FS, a *auth.Auth, store *config.Store) http.Handler
 	tcfg := term.Config{SSH: sshCfg, Audit: a.Audit(), Registry: reg, Presets: store}
 	mux.Handle("GET /ws/term", term.NewHandler(tcfg))
 	mux.Handle("GET /api/sessions", reg.ListHandler())
+	mux.Handle("GET /api/shell", term.ShellInfoHandler(term.PickShell("")))
 	reg.RegisterKill(mux)
 	if store != nil {
 		store.Register(mux)

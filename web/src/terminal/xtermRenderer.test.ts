@@ -28,6 +28,14 @@ vi.mock("@xterm/xterm", () => ({
     onData(cb: any) {
       this.handlers.data = cb;
     }
+    onTitleChange(cb: any) {
+      this.handlers.title = cb;
+    }
+    parser = {
+      registerOscHandler: (id: number, cb: any) => {
+        this.handlers["osc" + id] = cb;
+      },
+    };
     onBinary(cb: any) {
       this.handlers.binary = cb;
     }
@@ -127,4 +135,29 @@ test("cursor and font options are applied and refit", () => {
   r.setFont('"VT323", monospace');
   expect(m.term.options.fontFamily).toBe('"VT323", monospace');
   expect(m.fit).toHaveBeenCalled();
+});
+
+test("setFont applies family and size and refits; no-op without args", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  m.fit.mockClear();
+  r.setFont();
+  expect(m.fit).not.toHaveBeenCalled();
+  r.setFont("Fira Code");
+  expect(m.term.options.fontFamily).toBe("Fira Code");
+  expect(m.fit).toHaveBeenCalledTimes(1);
+  r.setFont(undefined, 16);
+  expect(m.term.options.fontSize).toBe(16);
+  expect(m.fit).toHaveBeenCalledTimes(2);
+});
+
+test("title and OSC 7 cwd are reported", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  const titles: string[] = [];
+  const cwds: (string | undefined)[] = [];
+  r.onTitle((t) => titles.push(t));
+  r.onCwd((c) => cwds.push(c));
+  m.term.handlers.title("vim");
+  expect(m.term.handlers.osc7("file://h/tmp/a%20b")).toBe(true);
+  expect(titles).toEqual(["vim"]);
+  expect(cwds).toEqual(["/tmp/a b"]);
 });

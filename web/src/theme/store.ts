@@ -4,6 +4,7 @@ import { motifSvg } from "./motif";
 import { shapeVars } from "./shape";
 import {
   CHROME_TOKENS,
+  type Effect,
   type TerminalColors,
   type ThemeVariant,
 } from "./schema";
@@ -125,6 +126,9 @@ export const themeStore = {
     ).terminal;
     return { cursor, font };
   },
+  /** Screen effects declared by a terminal theme (data only). */
+  effects: (themeId?: string | null): Effect[] =>
+    ((themeId ? findTheme(themeId) : undefined) ?? current()).terminal.effects,
   /** Terminal motif as a CSS url() for a pane's theme, or null when it has none. */
   terminalMotif: (themeId?: string | null): string | null => {
     const t = (themeId ? findTheme(themeId) : undefined) ?? current();
