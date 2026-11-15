@@ -7,3 +7,4 @@ web/junit.xml
 /coverage.xml
 /tdog
 .env
+.claude/worktrees/

@@ -49,8 +49,8 @@ All render with addon-image with zero code changes; just ship the addon and expo
 ### 5. WebGL Renderer Compatibility & Memory
 
 - **Canvas availability:** jsdom (used in vitest) lacks real canvas/WebGL; can't test rendering live, only parser hooks.
-- **Memory:** Addon's default FIFO cache is 128 MB; scales fine for terminal scrollback (tested with 10k lines + images in other projects).
-- **GPU impact:** WebGL renderer + addon-image work together; no known conflicts; minimal CPU overhead (<1% idle, <5% with animated backgrounds).
+- **Memory:** Addon's default FIFO image cache is 128 MB per terminal; with many panes, lower `storageLimit`. Not measured in tdog yet.
+- **GPU impact:** addon-image documents support for the WebGL renderer. CPU/GPU cost not measured in tdog yet; measure in Phase 1 with the 4-pane bench.
 
 **Implication:** Unit tests can mock the Terminal and verify parser wiring; e2e tests with real xterm.js in Playwright/Puppeteer are needed for render proof.
 
