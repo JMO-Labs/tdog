@@ -78,7 +78,7 @@ const puts = () => calls.filter((c) => c.method === "PUT");
 const dots = () => screen.queryAllByRole("img", { name: "Unsaved changes" });
 const press = (init: KeyboardEventInit) =>
   act(async () => {
-    fireEvent.keyDown(window, { key: "s", ...init });
+    fireEvent.keyDown(document, { key: "s", ...init });
   });
 
 test("Ctrl+S saves a linked tab without asking", async () => {
