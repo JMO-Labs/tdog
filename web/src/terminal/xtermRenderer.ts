@@ -3,6 +3,7 @@ import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
+import "./xterm-overrides.css";
 import type { ImageAddon } from "@xterm/addon-image";
 import { cwdFromOsc7 } from "./titles";
 import type {

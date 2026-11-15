@@ -51,3 +51,12 @@ test("loadFont swallows a font load failure and keeps the fallback", async () =>
   await expect(fresh("courier-prime")).resolves.toBeUndefined();
   expect(load).toHaveBeenCalledWith('16px "Courier Prime"');
 });
+
+test("scaledSize normalises small faces and leaves the default alone", async () => {
+  const { scaledSize, fontScale } = await import("./fonts");
+  expect(fontScale("jetbrains-mono")).toBe(1);
+  expect(fontScale("nope")).toBe(1);
+  expect(scaledSize("jetbrains-mono")).toBe(15);
+  expect(scaledSize("share-tech-mono", 14)).toBe(15);
+  expect(scaledSize("courier-prime", 20)).toBe(22);
+});

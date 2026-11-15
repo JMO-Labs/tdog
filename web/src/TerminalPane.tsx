@@ -10,10 +10,11 @@ import {
 import { TerminalSession, type SessionState } from "./terminal/session";
 import type { TerminalRenderer, TerminalTheme } from "./terminal/renderer";
 import { themeStore } from "./theme/store";
-import { fontFamily, loadFont } from "./theme/fonts";
+import { fontFamily, fontScale, loadFont, scaledSize } from "./theme/fonts";
 import { whenFamilyReady } from "./theme/serverFonts";
 import { pickRenderer } from "./terminal/select";
 import { ConnectionGag } from "./terminal/ConnectionGag";
+import { PaneIntro } from "./terminal/PaneIntro";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
 import { PaneOverlayHost, usePaneOverlayHost } from "./overlays/pane";
@@ -74,12 +75,15 @@ function terminalPaint(t: TerminalTheme, clear: boolean): TerminalTheme {
 }
 
 const wantFamily = new WeakMap<TerminalRenderer, string | undefined>();
+/** Theme-font size multiplier per renderer, so a later size-only change keeps it. */
+const themeScale = new WeakMap<TerminalRenderer, number>();
 
 export function applyFont(r: TerminalRenderer | null, f: Resolved) {
   const family = f["font.family"]?.value;
   const size = f["font.size"]?.value;
   const f2 = typeof family === "string" ? family : undefined;
-  const s2 = typeof size === "number" ? size : undefined;
+  const raw = typeof size === "number" ? size : undefined;
+  const s2 = raw && !f2 && r ? Math.round(raw * (themeScale.get(r) ?? 1)) : raw;
   if (f2 || s2) r?.setFont?.(f2, s2);
   // Server-installed families arrive via /api/fonts.css; refit once loaded.
   if (r) wantFamily.set(r, f2);
@@ -257,7 +261,13 @@ export function TerminalPane({
     scopeFontRef.current = font;
     void loadFont(font).then(() => {
       if (renderer.current !== r || scopeFontRef.current !== font) return;
-      if (!presetFont()) r.setFont?.(fontFamily(font));
+      if (presetFont()) return;
+      const size = fontRef.current["font.size"]?.value;
+      themeScale.set(r, fontScale(font));
+      r.setFont?.(
+        fontFamily(font),
+        scaledSize(font, typeof size === "number" ? size : undefined),
+      );
     });
   }, []);
   useEffect(() => {
@@ -515,6 +525,7 @@ export function TerminalPane({
       />
       <EffectsOverlay effects={effects} />
       <ConnectionGag phase={phase} onReconnect={connect} />
+      <PaneIntro theme={theme} />
       {(killed ||
         (state.status === "closed" && state.exitCode !== undefined)) && (
         <EndedPanel

@@ -27,6 +27,7 @@ vi.mock("./terminal/xtermRenderer", () => ({
 }));
 vi.mock("./theme/store", () => ({
   themeStore: {
+    get: () => ({ id: "plain" }),
     terminal: (id?: string) => {
       h.themeIds.push(id);
       return { background: "#000" };
@@ -39,6 +40,8 @@ vi.mock("./theme/store", () => ({
   },
 }));
 vi.mock("./theme/fonts", () => ({
+  fontScale: () => 1,
+  scaledSize: (_id: string, size?: number) => size,
   fontFamily: (id: string) => `fam:${id}`,
   loadFont: () =>
     new Promise<void>((res) => {

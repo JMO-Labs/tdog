@@ -18,6 +18,7 @@ vi.mock("./terminal/xtermRenderer", () => ({
 }));
 vi.mock("./theme/store", () => ({
   themeStore: {
+    get: () => ({ id: "plain" }),
     terminal: () => ({ background: "#000" }),
     terminalMotif: () => null,
     effects: () => [],
@@ -27,6 +28,8 @@ vi.mock("./theme/store", () => ({
   },
 }));
 vi.mock("./theme/fonts", () => ({
+  fontScale: () => 1,
+  scaledSize: (_id: string, size?: number) => size,
   fontFamily: (id: string) => id,
   loadFont: async () => {},
 }));

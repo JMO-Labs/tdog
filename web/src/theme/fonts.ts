@@ -62,3 +62,31 @@ export function loadFont(id: string): Promise<void> {
   }
   return p;
 }
+
+/** xterm's default font size, used when the user has not chosen one. */
+const DEFAULT_SIZE = 15;
+
+/**
+ * Per-font size multiplier so every face reads about as big as the default.
+ * ponytail: measured, not guessed. From each bundled @fontsource woff (latin
+ * 400): OS/2 sxHeight and the modal hmtx advance, both per em, vs JetBrains Mono
+ * (x-height 0.550, advance 0.600). Scale = mean of the x-height ratio and the
+ * advance ratio (x-height alone over-widens Courier Prime). Rounded to 0.01.
+ *   courier-prime  xh .451 adv .600 -> (1.22 + 1.00) / 2 = 1.11
+ *   share-tech     xh .500 adv .540 -> (1.10 + 1.11) / 2 = 1.10
+ *   space-mono     xh .496 adv .612 -> (1.11 + 0.98) / 2 = 1.04
+ *   ibm-plex-mono  xh .516 adv .600 -> (1.07 + 1.00) / 2 = 1.03
+ * Re-measure when adding a font; vt323 / press-start-2p are no longer used for terminals.
+ */
+const SCALE: Partial<Record<FontId, number>> = {
+  "courier-prime": 1.11,
+  "share-tech-mono": 1.1,
+  "space-mono": 1.04,
+  "ibm-plex-mono": 1.03,
+};
+
+export const fontScale = (id: string): number => SCALE[id as FontId] ?? 1;
+
+/** Terminal font size for a theme font id; whole px, as restty may not take fractions. */
+export const scaledSize = (id: string, size = DEFAULT_SIZE): number =>
+  Math.round(size * fontScale(id));
