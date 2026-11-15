@@ -40,16 +40,30 @@ func lookPath(name string) (string, error) { return exec.LookPath(name) }
 // D on the very first prompt, when no command has run yet.
 const bashRC = `[ -r /etc/bash.bashrc ] && . /etc/bash.bashrc
 [ -r "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+__tdog_cwd() { printf '\033]7;file://%s%s\033\\' "$HOSTNAME" "$PWD"; }
 __tdog_pc() {
   local e=$?
   [ -n "$__tdog_ran" ] && printf '\033]133;D;%s\033\\' "$e"
   __tdog_ran=1
-  printf '\033]7;file://%s%s\033\\' "$HOSTNAME" "$PWD"
+  __tdog_cwd
   printf '\033]133;A\033\\'
 }
-PS1='\[\033[32m\]'"${USER:-user}"'@\h\[\033[0m\]:\[\033[34m\]\w\[\033[0m\]\$ \[\033]133;B\033\\\]'
-PS0='\033]133;C\033\\'
-PROMPT_COMMAND='__tdog_pc'
+PS1='\[\033[32m\]'"${USER:-user}"'@\h\[\033[0m\]:\[\033[34m\]\w\[\033[0m\]\$ '
+# PS0 (the C marker) needs bash >= 4.4; without it emit no OSC 133 at all so
+# the journal falls back to time-sliced records. Our hooks go first and keep
+# the user's own PROMPT_COMMAND/PS0.
+if (( BASH_VERSINFO[0] > 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] >= 4) )); then
+  PS1="$PS1"'\[\033]133;B\033\\\]'
+  PS0='\033]133;C\033\\'"$PS0"
+  __tdog_hook=__tdog_pc
+else
+  __tdog_hook=__tdog_cwd
+fi
+if [[ $(declare -p PROMPT_COMMAND 2>/dev/null) == "declare -a"* ]] && (( BASH_VERSINFO[0] > 5 || (BASH_VERSINFO[0] == 5 && BASH_VERSINFO[1] >= 1) )); then
+  PROMPT_COMMAND=("$__tdog_hook" "${PROMPT_COMMAND[@]}")
+else
+  PROMPT_COMMAND="$__tdog_hook${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
+fi
 `
 
 var (

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -15,9 +16,14 @@ import (
 
 // runMarked runs shell in a PTY with our rc wiring, types true and false, and
 // returns the journal "end" events and the cmds seen on them.
-func runMarked(t *testing.T, shell string) (cmds []string, exits []int) {
+func runMarked(t *testing.T, shell, rc string) (cmds []string, exits []int, raw string) {
 	t.Helper()
 	home := t.TempDir()
+	if rc != "" {
+		if err := os.WriteFile(filepath.Join(home, rc), []byte(userRC[rc]), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
 	base := []string{"HOME=" + home, "PATH=" + os.Getenv("PATH"), "USER=tester"}
 	cmd := exec.Command(shell, shellArgs(shell)...)
 	cmd.Env = shellEnv(shell, base)
@@ -82,11 +88,20 @@ func runMarked(t *testing.T, shell string) (cmds []string, exits []int) {
 	typeLine("false\n")
 	// the third prompt closes the last record
 	wait("133;B", 3)
-	return cmds, exits
+	return cmds, exits, all.String()
 }
 
-func checkMarked(t *testing.T, shell string) {
-	cmds, exits := runMarked(t, shell)
+// userRC holds per-shell user rc files for the keep-user-hooks tests.
+var userRC = map[string]string{
+	".bashrc": "PROMPT_COMMAND='echo USERPC'\nPS0='USERPS0'\n",
+	".zshrc":  "precmd() { echo USERPC; }\n",
+}
+
+func checkMarked(t *testing.T, shell, rc string) {
+	cmds, exits, raw := runMarked(t, shell, rc)
+	if rc != "" && !strings.Contains(raw, "USERPC") {
+		t.Fatalf("user hook lost: %q", raw)
+	}
 	if len(exits) < 2 || exits[0] != 0 || exits[1] != 1 {
 		t.Fatalf("exits = %v", exits)
 	}
@@ -100,7 +115,15 @@ func TestBashMarkers(t *testing.T) {
 	if err != nil {
 		t.Skip("no bash")
 	}
-	checkMarked(t, p)
+	checkMarked(t, p, "")
+}
+
+func TestBashKeepsUserHooks(t *testing.T) {
+	p, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skip("no bash")
+	}
+	checkMarked(t, p, ".bashrc")
 }
 
 func TestZshMarkers(t *testing.T) {
@@ -108,5 +131,13 @@ func TestZshMarkers(t *testing.T) {
 	if err != nil {
 		t.Skip("no zsh")
 	}
-	checkMarked(t, p)
+	checkMarked(t, p, "")
+}
+
+func TestZshKeepsUserHooks(t *testing.T) {
+	p, err := exec.LookPath("zsh")
+	if err != nil {
+		t.Skip("no zsh")
+	}
+	checkMarked(t, p, ".zshrc")
 }
