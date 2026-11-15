@@ -31,7 +31,11 @@ beforeEach(() => {
 });
 
 const run = async (id: string) => {
-  await act(async () => getCommands().find((c) => c.id === id)!.run());
+  await act(async () =>
+    getCommands()
+      .find((c) => c.id === id)!
+      .run(),
+  );
 };
 
 test("opening presets toasts info when none exist", async () => {
