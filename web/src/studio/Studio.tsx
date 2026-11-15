@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Modal } from "../overlays/Modal";
+import { BackgroundPicker } from "../backgrounds/BackgroundPicker";
+import type { BgSpec } from "../backgrounds/spec";
 import { Cassette } from "./Cassette";
 import { SECTIONS, filterSections, hashFor, sectionFromHash } from "./sections";
 import "./studio.css";
@@ -14,6 +16,12 @@ export function Studio({ open, onClose }: Props) {
     () => sectionFromHash(location.hash) ?? SECTIONS[0].id,
   );
   const [query, setQuery] = useState("");
+  const [bg, setBg] = useState<BgSpec>({
+    kind: "color",
+    ref: "",
+    opacity: 1,
+    blur: 0,
+  });
   const navRef = useRef<HTMLElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -128,6 +136,11 @@ export function Studio({ open, onClose }: Props) {
             ) : (
               <p className="studio-none">No settings match “{query.trim()}”.</p>
             )
+          ) : current === "backgrounds" ? (
+            <section className="studio-bg">
+              <h3>{section.label}</h3>
+              <BackgroundPicker value={bg} onChange={setBg} />
+            </section>
           ) : (
             <section className="studio-empty">
               <h3>{section.label}</h3>

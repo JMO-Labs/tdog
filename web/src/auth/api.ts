@@ -82,6 +82,23 @@ export async function apiPut(path: string, body: string): Promise<Response> {
   return r;
 }
 
+/** CSRF-aware multipart POST (asset upload); the browser sets the boundary. */
+export async function apiUpload(
+  path: string,
+  body: FormData,
+): Promise<Response> {
+  const headers: Record<string, string> = {};
+  if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+  const r = await fetch(path, {
+    method: "POST",
+    credentials: "same-origin",
+    headers,
+    body,
+  });
+  if (r.status === 401) onUnauthorized?.();
+  return r;
+}
+
 async function post(path: string, body: unknown): Promise<Response> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
