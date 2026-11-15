@@ -229,6 +229,7 @@ export function TerminalPane({
   /** Something paints behind the text: the renderer must be transparent. */
   const sceneBg = useContext(SceneBgContext);
   const [perf] = usePref("perf");
+  const [serious] = usePref("serious");
   const paneBg = bgSpec(resolved);
   const hasBg = !perf && paneBg !== null;
   const clear = motifOn || rainBehind || hasBg || (sceneBg && !perf);
@@ -377,7 +378,9 @@ export function TerminalPane({
       // Register this pane for receiving broadcast input
       if (keyRef.current && sceneRef.current) {
         registerPaneInput(sceneRef.current, keyRef.current, (data) => {
-          r.paste?.(new TextDecoder().decode(data));
+          // Raw bytes, not paste: bracketed paste would insert Backspace
+          // and other keys literally (^?) instead of running them.
+          s.input(data);
         });
       }
 
@@ -451,7 +454,8 @@ export function TerminalPane({
     if (t)
       void Promise.resolve(navigator.clipboard.writeText(t)).catch(() => {});
   };
-  const themes = THEMES.map((t) => ({
+  // Serious mode forces Plain everywhere: no per-pane theme choice.
+  const themes = (serious ? [] : THEMES).map((t) => ({
     id: t.id,
     name: t.name,
     swatch: t.terminal.palette.cursor ?? t.terminal.palette.fg,

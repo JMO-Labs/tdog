@@ -34,6 +34,7 @@ const P = {
   paste:
     '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/>',
   eraser: '<path d="M4 15l9-9 7 7-6 6H8z"/><path d="M9 10l7 7M8 19h12"/>',
+  paw: '<circle cx="6" cy="10" r="2"/><circle cx="10" cy="6" r="2"/><circle cx="14" cy="6" r="2"/><circle cx="18" cy="10" r="2"/><path d="M12 12c-3 0-6 4-6 6.5S8 21 12 19.5 18 21 18 18.5 15 12 12 12z"/>',
 };
 export type IconName = keyof typeof P;
 

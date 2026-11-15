@@ -169,6 +169,8 @@ export function Workspace({
   const runKill = async () => {
     const targets = killTargets(kill);
     setKill(null);
+    // Nothing running (all disconnected): just remove the scene.
+    if (!targets.length && kill && kill !== "all") return finishClose(kill);
     void runKillImpl(targets);
   };
 
@@ -288,11 +290,16 @@ export function Workspace({
 
   const menuGroups: MenuGroup[] = [
     [
-      {
-        label: "Theme…",
-        icon: "system",
-        onSelect: () => setPicker(true),
-      },
+      // Serious mode forces Plain, so theme choice is hidden.
+      ...(serious
+        ? []
+        : [
+            {
+              label: "Theme…",
+              icon: "system" as const,
+              onSelect: () => setPicker(true),
+            },
+          ]),
       {
         label: "Appearance",
         icon: "light",
@@ -308,6 +315,16 @@ export function Workspace({
         hint: serious ? "On" : "Off",
         onSelect: () => setSerious(!serious),
       },
+      ...(serious
+        ? []
+        : [
+            {
+              label: "Dogbert",
+              icon: "paw" as const,
+              hint: petShown ? "Shown" : "Hidden",
+              onSelect: () => setPetShown(!petShown),
+            },
+          ]),
     ],
     [
       {

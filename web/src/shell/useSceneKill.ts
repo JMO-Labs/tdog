@@ -13,7 +13,8 @@ type SetState<T> = (f: (prev: T) => T) => void;
 /**
  * Kills shells and removes a scene once every pane in it has been killed,
  * whatever did the killing (pane menu, right-click, tab menu, kill all, or
- * the server's "killed" signal). Shells that exit on their own don't count.
+ * the server's "killed" signal), or once its last pane is closed. Shells
+ * that exit on their own don't count.
  */
 export function useSceneKill(
   leafMap: Record<string, string[]>,
@@ -44,7 +45,8 @@ export function useSceneKill(
   const sweep = useCallback(() => {
     const { leafMap: m, scenes: all, removeSceneCleanup: rm } = live.current;
     for (const [id, panes] of Object.entries(m)) {
-      if (panes.length === 0 || !panes.every(isKilled)) continue;
+      // Empty (every pane closed) or every shell killed: the tab goes.
+      if (panes.length > 0 && !panes.every(isKilled)) continue;
       const name = all.find((s) => s.id === id)?.name ?? id;
       rm(id);
       live.current.toast("info", live.current.c("scene.gone", { name }));

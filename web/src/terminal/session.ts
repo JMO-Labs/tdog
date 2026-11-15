@@ -108,6 +108,11 @@ export class TerminalSession {
     };
   }
 
+  /** Raw input from elsewhere (broadcast): sent as typed, not re-broadcast. */
+  input(d: Uint8Array): void {
+    this.send(encodeInput(d));
+  }
+
   dispose(): void {
     this.stopPing();
     const s = this.sock;

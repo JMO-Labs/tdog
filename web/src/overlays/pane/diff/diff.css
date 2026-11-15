@@ -6,6 +6,7 @@
   max-height: 80vh;
   overflow-y: auto;
   font-family: monospace;
+  width: min(520px, 90vw);
 }
 
 .diff-overlay-container h2 {
