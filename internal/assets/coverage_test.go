@@ -206,4 +206,3 @@ func TestServeMissingBlob(t *testing.T) {
 		t.Fatalf("got %d", w.Code)
 	}
 }
-
