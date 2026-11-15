@@ -119,8 +119,13 @@ describe("bundled themes", () => {
     expect(by("ninety-five").light).toBeTruthy();
     expect(by("hack-the-planet").chrome.pattern).toBe("zigzag");
   });
-  it("ships a light variant for the five dark-only themes", () => {
+  it("ships a light variant for the dark-only themes", () => {
     for (const id of [
+      "deep-gravity",
+      "dial-up-paranoia",
+      "hack-the-planet",
+      "isla-nublar",
+      "laser-binder",
       "ack-ack",
       "black-box",
       "bug-hunt",
