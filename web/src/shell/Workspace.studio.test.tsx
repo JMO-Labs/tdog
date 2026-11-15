@@ -32,7 +32,10 @@ const setWidth = (w: number) =>
 
 const studio = () => screen.queryByRole("dialog", { name: "Studio" });
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  history.replaceState(null, "", location.pathname);
+});
 afterEach(() => {
   cleanup();
   clearCommands();
