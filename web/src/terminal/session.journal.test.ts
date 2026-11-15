@@ -1,11 +1,11 @@
-import { expect, test, vi } from "vitest";
-import { setPaneRecording } from "../presets/panes";
+import { afterEach, expect, test, vi } from "vitest";
+import { setPaneRecording } from "../presets/recording";
 import { memJournal, type JournalDB } from "../journal/db";
 import { FrameType } from "../protocol/frames";
 import { TerminalSession, type SocketLike } from "./session";
 import type { TerminalRenderer } from "./renderer";
 
-function setup(db: JournalDB) {
+function setup(db: JournalDB | null, pane = "p") {
   const sent: Uint8Array[] = [];
   const sock = {
     binaryType: "",
@@ -23,7 +23,8 @@ function setup(db: JournalDB) {
     dispose() {},
   } as unknown as TerminalRenderer;
   const s = new TerminalSession(r, () => sock, vi.fn(), {
-    journal: { pane: "p", db },
+    paneId: pane,
+    journal: db ? { pane, db } : undefined,
   });
   s.connect();
   sock.onopen!(new Event("open"));
@@ -36,6 +37,20 @@ function setup(db: JournalDB) {
       ]).buffer,
     } as MessageEvent);
   sess();
+  sent.length = 0; // the record-state line every session frame sends
+  const reconnect = (id = "B") => {
+    s.connect();
+    sock.onopen!(new Event("open"));
+    sent.length = 0;
+    sess(id);
+  };
+  const ctrl = (m: object) =>
+    sock.onmessage!({
+      data: new Uint8Array([
+        FrameType.Control,
+        ...new TextEncoder().encode(JSON.stringify(m)),
+      ]).buffer,
+    } as MessageEvent);
   const recv = (evs: object[]) =>
     sock.onmessage!({
       data: new Uint8Array([
@@ -49,6 +64,8 @@ function setup(db: JournalDB) {
       .map((f) => JSON.parse(new TextDecoder().decode(f.subarray(1))));
   return {
     s,
+    reconnect,
+    ctrl,
     recv,
     ctl: () => ctl().filter((m) => m.type.startsWith("jrnl")),
     sock,
@@ -130,18 +147,53 @@ test("frames after dispose are dropped", async () => {
   expect(spy).not.toHaveBeenCalled();
 });
 
-test("reconnect re-sends jrnl-record off for an opted-out pane", () => {
-  const { s, sock, ctl } = setup(memJournal());
-  expect(ctl()).toEqual([]); // recording on: nothing to say
+afterEach(() => localStorage.clear());
+
+test("every session frame sends the record state, even without a journal db", () => {
   setPaneRecording("p", false);
-  s.connect();
-  sock.onopen!(new Event("open"));
-  sock.onmessage!({
-    data: new Uint8Array([
-      FrameType.Control,
-      ...new TextEncoder().encode(JSON.stringify({ type: "session", id: "B" })),
-    ]).buffer,
-  } as MessageEvent);
+  const { reconnect, ctl } = setup(null);
+  reconnect();
   expect(ctl()).toEqual([{ type: "jrnl-record", on: false }]);
-  localStorage.clear();
+  setPaneRecording("p", true);
+  reconnect();
+  expect(ctl()).toEqual([{ type: "jrnl-record", on: true }]);
+});
+
+test("a frame between forget and jrnl-forgotten is dropped and not acked", async () => {
+  const db = memJournal();
+  const apply = vi.spyOn(db, "apply");
+  const { s, recv, ctrl, ctl } = setup(db);
+  s.forget();
+  recv([e(1)]);
+  await new Promise((r) => setTimeout(r, 0));
+  expect(apply).not.toHaveBeenCalled();
+  expect(ctl()).toEqual([{ type: "jrnl-forget" }]);
+  ctrl({ type: "jrnl-forgotten" });
+  recv([e(2)]);
+  await vi.waitFor(() =>
+    expect(ctl()).toEqual([
+      { type: "jrnl-forget" },
+      { type: "jrnl-ack", seq: 2 },
+    ]),
+  );
+});
+
+test("forget while disconnected is sent after the record state on reconnect", async () => {
+  const db = memJournal();
+  const apply = vi.spyOn(db, "apply");
+  const { s, sock, recv, ctl, ctrl } = setup(db);
+  s.connect(); // socket not open yet
+  s.forget();
+  sock.onopen!(new Event("open"));
+  ctrl({ type: "session", id: "B" });
+  expect(ctl()).toEqual([
+    { type: "jrnl-record", on: true },
+    { type: "jrnl-forget" },
+  ]);
+  recv([e(1)]);
+  await new Promise((r) => setTimeout(r, 0));
+  expect(apply).not.toHaveBeenCalled();
+  ctrl({ type: "jrnl-forgotten" });
+  recv([e(2)]);
+  await vi.waitFor(() => expect(apply).toHaveBeenCalled());
 });

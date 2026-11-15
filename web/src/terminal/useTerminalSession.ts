@@ -110,6 +110,7 @@ export function useTerminalSession(d: TerminalSessionDeps) {
         () => new WebSocket(wsUrl(keyRef.current, idRef.current, preset)),
         setState,
         {
+          paneId,
           journal: (() => {
             const db = journalDB();
             return paneId && db ? { pane: paneId, db } : undefined;

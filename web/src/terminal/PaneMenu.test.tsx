@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 import { ToastProvider } from "../overlays/toast";
-import { paneRecording } from "../presets/panes";
+import { paneRecording } from "../presets/recording";
 import { PaneMenu } from "./PaneMenu";
 import type { TerminalSession } from "./session";
 
@@ -50,4 +50,5 @@ test("Forget clears the local db and the server copy", () => {
   fireEvent.click(screen.getByText("Forget this pane's history"));
   expect(forget).toHaveBeenCalledWith("p1");
   expect(s.forget).toHaveBeenCalled();
+  expect(screen.getByText("History for this pane forgotten.")).toBeTruthy();
 });

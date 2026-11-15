@@ -91,8 +91,8 @@ func (j *jrnl) stop() {
 	}
 }
 
-// control applies a client control payload; unknown or invalid ones are ignored.
-func (j *jrnl) control(p []byte) {
+// control applies a client control payload (reply may be nil); unknown or invalid ones are ignored.
+func (j *jrnl) control(p []byte, reply func([]byte) error) {
 	if j == nil {
 		return
 	}
@@ -112,6 +112,11 @@ func (j *jrnl) control(p []byte) {
 		j.buf.Ack(seq)
 	case "jrnl-forget":
 		j.buf.Wipe()
+		// The socket is ordered: the client drops journal frames until this
+		// arrives, so none sent before the wipe can re-add rows afterwards.
+		if reply != nil {
+			_ = reply(frame.Encode(frame.Control, []byte(`{"type":"jrnl-forgotten"}`)))
+		}
 	case "jrnl-record":
 		if v.On == nil {
 			return

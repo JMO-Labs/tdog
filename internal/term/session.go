@@ -147,7 +147,7 @@ func (s *Session) serve(c *websocket.Conn) {
 		pumpInput(ioctx, func(ctx context.Context) ([]byte, error) {
 			_, data, err := c.Read(ioctx)
 			return data, err
-		}, s.s.w, s.s.resize, write, s.j.control)
+		}, s.s.w, s.s.resize, write, func(p []byte) { s.j.control(p, write) })
 	}()
 
 	if write(frame.SessionControl(s.id)) != nil {

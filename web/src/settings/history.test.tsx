@@ -13,7 +13,10 @@ import { getHistorySync } from "./prefs";
 import { SSH_SNIPPET_BASH } from "./historySnippet";
 
 beforeEach(() => localStorage.clear());
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  localStorage.clear();
+});
 
 function mount(status = 200) {
   const f = vi.fn(async () => json({}, status));
@@ -72,4 +75,18 @@ test("shows the SSH snippet", () => {
   expect(screen.getByText(/Add to ~\/.bashrc/)).toBeTruthy();
   expect(document.body.textContent).toContain(SSH_SNIPPET_BASH.split("\n")[0]);
   expect(screen.getAllByRole("button", { name: /Copy/ }).length).toBe(2);
+});
+
+test("failed retention change reverts the select", async () => {
+  localStorage.setItem("tdog.historySync", "24");
+  const f = mount(500);
+  fireEvent.change(screen.getByLabelText("Keep for"), {
+    target: { value: "12" },
+  });
+  await waitFor(() => expect(f).toHaveBeenCalled());
+  await act(async () => {});
+  expect(getHistorySync()).toBe("24");
+  expect((screen.getByLabelText("Keep for") as HTMLSelectElement).value).toBe(
+    "24",
+  );
 });

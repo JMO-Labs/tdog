@@ -1,4 +1,4 @@
-import { paneRecording } from "../presets/panes";
+import { paneRecording } from "../presets/recording";
 import {
   decodeFrame,
   encodeAck,
@@ -49,6 +49,8 @@ export interface SessionHooks {
   onLatency?: (ms: number) => void;
   /** Called when input is received (for broadcasting). */
   onBroadcast?: (data: Uint8Array) => void;
+  /** Pane key (record state is sent per pane even without a journal db). */
+  paneId?: string;
   /** Where this pane's journal events are saved (acked once stored). */
   journal?: { pane: string; db: JournalDB };
   /** May hold or drop user input; call `pass` to send (and broadcast) it. */
@@ -67,6 +69,8 @@ export class TerminalSession {
   /** A save failed this connection: ingest/ack nothing until reconnect. */
   private journalFailed = false;
   private disposed = false;
+  private forgetting = false;
+  private pendingForget = false;
   private pinger: ReturnType<typeof setInterval> | undefined;
 
   constructor(
@@ -95,6 +99,7 @@ export class TerminalSession {
     this.killed = false;
     this.sid = undefined;
     this.journalFailed = false;
+    if (this.forgetting) this.pendingForget = true; // reply lost with the socket
     this.onState({ status: "connecting" });
     const s = this.open();
     this.sock = s;
@@ -148,12 +153,16 @@ export class TerminalSession {
 
   /** Ask the server to drop its journal copy. */
   forget(): void {
-    this.send(encodeJournalForget());
+    // Drop in-flight journal frames until the server confirms the wipe.
+    this.forgetting = true;
+    if (this.ready && this.sid) this.send(encodeJournalForget());
+    else this.pendingForget = true; // sent after the next session frame
   }
 
   private journaled(f: JournalEvent[]): void {
     const j = this.hooks.journal;
     if (!j || !this.sid || this.journalFailed || this.disposed) return;
+    if (this.forgetting) return;
     // On failure stop acking: the server resends from its last ack on reconnect.
     ingest(j.db, j.pane, this.sid, f).then(
       (seq) =>
@@ -187,8 +196,14 @@ export class TerminalSession {
       this.killed = true;
     } else if (f.kind === "session") {
       this.sid = f.id;
-      const pane = this.hooks.journal?.pane;
-      if (pane && !paneRecording(pane)) this.setRecording(false);
+      const pane = this.hooks.paneId;
+      if (pane) this.setRecording(paneRecording(pane));
+      if (this.pendingForget) {
+        this.pendingForget = false;
+        this.send(encodeJournalForget());
+      }
+    } else if (f.kind === "forgotten") {
+      this.forgetting = false;
     } else if (f.kind === "journal") {
       this.journaled(f.events);
     } else if (f.kind === "pong") {

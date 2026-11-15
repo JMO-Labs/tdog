@@ -6,11 +6,8 @@ import { usePref } from "../settings/prefs";
 import { THEMES } from "../theme/registry";
 import { clearScrollback } from "./paneActions";
 import { killScene } from "./sessions";
-import {
-  paneRecording,
-  setPaneRecording,
-  setPaneTheme,
-} from "../presets/panes";
+import { setPaneTheme } from "../presets/panes";
+import { paneRecording, setPaneRecording } from "../presets/recording";
 import { journalDB } from "../journal/db";
 import { useToast } from "../overlays/toast";
 import type { TerminalSession } from "./session";

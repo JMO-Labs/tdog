@@ -9,8 +9,6 @@ import {
   scenePreset,
   setPanePreset,
   setScenePreset,
-  paneRecording,
-  setPaneRecording,
 } from "./panes";
 
 beforeEach(() => localStorage.clear());
@@ -84,16 +82,4 @@ test("sceneArt treats malformed JSON as all off", () => {
   expect(sceneArt("s1")).toBe(false);
   setSceneArt("s1", true);
   expect(sceneArt("s1")).toBe(true);
-});
-
-test("paneRecording defaults on, stores only off panes, tolerates junk", () => {
-  expect(paneRecording("a")).toBe(true);
-  setPaneRecording("a", false);
-  expect(localStorage.getItem("tdog.paneRecording")).toBe('{"a":false}');
-  expect(paneRecording("a")).toBe(false);
-  expect(paneRecording("b")).toBe(true);
-  setPaneRecording("a", true);
-  expect(localStorage.getItem("tdog.paneRecording")).toBeNull();
-  localStorage.setItem("tdog.paneRecording", "{nope");
-  expect(paneRecording("a")).toBe(true);
 });

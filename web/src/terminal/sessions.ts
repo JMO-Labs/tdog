@@ -1,7 +1,7 @@
 import { markKilled } from "./killed";
 import { journalDB } from "../journal/db";
 import { apiFetch, apiPost } from "../auth/api";
-import { setPaneRecording } from "../presets/panes";
+import { setPaneRecording } from "../presets/recording";
 
 /** Server session id for a pane's `scene` key, if its shell is still alive. */
 export async function findSessionId(

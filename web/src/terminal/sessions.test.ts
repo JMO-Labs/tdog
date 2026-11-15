@@ -1,7 +1,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { isKilled } from "./killed";
 import { findSessionId, killScene, sessionExists } from "./sessions";
-import { paneRecording, setPaneRecording } from "../presets/panes";
+import { paneRecording, setPaneRecording } from "../presets/recording";
 
 afterEach(() => {
   vi.unstubAllGlobals();

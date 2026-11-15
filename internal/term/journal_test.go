@@ -194,14 +194,14 @@ func TestJournalControlIgnoresJunk(t *testing.T) {
 	defer j.stop()
 	j.feed([]byte("\x1b]133;C\x07x\n"))
 	for _, p := range []string{`{`, `{"type":"nope"}`, `{"type":"jrnl-record"}`, `{"type":"ping"}`} {
-		j.control([]byte(p))
+		j.control([]byte(p), nil)
 	}
 	if len(j.buf.Since(0)) == 0 {
 		t.Fatal("junk control changed state")
 	}
 	var nilJ *jrnl
 	nilJ.feed(nil)
-	nilJ.control([]byte(`{"type":"jrnl-forget"}`))
+	nilJ.control([]byte(`{"type":"jrnl-forget"}`), nil)
 	nilJ.start()
 	nilJ.stop()
 }
@@ -227,8 +227,8 @@ func TestJournalRecAndSeqMonotonicAcrossRecordToggle(t *testing.T) {
 	j := newJrnl()
 	cmdRun(j, "one")
 	old := j.buf.Since(0)
-	j.control([]byte(`{"type":"jrnl-record","on":false}`))
-	j.control([]byte(`{"type":"jrnl-record","on":true}`))
+	j.control([]byte(`{"type":"jrnl-record","on":false}`), nil)
+	j.control([]byte(`{"type":"jrnl-record","on":true}`), nil)
 	cmdRun(j, "two")
 	all := j.buf.Since(0)
 	if len(old) == 0 || len(all) == 0 {
@@ -249,7 +249,7 @@ func TestJournalAckClampedToSent(t *testing.T) {
 	j := newJrnl()
 	cmdRun(j, "one")
 	n := len(j.buf.Since(0))
-	j.control([]byte(`{"type":"jrnl-ack","seq":999}`))
+	j.control([]byte(`{"type":"jrnl-ack","seq":999}`), nil)
 	if len(j.buf.Since(0)) != n {
 		t.Fatal("bogus ack freed unsent events")
 	}
@@ -257,8 +257,23 @@ func TestJournalAckClampedToSent(t *testing.T) {
 	j.mu.Lock()
 	j.sent = first
 	j.mu.Unlock()
-	j.control([]byte(`{"type":"jrnl-ack","seq":999}`))
+	j.control([]byte(`{"type":"jrnl-ack","seq":999}`), nil)
 	if got := j.buf.Since(0); len(got) != n-1 {
 		t.Fatalf("want %d events left, got %d", n-1, len(got))
+	}
+}
+
+func TestJournalForgetRepliesForgotten(t *testing.T) {
+	j := newJrnl()
+	defer j.stop()
+	j.feed([]byte("\x1b]133;C\x07x\n"))
+	var got [][]byte
+	reply := func(f []byte) error { got = append(got, f); return nil }
+	j.control([]byte(`{"type":"jrnl-forget"}`), reply)
+	if len(j.buf.Since(0)) != 0 {
+		t.Fatal("forget did not wipe")
+	}
+	if len(got) != 1 || got[0][0] != byte(frame.Control) || string(got[0][1:]) != `{"type":"jrnl-forgotten"}` {
+		t.Fatalf("replies = %q", got)
 	}
 }
