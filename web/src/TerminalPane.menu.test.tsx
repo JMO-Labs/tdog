@@ -48,7 +48,10 @@ beforeEach(() => {
   m.r = null;
   m.toast.mockClear();
   Object.assign(navigator, {
-    clipboard: { writeText: vi.fn(), readText: vi.fn() },
+    clipboard: {
+      writeText: vi.fn().mockResolvedValue(undefined),
+      readText: vi.fn(),
+    },
   });
 });
 
@@ -105,7 +108,7 @@ test("denied paste explains in plain words", async () => {
   fireEvent.click(screen.getByRole("menuitem", { name: /^Paste/ }));
   await vi.waitFor(() =>
     expect(m.toast).toHaveBeenCalledWith(
-      "error",
+      "fail",
       expect.stringContaining("Allow clipboard access"),
     ),
   );

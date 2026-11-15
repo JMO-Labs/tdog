@@ -330,7 +330,8 @@ export function TerminalPane({
   };
   const copy = () => {
     const t = renderer.current?.getSelection?.() ?? "";
-    if (t) void navigator.clipboard.writeText(t).catch(() => {});
+    if (t)
+      void Promise.resolve(navigator.clipboard.writeText(t)).catch(() => {});
   };
   const themes = THEMES.map((t) => ({ id: t.id, name: t.name }));
   const bg =
