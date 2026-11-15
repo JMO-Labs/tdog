@@ -24,21 +24,30 @@ test("loadFont loads once per id and waits for the face", async () => {
   expect(load).toHaveBeenCalledWith('16px "VT323"');
 });
 
-test("loadFont resolves for every schema font id", async () => {
-  const load = vi.fn().mockResolvedValue([]);
+const stubFonts = (load: unknown) =>
   Object.defineProperty(document, "fonts", {
     value: { load },
     configurable: true,
   });
-  for (const id of FONTS) await expect(loadFont(id)).resolves.toBeUndefined();
-  expect(load).toHaveBeenCalled();
+
+test("loadFont requests every schema font family", async () => {
+  vi.resetModules();
+  const { loadFont: fresh } = await import("./fonts");
+  const load = vi.fn().mockResolvedValue([]);
+  stubFonts(load);
+  for (const id of FONTS) await expect(fresh(id)).resolves.toBeUndefined();
+  expect(load).toHaveBeenCalledTimes(FONTS.length);
+  for (const id of FONTS) {
+    const family = fontFamily(id).split('"')[1];
+    expect(load).toHaveBeenCalledWith(`16px "${family}"`);
+  }
 });
 
 test("loadFont swallows a font load failure and keeps the fallback", async () => {
-  Object.defineProperty(document, "fonts", {
-    value: { load: vi.fn().mockRejectedValue(new Error("boom")) },
-    configurable: true,
-  });
-  await expect(loadFont("courier-prime")).resolves.toBeUndefined();
-  await expect(loadFont("space-mono")).resolves.toBeUndefined();
+  vi.resetModules();
+  const { loadFont: fresh } = await import("./fonts");
+  const load = vi.fn().mockRejectedValue(new Error("boom"));
+  stubFonts(load);
+  await expect(fresh("courier-prime")).resolves.toBeUndefined();
+  expect(load).toHaveBeenCalledWith('16px "Courier Prime"');
 });
