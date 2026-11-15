@@ -18,7 +18,7 @@
       "$ref": "#/$defs/background"
     },
     "layout": {
-      "type": "object"
+      "$ref": "#/$defs/layout"
     },
     "panes": {
       "type": "array",
@@ -42,6 +42,20 @@
     }
   },
   "$defs": {
+    "layout": {
+      "type": "object",
+      "description": "Renderer-agnostic tree: split (dir, ratio, a, b) or pane (slot id from panes[].id)",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["pane", "split"] },
+        "pane": { "type": "string" },
+        "dir": { "enum": ["row", "col"] },
+        "ratio": { "type": "number", "minimum": 0.1, "maximum": 0.9 },
+        "a": { "$ref": "#/$defs/layout" },
+        "b": { "$ref": "#/$defs/layout" }
+      }
+    },
     "font": {
       "type": "object",
       "additionalProperties": false,

@@ -258,7 +258,7 @@ func (d *fakeSSHD) exec(ch ssh.Channel, r *ssh.Request) {
 	d.execs = append(d.execs, cmd)
 	d.mu.Unlock()
 	_ = r.Reply(true, nil)
-	if strings.HasPrefix(cmd, "tmux new") {
+	if strings.HasPrefix(cmd, "tmux new") || strings.HasPrefix(cmd, "hang") {
 		return
 	}
 	_, _ = ch.Write([]byte(d.execOut))

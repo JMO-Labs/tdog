@@ -57,9 +57,10 @@ export class XtermRenderer implements TerminalRenderer {
     this.term.options.cursorStyle = c.shape;
     this.term.options.cursorBlink = c.blink;
   }
-  setFont(family: string): void {
-    this.term.options.fontFamily = family;
-    this.fit.fit();
+  setFont(family?: string, size?: number): void {
+    if (family) this.term.options.fontFamily = family;
+    if (size) this.term.options.fontSize = size;
+    if (family || size) this.fit.fit();
   }
   dispose(): void {
     this.term.dispose();

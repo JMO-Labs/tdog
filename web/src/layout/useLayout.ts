@@ -83,6 +83,8 @@ export function useLayout(scene: string) {
     [],
   );
   const reset = useCallback(() => setTree(fresh()), []);
+  /** Start over with a single pane `id`. */
+  const open = useCallback((id: string) => setTree({ t: "leaf", id }), []);
 
   return {
     tree,
@@ -95,5 +97,6 @@ export function useLayout(scene: string) {
     rename,
     duplicate,
     reset,
+    open,
   };
 }

@@ -387,3 +387,19 @@
   outline-offset: 1px;
   border-radius: calc(8px * var(--radius-scale));
 }
+
+.preset-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.preset-list-wrap {
+  margin-top: 12px;
+  text-align: center;
+}
+.preset-list-wrap .preset-list {
+  justify-content: center;
+}

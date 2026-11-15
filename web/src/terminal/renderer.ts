@@ -37,7 +37,7 @@ export interface TerminalRenderer {
   onResize(cb: (cols: number, rows: number) => void): void;
   setTheme(theme: TerminalTheme): void;
   setCursor(c: CursorStyle): void;
-  /** Set the font-family and refit (cell size changes). */
-  setFont(family: string): void;
+  /** Set font family and/or size, then refit. Unset values keep the current one. */
+  setFont?(family?: string, size?: number): void;
   dispose(): void;
 }

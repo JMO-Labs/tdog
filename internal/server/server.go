@@ -51,11 +51,15 @@ func NewSecuredPresets(ui fs.FS, a *auth.Auth, store *config.Store) http.Handler
 			}
 		}()
 	}
-	mux.Handle("GET /ws/term", term.NewHandler(term.Config{SSH: sshCfg, Audit: a.Audit(), Registry: reg, Presets: store}))
+	tcfg := term.Config{SSH: sshCfg, Audit: a.Audit(), Registry: reg, Presets: store}
+	mux.Handle("GET /ws/term", term.NewHandler(tcfg))
 	mux.Handle("GET /api/sessions", reg.ListHandler())
 	reg.RegisterKill(mux)
 	if store != nil {
 		store.Register(mux)
+		scenes := term.NewScenes(tcfg)
+		scenes.Register(mux)
+		go scenes.Autostart() // after routes exist; sessions outlive any browser
 	}
 	mux.Handle("/", NewWithUI(ui))
 	return a.Middleware(mux)

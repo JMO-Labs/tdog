@@ -36,6 +36,11 @@
   background: var(--yellow);
   color: var(--ink);
 }
+.btn.danger-quiet {
+  background: var(--surface);
+  color: var(--red, #d62839);
+  border-color: var(--red, #d62839);
+}
 .btn.ghost {
   background: transparent;
   box-shadow: none;

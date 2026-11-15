@@ -66,6 +66,10 @@ describe("recents", () => {
     for (const id of ["1", "2", "3", "4", "5", "6", "2"]) recordRecent(id);
     expect(getRecents()).toEqual(["2", "6", "5", "4", "3"]);
   });
+  it("returns [] when stored recents are corrupt JSON", () => {
+    localStorage.setItem("tdog.recentCommands", "{not json");
+    expect(getRecents()).toEqual([]);
+  });
 });
 
 describe("palette rendering", () => {

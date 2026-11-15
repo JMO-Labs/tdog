@@ -8,8 +8,9 @@ import { ConnectionGag } from "./terminal/ConnectionGag";
 import { useConnectionPhase } from "./terminal/useConnectionPhase";
 import { useToast } from "./overlays/toast";
 import { useMotifOpacity } from "./settings/prefs";
-import { findSessionId } from "./terminal/sessions";
 import { registerClear } from "./terminal/paneActions";
+import { resolvePreset, type Resolved } from "./presets/api";
+import { panePreset, resolveSession } from "./presets/panes";
 
 /** Retry cadence while a dropped socket is being re-established. */
 const RETRY_MS = 3000;
@@ -28,11 +29,20 @@ function terminalPaint(t: TerminalTheme, motif: boolean): TerminalTheme {
   return motif ? { ...t, background: "rgba(0,0,0,0)" } : t;
 }
 
-function wsUrl(scene?: string, id?: string): string {
+function applyFont(r: TerminalRenderer | null, f: Resolved) {
+  const family = f["font.family"]?.value;
+  const size = f["font.size"]?.value;
+  const f2 = typeof family === "string" ? family : undefined;
+  const s2 = typeof size === "number" ? size : undefined;
+  if (f2 || s2) r?.setFont?.(f2, s2);
+}
+
+function wsUrl(scene?: string, id?: string, preset?: string): string {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const q = new URLSearchParams();
   if (scene) q.set("scene", scene);
   if (id) q.set("id", id);
+  if (preset) q.set("preset", preset);
   const qs = q.toString();
   return `${proto}://${location.host}/ws/term${qs ? `?${qs}` : ""}`;
 }
@@ -70,6 +80,13 @@ export function TerminalPane({
   const settledRef = useRef(settled);
   const visibleRef = useRef(visible);
   visibleRef.current = visible;
+  // A terminal preset's theme and font apply to this pane only.
+  const preset = sceneKey ? panePreset(sceneKey) : undefined;
+  const [resolved, setResolved] = useState<Resolved>({});
+  const presetTheme = resolved.theme?.value;
+  theme ??= typeof presetTheme === "string" ? presetTheme : undefined;
+  const fontRef = useRef<Resolved>({});
+  fontRef.current = resolved;
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const renderer = useRef<TerminalRenderer | null>(null);
@@ -81,11 +98,20 @@ export function TerminalPane({
   const connect = useCallback(() => {
     const key = keyRef.current;
     if (!key) return session.current?.connect();
-    void findSessionId(key).then((id) => {
+    void resolveSession(key).then((id) => {
       idRef.current = id;
       session.current?.connect();
     });
   }, []);
+  useEffect(() => {
+    if (!preset) return;
+    let live = true;
+    resolvePreset(preset).then(
+      (r) => live && setResolved(r),
+      () => {}, // validation errors were toasted when the pane was opened
+    );
+    return () => void (live = false);
+  }, [preset]);
   const [state, setState] = useState<SessionState>({ status: "connecting" });
 
   const toast = useToast();
@@ -110,16 +136,19 @@ export function TerminalPane({
   );
 
   const dropped = state.status === "closed" && state.exitCode === undefined;
-  const fontRef = useRef<string | null>(null);
-  /** Cursor now; font once its face has loaded (then the renderer refits). */
+  const scopeFontRef = useRef<string | null>(null);
+  /** Cursor now; theme font once loaded, unless a preset sets the family. */
   const applyScope = useCallback((r: TerminalRenderer) => {
     const { cursor, font } = themeStore.scope(themeRef.current);
     r.setCursor(cursor);
-    if (!visibleRef.current || fontRef.current === font) return;
-    fontRef.current = font;
+    const presetFont = () =>
+      typeof fontRef.current["font.family"]?.value === "string";
+    if (presetFont()) return;
+    if (!visibleRef.current || scopeFontRef.current === font) return;
+    scopeFontRef.current = font;
     void loadFont(font).then(() => {
-      if (renderer.current === r && fontRef.current === font)
-        r.setFont(fontFamily(font));
+      if (renderer.current !== r || scopeFontRef.current !== font) return;
+      if (!presetFont()) r.setFont?.(fontFamily(font));
     });
   }, []);
   useEffect(() => {
@@ -128,6 +157,9 @@ export function TerminalPane({
     r.setTheme(paintTheme());
     applyScope(r);
   }, [theme, visible, motifOn, paintTheme, applyScope]);
+  useEffect(() => {
+    applyFont(renderer.current, resolved);
+  }, [resolved]);
   useEffect(() => {
     if (!dropped) return;
     const id = setTimeout(connect, RETRY_MS);
@@ -161,7 +193,7 @@ export function TerminalPane({
       if (cancelled) return r.dispose();
       const s = new TerminalSession(
         r,
-        () => new WebSocket(wsUrl(keyRef.current, idRef.current)),
+        () => new WebSocket(wsUrl(keyRef.current, idRef.current, preset)),
         setState,
         {
           onSize: (c, r2) => hooks.current.onSize?.(c, r2),
@@ -182,6 +214,7 @@ export function TerminalPane({
         : () => {};
       r.setTheme(paintTheme());
       applyScope(r);
+      applyFont(r, fontRef.current);
       const offTheme = themeStore.subscribe(() => {
         r.setTheme(paintTheme());
         applyScope(r);
@@ -203,7 +236,7 @@ export function TerminalPane({
       cancelled = true;
       cleanup();
     };
-  }, [connect, applyScope, sceneKey, paintTheme]);
+  }, [connect, applyScope, sceneKey, paintTheme, preset]);
 
   const bg = themeStore.terminal(theme).background;
   return (

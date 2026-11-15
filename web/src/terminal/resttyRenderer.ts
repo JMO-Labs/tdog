@@ -49,8 +49,9 @@ export class ResttyRenderer implements TerminalRenderer {
     this.term.setOption("cursorBlink", c.blink);
   }
   /** restty observes its container and refits itself after the font changes. */
-  setFont(family: string): void {
-    this.term.setOption("fontFamily", family);
+  setFont(family?: string, size?: number): void {
+    if (family) this.term.setOption("fontFamily", family);
+    if (size) this.term.setOption("fontSize", size);
   }
   dispose(): void {
     this.term.dispose();
