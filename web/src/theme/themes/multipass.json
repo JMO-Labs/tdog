@@ -28,10 +28,10 @@
       ]
     },
     "cursor": {
-      "shape": "block",
+      "shape": "bar",
       "blink": true
     },
-    "font": "jetbrains-mono",
+    "font": "space-mono",
     "effects": []
   },
   "chrome": {
@@ -49,12 +49,67 @@
       "term-fg": "#f3ecd8"
     },
     "shape": {
-      "radius": 1,
+      "radius": 1.5,
       "shadow": "hard",
       "border": 1
     },
     "pattern": "none",
     "boot": "drop",
-    "costume": "none"
+    "costume": {
+      "name": "hair tuft",
+      "rows": ["....#..#......", "...#.##.#.....", "....####......"]
+    },
+    "motif": {
+      "viewBox": [0, 0, 64, 24],
+      "tile": [64, 24],
+      "shapes": [
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 4,
+          "width": 64,
+          "height": 2,
+          "fill": "surface-2"
+        },
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 12,
+          "width": 40,
+          "height": 2,
+          "fill": "surface-2"
+        },
+        {
+          "type": "rect",
+          "x": 48,
+          "y": 12,
+          "width": 16,
+          "height": 2,
+          "fill": "surface-2"
+        },
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 20,
+          "width": 64,
+          "height": 2,
+          "fill": "surface-2"
+        },
+        {
+          "type": "circle",
+          "cx": 44,
+          "cy": 13,
+          "r": 1.5,
+          "fill": "yellow"
+        },
+        {
+          "type": "circle",
+          "cx": 56,
+          "cy": 5,
+          "r": 1.5,
+          "fill": "shadow"
+        }
+      ]
+    }
   }
 }

@@ -31,8 +31,13 @@
       "shape": "block",
       "blink": true
     },
-    "font": "courier-prime",
-    "effects": []
+    "font": "vt323",
+    "effects": [
+      {
+        "id": "grain",
+        "intensity": 0.4
+      }
+    ]
   },
   "chrome": {
     "tokens": {
@@ -48,12 +53,56 @@
       "term-fg": "#e3dcc0"
     },
     "shape": {
-      "radius": 1,
+      "radius": 0,
       "shadow": "hard",
       "border": 1
     },
     "pattern": "zebra",
-    "boot": "drop",
-    "costume": "none"
+    "boot": "post",
+    "costume": {
+      "name": "combat helmet",
+      "rows": [
+        "....######....",
+        "..##########..",
+        ".############.",
+        "##############"
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 48, 48],
+      "tile": [48, 48],
+      "shapes": [
+        {
+          "type": "polygon",
+          "points": "0,0 12,0 0,12",
+          "fill": "shadow"
+        },
+        {
+          "type": "polygon",
+          "points": "24,0 36,0 12,24 0,24 0,12",
+          "fill": "surface-2"
+        },
+        {
+          "type": "circle",
+          "cx": 34,
+          "cy": 34,
+          "r": 3,
+          "fill": "surface-2"
+        },
+        {
+          "type": "rect",
+          "x": 31,
+          "y": 37,
+          "width": 6,
+          "height": 5,
+          "fill": "surface-2"
+        },
+        {
+          "type": "path",
+          "d": "M30 33 L24 30 M38 33 L44 30 M30 36 L24 40 M38 36 L44 40",
+          "stroke": "surface-2"
+        }
+      ]
+    }
   }
 }

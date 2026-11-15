@@ -28,11 +28,16 @@
       ]
     },
     "cursor": {
-      "shape": "block",
+      "shape": "underline",
       "blink": true
     },
     "font": "courier-prime",
-    "effects": []
+    "effects": [
+      {
+        "id": "scanlines",
+        "intensity": 0.3
+      }
+    ]
   },
   "chrome": {
     "tokens": {
@@ -48,12 +53,81 @@
       "term-fg": "#d9d6cc"
     },
     "shape": {
-      "radius": 1,
-      "shadow": "hard",
+      "radius": 0.3,
+      "shadow": "bevel",
       "border": 1
     },
     "pattern": "none",
     "boot": "dialup",
-    "costume": "none"
+    "costume": {
+      "name": "headset",
+      "rows": [
+        "..##########..",
+        ".#..........#.",
+        "#............#",
+        "#............#",
+        "##..........##",
+        "##..........##"
+      ]
+    },
+    "motif": {
+      "viewBox": [0, 0, 48, 16],
+      "tile": [48, 16],
+      "shapes": [
+        {
+          "type": "path",
+          "d": "M0 8 L6 8 L8 2 L11 14 L14 3 L17 12 L20 8 L26 8 L28 5 L30 11 L32 8 L48 8",
+          "stroke": "surface-2"
+        },
+        {
+          "type": "rect",
+          "x": 0,
+          "y": 14,
+          "width": 2,
+          "height": 2,
+          "fill": "surface-2"
+        },
+        {
+          "type": "rect",
+          "x": 8,
+          "y": 14,
+          "width": 2,
+          "height": 2,
+          "fill": "surface-2"
+        },
+        {
+          "type": "rect",
+          "x": 16,
+          "y": 14,
+          "width": 2,
+          "height": 2,
+          "fill": "surface-2"
+        },
+        {
+          "type": "rect",
+          "x": 24,
+          "y": 14,
+          "width": 2,
+          "height": 2,
+          "fill": "surface-2"
+        },
+        {
+          "type": "rect",
+          "x": 32,
+          "y": 14,
+          "width": 2,
+          "height": 2,
+          "fill": "surface-2"
+        },
+        {
+          "type": "rect",
+          "x": 40,
+          "y": 14,
+          "width": 2,
+          "height": 2,
+          "fill": "surface-2"
+        }
+      ]
+    }
   }
 }
