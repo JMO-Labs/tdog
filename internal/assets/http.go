@@ -124,7 +124,7 @@ func (s *Store) fromURL(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != 200 {
 		jerr(w, 502, fmt.Sprintf("remote returned %d", resp.StatusCode))
 		return
@@ -193,7 +193,7 @@ func (s *Store) serve(w http.ResponseWriter, r *http.Request) {
 		jerr(w, 404, "not found")
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	h := w.Header()
 	h.Set("Content-Type", a.Type)
 	h.Set("X-Content-Type-Options", "nosniff")

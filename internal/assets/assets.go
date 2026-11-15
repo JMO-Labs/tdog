@@ -71,7 +71,7 @@ func (s *Store) ingest(r io.Reader) (Asset, error) {
 	if err != nil {
 		return a, err
 	}
-	defer os.Remove(tmp.Name()) // no-op after successful rename
+	defer func() { _ = os.Remove(tmp.Name()) }() // no-op after successful rename
 	n, err := io.Copy(tmp, io.LimitReader(r, s.maxSize+1))
 	if cerr := tmp.Close(); err == nil {
 		err = cerr
