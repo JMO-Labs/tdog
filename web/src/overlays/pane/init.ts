@@ -11,6 +11,7 @@ import {
   hintsCopyHashOverlay,
   hintsInsertWordOverlay,
 } from "./hints/HintsOverlay";
+import { DiffOverlay } from "./diff/DiffOverlay";
 
 export function initPaneOverlays() {
   registerPaneOverlay({
@@ -119,6 +120,23 @@ export function initPaneOverlays() {
     group: "Hints",
     run: () => {
       openFocusedPaneOverlay("hints-insert-word");
+    },
+  });
+
+  // Diff overlay
+  registerPaneOverlay({
+    id: "diff",
+    title: "Diff two files",
+    render: DiffOverlay,
+  });
+
+  registerCommand({
+    id: "overlay.diff",
+    title: "Diff two files…",
+    shortcut: "⌘K",
+    group: "Overlays",
+    run: () => {
+      openFocusedPaneOverlay("diff");
     },
   });
 }

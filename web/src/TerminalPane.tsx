@@ -105,13 +105,13 @@ export function TerminalPane({
   onLatency,
   onOpenChange,
   reconnectRef,
-  paneId,
+  sceneKey: paneId,
   sceneId,
 }: {
   /** Terminal theme id for this pane; defaults to the page theme. */
   theme?: string;
-  /** Unique pane ID within a scene. */
-  paneId?: string;
+  /** Stable pane key sent as the session `scene`; reload reattaches by it. */
+  sceneKey?: string;
   /** Scene ID containing this pane. */
   sceneId?: string;
   onClosed?: () => void;
@@ -155,6 +155,7 @@ export function TerminalPane({
   const idRef = useRef<string | undefined>(undefined);
   const keyRef = useRef(paneId);
   const sceneRef = useRef(sceneId);
+  const cwdRef = useRef<string | undefined>(undefined);
   /** (Re)connect; with a sceneKey, re-resolves the live session id first. */
   const connect = useCallback(() => {
     const key = keyRef.current;
@@ -206,7 +207,7 @@ export function TerminalPane({
   const hooks = useRef({ onSize, onOutput, onLatency });
   hooks.current = { onSize, onOutput, onLatency };
 
-  const broadcast = paneId && sceneId ? useBroadcast(sceneId, paneId) : null;
+  const broadcast = useBroadcast(sceneId, paneId);
 
   sceneRef.current = sceneId;
 
@@ -347,6 +348,7 @@ export function TerminalPane({
         if (keyRef.current) titleStore.set(keyRef.current, { title });
       });
       r.onCwd?.((cwd) => {
+        cwdRef.current = cwd;
         if (keyRef.current) titleStore.set(keyRef.current, { cwd });
       });
       // ED 3: erase scrollback only; works the same in both renderers.
@@ -465,7 +467,12 @@ export function TerminalPane({
           onStart={killed ? startNew : connect}
         />
       )}
-      <PaneOverlayHost renderer={renderer.current} handle={hostRef} />
+      <PaneOverlayHost
+        renderer={renderer.current}
+        handle={hostRef}
+        sessionId={idRef.current}
+        cwd={cwdRef.current}
+      />
       {menu && (
         <TerminalMenu
           {...menu}
@@ -486,6 +493,7 @@ export function TerminalPane({
           onRename={ops?.rename}
           onShowScreen={() => openOverlay("show-screen")}
           onBroadcast={broadcast?.toggle}
+          onDiff={() => openOverlay("diff")}
           onKill={() => paneId && void killScene(paneId)}
           onClose={() => ops?.close()}
           onDismiss={closeMenu}

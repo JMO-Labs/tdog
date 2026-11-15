@@ -59,7 +59,7 @@ test("a pane with a sceneKey registers a clear that writes ED 3 to the renderer"
     vi.fn(async () => new Response("{}", { status: 200 })),
   );
   const { unmount } = render(
-    <TerminalPane paneId="scene-clear" sceneId="test-scene" />,
+    <TerminalPane sceneKey="scene-clear" sceneId="test-scene" />,
   );
   await waitFor(() => expect(clearScrollback("scene-clear")).toBe(true));
   const sent = new TextDecoder().decode(h.write.mock.calls.at(-1)![0]);

@@ -63,7 +63,7 @@ const ctl = (o: object) =>
   new Uint8Array([3, ...new TextEncoder().encode(JSON.stringify(o))]).buffer;
 
 test("killed frame shows the panel and never reconnects", async () => {
-  render(<TerminalPane paneId="k1" sceneId="test-scene" />);
+  render(<TerminalPane sceneKey="k1" sceneId="test-scene" />);
   await waitFor(() => expect(h.sockets.length).toBe(1));
   vi.useFakeTimers();
   act(() => {
@@ -79,7 +79,7 @@ test("killed frame shows the panel and never reconnects", async () => {
 
 test("reload of a killed pane opens no socket until the button", async () => {
   localStorage.setItem("tdog.killedPanes", JSON.stringify({ k2: true }));
-  render(<TerminalPane paneId="k2" sceneId="test-scene" />);
+  render(<TerminalPane sceneKey="k2" sceneId="test-scene" />);
   expect(screen.getByText("Shell killed")).toBeTruthy();
   await new Promise((r) => setTimeout(r, 50));
   expect(h.sockets.length).toBe(0);
@@ -89,7 +89,7 @@ test("reload of a killed pane opens no socket until the button", async () => {
 });
 
 test("exited shell shows its code in the styled panel", async () => {
-  render(<TerminalPane paneId="k3" sceneId="test-scene" />);
+  render(<TerminalPane sceneKey="k3" sceneId="test-scene" />);
   await waitFor(() => expect(h.sockets.length).toBe(1));
   act(() => {
     h.sockets[0].onopen!();

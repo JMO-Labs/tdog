@@ -49,7 +49,7 @@ export function PaneSlot({
   return (
     <div style={{ position: "relative", height: "100%" }}>
       <TerminalPane
-        paneId={id}
+        sceneKey={id}
         sceneId={sceneId}
         theme={theme}
         settled={settled}

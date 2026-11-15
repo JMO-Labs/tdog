@@ -10,31 +10,29 @@ import {
  * Hook for managing broadcast state and cleanup for a pane.
  * Subscribes to store changes and cleans up on unmount.
  */
-export function useBroadcast(sceneId: string, paneId: string) {
-  const [isBroadcasting, setIsBroadcasting] = useState(() =>
-    getBroadcastGroup(sceneId).has(paneId),
-  );
+export function useBroadcast(sceneId?: string, paneId?: string) {
+  const has = () =>
+    !!sceneId && !!paneId && getBroadcastGroup(sceneId).has(paneId);
+  const [isBroadcasting, setIsBroadcasting] = useState(has);
 
-  // Subscribe to store changes
   useEffect(() => {
-    return getBroadcastStore().subscribe(() => {
-      setIsBroadcasting(getBroadcastGroup(sceneId).has(paneId));
-    });
+    setIsBroadcasting(has());
+    return getBroadcastStore().subscribe(() => setIsBroadcasting(has()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sceneId, paneId]);
 
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (isBroadcasting) {
-        clearPane(sceneId, paneId);
-      }
-    };
-  }, [isBroadcasting, sceneId, paneId]);
+  // A pane that unmounts (closed, killed, moved) leaves its group.
+  useEffect(
+    () => () => {
+      if (sceneId && paneId) clearPane(sceneId, paneId);
+    },
+    [sceneId, paneId],
+  );
 
   return {
     isBroadcasting,
     toggle: () => {
-      toggleBroadcast(sceneId, paneId);
+      if (sceneId && paneId) toggleBroadcast(sceneId, paneId);
     },
   };
 }

@@ -105,7 +105,8 @@ function Pane({ id }: { id: string }) {
   live.current = p;
   const isFocused = focus === id && p.active !== false;
 
-  const broadcast = p.sceneId && isFocused ? useBroadcast(p.sceneId, id) : null;
+  // Every pane in the group shows the chip, focused or not.
+  const { isBroadcasting } = useBroadcast(p.sceneId, id);
 
   // ⌘K actions target the focused pane of the visible scene.
   useEffect(() => {
@@ -123,13 +124,6 @@ function Pane({ id }: { id: string }) {
       cmd("close", "Close", () => live.current.onClose(id)),
       cmd("split-right", "Split right", () => live.current.onSplit(id, "row")),
       cmd("split-down", "Split down", () => live.current.onSplit(id, "col")),
-      ...(broadcast
-        ? [
-            cmd("broadcast:toggle", "Broadcast to all panes in scene", () =>
-              broadcast.toggle(),
-            ),
-          ]
-        : []),
       ...TEMPLATES.map((t) =>
         cmd(`layout:${t.id}`, `Layout ${t.label}`, () => {
           const n = live.current.onSnap(t.id).length;
@@ -149,7 +143,7 @@ function Pane({ id }: { id: string }) {
       ),
     ];
     return () => offs.forEach((f) => f());
-  }, [isFocused, id, clear, p.scenes, broadcast]);
+  }, [isFocused, id, clear, p.scenes]);
   const over = (e: DragEvent<HTMLElement>) => {
     const d = draggedPane();
     if (!d || !p.onMove) {
@@ -236,9 +230,7 @@ function Pane({ id }: { id: string }) {
         )}
         {/* Panes are always local PTYs for now (no remote targets in spec). */}
         <span className="chip">local</span>
-        {broadcast?.isBroadcasting && (
-          <span className="chip broadcast">Broadcasting</span>
-        )}
+        {isBroadcasting && <span className="chip broadcast">Broadcasting</span>}
         <span className="spacer" />
         <button
           className="pane-btn pane-split icon-btn sm"

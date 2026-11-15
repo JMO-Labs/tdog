@@ -46,6 +46,8 @@ export interface PaneOverlayContext {
   copy(text: string): void;
   open(url: string): void;
   close(): void;
+  sessionId?: string;
+  cwd?: string;
 }
 
 export interface TerminalRenderer {

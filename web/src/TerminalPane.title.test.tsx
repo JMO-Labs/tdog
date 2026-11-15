@@ -40,7 +40,7 @@ import { TerminalPane } from "./TerminalPane";
 
 test("shell title and cwd land in the title store under the pane key", async () => {
   const { unmount } = render(
-    <TerminalPane paneId="pane-t" sceneId="test-scene" />,
+    <TerminalPane sceneKey="pane-t" sceneId="test-scene" />,
   );
   await waitFor(() => expect(h.title).not.toBeNull());
   h.title!("vim");
