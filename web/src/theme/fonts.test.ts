@@ -5,6 +5,8 @@ import { fontFamily, loadFont } from "./fonts";
 test("every schema font id resolves to a family with a mono fallback", () => {
   for (const id of FONTS) expect(fontFamily(id)).toMatch(/monospace$/);
   expect(fontFamily("vt323")).toContain("VT323");
+  for (const id of FONTS)
+    expect(fontFamily(id)).toMatch(/", "Nerd Symbols", monospace$/);
   expect(fontFamily("press-start-2p")).toContain("Press Start 2P");
 });
 
@@ -20,8 +22,9 @@ test("loadFont loads once per id and waits for the face", async () => {
   });
   await loadFont("vt323");
   await loadFont("vt323");
-  expect(load).toHaveBeenCalledTimes(1);
+  expect(load).toHaveBeenCalledTimes(2);
   expect(load).toHaveBeenCalledWith('16px "VT323"');
+  expect(load).toHaveBeenCalledWith('16px "Nerd Symbols"', "\ue0b0");
 });
 
 const stubFonts = (load: unknown) =>
@@ -36,7 +39,7 @@ test("loadFont requests every schema font family", async () => {
   const load = vi.fn().mockResolvedValue([]);
   stubFonts(load);
   for (const id of FONTS) await expect(fresh(id)).resolves.toBeUndefined();
-  expect(load).toHaveBeenCalledTimes(FONTS.length);
+  expect(load).toHaveBeenCalledTimes(FONTS.length * 2);
   for (const id of FONTS) {
     const family = fontFamily(id).split('"')[1];
     expect(load).toHaveBeenCalledWith(`16px "${family}"`);

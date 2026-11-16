@@ -12,6 +12,15 @@
   src: url("./assets/fonts/SymbolsNerdFontMono-Regular.woff2") format("woff2");
   font-display: block;
 }
+/* Full set for terminal text (fonts.ts NERD); the subset above serves the UI icons. */
+@font-face {
+  font-family: "Nerd Symbols";
+  src: url("./assets/fonts/SymbolsNerdFontMono-Full.woff2") format("woff2");
+  unicode-range:
+    U+23FB-23FE, U+2630, U+2665, U+26A1, U+276C-2771, U+2B58, U+E000-F8FF,
+    U+F0000-FFFFD;
+  font-display: swap;
+}
 .nf {
   font-family: "Symbols Nerd Font Mono";
   font-size: 14px;

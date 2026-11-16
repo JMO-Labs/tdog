@@ -2,6 +2,8 @@ import type { FONTS } from "./schema";
 
 type FontId = (typeof FONTS)[number];
 const MONO = "monospace";
+/** Full Nerd Font symbol set (index.css): icons in shell prompts render in every face. */
+const NERD = "Nerd Symbols";
 
 interface Face {
   family: string;
@@ -42,7 +44,7 @@ const face = (id: string): Face => FACES[id as FontId] ?? FACES[DEFAULT];
 
 /** CSS font-family for a theme font id (unknown ids fall back to the default). */
 export const fontFamily = (id: string): string =>
-  `"${face(id).family}", ${MONO}`;
+  `"${face(id).family}", "${NERD}", ${MONO}`;
 
 const loaded = new Map<string, Promise<void>>();
 
@@ -53,7 +55,13 @@ export function loadFont(id: string): Promise<void> {
   if (!p) {
     p = f
       .css()
-      .then(() => document.fonts?.load(`16px "${f.family}"`))
+      .then(() =>
+        Promise.all([
+          document.fonts?.load(`16px "${f.family}"`),
+          // ponytail: always fetched (~1.2 MB, cached) so the glyph atlas never caches tofu
+          document.fonts?.load(`16px "${NERD}"`, "\ue0b0"),
+        ]),
+      )
       .then(
         () => undefined,
         () => undefined, // font failure keeps the fallback family
