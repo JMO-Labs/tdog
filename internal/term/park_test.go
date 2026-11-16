@@ -182,23 +182,13 @@ const atPrompt = "\x1b]133;C\x07one\ntwo\nthree\n\x1b]133;D;0\x07\x1b]133;A\x07$
 func (r *parkRig) events() []journal.Event { return r.s.j.buf.Since(0) }
 
 // A pane idling after B (prompt drawn, input starts) parks; one after C
-// (command running) never does.
+// (command running) never does (TestRunningCommandNeverParks).
 func TestParkIdleAfterB(t *testing.T) {
 	r := newParkRig(t)
 	r.h.say(t, "\x1b]133;A\x07$ \x1b]133;B\x07")
 	waitFor(t, func() bool { return r.s.j.idle(time.Now().Add(time.Hour), parkAfter) })
 	r.idleFor(parkAfter + time.Second)
 	waitFor(t, r.parked)
-}
-
-func TestNoParkWhileCommandRunning(t *testing.T) {
-	r := newParkRig(t)
-	r.h.say(t, "\x1b]133;A\x07$ \x1b]133;B\x07sleep 9\r\n\x1b]133;C\x07")
-	waitFor(t, func() bool { return r.s.j.p.HasMarkers() })
-	r.idleFor(parkAfter + time.Second)
-	if r.parked() || r.s.j.idle(time.Now().Add(time.Hour), parkAfter) {
-		t.Fatal("running command must not park")
-	}
 }
 
 func TestParkOnlyAfterFullIdleDuration(t *testing.T) {
