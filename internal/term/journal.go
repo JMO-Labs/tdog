@@ -45,11 +45,10 @@ type jrnl struct {
 	streamMu   sync.Mutex // serializes stream's Since+write with forget's wipe+reply
 	afterSince func()     // test seam: runs in stream between Since and write
 
-	// Restore from host (restore.go); guarded by mu except snap (set once).
-	snap    func() (string, error) // tmux scrollback; nil = not restorable
-	tail    []string               // last anchorLines complete non-empty output lines
-	partial string                 // output after the last newline
-	anchors map[uint64][]string    // disconnected gap rec -> tail at park
+	// Restore from host (restore.go); guarded by mu.
+	tail    []string             // last anchorLines complete non-empty output lines
+	partial string               // output after the last newline
+	parks   map[uint64]*parkInfo // disconnected gap rec -> how to restore it
 }
 
 func newJrnl() *jrnl {
@@ -143,7 +142,7 @@ func (j *jrnl) control(p []byte, reply func([]byte) error) {
 		}
 	case "jrnl-restore":
 		if v.Rec != 0 {
-			go j.restore(v.Rec) // capture is a network round trip; never block input
+			go j.restore(v.Rec, reply) // scans up to 50k lines; keep input responsive
 		}
 	case "jrnl-record":
 		if v.On == nil {

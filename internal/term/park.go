@@ -13,7 +13,8 @@ import (
 // next attach re-dials (unpark) and pump carries on with the new transport.
 //
 // State (all under Session.mu): s is the current transport, parked says it
-// was closed on purpose, hungUp says a kill was requested. pump reads s until
+// was closed on purpose, hungUp says a kill was requested (or the host tmux
+// session is gone). pump reads s until
 // it ends, then calls next: if s was swapped meanwhile it continues with the
 // new one; if parked and not hung up it waits on cond; otherwise the shell
 // ended. parkMu serializes park against unpark+attach so a browser can never
@@ -85,6 +86,7 @@ func (s *Session) idleLoop(tick <-chan time.Time, stop func()) {
 		case <-s.ended:
 			return
 		case now := <-tick:
+			s.j.expireCaps(now)
 			s.tryPark(now)
 		}
 	}
@@ -101,27 +103,27 @@ func (s *Session) tryPark(now time.Time) bool {
 	}
 	s.mu.Lock()
 	t := s.s
-	ok := t.park != nil && !s.parked && !s.exited && !s.hungUp && s.att == nil
+	ok := t.link != nil && !s.parked && !s.exited && !s.hungUp && s.att == nil
 	s.parked = ok // set before closing: pump must see the end as a park
 	s.mu.Unlock()
 	if !ok {
 		return false
 	}
-	if err := t.park(); err != nil {
-		log.Printf("term: park %s: %v", s.id, err)
+	pos, err := t.link.position() // best effort: restore falls back to the anchor
+	if err != nil {
+		log.Printf("term: park %s: position: %v", s.id, err)
+		pos = -1
 	}
-	s.j.parkGap()
+	t.close() // drops ssh only; the host tmux keeps the shell
+	s.parkRec = s.j.parkGap(pos)
 	s.auditEvent("park")
 	return true
 }
 
-// unpark re-dials a parked session; a no-op otherwise.
-func (s *Session) unpark() error {
-	s.parkMu.Lock()
-	defer s.parkMu.Unlock()
-	return s.unparkLocked()
-}
-
+// unparkLocked re-dials a parked session (a no-op otherwise); callers hold
+// parkMu. A tmux session that is gone ends the session like a shell exit
+// instead of starting a fresh shell. The scrollback is captured before the
+// re-dial, so a restore never repeats output journaled after it.
 func (s *Session) unparkLocked() error {
 	s.mu.Lock()
 	old, parked, gone := s.s, s.parked, s.hungUp
@@ -129,7 +131,17 @@ func (s *Session) unparkLocked() error {
 	if !parked || gone {
 		return nil
 	}
-	ns, err := old.unpark()
+	alive, err := old.link.alive()
+	if err != nil {
+		return err
+	}
+	if !alive {
+		s.hangUp() // pump ends the session normally
+		return nil
+	}
+	scr, cerr := old.link.capture()
+	s.j.storeCapture(s.parkRec, scr, cerr, time.Now())
+	ns, err := old.link.redial()
 	if err != nil {
 		return err
 	}

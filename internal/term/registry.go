@@ -94,7 +94,6 @@ func (r *Registry) add(id, target, scene string, s *session, onClose func()) *Se
 		ended: make(chan struct{}),
 	}
 	sess.cond = sync.NewCond(&sess.mu)
-	sess.j.snap = s.snap
 	r.mu.Lock()
 	sess.j.store, sess.j.sid, sess.j.pane = r.jstore, id, sess.paneID
 	r.sessions[sess.id] = sess
@@ -102,7 +101,7 @@ func (r *Registry) add(id, target, scene string, s *session, onClose func()) *Se
 	r.audit.Log(audit.Entry{Event: "term_start", Target: target, PID: s.pid, Session: sess.id})
 	sess.j.start()
 	go sess.pump()
-	if s.park != nil {
+	if s.link != nil {
 		go sess.idleLoop(r.ticker())
 	}
 	return sess

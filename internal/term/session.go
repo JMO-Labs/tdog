@@ -25,11 +25,12 @@ type Session struct {
 	killed bool // ended by a kill request; clients get a "killed" control
 
 	// Parking (park.go): s may be swapped while parked; read it via tr().
-	parked bool          // transport closed on purpose; tmux keeps the shell
-	hungUp bool          // a kill was requested: a parked pump must end
-	cond   *sync.Cond    // on mu; wakes a parked pump
-	parkMu sync.Mutex    // serializes park against unpark+attach
-	ended  chan struct{} // closed when pump ends
+	parked  bool          // transport closed on purpose; tmux keeps the shell
+	hungUp  bool          // a kill was requested: a parked pump must end
+	cond    *sync.Cond    // on mu; wakes a parked pump
+	parkMu  sync.Mutex    // serializes park against unpark+attach
+	parkRec uint64        // gap rec of the current park; guarded by parkMu
+	ended   chan struct{} // closed when pump ends
 
 	pane string // browser pane key for journal sync; "" = never syncs; set once
 

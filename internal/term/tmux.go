@@ -95,12 +95,44 @@ func spawnTmuxCmd(cfg SSHConfig, run CmdRunner, id, cmd string) (*session, error
 		return nil, err
 	}
 	wrapTmuxKill(s, run, id)
-	s.park = func() error { s.close(); return nil }
-	s.unpark = func() (*session, error) { return spawnTmuxCmd(cfg, run, id, cmd) }
-	s.snap = func() (string, error) { return capture(run, id) }
+	s.link = &tmuxLink{run: run, id: id, redial: func() (*session, error) { return spawnTmuxCmd(cfg, run, id, cmd) }}
 	raiseHistoryOnce(net.JoinHostPort(cfg.Host, cfg.Port), run)
 	return s, nil
 }
+
+// tmuxLink reaches the host tmux session behind a parkable transport.
+type tmuxLink struct {
+	run    CmdRunner
+	id     string
+	redial func() (*session, error) // re-runs the original attach command
+}
+
+// position is the cursor's absolute line in the pane's scrollback, as
+// numbered by capture (history lines first, then the visible screen).
+func (l *tmuxLink) position() (int, error) {
+	out, err := l.run("tmux display -p -t " + tmuxPrefix + l.id + " '#{history_size} #{cursor_y}'")
+	if err != nil {
+		return 0, err
+	}
+	var h, y int
+	if _, err := fmt.Sscan(out, &h, &y); err != nil {
+		return 0, fmt.Errorf("tmux display: %q: %w", out, err)
+	}
+	return h + y, nil
+}
+
+// alive reports whether the tmux session still exists; a non-zero exit means
+// it does not, any other error is a transport failure.
+func (l *tmuxLink) alive() (bool, error) {
+	_, err := l.run("tmux has-session -t " + tmuxPrefix + l.id)
+	var ee *ssh.ExitError
+	if errors.As(err, &ee) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
+func (l *tmuxLink) capture() (string, error) { return capture(l.run, l.id) }
 
 // capture returns session id's tmux scrollback as plain text, wrapped lines joined.
 func capture(run CmdRunner, id string) (string, error) {

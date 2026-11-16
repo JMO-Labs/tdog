@@ -9,23 +9,72 @@ import (
 	"time"
 
 	"github.com/JMO-Labs/tdog/internal/journal"
+	"golang.org/x/crypto/ssh"
 )
 
 // fakeHost hands out pipe transports that behave like a tmux-backed ssh
-// session: park/close end the pipe without killing "tmux", unpark re-dials.
+// session (closing one leaves "tmux" running; redial re-attaches) and answers
+// the one-shot tmux commands.
 type fakeHost struct {
-	mu   sync.Mutex
-	run  *fakeRun
-	cur  *io.PipeWriter
-	err  error // next dial fails with this
-	dial int   // successful dials (the attach command ran this many times)
+	mu      sync.Mutex
+	cmds    []string
+	cur     *io.PipeWriter
+	dialErr error         // next dial fails with this
+	gate    chan struct{} // when set, dials wait for it
+	inDial  bool          // a dial is waiting on gate
+	dial    int           // successful dials (the attach command ran this many times)
+	pos     string        // "tmux display" output
+	scr     string        // "tmux capture-pane" output
+	capErr  error
+	deadErr error // "tmux has-session" result
+}
+
+func (h *fakeHost) run(cmd string) (string, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.cmds = append(h.cmds, cmd)
+	switch {
+	case strings.HasPrefix(cmd, "tmux display"):
+		return h.pos, nil
+	case strings.HasPrefix(cmd, "tmux capture-pane"):
+		return h.scr, h.capErr
+	case strings.HasPrefix(cmd, "tmux has-session"):
+		return "", h.deadErr
+	}
+	return "", nil
+}
+
+func (h *fakeHost) set(f func()) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	f()
+}
+
+// count is how many commands so far contain sub.
+func (h *fakeHost) count(sub string) int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	n := 0
+	for _, c := range h.cmds {
+		if strings.Contains(c, sub) {
+			n++
+		}
+	}
+	return n
 }
 
 func (h *fakeHost) attach() (*session, error) {
 	h.mu.Lock()
+	gate := h.gate
+	h.inDial = gate != nil
+	h.mu.Unlock()
+	if gate != nil {
+		<-gate
+	}
+	h.mu.Lock()
 	defer h.mu.Unlock()
-	if h.err != nil {
-		return nil, h.err
+	if h.dialErr != nil {
+		return nil, h.dialErr
 	}
 	h.dial++
 	pr, pw := io.Pipe()
@@ -37,11 +86,9 @@ func (h *fakeHost) attach() (*session, error) {
 		r: pr, w: io.Discard, wait: w, resize: func(uint16, uint16) {},
 		kill:  func() { end(); <-w.done },
 		close: end,
+		link:  &tmuxLink{run: h.run, id: "abc", redial: h.attach},
 	}
-	s.park = func() error { end(); return nil }
-	s.unpark = h.attach
-	s.snap = func() (string, error) { return capture(h.run.run, "abc") }
-	wrapTmuxKill(s, h.run.run, "abc")
+	wrapTmuxKill(s, h.run, "abc")
 	return s, nil
 }
 
@@ -74,10 +121,16 @@ func newParkRig(t *testing.T) *parkRig {
 	reg := NewRegistry(nil, 0)
 	tick := make(chan time.Time)
 	reg.parkTicker = func() (<-chan time.Time, func()) { return tick, func() {} }
-	h := &fakeHost{run: &fakeRun{}}
+	h := &fakeHost{}
 	tr, _ := h.attach()
 	s := reg.addID("abc", "ssh-host", "", tr)
 	t.Cleanup(func() {
+		h.set(func() {
+			if h.gate != nil && h.inDial {
+				close(h.gate)
+				h.gate = nil
+			}
+		})
 		s.kill()
 		waitFor(t, func() bool { return reg.get("abc") == nil })
 	})
@@ -102,6 +155,14 @@ func (r *parkRig) prompt(t *testing.T) {
 	t.Helper()
 	r.h.say(t, atPrompt)
 	waitFor(t, func() bool { return r.s.j.idle(time.Now().Add(time.Hour), parkAfter) })
+}
+
+// park brings r to the parked state.
+func (r *parkRig) park(t *testing.T) {
+	t.Helper()
+	r.prompt(t)
+	r.idleFor(parkAfter + time.Second)
+	waitFor(t, r.parked)
 }
 
 const atPrompt = "\x1b]133;C\x07one\ntwo\nthree\n\x1b]133;D;0\x07\x1b]133;A\x07$ "
@@ -159,9 +220,7 @@ func TestAttachedPaneNeverParks(t *testing.T) {
 
 func TestAttachUnparksAndPumpContinues(t *testing.T) {
 	r := newParkRig(t)
-	r.prompt(t)
-	r.idleFor(parkAfter + time.Second)
-	waitFor(t, r.parked)
+	r.park(t)
 	a, _, err := r.s.attachUnparked()
 	if err != nil || a == nil {
 		t.Fatalf("attach: %v", err)
@@ -170,10 +229,8 @@ func TestAttachUnparksAndPumpContinues(t *testing.T) {
 	if r.parked() || r.h.dials() != 2 {
 		t.Fatalf("parked=%v dials=%d", r.parked(), r.h.dials())
 	}
-	for _, c := range r.h.run.cmds {
-		if strings.Contains(c, "kill-session") {
-			t.Fatal("unpark must keep the tmux session")
-		}
+	if r.h.count("kill-session") != 0 {
+		t.Fatal("unpark must keep the tmux session")
 	}
 	r.h.say(t, "after\n")
 	waitFor(t, func() bool {
@@ -185,12 +242,8 @@ func TestAttachUnparksAndPumpContinues(t *testing.T) {
 
 func TestUnparkFailureKeepsSessionParked(t *testing.T) {
 	r := newParkRig(t)
-	r.prompt(t)
-	r.idleFor(parkAfter + time.Second)
-	waitFor(t, r.parked)
-	r.h.mu.Lock()
-	r.h.err = errors.New("dial refused")
-	r.h.mu.Unlock()
+	r.park(t)
+	r.h.set(func() { r.h.dialErr = errors.New("dial refused") })
 	if a, _, err := r.s.attachUnparked(); err == nil || a != nil {
 		t.Fatal("want unpark error and no attachment")
 	}
@@ -199,18 +252,37 @@ func TestUnparkFailureKeepsSessionParked(t *testing.T) {
 	}
 }
 
+func TestUnparkDeadTmuxEndsSession(t *testing.T) {
+	r := newParkRig(t)
+	r.park(t)
+	r.h.set(func() { r.h.deadErr = &ssh.ExitError{} })
+	if _, _, err := r.s.attachUnparked(); err != nil {
+		t.Fatalf("a dead shell is an exit, not an error: %v", err)
+	}
+	waitFor(t, func() bool { return r.reg.get("abc") == nil })
+	if r.h.dials() != 1 {
+		t.Fatalf("a fresh shell was started: dials=%d", r.h.dials())
+	}
+}
+
+func TestUnparkHasSessionErrorKeepsParked(t *testing.T) {
+	r := newParkRig(t)
+	r.park(t)
+	r.h.set(func() { r.h.deadErr = errors.New("dial failed") })
+	if _, _, err := r.s.attachUnparked(); err == nil {
+		t.Fatal("want error")
+	}
+	if !r.parked() || r.reg.get("abc") == nil || r.h.dials() != 1 {
+		t.Fatal("an unreachable host must leave the session parked")
+	}
+}
+
 func TestKillWhileParkedRemovesSession(t *testing.T) {
 	r := newParkRig(t)
-	r.prompt(t)
-	r.idleFor(parkAfter + time.Second)
-	waitFor(t, r.parked)
+	r.park(t)
 	r.s.kill()
 	waitFor(t, func() bool { return r.reg.get("abc") == nil })
-	waitFor(t, func() bool { // the kill runs in the background
-		r.h.run.mu.Lock()
-		defer r.h.run.mu.Unlock()
-		return strings.Contains(strings.Join(r.h.run.cmds, "|"), "tmux kill-session -t tdog-abc")
-	})
+	waitFor(t, func() bool { return r.h.count("tmux kill-session -t tdog-abc") > 0 })
 	select {
 	case <-r.s.ended:
 	case <-time.After(3 * time.Second):
@@ -218,70 +290,80 @@ func TestKillWhileParkedRemovesSession(t *testing.T) {
 	}
 }
 
-// parkedWithCapture parks r and then makes the host's capture return out/err.
-func parkedWithCapture(t *testing.T, out string, err error) (*parkRig, uint64) {
+func TestAttachRacingPark(t *testing.T) {
 	r := newParkRig(t)
 	r.prompt(t)
-	r.idleFor(parkAfter + time.Second)
-	waitFor(t, r.parked)
-	evs := r.events()
-	rec := evs[len(evs)-1].Rec
-	r.h.run.mu.Lock()
-	r.h.run.out, r.h.run.err = out, err
-	r.h.run.mu.Unlock()
-	return r, rec
-}
-
-// restored runs a restore for rec and returns the events it added.
-func restored(t *testing.T, r *parkRig, rec uint64) []journal.Event {
-	t.Helper()
-	before := r.events()
-	last := before[len(before)-1].Seq
-	r.s.j.control([]byte(`{"type":"jrnl-restore","rec":`+itoa(rec)+`}`), nil)
-	var got []journal.Event
-	waitFor(t, func() bool { got = r.s.j.buf.Since(last); return len(got) > 0 })
-	return got
-}
-
-func TestRestoreEmitsLinesAfterAnchor(t *testing.T) {
-	scr := "old\none\n$ ls\ntwo\nthree\n$ missed-1\nmissed 2\n\n"
-	r, rec := parkedWithCapture(t, scr, nil)
-	got := restored(t, r, rec)
-	if len(got) != 1 || got[0].Kind != journal.KindOut || got[0].Rec != rec {
-		t.Fatalf("want one out for rec %d, got %+v", rec, got)
+	ticked := make(chan struct{})
+	go func() { r.idleFor(parkAfter + time.Second); close(ticked) }()
+	a, _, err := r.s.attachUnparked()
+	if err != nil || a == nil {
+		t.Fatalf("attach: %v", err)
 	}
-	if got[0].Text != "$ missed-1\nmissed 2\n" {
-		t.Fatalf("text = %q", got[0].Text)
+	defer r.s.detach(a)
+	<-ticked
+	if r.parked() {
+		t.Fatal("parked under an attached browser")
 	}
-	if r.h.run.cmds[len(r.h.run.cmds)-1] != "tmux capture-pane -p -J -S -50000 -t tdog-abc" {
-		t.Fatalf("capture cmd = %q", r.h.run.cmds)
+	r.h.say(t, "live\n")
+	select {
+	case b := <-a.ch:
+		if !strings.Contains(string(b), "live") {
+			t.Fatalf("got %q", b)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("attachment gets no output")
 	}
 }
 
-func TestRestoreUsesLastAnchorOccurrence(t *testing.T) {
-	scr := "one\ntwo\nthree\nstale\none\ntwo\nthree\nfresh\n"
-	r, rec := parkedWithCapture(t, scr, nil)
-	if got := restored(t, r, rec); got[0].Text != "fresh\n" {
-		t.Fatalf("text = %q", got[0].Text)
+func TestConcurrentAttachesUnparkOnce(t *testing.T) {
+	r := newParkRig(t)
+	r.park(t)
+	var wg sync.WaitGroup
+	errs := make(chan error, 2)
+	for range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			a, _, err := r.s.attachUnparked()
+			if err == nil && a == nil {
+				err = errors.New("no attachment")
+			}
+			errs <- err
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if r.parked() || r.h.dials() != 2 {
+		t.Fatalf("parked=%v dials=%d (want one re-dial)", r.parked(), r.h.dials())
 	}
 }
 
-func TestRestoreAnchorMissingGap(t *testing.T) {
-	r, rec := parkedWithCapture(t, "unrelated\nlines\n", nil)
-	got := restored(t, r, rec)
-	g := got[len(got)-1]
-	if g.Kind != journal.KindGap || g.Why != "restore failed: scrollback no longer reaches the gap" || g.Rec <= rec {
-		t.Fatalf("got %+v", got)
+func TestKillDuringUnparkDial(t *testing.T) {
+	r := newParkRig(t)
+	r.park(t)
+	gate := make(chan struct{})
+	r.h.set(func() { r.h.gate = gate })
+	res := make(chan error, 1)
+	go func() { _, _, err := r.s.attachUnparked(); res <- err }()
+	waitFor(t, func() bool {
+		r.h.mu.Lock()
+		defer r.h.mu.Unlock()
+		return r.h.inDial
+	})
+	r.s.kill()
+	waitFor(t, func() bool { return r.reg.get("abc") == nil })
+	r.h.set(func() { r.h.gate = nil })
+	close(gate)
+	if err := <-res; err == nil {
+		t.Fatal("unpark after kill must fail")
 	}
-}
-
-func TestRestoreCaptureErrorGap(t *testing.T) {
-	r, rec := parkedWithCapture(t, "", errors.New("no server"))
-	got := restored(t, r, rec)
-	g := got[len(got)-1]
-	if g.Kind != journal.KindGap || g.Why != "restore failed: no server" || g.Rec <= rec {
-		t.Fatalf("got %+v", got)
-	}
+	// The attach that raced the kill is torn down with its tmux session.
+	waitFor(t, func() bool { return r.h.count("tmux kill-session -t tdog-abc") >= 2 })
 }
 
 func TestRaiseHistory(t *testing.T) {
@@ -319,15 +401,13 @@ func TestSpawnTmuxParkUnparkRedials(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.park(); err != nil {
-		t.Fatal(err)
-	}
+	s.close() // park
 	select {
 	case <-s.wait.done:
 	case <-time.After(3 * time.Second):
 		t.Fatal("park did not end the transport")
 	}
-	ns, err := s.unpark()
+	ns, err := s.link.redial()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -340,5 +420,33 @@ func TestSpawnTmuxParkUnparkRedials(t *testing.T) {
 	}
 	if n != 2 {
 		t.Fatalf("attach ran %d times: %q", n, d.execLog())
+	}
+}
+
+func TestTmuxLinkCommands(t *testing.T) {
+	h := &fakeHost{pos: "120 7\n"}
+	l := &tmuxLink{run: h.run, id: "abc"}
+	if p, err := l.position(); err != nil || p != 127 {
+		t.Fatalf("pos=%d err=%v", p, err)
+	}
+	h.set(func() { h.pos = "junk" })
+	if _, err := l.position(); err == nil {
+		t.Fatal("bad display output must fail")
+	}
+	if ok, err := l.alive(); !ok || err != nil {
+		t.Fatalf("alive=%v err=%v", ok, err)
+	}
+	h.set(func() { h.deadErr = &ssh.ExitError{} })
+	if ok, err := l.alive(); ok || err != nil {
+		t.Fatalf("dead: alive=%v err=%v", ok, err)
+	}
+	want := []string{
+		"tmux display -p -t tdog-abc '#{history_size} #{cursor_y}'",
+		"tmux display -p -t tdog-abc '#{history_size} #{cursor_y}'",
+		"tmux has-session -t tdog-abc",
+		"tmux has-session -t tdog-abc",
+	}
+	if strings.Join(h.cmds, "|") != strings.Join(want, "|") {
+		t.Fatalf("cmds %q", h.cmds)
 	}
 }

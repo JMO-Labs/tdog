@@ -171,10 +171,7 @@ type session struct {
 	close  func()                  // release resources
 	pid    int                     // 0 when unknown (ssh)
 
-	// Set only on tmux-backed ssh sessions (see park.go).
-	park   func() error             // drop the transport; the host tmux keeps the shell
-	unpark func() (*session, error) // re-attach to the host tmux session
-	snap   func() (string, error)   // tmux scrollback as plain text
+	link *tmuxLink // tmux-backed ssh only: the session can park (park.go)
 }
 
 // waiter publishes a process exit: done closes after code is set.
