@@ -93,7 +93,9 @@ test("setup network error shows a generic error", async () => {
 test("message covers totp, done and fallback kinds", () => {
   expect(message({ ok: false, kind: "totp" })).toMatch(/authentication code/i);
   expect(message({ ok: false, kind: "done" })).toMatch(/already set up/i);
-  expect(message({ ok: false, kind: "save" })).toMatch(/data folder is writable/i);
+  expect(message({ ok: false, kind: "save" })).toMatch(
+    /data folder is writable/i,
+  );
   expect(message({ ok: false, kind: "other" })).toMatch(
     /something went wrong/i,
   );
