@@ -25,6 +25,7 @@ const (
 	whyNoReach  = "restore failed: scrollback no longer reaches the gap"
 	whyExpired  = "restore failed: the host capture expired; restore within 10 minutes of reconnecting"
 	whyUnknown  = "restore failed: nothing to restore for this gap"
+	whyOff      = "Recording is off for this pane."
 	whyRestFail = "restore failed: "
 )
 
@@ -97,6 +98,21 @@ func (j *jrnl) parkGap(pos int) uint64 {
 	return rec
 }
 
+// dropParks forgets every park, stored capture and output tail (forget,
+// kill, end): none of that plaintext may outlive the journal it came from.
+func (j *jrnl) dropParks() {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	j.dropParksLocked()
+}
+
+// dropParksLocked is dropParks for callers holding j.mu. Bumping parkGen
+// voids a restore that already took its park but has not written yet.
+func (j *jrnl) dropParksLocked() {
+	j.parks, j.tail, j.partial = nil, nil, ""
+	j.parkGen++
+}
+
 // oldest is the lowest rec whose info matches keep (0 if none).
 func oldest(m map[uint64]*parkInfo, keep func(*parkInfo) bool) uint64 {
 	var lo uint64
@@ -120,7 +136,7 @@ func (j *jrnl) storeCapture(rec uint64, scr string, err error, now time.Time) {
 	if p == nil {
 		return
 	}
-	p.hasCap, p.scr, p.capErr, p.capAt = true, scr, err, now
+	p.hasCap, p.scr, p.capErr, p.capAt = true, newestTail(scr), err, now
 	held := func(p *parkInfo) bool { return p.hasCap }
 	for n := 0; ; n = 0 {
 		for _, q := range j.parks {
@@ -154,14 +170,23 @@ func (j *jrnl) expireCaps(now time.Time) {
 // events for rec, or a "restore failed" gap. Each gap restores at most once.
 // An unknown rec (or a session that never parked) only gets an error control.
 func (j *jrnl) restore(rec uint64, reply func([]byte) error) {
-	j.mu.Lock()
-	p := j.parks[rec]
-	delete(j.parks, rec)
-	j.mu.Unlock()
-	if p == nil {
+	fail := func(msg string) {
 		if reply != nil {
-			_ = reply(frame.ErrorControl(whyUnknown))
+			_ = reply(frame.ErrorControl(msg))
 		}
+	}
+	j.mu.Lock()
+	on, gen, p := j.on, j.parkGen, j.parks[rec]
+	if on {
+		delete(j.parks, rec)
+	}
+	j.mu.Unlock()
+	if !on {
+		fail(whyOff)
+		return
+	}
+	if p == nil {
+		fail(whyUnknown)
 		return
 	}
 	var text, why string
@@ -175,11 +200,11 @@ func (j *jrnl) restore(rec uint64, reply func([]byte) error) {
 	}
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	if why != "" {
-		j.gap(why)
+	if j.parkGen != gen || !j.on { // forgotten, killed or switched off meanwhile
 		return
 	}
-	if !j.on {
+	if why != "" {
+		j.gap(why)
 		return
 	}
 	for _, c := range restorePieces(text) {
@@ -270,15 +295,24 @@ func findAnchor(lines, anchor []string) (int, bool) {
 // restorePieces makes restored text valid UTF-8, keeps its newest maxRestore
 // bytes (behind trimmedMark when cut) and splits it into out-event pieces.
 func restorePieces(text string) []string {
+	return chunks(newestTail(text), restoreChunk)
+}
+
+// newestTail is text as valid UTF-8, cut to its newest maxRestore bytes
+// behind trimmedMark when longer.
+func newestTail(text string) string {
 	s := strings.ToValidUTF8(text, "\uFFFD")
-	if len(s) > maxRestore {
-		i := len(s) - maxRestore
-		for i < len(s) && !utf8.RuneStart(s[i]) {
-			i++
-		}
-		s = trimmedMark + s[i:]
+	if len(s) <= maxRestore {
+		return s
 	}
-	return chunks(s, restoreChunk)
+	if len(s) <= maxRestore+len(trimmedMark) && strings.HasPrefix(s, trimmedMark) {
+		return s // already cut (stored captures are cut at store time)
+	}
+	i := len(s) - maxRestore
+	for i < len(s) && !utf8.RuneStart(s[i]) {
+		i++
+	}
+	return trimmedMark + s[i:]
 }
 
 // chunks splits s into pieces of at most n bytes, never splitting a rune of

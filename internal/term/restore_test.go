@@ -259,3 +259,73 @@ func TestRestorePiecesValidAndCapped(t *testing.T) {
 		t.Fatal("cap must keep the newest tail behind the marker")
 	}
 }
+
+func parkCount(j *jrnl) int {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return len(j.parks)
+}
+
+func TestStoredCaptureIsBounded(t *testing.T) {
+	j := newJrnl()
+	j.parks = map[uint64]*parkInfo{1: {pos: -1}}
+	j.storeCapture(1, strings.Repeat("ab\xffé\n", 2<<20), nil, time.Now()) // ~12 MiB
+	scr := j.parks[1].scr
+	if len(scr) > maxRestore+len(trimmedMark) || !utf8.ValidString(scr) {
+		t.Fatalf("stored %d bytes, valid=%v", len(scr), utf8.ValidString(scr))
+	}
+}
+
+func TestForgetDropsParksAndCaptures(t *testing.T) {
+	r := newParkRig(t)
+	rec := parkAndReturn(t, r, "3 1\n", "x\none\ntwo\nthree\n$ \nsecret\n", nil)
+	r.s.j.control([]byte(`{"type":"jrnl-forget"}`), nil)
+	if parkCount(r.s.j) != 0 {
+		t.Fatal("forget kept stored captures")
+	}
+	select {
+	case msg := <-ask(r, rec):
+		if msg != whyUnknown {
+			t.Fatalf("msg %q", msg)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("no error control")
+	}
+	time.Sleep(20 * time.Millisecond)
+	if evs := r.events(); len(evs) != 0 {
+		t.Fatalf("restore after forget wrote %+v", evs)
+	}
+}
+
+func TestKillAndStopDropCaptures(t *testing.T) {
+	r := newParkRig(t)
+	parkAndReturn(t, r, "3 1\n", "x\none\ntwo\nthree\n$ \n", nil)
+	r.s.j.kill()
+	if parkCount(r.s.j) != 0 {
+		t.Fatal("kill kept stored captures")
+	}
+	j := newJrnl()
+	j.parks = map[uint64]*parkInfo{1: {pos: -1, hasCap: true, scr: "secret"}}
+	j.stop()
+	if parkCount(j) != 0 {
+		t.Fatal("stop kept stored captures")
+	}
+}
+
+func TestRestoreWithRecordingOffSendsError(t *testing.T) {
+	r := newParkRig(t)
+	rec := parkAndReturn(t, r, "3 1\n", "x\none\ntwo\nthree\n$ \nmissed\n", nil)
+	r.s.j.control([]byte(`{"type":"jrnl-record","on":false}`), nil)
+	select {
+	case msg := <-ask(r, rec):
+		if msg != "Recording is off for this pane." {
+			t.Fatalf("msg %q", msg)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("no error control")
+	}
+	time.Sleep(20 * time.Millisecond)
+	if evs := r.events(); len(evs) != 0 {
+		t.Fatalf("wrote %+v", evs)
+	}
+}

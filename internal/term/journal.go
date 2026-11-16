@@ -49,6 +49,7 @@ type jrnl struct {
 	tail    []string             // last anchorLines complete non-empty output lines
 	partial string               // output after the last newline
 	parks   map[uint64]*parkInfo // disconnected gap rec -> how to restore it
+	parkGen uint64               // bumped whenever parks are dropped
 }
 
 func newJrnl() *jrnl {
@@ -110,6 +111,7 @@ func (j *jrnl) start() {
 func (j *jrnl) stop() {
 	if j != nil {
 		j.once.Do(func() { close(j.done) })
+		j.dropParks()
 	}
 }
 
@@ -134,6 +136,7 @@ func (j *jrnl) control(p []byte, reply func([]byte) error) {
 		j.streamMu.Lock()
 		defer j.streamMu.Unlock()
 		j.buf.Wipe()
+		j.dropParks() // a restore must not bring forgotten text back
 		defer j.forgetSynced()()
 		// The socket is ordered: the client drops journal frames until this
 		// arrives, so none sent before the wipe can re-add rows afterwards.
@@ -154,6 +157,7 @@ func (j *jrnl) control(p []byte, reply func([]byte) error) {
 		case !*v.On && j.on:
 			j.on = false
 			j.buf.Wipe()
+			j.dropParksLocked()
 		case *v.On && !j.on:
 			j.on, j.base, j.recBase, j.p = true, j.max, j.recMax, journal.NewParser(time.Now)
 		}
@@ -166,6 +170,7 @@ func (j *jrnl) kill() {
 	if j == nil {
 		return
 	}
+	j.dropParks()
 	if p := j.syncPane(); p != "" {
 		if err := j.store.KillPane(p, j.sid); err != nil {
 			log.Printf("journal: delete %s: %v", p, err)
