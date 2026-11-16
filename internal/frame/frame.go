@@ -106,6 +106,15 @@ func KilledControl() []byte {
 	return Encode(Control, p)
 }
 
+// ReplayedControl builds the control frame marking the end of the scrollback
+// replay; output after it is live.
+func ReplayedControl() []byte {
+	p, _ := json.Marshal(struct {
+		Type string `json:"type"`
+	}{"replayed"})
+	return Encode(Control, p)
+}
+
 // EncodeJournal builds a Journal frame carrying evs as a JSON array.
 func EncodeJournal(evs []journal.Event) []byte {
 	p, _ := json.Marshal(evs)

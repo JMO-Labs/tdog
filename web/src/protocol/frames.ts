@@ -13,6 +13,7 @@ export type Decoded =
   | { kind: "output"; data: Uint8Array }
   | { kind: "exit"; code: number }
   | { kind: "killed" }
+  | { kind: "replayed" }
   | { kind: "forgotten" }
   | { kind: "pong"; t: number }
   | { kind: "session"; id: string }
@@ -97,6 +98,7 @@ export function decodeFrame(buf: ArrayBuffer): Decoded {
         return { kind: "session", id: m.id };
       }
       if (m?.type === "killed") return { kind: "killed" };
+      if (m?.type === "replayed") return { kind: "replayed" };
       if (m?.type === "jrnl-forgotten") return { kind: "forgotten" };
       if (m?.type === "pong" && typeof m.t === "number") {
         return { kind: "pong", t: m.t };

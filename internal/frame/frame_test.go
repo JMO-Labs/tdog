@@ -145,3 +145,10 @@ func TestEncodeJournalRoundTrip(t *testing.T) {
 		t.Fatalf("%v %v %s", typ, err, p)
 	}
 }
+
+func TestReplayedControl(t *testing.T) {
+	typ, p, err := Decode(ReplayedControl())
+	if err != nil || typ != Control || string(p) != `{"type":"replayed"}` {
+		t.Fatalf("%v %q %v", typ, p, err)
+	}
+}

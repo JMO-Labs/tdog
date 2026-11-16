@@ -117,3 +117,9 @@ describe("journal frames", () => {
     expect(ctl(encodeJournalForget())).toEqual({ type: "jrnl-forget" });
   });
 });
+
+test("decodes the replayed control frame", () => {
+  const p = new TextEncoder().encode(JSON.stringify({ type: "replayed" }));
+  const b = new Uint8Array([FrameType.Control, ...p]);
+  expect(decodeFrame(b.buffer)).toEqual({ kind: "replayed" });
+});

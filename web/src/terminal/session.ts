@@ -28,6 +28,9 @@ export const ACK_BATCH_BYTES = 32 * 1024;
 /** Round-trip probe cadence for the status-bar latency chip. */
 export const PING_INTERVAL_MS = 5000;
 
+/** Input stays gated this long if an older server never sends `replayed`. */
+export const REPLAY_TIMEOUT_MS = 3000;
+
 export interface SocketLike {
   binaryType: string;
   onopen: ((ev: Event) => void) | null;
@@ -72,6 +75,12 @@ export class TerminalSession {
   private disposed = false;
   private forgetting = false;
   private pendingForget = false;
+  /**
+   * True while scrollback is replayed: xterm answers queries (DA, OSC colours)
+   * found in old output, and those answers must not reach the shell.
+   */
+  private replaying = false;
+  private replayTimer: ReturnType<typeof setTimeout> | undefined;
   private pinger: ReturnType<typeof setInterval> | undefined;
 
   constructor(
@@ -84,9 +93,10 @@ export class TerminalSession {
       this.send(encodeInput(d));
       this.hooks.onBroadcast?.(d);
     };
-    r.onInput((d) =>
-      this.hooks.interceptInput ? this.hooks.interceptInput(d, pass) : pass(d),
-    );
+    r.onInput((d) => {
+      if (this.replaying) return;
+      this.hooks.interceptInput ? this.hooks.interceptInput(d, pass) : pass(d);
+    });
     r.onResize((c, rows) => {
       this.send(encodeResize(c, rows));
       this.hooks.onSize?.(c, rows);
@@ -100,6 +110,7 @@ export class TerminalSession {
     this.killed = false;
     this.sid = undefined;
     this.journalFailed = false;
+    this.endReplay();
     if (this.forgetting) this.pendingForget = true; // reply lost with the socket
     this.onState({ status: "connecting" });
     const s = this.open();
@@ -122,6 +133,7 @@ export class TerminalSession {
         this.ready = false;
         this.stopPing();
       }
+      this.endReplay();
       this.onState(
         this.killed
           ? { status: "closed", killed: true }
@@ -138,6 +150,7 @@ export class TerminalSession {
   dispose(): void {
     this.disposed = true;
     this.stopPing();
+    this.endReplay();
     const s = this.sock;
     this.sock = null;
     if (s) {
@@ -181,6 +194,12 @@ export class TerminalSession {
     );
   }
 
+  private endReplay(): void {
+    clearTimeout(this.replayTimer);
+    this.replayTimer = undefined;
+    this.replaying = false;
+  }
+
   private ping(): void {
     this.send(encodePing(performance.now()));
   }
@@ -202,12 +221,18 @@ export class TerminalSession {
       this.killed = true;
     } else if (f.kind === "session") {
       this.sid = f.id;
+      this.replaying = true;
+      clearTimeout(this.replayTimer);
+      this.replayTimer = setTimeout(() => this.endReplay(), REPLAY_TIMEOUT_MS);
       const pane = this.hooks.paneId;
       if (pane) this.setRecording(paneRecording(pane));
       if (this.pendingForget) {
         this.pendingForget = false;
         this.send(encodeJournalForget());
       }
+    } else if (f.kind === "replayed") {
+      // Replies are generated while parsing: clear once xterm has drained.
+      this.r.write(new Uint8Array(0), () => this.endReplay());
     } else if (f.kind === "forgotten") {
       this.forgetting = false;
     } else if (f.kind === "journal") {

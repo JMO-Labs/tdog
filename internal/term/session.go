@@ -227,6 +227,9 @@ func (s *Session) serve(c *websocket.Conn) {
 		}
 		replay = replay[n:]
 	}
+	if write(frame.ReplayedControl()) != nil {
+		return
+	}
 
 	go s.j.stream(a.ctx, write)
 	if pumpOutput(a.ctx, write, a.ch) { // shell exited
