@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
 )
 
-const tmuxPrefix = "tdog-"
+const (
+	tmuxPrefix   = "tdog-"
+	historyLimit = 50000 // tmux scrollback lines, so a restore can reach a park
+)
 
 // CmdRunner runs a command on the ssh host and returns its stdout.
 type CmdRunner func(cmd string) (string, error)
@@ -18,10 +22,21 @@ type CmdRunner func(cmd string) (string, error)
 // idRe bounds ids taken from the host before they reach a shell command line.
 var idRe = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 
-func tmuxAttachCmd(id string) string { return "tmux new -A -s " + tmuxPrefix + id }
+// tmuxAttachCmd attaches/creates the session. History is raised in the same
+// tmux invocation, before the window exists: tmux applies history-limit only
+// to panes created afterwards. A larger user setting is left alone.
+func tmuxAttachCmd(id string) string {
+	hl := strconv.Itoa(historyLimit)
+	return `tmux start-server \; if -F '#{e|<:#{history-limit},` + hl + `}' 'set -g history-limit ` + hl + `' \; new -A -s ` + tmuxPrefix + id
+}
+
+// sessTarget and paneTarget name tdog-<id> exactly ("=": no prefix match),
+// quoted for the login shell (zsh expands a leading "=").
+func sessTarget(id string) string { return "'=" + tmuxPrefix + id + "'" }
+func paneTarget(id string) string { return "'=" + tmuxPrefix + id + ":'" }
 
 func killTmux(run CmdRunner, id string) error {
-	_, err := run("tmux kill-session -t " + tmuxPrefix + id)
+	_, err := run("tmux kill-session -t " + sessTarget(id))
 	return err
 }
 
@@ -81,13 +96,56 @@ func spawnTmux(cfg SSHConfig, run CmdRunner, id string) (*session, error) {
 }
 
 // spawnTmuxCmd is spawnTmux with an explicit attach command (cwd/env setup).
+// The session can park: closing ssh leaves the tmux shell running, and
+// unpark re-runs cmd, whose "new -A" re-attaches to it.
 func spawnTmuxCmd(cfg SSHConfig, run CmdRunner, id, cmd string) (*session, error) {
-	s, err := spawnSSHCmd(cfg, cmd)
+	s, client, err := spawnSSHClient(cfg, cmd)
 	if err != nil {
 		return nil, err
 	}
+	s.openPipe = sshPipe(client, id)
 	wrapTmuxKill(s, run, id)
+	s.link = &tmuxLink{run: run, id: id, redial: func() (*session, error) { return spawnTmuxCmd(cfg, run, id, cmd) }}
 	return s, nil
+}
+
+// tmuxLink reaches the host tmux session behind a parkable transport.
+type tmuxLink struct {
+	run    CmdRunner
+	id     string
+	redial func() (*session, error) // re-runs the original attach command
+}
+
+// position is the cursor's absolute line in the pane's scrollback, as
+// numbered by capture (history lines first, then the visible screen).
+func (l *tmuxLink) position() (int, error) {
+	out, err := l.run("tmux display -p -t " + paneTarget(l.id) + " '#{history_size} #{cursor_y}'")
+	if err != nil {
+		return 0, err
+	}
+	var h, y int
+	if _, err := fmt.Sscan(out, &h, &y); err != nil {
+		return 0, fmt.Errorf("tmux display: %q: %w", out, err)
+	}
+	return h + y, nil
+}
+
+// alive reports whether the tmux session still exists; a non-zero exit means
+// it does not, any other error is a transport failure.
+func (l *tmuxLink) alive() (bool, error) {
+	_, err := l.run("tmux has-session -t " + sessTarget(l.id))
+	var ee *ssh.ExitError
+	if errors.As(err, &ee) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
+func (l *tmuxLink) capture() (string, error) { return capture(l.run, l.id) }
+
+// capture returns session id's tmux scrollback as plain text, wrapped lines joined.
+func capture(run CmdRunner, id string) (string, error) {
+	return run("tmux capture-pane -p -J -S -" + strconv.Itoa(historyLimit) + " -t " + paneTarget(id))
 }
 
 // Rediscover registers an attached session for every host tdog-* tmux session

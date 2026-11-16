@@ -21,6 +21,7 @@ export function useWorkspaceCommands({
   setPicker,
   setSettings,
   setStudio,
+  setSearch,
 }: {
   cycle: () => void;
   signOut: () => void;
@@ -34,6 +35,7 @@ export function useWorkspaceCommands({
   setPicker: (v: boolean) => void;
   setSettings: (v: boolean) => void;
   setStudio: (v: boolean) => void;
+  setSearch: (v: boolean) => void;
 }) {
   useEffect(() => {
     const offs = [
@@ -79,6 +81,14 @@ export function useWorkspaceCommands({
         group: "Panes",
         shortcut: "⌘.",
         run: () => setStudio(true),
+      }),
+      registerCommand({
+        id: "search:history",
+        icon: "search",
+        title: "Search history…",
+        group: "Panes",
+        shortcut: "⇧⌘F",
+        run: () => setSearch(true),
       }),
       registerCommand({
         id: "scene:new",

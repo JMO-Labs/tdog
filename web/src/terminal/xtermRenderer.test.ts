@@ -290,3 +290,24 @@ test("zoom adds steps to the font size and survives font changes", async () => {
   r.setZoom(0);
   expect(m.term.options.fontSize).toBe(12);
 });
+
+test("markLine/scrollToMarker use a cursor marker and select the line", async () => {
+  const { XtermRenderer } = await import("./xtermRenderer");
+  const r = new XtermRenderer(document.createElement("div"));
+  const mk = { line: 7, isDisposed: false, dispose: vi.fn() };
+  m.term.registerMarker = vi.fn(() => mk);
+  m.term.scrollToLine = vi.fn();
+  m.term.selectLines = vi.fn();
+  m.term.clearSelection = vi.fn();
+  expect(r.markLine()).toBe(mk);
+  expect(m.term.registerMarker).toHaveBeenCalledWith(0);
+  vi.useFakeTimers();
+  r.scrollToMarker(mk);
+  expect(m.term.scrollToLine).toHaveBeenCalledWith(7);
+  expect(m.term.selectLines).toHaveBeenCalledWith(7, 7);
+  vi.advanceTimersByTime(1500);
+  expect(m.term.clearSelection).toHaveBeenCalled();
+  vi.useRealTimers();
+  m.term.registerMarker = vi.fn(() => undefined);
+  expect(r.markLine()).toBeNull();
+});

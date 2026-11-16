@@ -26,6 +26,8 @@ const (
 	flushAfter = 4 * time.Millisecond
 	flushSize  = 16 * 1024
 	hupGrace   = 3 * time.Second
+
+	journalCap = 16 << 20 // per-session journal buffer bytes
 )
 
 // Config selects and parameterises the shell targets.
@@ -66,6 +68,7 @@ func NewHandler(cfg Config) http.Handler {
 			http.Error(w, "scene too long", http.StatusBadRequest)
 			return
 		}
+		pane := q.Get("pane")
 		var existing *Session
 		if id := q.Get("id"); id != "" {
 			if existing = reg.get(id); existing == nil {
@@ -112,6 +115,7 @@ func NewHandler(cfg Config) http.Handler {
 				return
 			}
 		}
+		sess.setPane(pane)
 		sess.serve(c)
 	})
 }
@@ -166,6 +170,12 @@ type session struct {
 	kill   func()                  // hang up the shell; returns once it exited
 	close  func()                  // release resources
 	pid    int                     // 0 when unknown (ssh)
+
+	link *tmuxLink // tmux-backed ssh only: the session can park (park.go)
+
+	// openPipe opens a second channel streaming the raw pane bytes (pipe.go);
+	// nil when the transport has none.
+	openPipe func() (io.ReadCloser, error)
 }
 
 // waiter publishes a process exit: done closes after code is set.
@@ -284,9 +294,9 @@ func pumpOutput(ctx context.Context, write func(frame []byte) error, chunks <-ch
 
 // pumpInput decodes client frames and applies them: Input is written to w,
 // Resize calls resize, and a ping control frame is answered with a pong via
-// reply (may be nil). Undecodable or unknown frames are skipped. It returns
+// reply (may be nil); other control payloads go to ctl (may be nil). Undecodable or unknown frames are skipped. It returns
 // on a read error or a failed write.
-func pumpInput(ctx context.Context, read func(context.Context) ([]byte, error), w io.Writer, resize func(cols, rows uint16), reply func([]byte) error) {
+func pumpInput(ctx context.Context, read func(context.Context) ([]byte, error), w io.Writer, resize func(cols, rows uint16), reply func([]byte) error, ctl func([]byte)) {
 	for {
 		data, err := read(ctx)
 		if err != nil {
@@ -308,6 +318,8 @@ func pumpInput(ctx context.Context, read func(context.Context) ([]byte, error), 
 		case frame.Control:
 			if pong, ok := frame.Pong(p); ok && reply != nil {
 				_ = reply(pong)
+			} else if ctl != nil {
+				ctl(p)
 			}
 		}
 	}

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { TerminalMenu } from "./TerminalMenu";
 import type { TerminalRenderer } from "./renderer";
@@ -6,6 +7,10 @@ import { THEMES } from "../theme/registry";
 import { clearScrollback } from "./paneActions";
 import { killScene } from "./sessions";
 import { setPaneTheme } from "../presets/panes";
+import { paneRecording, setPaneRecording } from "../presets/recording";
+import { journalDB } from "../journal/db";
+import { useToast } from "../overlays/toast";
+import type { TerminalSession } from "./session";
 import type { usePaneOps } from "../layout/paneOps";
 import type { useBroadcast } from "../broadcast/useBroadcast";
 import type { usePaneOverlayHost } from "../overlays/pane";
@@ -16,6 +21,7 @@ export function PaneMenu({
   y,
   renderer,
   paneId,
+  session,
   ops,
   broadcast,
   override,
@@ -31,6 +37,7 @@ export function PaneMenu({
   y: number;
   renderer: TerminalRenderer | null;
   paneId?: string;
+  session?: TerminalSession | null;
   ops: ReturnType<typeof usePaneOps>;
   broadcast: ReturnType<typeof useBroadcast>;
   override?: string;
@@ -43,6 +50,10 @@ export function PaneMenu({
   onDismiss: (refocus?: boolean) => void;
 }) {
   const [serious] = usePref("serious");
+  const toast = useToast();
+  const [recording, setRecording] = useState(
+    () => !paneId || paneRecording(paneId),
+  );
   // Serious mode forces Plain everywhere: no per-pane theme choice.
   const themes = (serious ? [] : THEMES).map((t) => ({
     id: t.id,
@@ -76,6 +87,27 @@ export function PaneMenu({
       onDiff={() => openOverlay("diff")}
       zoom={zoom}
       onZoom={(d) => setZoom((z) => (d === 0 ? 0 : z + d))}
+      recording={recording}
+      onToggleRecording={
+        paneId
+          ? () => {
+              setRecording(!recording);
+              setPaneRecording(paneId, !recording);
+              session?.setRecording(!recording);
+            }
+          : undefined
+      }
+      onForget={
+        paneId
+          ? () => {
+              void journalDB()
+                ?.forget(paneId)
+                .catch(() => {});
+              session?.forget();
+              toast("success", "History for this pane forgotten.");
+            }
+          : undefined
+      }
       onKill={() => paneId && void killScene(paneId)}
       onClose={() => ops?.close()}
       onDismiss={onDismiss}

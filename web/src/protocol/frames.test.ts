@@ -3,6 +3,9 @@ import {
   decodeFrame,
   encodeAck,
   encodeInput,
+  encodeJournalAck,
+  encodeJournalForget,
+  encodeJournalRecord,
   encodePing,
   encodeResize,
   FrameType,
@@ -81,4 +84,64 @@ test("decodes the killed control frame", () => {
   const p = new TextEncoder().encode(JSON.stringify({ type: "killed" }));
   const b = new Uint8Array([FrameType.Control, ...p]);
   expect(decodeFrame(b.buffer)).toEqual({ kind: "killed" });
+});
+
+describe("journal frames", () => {
+  const ctl = (f: Uint8Array) =>
+    JSON.parse(new TextDecoder().decode(f.subarray(1)));
+  test("decodes 0x04 as a journal event array", () => {
+    const body = new TextEncoder().encode(
+      '[{"seq":1,"kind":"start","rec":"r"}]',
+    );
+    const d = decodeFrame(new Uint8Array([FrameType.Journal, ...body]).buffer);
+    expect(d).toEqual({
+      kind: "journal",
+      events: [{ seq: 1, kind: "start", rec: "r" }],
+    });
+  });
+  test("malformed or non-array journal is unknown", () => {
+    const bad = (s: string) =>
+      decodeFrame(
+        new Uint8Array([FrameType.Journal, ...new TextEncoder().encode(s)])
+          .buffer,
+      ).kind;
+    expect(bad("{")).toBe("unknown");
+    expect(bad("{}")).toBe("unknown");
+  });
+  test("encodes jrnl controls", () => {
+    expect(ctl(encodeJournalAck(7))).toEqual({ type: "jrnl-ack", seq: 7 });
+    expect(ctl(encodeJournalRecord(true))).toEqual({
+      type: "jrnl-record",
+      on: true,
+    });
+    expect(ctl(encodeJournalForget())).toEqual({ type: "jrnl-forget" });
+  });
+});
+
+test("decodes the replayed control frame", () => {
+  const p = new TextEncoder().encode(JSON.stringify({ type: "replayed" }));
+  const b = new Uint8Array([FrameType.Control, ...p]);
+  expect(decodeFrame(b.buffer)).toEqual({ kind: "replayed" });
+});
+
+test("decodes session epoch and error control frames", () => {
+  const c = (m: object) =>
+    new Uint8Array([
+      FrameType.Control,
+      ...new TextEncoder().encode(JSON.stringify(m)),
+    ]).buffer;
+  expect(decodeFrame(c({ type: "session", id: "a", epoch: "e1" }))).toEqual({
+    kind: "session",
+    id: "a",
+    epoch: "e1",
+  });
+  expect(decodeFrame(c({ type: "session", id: "a" }))).toEqual({
+    kind: "session",
+    id: "a",
+    epoch: undefined,
+  });
+  expect(decodeFrame(c({ type: "error", message: "boom" }))).toEqual({
+    kind: "error",
+    message: "boom",
+  });
 });

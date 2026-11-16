@@ -211,3 +211,21 @@ test("reset zoom is disabled at the default size", () => {
       .disabled,
   ).toBe(true);
 });
+
+test("history items show in the menu and fire their callbacks", () => {
+  const p = setup({
+    recording: false,
+    onToggleRecording: vi.fn(),
+    onForget: vi.fn(),
+  });
+  const rec = screen.getByRole("menuitemradio", {
+    name: /Don't record this pane/,
+  });
+  expect(rec.getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(rec);
+  expect(p.onToggleRecording).toHaveBeenCalled();
+  fireEvent.click(
+    screen.getByRole("menuitem", { name: /Forget this pane's history/ }),
+  );
+  expect(p.onForget).toHaveBeenCalled();
+});

@@ -274,3 +274,38 @@ func waitFor(t *testing.T, cond func() bool) {
 		time.Sleep(20 * time.Millisecond)
 	}
 }
+
+func TestReplayedFollowsReplayBeforeLiveOutput(t *testing.T) {
+	r := newRig(t)
+	c, id := r.start("")
+	send(t, r.ctx, c, frame.Input, "echo $((20+22))\n")
+	readUntil(t, r.ctx, c, "42")
+	_ = c.CloseNow()
+
+	c2, err := r.dial("id=" + id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	send(t, r.ctx, c2, frame.Input, "echo $((6*7+1))\n")
+	var out strings.Builder
+	for {
+		_, data, err := c2.Read(r.ctx)
+		if err != nil {
+			t.Fatalf("read: %v (output %q)", err, out.String())
+		}
+		typ, p, err := frame.Decode(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if typ == frame.Output {
+			out.Write(p)
+			continue
+		}
+		if typ == frame.Control && strings.Contains(string(p), `"type":"replayed"`) {
+			break
+		}
+	}
+	if !strings.Contains(out.String(), "42") || strings.Contains(out.String(), "43\r\n") {
+		t.Fatalf("replay before marker %q", out.String())
+	}
+}

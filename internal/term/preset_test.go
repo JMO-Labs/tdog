@@ -82,7 +82,7 @@ func TestRemoteScripts(t *testing.T) {
 	if got, want := (Spec{}).shellCmd(), ""; got != want {
 		t.Errorf("empty shellCmd %q", got)
 	}
-	if got, want := sp.tmuxCmd("abc"), `cd ~/'app' && tmux new -A -s tdog-abc -e 'A=it'\''s' -e 'B=2' \; set -wq allow-passthrough on`; got != want {
+	if got, want := sp.tmuxCmd("abc"), `cd ~/'app' && tmux start-server \; if -F '#{e|<:#{history-limit},50000}' 'set -g history-limit 50000' \; new -A -s tdog-abc -e 'A=it'\''s' -e 'B=2' \; set -wq allow-passthrough on`; got != want {
 		t.Errorf("tmuxCmd %q want %q", got, want)
 	}
 	oc := Spec{Cwd: "/x", Env: map[string]string{"K": "v"}, OnClose: hook("stop_on_fail", "a", "b")}

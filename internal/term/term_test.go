@@ -78,7 +78,7 @@ func readCtl(t *testing.T, ctx context.Context, c *websocket.Conn, want string, 
 				return out.String(), nil
 			}
 		case frame.Control:
-			if skipSession && strings.Contains(string(p), `"type":"session"`) {
+			if strings.Contains(string(p), `"type":"replayed"`) || skipSession && strings.Contains(string(p), `"type":"session"`) {
 				continue
 			}
 			return out.String(), p

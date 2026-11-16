@@ -13,6 +13,7 @@ export function useKeyboardShortcuts(
   setMenu: (v: (o: boolean) => boolean) => void,
   setKill: (v: string | null) => void,
   broadcastAll: () => void,
+  setSearch: (v: boolean) => void,
 ) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -29,6 +30,9 @@ export function useKeyboardShortcuts(
       } else if (e.shiftKey && e.key.toLowerCase() === "b") {
         e.preventDefault();
         broadcastAll();
+      } else if (e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setSearch(true);
       } else if (e.shiftKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setKill("all");
@@ -58,5 +62,6 @@ export function useKeyboardShortcuts(
     setMenu,
     setKill,
     broadcastAll,
+    setSearch,
   ]);
 }

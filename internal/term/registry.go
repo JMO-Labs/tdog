@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/JMO-Labs/tdog/internal/audit"
+	"github.com/JMO-Labs/tdog/internal/journal"
 )
 
 const (
@@ -34,6 +35,17 @@ type Registry struct {
 	sessions   map[string]*Session
 	scrollback int
 	audit      *audit.Logger
+	jstore     *journal.Store // optional server journal sync; nil = off
+
+	parkTicker func() (<-chan time.Time, func()) // test seam; nil = every parkTick
+}
+
+// SetJournalStore enables server-side journal sync for sessions created after
+// the call (nil = off).
+func (r *Registry) SetJournalStore(s *journal.Store) {
+	r.mu.Lock()
+	r.jstore = s
+	r.mu.Unlock()
 }
 
 // NewRegistry returns an empty registry; scrollback is the per-session ring
@@ -72,13 +84,24 @@ func (r *Registry) addID(id, target, scene string, s *session) *Session {
 func (r *Registry) add(id, target, scene string, s *session, onClose func()) *Session {
 	sess := &Session{
 		id: id, scene: scene, target: target, started: time.Now().UTC(),
-		s: s, reg: r, ring: newRing(r.scrollback), onClose: onClose,
+		s: s, reg: r, ring: newRing(r.scrollback), onClose: onClose, j: newJrnl(),
+		ended: make(chan struct{}),
 	}
+	sess.cond = sync.NewCond(&sess.mu)
 	r.mu.Lock()
+	sess.j.store, sess.j.sid, sess.j.pane = r.jstore, id+"."+sess.j.epoch, sess.paneID
 	r.sessions[sess.id] = sess
 	r.mu.Unlock()
 	r.audit.Log(audit.Entry{Event: "term_start", Target: target, PID: s.pid, Session: sess.id})
+	sess.j.start()
+	if s.openPipe != nil {
+		sess.pipeFeed.Store(true)
+		go sess.runPipe(s)
+	}
 	go sess.pump()
+	if s.link != nil {
+		go sess.idleLoop(r.ticker())
+	}
 	return sess
 }
 
@@ -109,7 +132,8 @@ func (r *Registry) Kill(id string) bool {
 	if s == nil {
 		return false
 	}
-	s.s.kill()
+	s.hangUp()
+	s.tr().kill()
 	return true
 }
 
@@ -119,7 +143,9 @@ func (s *Session) kill() {
 	s.mu.Lock()
 	s.killed = true
 	s.mu.Unlock()
-	go s.s.kill()
+	s.hangUp()
+	s.dropSynced()
+	go s.tr().kill()
 }
 
 // KillAll hangs up every session (shutdown).

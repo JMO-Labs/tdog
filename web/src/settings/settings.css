@@ -14,6 +14,14 @@
   padding: 10px 0;
   border-bottom: 2px dashed var(--line);
 }
+/* Label + description on top, controls full width below. */
+.settings .setting-stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+.settings .setting-stack .radio-row {
+  white-space: nowrap;
+}
 .settings .muted {
   margin: 2px 0 0;
   font-size: 12px;
@@ -140,4 +148,14 @@
 }
 .switch:disabled {
   opacity: 0.6;
+}
+.settings .radio-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings pre {
+  white-space: pre;
+  overflow-x: auto;
+  max-width: 100%;
 }

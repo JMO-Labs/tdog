@@ -213,3 +213,73 @@ describe("latency ping", () => {
     }
   });
 });
+
+describe("replay input gate", () => {
+  const ctl = (o: object) =>
+    new Uint8Array([
+      FrameType.Control,
+      ...new TextEncoder().encode(JSON.stringify(o)),
+    ]).buffer;
+  const inputFrames = (sock: FakeSocket) =>
+    sock.sent.filter((f) => f[0] === FrameType.Input);
+  const typed = new Uint8Array([97]);
+
+  test("drops input during replay, sends after replayed + drain", () => {
+    const { sock, r } = setup();
+    sock.onopen!();
+    sock.onmessage!({ data: ctl({ type: "session", id: "x" }) });
+    r.input!(typed);
+    expect(inputFrames(sock)).toHaveLength(0);
+    let drained: (() => void) | undefined;
+    r.write.mockImplementationOnce((_d, cb) => {
+      drained = cb;
+    });
+    sock.onmessage!({ data: ctl({ type: "replayed" }) });
+    r.input!(typed); // xterm still parsing
+    expect(inputFrames(sock)).toHaveLength(0);
+    drained!();
+    r.input!(typed);
+    expect(inputFrames(sock)).toHaveLength(1);
+  });
+
+  test("reconnect resets the flag", () => {
+    const { sock, r, s } = setup();
+    sock.onopen!();
+    sock.onmessage!({ data: ctl({ type: "session", id: "x" }) });
+    sock.onmessage!({ data: ctl({ type: "replayed" }) });
+    r.input!(typed);
+    expect(inputFrames(sock)).toHaveLength(1);
+    const sock2 = new FakeSocket();
+    (s as unknown as { open: () => FakeSocket }).open = () => sock2;
+    s.connect();
+    sock2.onopen!();
+    sock2.onmessage!({ data: ctl({ type: "session", id: "y" }) });
+    r.input!(typed);
+    expect(inputFrames(sock2)).toHaveLength(0);
+  });
+
+  test("socket close clears the flag", () => {
+    const { sock, s } = setup();
+    sock.onopen!();
+    sock.onmessage!({ data: ctl({ type: "session", id: "x" }) });
+    expect((s as unknown as { replaying: boolean }).replaying).toBe(true);
+    sock.onclose!();
+    expect((s as unknown as { replaying: boolean }).replaying).toBe(false);
+  });
+
+  test("safety timeout opens the gate if replayed never arrives", () => {
+    vi.useFakeTimers();
+    try {
+      const { sock, r } = setup();
+      sock.onopen!();
+      sock.onmessage!({ data: ctl({ type: "session", id: "x" }) });
+      r.input!(typed);
+      expect(inputFrames(sock)).toHaveLength(0);
+      vi.advanceTimersByTime(3001);
+      r.input!(typed);
+      expect(inputFrames(sock)).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

@@ -32,6 +32,8 @@ import {
   subscribeKilled,
 } from "./terminal/killed";
 import { PaneMenu } from "./terminal/PaneMenu";
+import { useJournalMarkers } from "./journal/useJournalMarkers";
+import { GapBanner } from "./journal/GapBanner";
 import { usePaneCommands } from "./terminal/usePaneCommands";
 import { usePaneOps } from "./layout/paneOps";
 import { killScene } from "./terminal/sessions";
@@ -297,6 +299,7 @@ export function TerminalPane({
     if (refocus) renderer.current?.focus?.();
   };
   const { hostRef, openOverlay } = usePaneOverlayHost();
+  useJournalMarkers(paneId, renderer, openOverlay);
   const paste = async () => {
     try {
       renderer.current?.paste?.(await navigator.clipboard.readText());
@@ -371,6 +374,10 @@ export function TerminalPane({
         style={{ position: "relative", zIndex: 1, height: "100%" }}
       />
       <EffectsOverlay effects={effects} />
+      <GapBanner
+        pane={paneId}
+        onRestore={(rec) => session.current?.restore(rec)}
+      />
       <ConnectionGag phase={phase} onReconnect={connect} />
       <PaneIntro theme={theme} />
       {(killed ||
@@ -399,6 +406,7 @@ export function TerminalPane({
           {...menu}
           renderer={renderer.current}
           paneId={paneId}
+          session={session.current}
           ops={ops}
           broadcast={broadcast}
           override={override}

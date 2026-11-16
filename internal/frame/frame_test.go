@@ -2,7 +2,10 @@ package frame
 
 import (
 	"bytes"
+	"strings"
 	"testing"
+
+	"github.com/JMO-Labs/tdog/internal/journal"
 )
 
 func TestEncode(t *testing.T) {
@@ -123,8 +126,8 @@ func TestPong(t *testing.T) {
 }
 
 func TestSessionControl(t *testing.T) {
-	typ, p, err := Decode(SessionControl("abc123"))
-	if err != nil || typ != Control || string(p) != `{"type":"session","id":"abc123"}` {
+	typ, p, err := Decode(SessionControl("abc123", "ep1"))
+	if err != nil || typ != Control || string(p) != `{"type":"session","id":"abc123","epoch":"ep1"}` {
 		t.Fatalf("%v %q %v", typ, p, err)
 	}
 }
@@ -132,6 +135,20 @@ func TestSessionControl(t *testing.T) {
 func TestKilledControl(t *testing.T) {
 	typ, p, err := Decode(KilledControl())
 	if err != nil || typ != Control || string(p) != `{"type":"killed"}` {
+		t.Fatalf("%v %q %v", typ, p, err)
+	}
+}
+
+func TestEncodeJournalRoundTrip(t *testing.T) {
+	typ, p, err := Decode(EncodeJournal([]journal.Event{{Seq: 1, Kind: "out", Text: "hi"}}))
+	if err != nil || typ != Journal || !strings.Contains(string(p), `"seq":1`) {
+		t.Fatalf("%v %v %s", typ, err, p)
+	}
+}
+
+func TestReplayedControl(t *testing.T) {
+	typ, p, err := Decode(ReplayedControl())
+	if err != nil || typ != Control || string(p) != `{"type":"replayed"}` {
 		t.Fatalf("%v %q %v", typ, p, err)
 	}
 }

@@ -2,19 +2,28 @@
 package server
 
 import (
+	"context"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/JMO-Labs/tdog/internal/assets"
 	"github.com/JMO-Labs/tdog/internal/auth"
 	"github.com/JMO-Labs/tdog/internal/config"
 	"github.com/JMO-Labs/tdog/internal/fonts"
+	"github.com/JMO-Labs/tdog/internal/journal"
 	"github.com/JMO-Labs/tdog/internal/plugins"
 	"github.com/JMO-Labs/tdog/internal/term"
 	"github.com/JMO-Labs/tdog/web"
 )
+
+// journalSweep is how often expired synced history is deleted.
+const journalSweep = 10 * time.Minute
+
+// journalCtx ends the sweep goroutines; tests swap it to stop them.
+var journalCtx = context.Background()
 
 // New returns the root handler serving the embedded web build (no terminal).
 func New() http.Handler { return NewWithUI(web.FS()) }
@@ -45,6 +54,13 @@ func NewSecuredPresets(ui fs.FS, a *auth.Auth, store *config.Store) http.Handler
 	a.Register(mux)
 	reg := term.NewRegistry(a.Audit(), 0)
 	sshCfg := sshConfig()
+	var js *journal.Store
+	if store != nil { // optional server-side history sync under $TDOG_DATA/journal
+		js = journal.NewStore(store.Dir())
+		reg.SetJournalStore(js) // before any session can exist (rediscovery below)
+		js.Sweep(time.Now())    // drop what expired while down
+		go js.Run(journalCtx, journalSweep)
+	}
 	if _, err := os.Stat(sshCfg.KeyPath); err == nil { // reattach persistent tmux sessions
 		go func() {
 			if n, err := reg.RediscoverSSH(sshCfg); err != nil {
@@ -66,6 +82,7 @@ func NewSecuredPresets(ui fs.FS, a *auth.Auth, store *config.Store) http.Handler
 	reg.RegisterKill(mux)
 	if store != nil {
 		store.Register(mux)
+		js.Register(mux)
 		fonts.New(store.Dir(), nil).Register(mux)
 		assets.New(store.Dir()).Register(mux)
 		plugins.NewHTTPHandler(plugins.New(store.Dir()), a.Audit()).Register(mux)

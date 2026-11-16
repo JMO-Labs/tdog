@@ -74,8 +74,9 @@ export async function apiPut(
   path: string,
   body: string,
   method: "PUT" | "POST" = "PUT",
+  type = "text/plain",
 ): Promise<Response> {
-  const headers: Record<string, string> = { "Content-Type": "text/plain" };
+  const headers: Record<string, string> = { "Content-Type": type };
   if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
   const r = await fetch(path, {
     method,

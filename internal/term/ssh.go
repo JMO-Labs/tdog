@@ -119,13 +119,20 @@ func exitCode(err error) int {
 
 // spawnSSHCmd runs cmd in a pty on the host; "" starts the login shell.
 func spawnSSHCmd(cfg SSHConfig, cmd string) (*session, error) {
+	s, _, err := spawnSSHClient(cfg, cmd)
+	return s, err
+}
+
+// spawnSSHClient is spawnSSHCmd that also returns the session's client, which
+// closes with the session.
+func spawnSSHClient(cfg SSHConfig, cmd string) (*session, *ssh.Client, error) {
 	client, err := dialSSH(cfg)
 	if err != nil {
-		return nil, errors.New("ssh connect failed: " + err.Error())
+		return nil, nil, errors.New("ssh connect failed: " + err.Error())
 	}
-	fail := func(msg string, err error) (*session, error) {
+	fail := func(msg string, err error) (*session, *ssh.Client, error) {
 		_ = client.Close()
-		return nil, errors.New(msg + err.Error())
+		return nil, nil, errors.New(msg + err.Error())
 	}
 	sess, err := client.NewSession()
 	if err != nil {
@@ -155,5 +162,5 @@ func spawnSSHCmd(cfg SSHConfig, cmd string) (*session, error) {
 			<-w.done
 		},
 		close: closeAll,
-	}, nil
+	}, client, nil
 }

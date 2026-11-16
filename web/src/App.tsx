@@ -1,6 +1,7 @@
 import { useCopy } from "./copy/copy";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Workspace } from "./shell/Workspace";
+import { resumeJournal, wipeJournal } from "./journal/db";
 import { getStatus, logout, setUnauthorizedHandler } from "./auth/api";
 import { LoginScreen, SetupScreen } from "./auth/screens";
 import { ToastProvider, useToast } from "./overlays/toast";
@@ -56,6 +57,7 @@ function AuthApp() {
       toast("fail", "Couldn't sign out. Reload and try again.");
       return;
     }
+    void wipeJournal();
     setView("login");
     toast("info", c("session.ended"), c("session.endedHead"));
   }, [toast, c]);
@@ -102,12 +104,20 @@ function AuthApp() {
     );
   if (view === "setup")
     return (
-      <SetupScreen onDone={(inside) => setView(inside ? "app" : "login")} />
+      <SetupScreen
+        onDone={(inside) => {
+          if (inside) resumeJournal();
+          setView(inside ? "app" : "login");
+        }}
+      />
     );
   if (view === "login")
     return (
       <LoginScreen
-        onDone={() => setView("app")}
+        onDone={() => {
+          resumeJournal();
+          setView("app");
+        }}
         onNeedSetup={() => setView("setup")}
       />
     );

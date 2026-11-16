@@ -1,10 +1,18 @@
+import { paneRecording } from "../presets/recording";
 import {
   decodeFrame,
   encodeAck,
   encodeInput,
+  encodeJournalAck,
+  encodeJournalForget,
+  encodeJournalRecord,
+  encodeJournalRestore,
   encodePing,
   encodeResize,
 } from "../protocol/frames";
+import type { JournalEvent } from "../journal/types";
+import type { JournalDB } from "../journal/db";
+import { emitJournalError, ingest } from "../journal/ingest";
 import type { TerminalRenderer } from "./renderer";
 
 /**
@@ -19,6 +27,9 @@ export const ACK_BATCH_BYTES = 32 * 1024;
 
 /** Round-trip probe cadence for the status-bar latency chip. */
 export const PING_INTERVAL_MS = 5000;
+
+/** Input stays gated this long if an older server never sends `replayed`. */
+export const REPLAY_TIMEOUT_MS = 3000;
 
 export interface SocketLike {
   binaryType: string;
@@ -42,6 +53,10 @@ export interface SessionHooks {
   onLatency?: (ms: number) => void;
   /** Called when input is received (for broadcasting). */
   onBroadcast?: (data: Uint8Array) => void;
+  /** Pane key (record state is sent per pane even without a journal db). */
+  paneId?: string;
+  /** Where this pane's journal events are saved (acked once stored). */
+  journal?: { pane: string; db: JournalDB };
   /** May hold or drop user input; call `pass` to send (and broadcast) it. */
   interceptInput?: (data: Uint8Array, pass: (d: Uint8Array) => void) => void;
 }
@@ -53,6 +68,19 @@ export class TerminalSession {
   private pending = 0;
   private exitCode: number | undefined;
   private killed = false;
+  private warned = false;
+  private sid: string | undefined;
+  /** A save failed this connection: ingest/ack nothing until reconnect. */
+  private journalFailed = false;
+  private disposed = false;
+  private forgetting = false;
+  private pendingForget = false;
+  /**
+   * True while scrollback is replayed: xterm answers queries (DA, OSC colours)
+   * found in old output, and those answers must not reach the shell.
+   */
+  private replaying = false;
+  private replayTimer: ReturnType<typeof setTimeout> | undefined;
   private pinger: ReturnType<typeof setInterval> | undefined;
 
   constructor(
@@ -65,9 +93,10 @@ export class TerminalSession {
       this.send(encodeInput(d));
       this.hooks.onBroadcast?.(d);
     };
-    r.onInput((d) =>
-      this.hooks.interceptInput ? this.hooks.interceptInput(d, pass) : pass(d),
-    );
+    r.onInput((d) => {
+      if (this.replaying) return;
+      this.hooks.interceptInput ? this.hooks.interceptInput(d, pass) : pass(d);
+    });
     r.onResize((c, rows) => {
       this.send(encodeResize(c, rows));
       this.hooks.onSize?.(c, rows);
@@ -79,6 +108,10 @@ export class TerminalSession {
     this.pending = 0;
     this.exitCode = undefined;
     this.killed = false;
+    this.sid = undefined;
+    this.journalFailed = false;
+    this.endReplay();
+    if (this.forgetting) this.pendingForget = true; // reply lost with the socket
     this.onState({ status: "connecting" });
     const s = this.open();
     this.sock = s;
@@ -100,6 +133,7 @@ export class TerminalSession {
         this.ready = false;
         this.stopPing();
       }
+      this.endReplay();
       this.onState(
         this.killed
           ? { status: "closed", killed: true }
@@ -114,7 +148,9 @@ export class TerminalSession {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.stopPing();
+    this.endReplay();
     const s = this.sock;
     this.sock = null;
     if (s) {
@@ -122,6 +158,48 @@ export class TerminalSession {
       s.close();
     }
     this.r.dispose();
+  }
+
+  /** Ask the server to start/stop journaling this session. */
+  setRecording(on: boolean): void {
+    this.send(encodeJournalRecord(on));
+  }
+
+  /** Ask the server to drop its journal copy. */
+  forget(): void {
+    // Drop in-flight journal frames until the server confirms the wipe.
+    this.forgetting = true;
+    if (this.ready && this.sid) this.send(encodeJournalForget());
+    else this.pendingForget = true; // sent after the next session frame
+  }
+
+  /** Ask the server to restore a disconnect gap from the host's scrollback. */
+  restore(rec: number): void {
+    this.send(encodeJournalRestore(rec));
+  }
+
+  private journaled(f: JournalEvent[]): void {
+    const j = this.hooks.journal;
+    if (!j || !this.sid || this.journalFailed || this.disposed) return;
+    if (this.forgetting) return;
+    // Batches buffered before a record-off took effect must not be kept.
+    if (this.hooks.paneId && !paneRecording(this.hooks.paneId)) return;
+    // On failure stop acking: the server resends from its last ack on reconnect.
+    ingest(j.db, j.pane, this.sid, f).then(
+      (seq) =>
+        seq > 0 && !this.journalFailed && this.send(encodeJournalAck(seq)),
+      () => {
+        this.journalFailed = true;
+        if (!this.warned) console.warn("journal: save failed, not acking");
+        this.warned = true;
+      },
+    );
+  }
+
+  private endReplay(): void {
+    clearTimeout(this.replayTimer);
+    this.replayTimer = undefined;
+    this.replaying = false;
   }
 
   private ping(): void {
@@ -143,6 +221,26 @@ export class TerminalSession {
       this.exitCode = f.code;
     } else if (f.kind === "killed") {
       this.killed = true;
+    } else if (f.kind === "session") {
+      this.sid = f.epoch ? `${f.id}.${f.epoch}` : f.id;
+      this.replaying = true;
+      clearTimeout(this.replayTimer);
+      this.replayTimer = setTimeout(() => this.endReplay(), REPLAY_TIMEOUT_MS);
+      const pane = this.hooks.paneId;
+      if (pane) this.setRecording(paneRecording(pane));
+      if (this.pendingForget) {
+        this.pendingForget = false;
+        this.send(encodeJournalForget());
+      }
+    } else if (f.kind === "error") {
+      if (this.hooks.paneId) emitJournalError(this.hooks.paneId, f.message);
+    } else if (f.kind === "replayed") {
+      // Replies are generated while parsing: clear once xterm has drained.
+      this.r.write(new Uint8Array(0), () => this.endReplay());
+    } else if (f.kind === "forgotten") {
+      this.forgetting = false;
+    } else if (f.kind === "journal") {
+      this.journaled(f.events);
     } else if (f.kind === "pong") {
       this.hooks.onLatency?.(Math.round(performance.now() - f.t));
     } else if (f.kind === "output") {

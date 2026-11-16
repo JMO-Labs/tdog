@@ -28,14 +28,14 @@ func (f *fakeRun) run(cmd string) (string, error) {
 }
 
 func TestTmuxCommands(t *testing.T) {
-	if got := tmuxAttachCmd("abc"); got != "tmux new -A -s tdog-abc" {
+	if got := tmuxAttachCmd("abc"); got != `tmux start-server \; if -F '#{e|<:#{history-limit},50000}' 'set -g history-limit 50000' \; new -A -s tdog-abc` {
 		t.Fatalf("attach: %q", got)
 	}
 	f := &fakeRun{}
 	if err := killTmux(f.run, "abc"); err != nil {
 		t.Fatal(err)
 	}
-	if len(f.cmds) != 1 || f.cmds[0] != "tmux kill-session -t tdog-abc" {
+	if len(f.cmds) != 1 || f.cmds[0] != "tmux kill-session -t '=tdog-abc'" {
 		t.Fatalf("kill cmds: %q", f.cmds)
 	}
 }
@@ -114,7 +114,7 @@ func TestKillPersistentKillsTmux(t *testing.T) {
 	base := &session{kill: func() { killed = true }}
 	wrapTmuxKill(base, f.run, "abc")
 	base.kill()
-	if !killed || len(f.cmds) != 1 || f.cmds[0] != "tmux kill-session -t tdog-abc" {
+	if !killed || len(f.cmds) != 1 || f.cmds[0] != "tmux kill-session -t '=tdog-abc'" {
 		t.Fatalf("killed=%v cmds=%q", killed, f.cmds)
 	}
 }

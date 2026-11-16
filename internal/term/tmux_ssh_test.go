@@ -47,7 +47,7 @@ func TestSpawnTmuxAttachesAndKills(t *testing.T) {
 	}
 	s.kill()
 	log := strings.Join(d.execLog(), "|")
-	if !strings.Contains(log, "tmux new -A -s tdog-abc") || !strings.Contains(log, "tmux kill-session -t tdog-abc") {
+	if !strings.Contains(log, "new -A -s tdog-abc") || !strings.Contains(log, "tmux kill-session -t '=tdog-abc'") {
 		t.Fatalf("execs: %q", log)
 	}
 }
@@ -118,7 +118,7 @@ func TestHandlerPersistentSSHUsesTmux(t *testing.T) {
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
 		if l := d.execLog(); len(l) > 0 {
-			if !strings.HasPrefix(l[0], "tmux new -A -s tdog-") {
+			if !strings.HasPrefix(l[0], "tmux start-server") || !strings.Contains(l[0], "history-limit 50000") {
 				t.Fatalf("exec = %q", l[0])
 			}
 			return

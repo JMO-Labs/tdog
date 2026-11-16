@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { isKilled } from "./killed";
 import { findSessionId, killScene, sessionExists } from "./sessions";
+import { paneRecording, setPaneRecording } from "../presets/recording";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -66,4 +67,29 @@ test("sessionExists is false on http or network failure", async () => {
   expect(await sessionExists("x1")).toBe(false);
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
   expect(await sessionExists("x1")).toBe(false);
+});
+
+test("killScene forgets the pane's browser journal", async () => {
+  const forget = vi.fn().mockResolvedValue(undefined);
+  const db = await import("../journal/db");
+  vi.spyOn(db, "journalDB").mockReturnValue({ forget } as never);
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok({ killed: 0 })));
+  await killScene("pa");
+  expect(forget).toHaveBeenCalledWith("pa");
+  vi.restoreAllMocks();
+});
+
+test("killScene works when no journal db exists", async () => {
+  const db = await import("../journal/db");
+  vi.spyOn(db, "journalDB").mockReturnValue(null);
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok({ killed: 0 })));
+  await expect(killScene("pa")).resolves.toBe(0);
+  vi.restoreAllMocks();
+});
+
+test("killScene drops the pane's recording opt-out", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(ok({ killed: 0 })));
+  setPaneRecording("pa", false);
+  await killScene("pa");
+  expect(paneRecording("pa")).toBe(true);
 });
