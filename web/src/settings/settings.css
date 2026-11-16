@@ -141,3 +141,13 @@
 .switch:disabled {
   opacity: 0.6;
 }
+.settings .radio-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings pre {
+  white-space: pre;
+  overflow-x: auto;
+  max-width: 100%;
+}

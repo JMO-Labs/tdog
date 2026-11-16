@@ -48,22 +48,22 @@ export function HistorySettings() {
           </p>
         </div>
         <div role="radiogroup" aria-label="History storage">
-          <label>
+          <label className="radio-row">
             <input
               type="radio"
               name="history-mode"
               checked={mode === "off"}
               onChange={() => void change("off")}
-            />{" "}
+            />
             This browser only
           </label>
-          <label>
+          <label className="radio-row">
             <input
               type="radio"
               name="history-mode"
               checked={mode !== "off"}
               onChange={() => void change(mode === "off" ? "24" : mode)}
-            />{" "}
+            />
             Sync to server
           </label>
         </div>
