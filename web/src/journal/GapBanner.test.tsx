@@ -54,3 +54,19 @@ it("shows the failure text, and can be dismissed", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
   expect(screen.queryByRole("status")).toBeNull();
 });
+
+it("returns to the offer with a note when no result arrives in 30 s", async () => {
+  vi.useFakeTimers();
+  const restore = vi.fn();
+  const db = memJournal();
+  render(<GapBanner pane="p" onRestore={restore} />);
+  await act(() => ingest(db, "p", "s", [gap(1, 9, "disconnected")]));
+  fireEvent.click(screen.getByRole("button", { name: "Restore from host" }));
+  act(() => void vi.advanceTimersByTime(29_000));
+  expect(screen.getByText("Restoring…")).toBeTruthy();
+  act(() => void vi.advanceTimersByTime(1_000));
+  expect(screen.getByText(/No reply from the host/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Restore from host" }));
+  expect(restore).toHaveBeenLastCalledWith(9);
+  expect(restore).toHaveBeenCalledTimes(2);
+});

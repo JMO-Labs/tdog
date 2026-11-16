@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { onJournalGap, onJournalOut } from "./ingest";
 
 export type GapState =
-  | { phase: "offer" | "restoring"; sid: string; rec: number }
+  | { phase: "offer" | "restoring"; sid: string; rec: number; note?: string }
   | { phase: "done" | "failed"; text: string };
 
 const HIDE_MS = { done: 2500, failed: 6000 };
+/** A restore with no result by then is given up (the server may never answer). */
+export const RESTORE_TIMEOUT_MS = 30_000;
 
 /** Tracks this pane's latest disconnect gap and the restore that follows. */
 export function useGapBanner(pane: string | undefined) {
@@ -37,6 +39,23 @@ export function useGapBanner(pane: string | undefined) {
   }, [pane]);
   const phase = st?.phase;
   useEffect(() => {
+    if (phase !== "restoring") return;
+    const id = setTimeout(
+      () =>
+        setSt((s) =>
+          s?.phase === "restoring"
+            ? {
+                ...s,
+                phase: "offer",
+                note: "No reply from the host. Try again.",
+              }
+            : s,
+        ),
+      RESTORE_TIMEOUT_MS,
+    );
+    return () => clearTimeout(id);
+  }, [phase]);
+  useEffect(() => {
     if (phase !== "done" && phase !== "failed") return;
     const id = setTimeout(() => setSt(null), HIDE_MS[phase]);
     return () => clearTimeout(id);
@@ -44,7 +63,11 @@ export function useGapBanner(pane: string | undefined) {
   return {
     state: st,
     restoring: () =>
-      setSt((s) => (s?.phase === "offer" ? { ...s, phase: "restoring" } : s)),
+      setSt((s) =>
+        s?.phase === "offer"
+          ? { phase: "restoring", sid: s.sid, rec: s.rec }
+          : s,
+      ),
     dismiss: () => setSt(null),
   };
 }

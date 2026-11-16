@@ -34,7 +34,7 @@ export function GapBanner({
         {"text" in state
           ? state.text
           : state.phase === "offer"
-            ? "Output while disconnected isn't in history."
+            ? `Output while disconnected isn't in history.${state.note ? ` ${state.note}` : ""}`
             : "Restoring…"}
       </span>
       {state.phase === "offer" && (
