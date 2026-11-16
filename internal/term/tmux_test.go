@@ -35,7 +35,7 @@ func TestTmuxCommands(t *testing.T) {
 	if err := killTmux(f.run, "abc"); err != nil {
 		t.Fatal(err)
 	}
-	if len(f.cmds) != 1 || f.cmds[0] != "tmux kill-session -t tdog-abc" {
+	if len(f.cmds) != 1 || f.cmds[0] != "tmux kill-session -t '=tdog-abc'" {
 		t.Fatalf("kill cmds: %q", f.cmds)
 	}
 }
@@ -114,7 +114,7 @@ func TestKillPersistentKillsTmux(t *testing.T) {
 	base := &session{kill: func() { killed = true }}
 	wrapTmuxKill(base, f.run, "abc")
 	base.kill()
-	if !killed || len(f.cmds) != 1 || f.cmds[0] != "tmux kill-session -t tdog-abc" {
+	if !killed || len(f.cmds) != 1 || f.cmds[0] != "tmux kill-session -t '=tdog-abc'" {
 		t.Fatalf("killed=%v cmds=%q", killed, f.cmds)
 	}
 }

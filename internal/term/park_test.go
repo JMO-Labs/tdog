@@ -28,7 +28,8 @@ type fakeHost struct {
 	capErr  error
 	deadErr error // "tmux has-session" result
 
-	openPipe func() (io.ReadCloser, error) // given to each transport (pipe_test.go)
+	openPipe func(trDone <-chan struct{}) (io.ReadCloser, error) // per transport (pipe_test.go)
+	end      func()                                              // ends the current transport like a shell exit
 }
 
 func (h *fakeHost) run(cmd string) (string, error) {
@@ -84,13 +85,15 @@ func (h *fakeHost) attach() (*session, error) {
 	w := newWaiter()
 	var once sync.Once
 	end := func() { once.Do(func() { _ = pw.Close(); w.finish(0) }) }
+	h.end = end
 	s := &session{
 		r: pr, w: io.Discard, wait: w, resize: func(uint16, uint16) {},
 		kill:  func() { end(); <-w.done },
 		close: end,
 		link:  &tmuxLink{run: h.run, id: "abc", redial: h.attach},
-
-		openPipe: h.openPipe,
+	}
+	if op := h.openPipe; op != nil {
+		s.openPipe = func() (io.ReadCloser, error) { return op(w.done) }
 	}
 	wrapTmuxKill(s, h.run, "abc")
 	return s, nil
@@ -291,7 +294,7 @@ func TestKillWhileParkedRemovesSession(t *testing.T) {
 	r.park(t)
 	r.s.kill()
 	waitFor(t, func() bool { return r.reg.get("abc") == nil })
-	waitFor(t, func() bool { return r.h.count("tmux kill-session -t tdog-abc") > 0 })
+	waitFor(t, func() bool { return r.h.count("tmux kill-session -t '=tdog-abc'") > 0 })
 	select {
 	case <-r.s.ended:
 	case <-time.After(3 * time.Second):
@@ -372,7 +375,7 @@ func TestKillDuringUnparkDial(t *testing.T) {
 		t.Fatal("unpark after kill must fail")
 	}
 	// The attach that raced the kill is torn down with its tmux session.
-	waitFor(t, func() bool { return r.h.count("tmux kill-session -t tdog-abc") >= 2 })
+	waitFor(t, func() bool { return r.h.count("tmux kill-session -t '=tdog-abc'") >= 2 })
 }
 
 func TestRaiseHistory(t *testing.T) {
@@ -450,10 +453,10 @@ func TestTmuxLinkCommands(t *testing.T) {
 		t.Fatalf("dead: alive=%v err=%v", ok, err)
 	}
 	want := []string{
-		"tmux display -p -t tdog-abc '#{history_size} #{cursor_y}'",
-		"tmux display -p -t tdog-abc '#{history_size} #{cursor_y}'",
-		"tmux has-session -t tdog-abc",
-		"tmux has-session -t tdog-abc",
+		"tmux display -p -t '=tdog-abc:' '#{history_size} #{cursor_y}'",
+		"tmux display -p -t '=tdog-abc:' '#{history_size} #{cursor_y}'",
+		"tmux has-session -t '=tdog-abc'",
+		"tmux has-session -t '=tdog-abc'",
 	}
 	if strings.Join(h.cmds, "|") != strings.Join(want, "|") {
 		t.Fatalf("cmds %q", h.cmds)

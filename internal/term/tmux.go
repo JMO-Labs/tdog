@@ -26,8 +26,13 @@ var idRe = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 
 func tmuxAttachCmd(id string) string { return "tmux new -A -s " + tmuxPrefix + id }
 
+// sessTarget and paneTarget name tdog-<id> exactly ("=": no prefix match),
+// quoted for the login shell (zsh expands a leading "=").
+func sessTarget(id string) string { return "'=" + tmuxPrefix + id + "'" }
+func paneTarget(id string) string { return "'=" + tmuxPrefix + id + ":'" }
+
 func killTmux(run CmdRunner, id string) error {
-	_, err := run("tmux kill-session -t " + tmuxPrefix + id)
+	_, err := run("tmux kill-session -t " + sessTarget(id))
 	return err
 }
 
@@ -111,7 +116,7 @@ type tmuxLink struct {
 // position is the cursor's absolute line in the pane's scrollback, as
 // numbered by capture (history lines first, then the visible screen).
 func (l *tmuxLink) position() (int, error) {
-	out, err := l.run("tmux display -p -t " + tmuxPrefix + l.id + " '#{history_size} #{cursor_y}'")
+	out, err := l.run("tmux display -p -t " + paneTarget(l.id) + " '#{history_size} #{cursor_y}'")
 	if err != nil {
 		return 0, err
 	}
@@ -125,7 +130,7 @@ func (l *tmuxLink) position() (int, error) {
 // alive reports whether the tmux session still exists; a non-zero exit means
 // it does not, any other error is a transport failure.
 func (l *tmuxLink) alive() (bool, error) {
-	_, err := l.run("tmux has-session -t " + tmuxPrefix + l.id)
+	_, err := l.run("tmux has-session -t " + sessTarget(l.id))
 	var ee *ssh.ExitError
 	if errors.As(err, &ee) {
 		return false, nil
@@ -137,7 +142,7 @@ func (l *tmuxLink) capture() (string, error) { return capture(l.run, l.id) }
 
 // capture returns session id's tmux scrollback as plain text, wrapped lines joined.
 func capture(run CmdRunner, id string) (string, error) {
-	return run("tmux capture-pane -p -J -S -" + strconv.Itoa(historyLimit) + " -t " + tmuxPrefix + id)
+	return run("tmux capture-pane -p -J -S -" + strconv.Itoa(historyLimit) + " -t " + paneTarget(id))
 }
 
 // raiseHistory lifts the host's global tmux history-limit to historyLimit

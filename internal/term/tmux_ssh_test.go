@@ -47,7 +47,7 @@ func TestSpawnTmuxAttachesAndKills(t *testing.T) {
 	}
 	s.kill()
 	log := strings.Join(d.execLog(), "|")
-	if !strings.Contains(log, "tmux new -A -s tdog-abc") || !strings.Contains(log, "tmux kill-session -t tdog-abc") {
+	if !strings.Contains(log, "tmux new -A -s tdog-abc") || !strings.Contains(log, "tmux kill-session -t '=tdog-abc'") {
 		t.Fatalf("execs: %q", log)
 	}
 }

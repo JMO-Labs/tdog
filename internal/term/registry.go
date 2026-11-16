@@ -102,7 +102,7 @@ func (r *Registry) add(id, target, scene string, s *session, onClose func()) *Se
 	sess.j.start()
 	if s.openPipe != nil {
 		sess.pipeFeed.Store(true)
-		sess.startPipe(s)
+		go sess.runPipe(s)
 	}
 	go sess.pump()
 	if s.link != nil {

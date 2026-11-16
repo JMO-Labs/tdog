@@ -119,9 +119,10 @@ func (s *Session) pump() {
 		s.att = nil
 	}
 	s.mu.Unlock()
-	s.closePipe() // after exited: no pipe can open from here on
+	waitPipe := s.dropPipe() // after exited: no pipe can open from here on
 	t = s.tr()
 	t.close()
+	waitPipe()
 	// Log before removal: once the session is gone from the registry, its end is on record.
 	s.reg.audit.Log(audit.Entry{Event: "term_end", Target: s.target, PID: t.pid, Session: s.id})
 	s.reg.remove(s.id)

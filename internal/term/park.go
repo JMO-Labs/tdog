@@ -114,8 +114,9 @@ func (s *Session) tryPark(now time.Time) bool {
 		log.Printf("term: park %s: position: %v", s.id, err)
 		pos = -1
 	}
-	s.closePipe() // before the transport: the pipe channel rides on it
-	t.close()     // drops ssh only; the host tmux keeps the shell
+	waitPipe := s.dropPipe() // before the transport: the pipe channel rides on it
+	t.close()                // drops ssh only; the host tmux keeps the shell
+	waitPipe()
 	s.parkRec = s.j.parkGap(pos)
 	s.auditEvent("park")
 	return true
@@ -155,7 +156,7 @@ func (s *Session) unparkLocked() error {
 	s.s, s.parked = ns, false
 	s.cond.Broadcast()
 	s.mu.Unlock()
-	s.startPipe(ns) // the old pipe died with the old client
+	go s.runPipe(ns) // the old pipe died with the old client
 	s.auditEvent("unpark")
 	return nil
 }
