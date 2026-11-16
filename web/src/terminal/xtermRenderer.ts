@@ -15,6 +15,8 @@ import type {
   TerminalTheme,
 } from "./renderer";
 
+import { SPACING } from "../theme/fonts";
+
 const enc = new TextEncoder();
 
 export class XtermRenderer implements TerminalRenderer {
@@ -23,6 +25,7 @@ export class XtermRenderer implements TerminalRenderer {
     allowTransparency: true, // motif / glyph-rain paint behind the text
     cursorBlink: true,
     scrollback: 10000,
+    ...SPACING,
   });
   private fit = new FitAddon();
   private resizeCb: ((c: number, r: number) => void) | null = null;

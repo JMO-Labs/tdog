@@ -2,6 +2,8 @@ import type { FONTS } from "./schema";
 
 type FontId = (typeof FONTS)[number];
 const MONO = "monospace";
+/** Breathing room for terminal text; xterm's defaults (0, 1.0) feel cramped. */
+export const SPACING = { letterSpacing: 0.5, lineHeight: 1.15 } as const;
 /** Full Nerd Font symbol set (index.css): icons in shell prompts render in every face. */
 const NERD = "Nerd Symbols";
 
