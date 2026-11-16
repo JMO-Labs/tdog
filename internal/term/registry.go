@@ -95,7 +95,7 @@ func (r *Registry) add(id, target, scene string, s *session, onClose func()) *Se
 	}
 	sess.cond = sync.NewCond(&sess.mu)
 	r.mu.Lock()
-	sess.j.store, sess.j.sid, sess.j.pane = r.jstore, id, sess.paneID
+	sess.j.store, sess.j.sid, sess.j.pane = r.jstore, id+"."+sess.j.epoch, sess.paneID
 	r.sessions[sess.id] = sess
 	r.mu.Unlock()
 	r.audit.Log(audit.Entry{Event: "term_start", Target: target, PID: s.pid, Session: sess.id})

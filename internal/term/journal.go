@@ -2,6 +2,8 @@ package term
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"log"
 	"sync"
@@ -36,7 +38,8 @@ type jrnl struct {
 	// Optional server sync (nil store = off). pane returns "" when the session
 	// has no valid pane id; such sessions never sync.
 	store   *journal.Store
-	sid     string
+	sid     string // store identity: id + "." + epoch
+	epoch   string // random per jrnl so a restart never reuses seq/rec numbering
 	pane    func() string
 	prevAck uint64 // highest seq already appended to the store; guarded by mu
 
@@ -54,7 +57,9 @@ type jrnl struct {
 }
 
 func newJrnl() *jrnl {
-	return &jrnl{buf: journal.NewBuffer(journalCap), p: journal.NewParser(time.Now), on: true, done: make(chan struct{})}
+	var b [8]byte
+	_, _ = rand.Read(b[:])
+	return &jrnl{epoch: hex.EncodeToString(b[:]), buf: journal.NewBuffer(journalCap), p: journal.NewParser(time.Now), on: true, done: make(chan struct{})}
 }
 
 // add stores events; callers hold j.mu.
@@ -218,15 +223,18 @@ func (j *jrnl) ack(want uint64) {
 	var evs []journal.Event
 	var gen uint64
 	p := j.syncPane()
-	if p != "" && seq > prev && j.store.Enabled() {
+	sync := p != "" && seq > prev && j.store.Enabled()
+	if sync {
 		gen = j.store.Gen(p) // a delete after this makes the append a no-op
-		for _, e := range j.buf.Since(prev) {
+	}
+	j.mu.Unlock()
+	if sync {
+		for _, e := range j.buf.Since(prev) { // decrypts; keep outside j.mu
 			if e.Seq <= seq {
 				evs = append(evs, e)
 			}
 		}
 	}
-	j.mu.Unlock()
 	if len(evs) > 0 {
 		if j.beforeAppend != nil {
 			j.beforeAppend()
@@ -286,4 +294,12 @@ func (j *jrnl) flush(sent *uint64, write func([]byte) error) bool {
 	}
 	*sent = last
 	return true
+}
+
+// epochID is the journal epoch ("" without a journal).
+func (j *jrnl) epochID() string {
+	if j == nil {
+		return ""
+	}
+	return j.epoch
 }

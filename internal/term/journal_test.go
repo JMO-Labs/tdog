@@ -329,3 +329,18 @@ func TestJournalForgetWaitsForInFlightBatch(t *testing.T) {
 		t.Fatalf("wire order = %v, want journal before forgotten", out)
 	}
 }
+
+func TestJrnlEpochUnique(t *testing.T) {
+	a, b := newJrnl(), newJrnl()
+	if len(a.epoch) != 16 || a.epoch == b.epoch {
+		t.Fatalf("epochs %q %q", a.epoch, b.epoch)
+	}
+}
+
+func TestSessionControlCarriesEpoch(t *testing.T) {
+	j := newJrnl()
+	_, p, err := frame.Decode(frame.SessionControl("x", j.epochID()))
+	if err != nil || !strings.Contains(string(p), `"epoch":"`+j.epoch+`"`) {
+		t.Fatalf("%q %v", p, err)
+	}
+}

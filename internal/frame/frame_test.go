@@ -126,8 +126,8 @@ func TestPong(t *testing.T) {
 }
 
 func TestSessionControl(t *testing.T) {
-	typ, p, err := Decode(SessionControl("abc123"))
-	if err != nil || typ != Control || string(p) != `{"type":"session","id":"abc123"}` {
+	typ, p, err := Decode(SessionControl("abc123", "ep1"))
+	if err != nil || typ != Control || string(p) != `{"type":"session","id":"abc123","epoch":"ep1"}` {
 		t.Fatalf("%v %q %v", typ, p, err)
 	}
 }

@@ -91,7 +91,7 @@ func NewParser(now func() time.Time, opts ...Option) *Parser {
 }
 
 // AtPrompt reports the shell is not running a command: true after OSC 133 A, B
-// or D, false after C until the next D or A.
+// or D, false after C until the next A, B or D.
 func (p *Parser) AtPrompt() bool   { return p.atPrompt }
 func (p *Parser) HasMarkers() bool { return p.markers }
 
