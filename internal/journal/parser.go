@@ -59,7 +59,7 @@ type Parser struct {
 	lineOpen bool   // current output line is non-empty
 	ovf      bool   // pending sequence exceeded maxSeq
 	markers  bool
-	atPrompt bool
+	atPrompt bool // A, B or D seen; only C (command running) clears it
 	phase    phase
 	state    state
 	buf      []byte // pending escape sequence body
@@ -90,6 +90,8 @@ func NewParser(now func() time.Time, opts ...Option) *Parser {
 	return p
 }
 
+// AtPrompt reports the shell is not running a command: true after OSC 133 A, B
+// or D, false after C until the next D or A.
 func (p *Parser) AtPrompt() bool   { return p.atPrompt }
 func (p *Parser) HasMarkers() bool { return p.markers }
 
@@ -262,7 +264,7 @@ func (p *Parser) mark(f []string) {
 	case "B":
 		p.markers = true
 		p.endRec(nil)
-		p.phase, p.atPrompt = phCmd, false
+		p.phase, p.atPrompt = phCmd, true
 		p.cmd = p.cmd[:0]
 	case "C":
 		p.markers = true

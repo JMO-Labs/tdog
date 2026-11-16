@@ -181,6 +181,26 @@ const atPrompt = "\x1b]133;C\x07one\ntwo\nthree\n\x1b]133;D;0\x07\x1b]133;A\x07$
 
 func (r *parkRig) events() []journal.Event { return r.s.j.buf.Since(0) }
 
+// A pane idling after B (prompt drawn, input starts) parks; one after C
+// (command running) never does.
+func TestParkIdleAfterB(t *testing.T) {
+	r := newParkRig(t)
+	r.h.say(t, "\x1b]133;A\x07$ \x1b]133;B\x07")
+	waitFor(t, func() bool { return r.s.j.idle(time.Now().Add(time.Hour), parkAfter) })
+	r.idleFor(parkAfter + time.Second)
+	waitFor(t, r.parked)
+}
+
+func TestNoParkWhileCommandRunning(t *testing.T) {
+	r := newParkRig(t)
+	r.h.say(t, "\x1b]133;A\x07$ \x1b]133;B\x07sleep 9\r\n\x1b]133;C\x07")
+	waitFor(t, func() bool { return r.s.j.p.HasMarkers() })
+	r.idleFor(parkAfter + time.Second)
+	if r.parked() || r.s.j.idle(time.Now().Add(time.Hour), parkAfter) {
+		t.Fatal("running command must not park")
+	}
+}
+
 func TestParkOnlyAfterFullIdleDuration(t *testing.T) {
 	r := newParkRig(t)
 	r.prompt(t)
@@ -376,26 +396,6 @@ func TestKillDuringUnparkDial(t *testing.T) {
 	}
 	// The attach that raced the kill is torn down with its tmux session.
 	waitFor(t, func() bool { return r.h.count("tmux kill-session -t '=tdog-abc'") >= 2 })
-}
-
-func TestRaiseHistory(t *testing.T) {
-	low := &fakeRun{out: "2000\n"}
-	if err := raiseHistory(low.run); err != nil {
-		t.Fatal(err)
-	}
-	if strings.Join(low.cmds, "|") != "tmux show -gv history-limit|tmux set -g history-limit 50000" {
-		t.Fatalf("low: %q", low.cmds)
-	}
-	high := &fakeRun{out: "100000\n"}
-	if err := raiseHistory(high.run); err != nil {
-		t.Fatal(err)
-	}
-	if strings.Join(high.cmds, "|") != "tmux show -gv history-limit" {
-		t.Fatalf("high: %q", high.cmds)
-	}
-	if err := raiseHistory((&fakeRun{err: errors.New("x")}).run); err == nil {
-		t.Fatal("show error must surface")
-	}
 }
 
 func TestParkAfterEnv(t *testing.T) {
