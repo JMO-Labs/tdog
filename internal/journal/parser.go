@@ -67,14 +67,27 @@ type Parser struct {
 	cmd      []byte // command line between B and C
 	cr       bool   // pending carriage return
 	alt      bool   // inside full-screen app
+	noAlt    bool   // never treat the alternate screen as a full-screen app
 	cwd      string
 	at       time.Time // clock reading for the current Feed
 	last     time.Time // last output time (no-marker slicing)
 	evs      []Event
 }
 
-func NewParser(now func() time.Time) *Parser {
-	return &Parser{now: now}
+// Option configures a Parser.
+type Option func(*Parser)
+
+// WithoutAltScreen keeps text drawn on the alternate screen instead of
+// collapsing it to one full-screen line (for streams where a multiplexer, not
+// the app, switches screens).
+func WithoutAltScreen() Option { return func(p *Parser) { p.noAlt = true } }
+
+func NewParser(now func() time.Time, opts ...Option) *Parser {
+	p := &Parser{now: now}
+	for _, o := range opts {
+		o(p)
+	}
+	return p
 }
 
 func (p *Parser) AtPrompt() bool   { return p.atPrompt }

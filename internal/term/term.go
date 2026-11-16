@@ -172,6 +172,10 @@ type session struct {
 	pid    int                     // 0 when unknown (ssh)
 
 	link *tmuxLink // tmux-backed ssh only: the session can park (park.go)
+
+	// openPipe opens a second channel streaming the raw pane bytes (pipe.go);
+	// nil when the transport has none.
+	openPipe func() (io.ReadCloser, error)
 }
 
 // waiter publishes a process exit: done closes after code is set.

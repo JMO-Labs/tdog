@@ -100,6 +100,10 @@ func (r *Registry) add(id, target, scene string, s *session, onClose func()) *Se
 	r.mu.Unlock()
 	r.audit.Log(audit.Entry{Event: "term_start", Target: target, PID: s.pid, Session: sess.id})
 	sess.j.start()
+	if s.openPipe != nil {
+		sess.pipeFeed.Store(true)
+		sess.startPipe(s)
+	}
 	go sess.pump()
 	if s.link != nil {
 		go sess.idleLoop(r.ticker())

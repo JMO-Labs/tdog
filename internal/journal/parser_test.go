@@ -414,3 +414,12 @@ func TestBackspaceInCmd(t *testing.T) {
 		t.Fatalf("multibyte: got %+v", evs)
 	}
 }
+
+func TestWithoutAltScreenKeepsText(t *testing.T) {
+	c := &clock{t: time.Unix(1000, 0)}
+	p := NewParser(c.now, WithoutAltScreen())
+	evs := p.Feed([]byte("\x1b[?1049h\x1b[Hhello\r\n\x1b[?1049l"))
+	if got := strings.Join(outs(evs), "|"); got != "hello\n" {
+		t.Fatalf("got %q, want plain text without [full-screen app]", got)
+	}
+}

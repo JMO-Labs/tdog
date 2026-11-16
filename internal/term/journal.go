@@ -23,6 +23,7 @@ type jrnl struct {
 
 	mu              sync.Mutex // guards the fields below
 	p               *journal.Parser
+	opts            []journal.Option // for every parser made after the first
 	on              bool
 	base            uint64 // seq offset so a fresh parser continues the old numbering
 	max             uint64 // highest seq added
@@ -159,7 +160,7 @@ func (j *jrnl) control(p []byte, reply func([]byte) error) {
 			j.buf.Wipe()
 			j.dropParksLocked()
 		case *v.On && !j.on:
-			j.on, j.base, j.recBase, j.p = true, j.max, j.recMax, journal.NewParser(time.Now)
+			j.on, j.base, j.recBase, j.p = true, j.max, j.recMax, journal.NewParser(time.Now, j.opts...)
 		}
 	}
 }

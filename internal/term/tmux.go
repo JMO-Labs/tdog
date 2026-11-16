@@ -90,10 +90,11 @@ func spawnTmux(cfg SSHConfig, run CmdRunner, id string) (*session, error) {
 // The session can park: closing ssh leaves the tmux shell running, and
 // unpark re-runs cmd, whose "new -A" re-attaches to it.
 func spawnTmuxCmd(cfg SSHConfig, run CmdRunner, id, cmd string) (*session, error) {
-	s, err := spawnSSHCmd(cfg, cmd)
+	s, client, err := spawnSSHClient(cfg, cmd)
 	if err != nil {
 		return nil, err
 	}
+	s.openPipe = sshPipe(client, id)
 	wrapTmuxKill(s, run, id)
 	s.link = &tmuxLink{run: run, id: id, redial: func() (*session, error) { return spawnTmuxCmd(cfg, run, id, cmd) }}
 	raiseHistoryOnce(net.JoinHostPort(cfg.Host, cfg.Port), run)

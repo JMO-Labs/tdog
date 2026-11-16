@@ -2,7 +2,9 @@ package term
 
 import (
 	"context"
+	"io"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/JMO-Labs/tdog/internal/audit"
@@ -36,6 +38,13 @@ type Session struct {
 
 	onClose func() // preset on_close hook; nil when none
 	j       *jrnl  // session journal; nil when absent
+
+	// Pane pipe (pipe.go): while pipeFeed is set, only the pipe feeds the
+	// journal. pipeFeed is written under mu, read anywhere.
+	pipe     io.ReadCloser // live pipe; guarded by mu
+	pipeDone chan struct{} // closed when the live pipe's reader exits; guarded by mu
+	pipeFeed atomic.Bool
+	fellBack bool // pipe gave up for good (journal fed from the PTY); guarded by mu
 }
 
 // attachment is one socket's live view of a session.
@@ -110,6 +119,7 @@ func (s *Session) pump() {
 		s.att = nil
 	}
 	s.mu.Unlock()
+	s.closePipe() // after exited: no pipe can open from here on
 	t = s.tr()
 	t.close()
 	// Log before removal: once the session is gone from the registry, its end is on record.
@@ -124,8 +134,11 @@ func (s *Session) pump() {
 // keep up is detached (it can reattach and replay) rather than blocking the shell.
 func (s *Session) feed(b []byte) {
 	// Parsing and encryption run outside s.mu so they never block attach/info.
-	// pump is the only feeder, so journal order matches output order.
-	s.j.feed(b)
+	// pump is the only PTY feeder, so journal order matches output order.
+	// With a live pane pipe the pipe feeds the journal instead (pipe.go).
+	if !s.pipeFeed.Load() {
+		s.j.feed(b)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.ring.write(b)

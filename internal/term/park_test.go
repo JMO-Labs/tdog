@@ -27,6 +27,8 @@ type fakeHost struct {
 	scr     string        // "tmux capture-pane" output
 	capErr  error
 	deadErr error // "tmux has-session" result
+
+	openPipe func() (io.ReadCloser, error) // given to each transport (pipe_test.go)
 }
 
 func (h *fakeHost) run(cmd string) (string, error) {
@@ -87,6 +89,8 @@ func (h *fakeHost) attach() (*session, error) {
 		kill:  func() { end(); <-w.done },
 		close: end,
 		link:  &tmuxLink{run: h.run, id: "abc", redial: h.attach},
+
+		openPipe: h.openPipe,
 	}
 	wrapTmuxKill(s, h.run, "abc")
 	return s, nil
@@ -118,10 +122,15 @@ type parkRig struct {
 
 func newParkRig(t *testing.T) *parkRig {
 	t.Helper()
+	return newRigOn(t, &fakeHost{})
+}
+
+// newRigOn is newParkRig on a prepared host.
+func newRigOn(t *testing.T, h *fakeHost) *parkRig {
+	t.Helper()
 	reg := NewRegistry(nil, 0)
 	tick := make(chan time.Time)
 	reg.parkTicker = func() (<-chan time.Time, func()) { return tick, func() {} }
-	h := &fakeHost{}
 	tr, _ := h.attach()
 	s := reg.addID("abc", "ssh-host", "", tr)
 	t.Cleanup(func() {

@@ -117,7 +117,7 @@ func (p *Parser) osc() {
 
 // csi detects full-screen (alternate screen) enter/leave.
 func (p *Parser) csi(final byte) {
-	if p.ovf || (final != 'h' && final != 'l') || len(p.buf) == 0 || p.buf[0] != '?' {
+	if p.noAlt || p.ovf || (final != 'h' && final != 'l') || len(p.buf) == 0 || p.buf[0] != '?' {
 		return
 	}
 	for _, m := range strings.Split(string(p.buf[1:]), ";") {
