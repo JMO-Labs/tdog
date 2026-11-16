@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import type { Resolved } from "../presets/api";
-import { fontFamily, loadFont } from "../theme/fonts";
+import { SPACING, fontFamily, loadFont } from "../theme/fonts";
 import { findTheme } from "../theme/registry";
 import { themeStore } from "../theme/store";
 import type { TerminalPreset } from "./terminalToml";
@@ -61,6 +61,7 @@ export function TerminalPreview({ draft, resolved }: Props) {
   useEffect(() => {
     const t = new Terminal({
       ...latest.current,
+      ...SPACING,
       allowTransparency: true,
       cols: 40,
       rows: 8,
