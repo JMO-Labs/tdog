@@ -158,3 +158,14 @@ test("Theme art item is absent in serious mode", async () => {
     setPref("serious", false);
   }
 });
+
+test("context menu Rename edits the scene name inline", async () => {
+  const p = mount();
+  await openMenu("beta");
+  fireEvent.click(screen.getByRole("menuitem", { name: "Rename" }));
+  const input = screen.getByRole("textbox", { name: "Scene name" });
+  expect(input).toHaveProperty("value", "beta");
+  fireEvent.change(input, { target: { value: "logs" } });
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(p.onRename).toHaveBeenCalledWith("b", "logs");
+});

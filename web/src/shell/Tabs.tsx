@@ -43,6 +43,10 @@ export function Tabs(p: Props) {
   const [serious] = usePref("serious");
   const art = useSceneArt(menu?.id ?? "");
 
+  const startEdit = (id: string, name: string) => {
+    setDraft(name);
+    setEditing(id);
+  };
   const commit = (id: string) => {
     setEditing(null);
     p.onRename(id, draft);
@@ -103,10 +107,7 @@ export function Tabs(p: Props) {
                   e.preventDefault();
                   setMenu({ id: s.id, x: e.clientX, y: e.clientY });
                 }}
-                onDoubleClick={() => {
-                  setDraft(s.name);
-                  setEditing(s.id);
-                }}
+                onDoubleClick={() => startEdit(s.id, s.name)}
               >
                 {s.name}
                 {p.dirty?.has(s.id) && (
@@ -132,8 +133,13 @@ export function Tabs(p: Props) {
       </nav>
       {menu &&
         (() => {
+          const name = p.scenes.find((s) => s.id === menu.id)?.name ?? "";
           const groups: MenuItem[][] = [
             [
+              {
+                label: "Rename",
+                onSelect: () => startEdit(menu.id, name),
+              },
               ...(p.onSave
                 ? [
                     {
