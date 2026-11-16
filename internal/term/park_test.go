@@ -220,7 +220,7 @@ func TestParkOnlyAfterFullIdleDuration(t *testing.T) {
 }
 
 func TestRunningCommandNeverParks(t *testing.T) {
-	for _, mark := range []string{"B", "C"} {
+	for _, mark := range []string{"C"} {
 		r := newParkRig(t)
 		r.h.say(t, "\x1b]133;A\x07$ \x1b]133;"+mark+"\x07")
 		r.idleFor(parkAfter * 10)

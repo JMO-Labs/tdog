@@ -28,7 +28,7 @@ func (f *fakeRun) run(cmd string) (string, error) {
 }
 
 func TestTmuxCommands(t *testing.T) {
-	if got := tmuxAttachCmd("abc"); got != "tmux new -A -s tdog-abc" {
+	if got := tmuxAttachCmd("abc"); got != `tmux start-server \; if -F '#{e|<:#{history-limit},50000}' 'set -g history-limit 50000' \; new -A -s tdog-abc` {
 		t.Fatalf("attach: %q", got)
 	}
 	f := &fakeRun{}

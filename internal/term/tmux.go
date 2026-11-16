@@ -4,11 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -24,7 +22,13 @@ type CmdRunner func(cmd string) (string, error)
 // idRe bounds ids taken from the host before they reach a shell command line.
 var idRe = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 
-func tmuxAttachCmd(id string) string { return "tmux new -A -s " + tmuxPrefix + id }
+// tmuxAttachCmd attaches/creates the session. History is raised in the same
+// tmux invocation, before the window exists: tmux applies history-limit only
+// to panes created afterwards. A larger user setting is left alone.
+func tmuxAttachCmd(id string) string {
+	hl := strconv.Itoa(historyLimit)
+	return `tmux start-server \; if -F '#{e|<:#{history-limit},` + hl + `}' 'set -g history-limit ` + hl + `' \; new -A -s ` + tmuxPrefix + id
+}
 
 // sessTarget and paneTarget name tdog-<id> exactly ("=": no prefix match),
 // quoted for the login shell (zsh expands a leading "=").
@@ -102,7 +106,6 @@ func spawnTmuxCmd(cfg SSHConfig, run CmdRunner, id, cmd string) (*session, error
 	s.openPipe = sshPipe(client, id)
 	wrapTmuxKill(s, run, id)
 	s.link = &tmuxLink{run: run, id: id, redial: func() (*session, error) { return spawnTmuxCmd(cfg, run, id, cmd) }}
-	raiseHistoryOnce(net.JoinHostPort(cfg.Host, cfg.Port), run)
 	return s, nil
 }
 
@@ -143,35 +146,6 @@ func (l *tmuxLink) capture() (string, error) { return capture(l.run, l.id) }
 // capture returns session id's tmux scrollback as plain text, wrapped lines joined.
 func capture(run CmdRunner, id string) (string, error) {
 	return run("tmux capture-pane -p -J -S -" + strconv.Itoa(historyLimit) + " -t " + paneTarget(id))
-}
-
-// raiseHistory lifts the host's global tmux history-limit to historyLimit
-// (never lowers it). It applies to panes created afterwards.
-func raiseHistory(run CmdRunner) error {
-	out, err := run("tmux show -gv history-limit")
-	if err != nil {
-		return err
-	}
-	if n, err := strconv.Atoi(strings.TrimSpace(out)); err == nil && n >= historyLimit {
-		return nil
-	}
-	_, err = run("tmux set -g history-limit " + strconv.Itoa(historyLimit))
-	return err
-}
-
-var raisedHosts sync.Map // host:port -> true once raiseHistory was tried
-
-// raiseHistoryOnce runs raiseHistory in the background, once per host per
-// process; failures are logged and never fail a spawn.
-func raiseHistoryOnce(host string, run CmdRunner) {
-	if _, done := raisedHosts.LoadOrStore(host, true); done {
-		return
-	}
-	go func() {
-		if err := raiseHistory(run); err != nil {
-			log.Printf("term: tmux history-limit on %s: %v", host, err)
-		}
-	}()
 }
 
 // Rediscover registers an attached session for every host tdog-* tmux session
