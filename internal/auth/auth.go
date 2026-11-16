@@ -134,7 +134,8 @@ func (a *Auth) handleSetup(w http.ResponseWriter, r *http.Request) {
 		err = saveHash(a.dir, h)
 	}
 	if err != nil {
-		msg(w, 500, "setup failed")
+		a.logf("tdog setup: cannot save password in %s: %v", a.dir, err)
+		msg(w, 500, "could not save the password; check the data directory is writable")
 		return
 	}
 	a.hash, a.setupToken = h, ""

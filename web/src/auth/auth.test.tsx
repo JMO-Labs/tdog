@@ -284,3 +284,22 @@ test("2FA: pasted code submits and recovery code can be used", async () => {
   expect(await screen.findByTestId("terminal-pane")).toBeTruthy();
   expect(bodies(f)[1]).toEqual({ password: "longenough1", code: "abcd-efgh" });
 });
+
+test("setup save failure points at the data folder", async () => {
+  vi.stubGlobal(
+    "fetch",
+    mockFetch({
+      "GET /api/status": status(true, false),
+      "POST /api/setup": new Response("no", { status: 500 }),
+    }),
+  );
+  render(<App />);
+  type(await screen.findByLabelText("Setup token"), "tok");
+  type(screen.getByLabelText("Password"), "longenough1");
+  type(screen.getByLabelText("Confirm password"), "longenough1");
+  fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+  expect(await screen.findByRole("alert")).toHaveProperty(
+    "textContent",
+    expect.stringMatching(/data folder is writable/),
+  );
+});

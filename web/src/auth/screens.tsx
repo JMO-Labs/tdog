@@ -42,6 +42,8 @@ export function message(r: Exclude<api.AuthResult, { ok: true }>): string {
       return `Too many attempts. Retry in ${r.retryAfter ?? 1}s.`;
     case "done":
       return "Already set up. Please sign in.";
+    case "save":
+      return "Couldn't save the password. Make sure tdog's data folder is writable, then check the server log.";
     default:
       return "Something went wrong. Try again.";
   }
