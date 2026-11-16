@@ -226,7 +226,7 @@ func (p *parkInfo) missed() (string, string) {
 	for i := range lines {
 		lines[i] = strings.TrimRight(lines[i], " \t\r")
 	}
-	start := -1
+	var start int
 	switch {
 	case p.pos >= 0 && p.pos < len(lines) && nearAnchor(lines, p.pos, p.anchor):
 		start = p.pos

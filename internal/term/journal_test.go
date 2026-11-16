@@ -31,7 +31,7 @@ func ctl(t *testing.T, r *rig, c *websocket.Conn, js string) {
 // first Output frame holding want (-1 if none) plus the Journal frame index.
 func readJournal(t *testing.T, ctx context.Context, c *websocket.Conn, want string) (evs []journal.Event, outIdx, jrnlIdx int) {
 	t.Helper()
-	outIdx, jrnlIdx = -1, -1
+	outIdx = -1
 	for i := 0; ; i++ {
 		_, data, err := c.Read(ctx)
 		if err != nil {

@@ -40,12 +40,6 @@ type Registry struct {
 	parkTicker func() (<-chan time.Time, func()) // test seam; nil = every parkTick
 }
 
-func (r *Registry) store() *journal.Store {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.jstore
-}
-
 // SetJournalStore enables server-side journal sync for sessions created after
 // the call (nil = off).
 func (r *Registry) SetJournalStore(s *journal.Store) {
