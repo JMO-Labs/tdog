@@ -68,6 +68,20 @@ export function onJournalOut(cb: StartCb): () => void {
   return () => void outSubs.delete(cb);
 }
 
+type ErrCb = (pane: string, message: string) => void;
+const errSubs = new Set<ErrCb>();
+
+/** Subscribe to server error frames (pane, message); returns unsubscribe. */
+export function onJournalError(cb: ErrCb): () => void {
+  errSubs.add(cb);
+  return () => void errSubs.delete(cb);
+}
+
+/** Publish a server error frame for a pane. */
+export function emitJournalError(pane: string, message: string): void {
+  errSubs.forEach((cb) => cb(pane, message));
+}
+
 /**
  * Persist events, then notify start, gap and out subscribers. Resolves to the highest seq
  * in `evs`; rejects (without notifying) if the db fails. Duplicate seqs are

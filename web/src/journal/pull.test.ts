@@ -74,3 +74,33 @@ it("does nothing on a failed request", async () => {
   await pullSyncedHistory(db);
   expect(await all(db)).toEqual([]);
 });
+
+it("forgets previously pulled panes not in the local layout, then re-pulls", async () => {
+  setHistorySync("12");
+  const db = memJournal();
+  await db.apply("old", "s1", [ev(1, "start")]);
+  await db.apply("mine", "s1", [ev(1, "start")]);
+  await db.apply("keep", "s1", [ev(1, "start")]);
+  localStorage.setItem(
+    "tdog.pulledPanes",
+    JSON.stringify(["old", "mine", "keep"]),
+  );
+  fetchMock.mockResolvedValue(body(line("keep", "s2", ev(1, "start"))));
+  await pullSyncedHistory(db, new Set(["mine"]));
+  expect(await all(db, "old")).toEqual([]);
+  expect((await all(db, "mine")).map((r) => r.sid)).toEqual(["s1"]);
+  expect((await all(db, "keep")).map((r) => r.sid)).toEqual(["s2"]);
+  expect(JSON.parse(localStorage.getItem("tdog.pulledPanes")!)).toEqual([
+    "keep",
+  ]);
+});
+
+it("forgets pulled panes and clears the key when sync is off", async () => {
+  const db = memJournal();
+  await db.apply("old", "s1", [ev(1, "start")]);
+  localStorage.setItem("tdog.pulledPanes", JSON.stringify(["old"]));
+  await pullSyncedHistory(db, new Set());
+  expect(await all(db, "old")).toEqual([]);
+  expect(localStorage.getItem("tdog.pulledPanes")).toBeNull();
+  expect(fetchMock).not.toHaveBeenCalled();
+});

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { onJournalGap, onJournalOut } from "./ingest";
+import { onJournalError, onJournalGap, onJournalOut } from "./ingest";
 
 export type GapState =
   | { phase: "offer" | "restoring"; sid: string; rec: number; note?: string }
@@ -32,7 +32,14 @@ export function useGapBanner(pane: string | undefined) {
           : s,
       );
     });
+    const offErr = onJournalError((p, text) => {
+      if (p === pane)
+        setSt((s) =>
+          s?.phase === "restoring" ? { phase: "failed", text } : s,
+        );
+    });
     return () => {
+      offErr();
       offGap();
       offOut();
     };

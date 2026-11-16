@@ -12,7 +12,7 @@ import {
 } from "../protocol/frames";
 import type { JournalEvent } from "../journal/types";
 import type { JournalDB } from "../journal/db";
-import { ingest } from "../journal/ingest";
+import { emitJournalError, ingest } from "../journal/ingest";
 import type { TerminalRenderer } from "./renderer";
 
 /**
@@ -182,6 +182,8 @@ export class TerminalSession {
     const j = this.hooks.journal;
     if (!j || !this.sid || this.journalFailed || this.disposed) return;
     if (this.forgetting) return;
+    // Batches buffered before a record-off took effect must not be kept.
+    if (this.hooks.paneId && !paneRecording(this.hooks.paneId)) return;
     // On failure stop acking: the server resends from its last ack on reconnect.
     ingest(j.db, j.pane, this.sid, f).then(
       (seq) =>
@@ -220,7 +222,7 @@ export class TerminalSession {
     } else if (f.kind === "killed") {
       this.killed = true;
     } else if (f.kind === "session") {
-      this.sid = f.id;
+      this.sid = f.epoch ? `${f.id}.${f.epoch}` : f.id;
       this.replaying = true;
       clearTimeout(this.replayTimer);
       this.replayTimer = setTimeout(() => this.endReplay(), REPLAY_TIMEOUT_MS);
@@ -230,6 +232,8 @@ export class TerminalSession {
         this.pendingForget = false;
         this.send(encodeJournalForget());
       }
+    } else if (f.kind === "error") {
+      if (this.hooks.paneId) emitJournalError(this.hooks.paneId, f.message);
     } else if (f.kind === "replayed") {
       // Replies are generated while parsing: clear once xterm has drained.
       this.r.write(new Uint8Array(0), () => this.endReplay());

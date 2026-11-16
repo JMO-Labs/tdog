@@ -123,3 +123,25 @@ test("decodes the replayed control frame", () => {
   const b = new Uint8Array([FrameType.Control, ...p]);
   expect(decodeFrame(b.buffer)).toEqual({ kind: "replayed" });
 });
+
+test("decodes session epoch and error control frames", () => {
+  const c = (m: object) =>
+    new Uint8Array([
+      FrameType.Control,
+      ...new TextEncoder().encode(JSON.stringify(m)),
+    ]).buffer;
+  expect(decodeFrame(c({ type: "session", id: "a", epoch: "e1" }))).toEqual({
+    kind: "session",
+    id: "a",
+    epoch: "e1",
+  });
+  expect(decodeFrame(c({ type: "session", id: "a" }))).toEqual({
+    kind: "session",
+    id: "a",
+    epoch: undefined,
+  });
+  expect(decodeFrame(c({ type: "error", message: "boom" }))).toEqual({
+    kind: "error",
+    message: "boom",
+  });
+});

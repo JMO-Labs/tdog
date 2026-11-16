@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { setPaneRecording } from "../presets/recording";
 import { memJournal, type JournalDB } from "../journal/db";
+import { onJournalError } from "../journal/ingest";
 import { FrameType } from "../protocol/frames";
 import { TerminalSession, type SocketLike } from "./session";
 import type { TerminalRenderer } from "./renderer";
@@ -198,4 +199,50 @@ test("forget while disconnected is sent after the record state on reconnect", as
   ctrl({ type: "jrnl-forgotten" });
   recv([e(2)]);
   await vi.waitFor(() => expect(apply).toHaveBeenCalled());
+});
+
+test("a new epoch for the same session id restarts seq and keeps records distinct", async () => {
+  const db = memJournal();
+  const { ctrl, recv, ctl: all } = setup(db);
+  const ctl = () => all().filter((m) => m.type === "jrnl-ack");
+  ctrl({ type: "session", id: "A", epoch: "e1" });
+  recv([e(1), e(2)]);
+  await vi.waitFor(() => expect(ctl()).toEqual([{ type: "jrnl-ack", seq: 2 }]));
+  ctrl({ type: "session", id: "A", epoch: "e2" });
+  recv([e(1)]);
+  await vi.waitFor(() =>
+    expect(ctl().at(-1)).toEqual({ type: "jrnl-ack", seq: 1 }),
+  );
+  const sids = [];
+  for await (const r of db.records("p")) sids.push(r.sid);
+  expect(sids.filter((s) => s === "A.e2")).toHaveLength(1);
+  expect(sids).toContain("A.e1");
+});
+
+test("without an epoch the sid is the id alone", async () => {
+  const db = memJournal();
+  const { recv, ctl } = setup(db);
+  recv([e(1)]);
+  await vi.waitFor(() => expect(ctl()).toEqual([{ type: "jrnl-ack", seq: 1 }]));
+  for await (const r of db.records("p")) expect(r.sid).toBe("A");
+});
+
+test("journal frames are dropped, not applied or acked, while not recording", async () => {
+  const db = memJournal();
+  const apply = vi.spyOn(db, "apply");
+  const { recv, ctl } = setup(db);
+  setPaneRecording("p", false);
+  recv([e(1)]);
+  await new Promise((r) => setTimeout(r, 0));
+  expect(apply).not.toHaveBeenCalled();
+  expect(ctl()).toEqual([]);
+});
+
+test("an error control frame reaches the gap banner subscribers", () => {
+  const got: [string, string][] = [];
+  const off = onJournalError((p, m) => got.push([p, m]));
+  const { ctrl } = setup(memJournal());
+  ctrl({ type: "error", message: "recording is off" });
+  off();
+  expect(got).toEqual([["p", "recording is off"]]);
 });
