@@ -2,6 +2,7 @@ import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Icon, type IconName } from "../shell/icons";
 import { useToast } from "../overlays/toast";
+import { paneTitle } from "../layout/tree";
 import { displayTitle, titleStore } from "../terminal/titles";
 import { copyBoth, copyCommand, copyOutput, jumpTo } from "./jump";
 import { compile, type Hit } from "./search";
@@ -39,18 +40,23 @@ function group(
   scenes: Props["scenes"],
   leafMap: Props["leafMap"],
 ): Group[] {
-  const paneLabel = (p: string) => displayTitle(titleStore.get(p), p);
+  // Same title the pane header shows (SplitView): shell title, else "Shell N".
+  const paneLabel = (p: string, i?: number) =>
+    displayTitle(
+      titleStore.get(p),
+      i === undefined ? p : paneTitle(undefined, undefined, i),
+    );
   const out: Group[] = [];
   const seen = new Set<string>();
   for (const sc of scenes) {
     const panes = (leafMap[sc.id] ?? [])
-      .map((p) => ({ p, hits: hits.filter((h) => h.pane === p) }))
+      .map((p, i) => ({ p, i, hits: hits.filter((h) => h.pane === p) }))
       .filter((x) => x.hits.length);
     panes.forEach((x) => seen.add(x.p));
     if (panes.length)
       out.push({
         label: sc.name,
-        panes: panes.map((x) => ({ label: paneLabel(x.p), hits: x.hits })),
+        panes: panes.map((x) => ({ label: paneLabel(x.p, x.i), hits: x.hits })),
       });
   }
   const rest = hits.filter((h) => !seen.has(h.pane));

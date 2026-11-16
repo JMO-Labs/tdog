@@ -1,3 +1,4 @@
+import { titleStore } from "../terminal/titles";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { memJournal } from "./db";
@@ -62,12 +63,29 @@ beforeEach(async () => {
   ]);
 });
 
+it("labels panes like the pane header: shell title, else Shell N", () => {
+  titleStore.set("p2", { title: "vim" });
+  try {
+    render(ui({ leafMap: { sc1: ["x", "p1"], sc2: ["p2"] } }));
+    const groups = screen
+      .getAllByRole("group")
+      .map((g) => g.getAttribute("aria-label"));
+    expect(groups.slice(0, 2)).toEqual(["work › Shell 2", "play › vim"]);
+  } finally {
+    titleStore.remove("p2");
+  }
+});
+
 it("groups hits by scene then pane, orphans under Other sessions", () => {
   render(ui());
   const groups = screen
     .getAllByRole("group")
     .map((g) => g.getAttribute("aria-label"));
-  expect(groups).toEqual(["work › p1", "play › p2", "Other sessions › gone"]);
+  expect(groups).toEqual([
+    "work › Shell 1",
+    "play › Shell 1",
+    "Other sessions › gone",
+  ]);
   const opts = screen.getAllByRole("option");
   expect(opts).toHaveLength(3);
   expect(opts[0].textContent).toContain("ls");
