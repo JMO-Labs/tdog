@@ -162,3 +162,10 @@ it("copy of a missing record or without clipboard shows the failure toast", asyn
   await waitFor(() => expect(toast).toHaveBeenCalledTimes(2));
   expect(toast).toHaveBeenLastCalledWith("fail", "Copy failed");
 });
+
+it("renders portaled to document.body so pane sashes can't sit above it", () => {
+  const { container } = render(ui());
+  const dlg = screen.getByRole("dialog", { name: "Search history" });
+  expect(container.contains(dlg)).toBe(false);
+  expect(dlg.closest(".sp-backdrop")?.parentElement).toBe(document.body);
+});

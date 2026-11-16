@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Icon, type IconName } from "../shell/icons";
 import { useToast } from "../overlays/toast";
 import { displayTitle, titleStore } from "../terminal/titles";
@@ -141,7 +142,8 @@ export function SearchPanel(props: Props) {
     }
   };
   let n = -1;
-  return (
+  // Portaled: dockview sashes inside .panes would otherwise sit above the panel.
+  return createPortal(
     <div className="sp-backdrop" onClick={dismiss}>
       <div
         className="sp float"
@@ -240,6 +242,7 @@ export function SearchPanel(props: Props) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
