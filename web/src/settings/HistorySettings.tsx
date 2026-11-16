@@ -40,7 +40,7 @@ export function HistorySettings() {
   return (
     <>
       <h3>History</h3>
-      <div className="row">
+      <div className="row setting-stack">
         <div>
           <b>Where history lives</b>
           <p className="muted">

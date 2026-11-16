@@ -90,3 +90,9 @@ test("failed retention change reverts the select", async () => {
     "24",
   );
 });
+
+test("storage setting stacks label above the radios", () => {
+  mount();
+  const group = screen.getByRole("radiogroup", { name: "History storage" });
+  expect(group.parentElement?.classList.contains("setting-stack")).toBe(true);
+});
