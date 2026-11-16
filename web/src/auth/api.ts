@@ -17,6 +17,7 @@ export type AuthResult =
         | "limited"
         | "setup"
         | "done"
+        | "save"
         | "other";
       retryAfter?: number;
     };
@@ -163,6 +164,7 @@ export async function setup(
   if (r.status === 403) return { ok: false, kind: "token" };
   if (r.status === 400) return { ok: false, kind: "short" };
   if (r.status === 409) return { ok: false, kind: "done" };
+  if (r.status === 500) return { ok: false, kind: "save" };
   return { ok: false, kind: "other" };
 }
 

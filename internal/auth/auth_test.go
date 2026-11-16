@@ -3,8 +3,11 @@ package auth
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -351,5 +354,28 @@ func TestStatusReturnsCSRFOnlyWhenAuthenticated(t *testing.T) {
 	_ = json.Unmarshal(w.Body.Bytes(), &m)
 	if m["csrf"] != csrf || csrf == "" {
 		t.Fatalf("csrf = %v, want %q", m["csrf"], csrf)
+	}
+}
+
+func TestSetupSaveFailureIsLogged(t *testing.T) {
+	var logs []string
+	dir := t.TempDir()
+	a, err := New(dir, func(f string, v ...any) { logs = append(logs, fmt.Sprintf(f, v...)) })
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	a.Register(mux)
+	blocker := filepath.Join(dir, "file")
+	if err := os.WriteFile(blocker, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	a.dir = filepath.Join(blocker, "sub") // parent is a file: save fails
+	w := do(a.Middleware(mux), "POST", "/api/setup", "localhost", map[string]string{"token": a.setupToken, "password": pw}, nil)
+	if w.Code != 500 || !strings.Contains(w.Body.String(), "data directory") {
+		t.Fatalf("code=%d body=%q", w.Code, w.Body.String())
+	}
+	if last := logs[len(logs)-1]; !strings.Contains(last, "setup") || !strings.Contains(last, a.dir) {
+		t.Fatalf("log %q", last)
 	}
 }
