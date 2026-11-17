@@ -14,6 +14,7 @@ import type { JournalEvent } from "../journal/types";
 import type { JournalDB } from "../journal/db";
 import { emitJournalError, ingest } from "../journal/ingest";
 import type { TerminalRenderer } from "./renderer";
+import { titleStore } from "./titles";
 
 /**
  * Flow control (spec §4). The server pauses PTY reads when unacked bytes exceed
@@ -228,6 +229,7 @@ export class TerminalSession {
       this.replayTimer = setTimeout(() => this.endReplay(), REPLAY_TIMEOUT_MS);
       const pane = this.hooks.paneId;
       if (pane) this.setRecording(paneRecording(pane));
+      if (pane && f.target) titleStore.set(pane, { target: f.target });
       if (this.pendingForget) {
         this.pendingForget = false;
         this.send(encodeJournalForget());

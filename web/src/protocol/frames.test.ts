@@ -130,15 +130,21 @@ test("decodes session epoch and error control frames", () => {
       FrameType.Control,
       ...new TextEncoder().encode(JSON.stringify(m)),
     ]).buffer;
-  expect(decodeFrame(c({ type: "session", id: "a", epoch: "e1" }))).toEqual({
+  expect(
+    decodeFrame(
+      c({ type: "session", id: "a", epoch: "e1", target: "ssh-host" }),
+    ),
+  ).toEqual({
     kind: "session",
     id: "a",
     epoch: "e1",
+    target: "ssh-host",
   });
   expect(decodeFrame(c({ type: "session", id: "a" }))).toEqual({
     kind: "session",
     id: "a",
     epoch: undefined,
+    target: undefined,
   });
   expect(decodeFrame(c({ type: "error", message: "boom" }))).toEqual({
     kind: "error",

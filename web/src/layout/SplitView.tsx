@@ -15,7 +15,7 @@ import {
   type SplitviewReadyEvent,
 } from "dockview-react";
 import "dockview-react/dist/styles/dockview.css";
-import { usePaneTitle } from "../terminal/titles";
+import { usePaneTarget, usePaneTitle } from "../terminal/titles";
 import { Icon } from "../shell/icons";
 import { PANE_MIME, dragPane, draggedPane, dropZone, type Zone } from "./dnd";
 import { leaves, paneTitle, titles } from "./tree";
@@ -95,6 +95,7 @@ function NodeView({ n }: { n: Node }) {
 function Pane({ id }: { id: string }) {
   const { p, settled, order, names, focus, setFocus } = useContext(SharedCtx)!;
   const [zone, setZone] = useState<Zone | null>(null);
+  const target = usePaneTarget(id);
   const title = usePaneTitle(
     id,
     paneTitle(undefined, undefined, order.indexOf(id)),
@@ -250,8 +251,7 @@ function Pane({ id }: { id: string }) {
             {paneTitle(names[id], title, order.indexOf(id))}
           </span>
         )}
-        {/* Panes are always local PTYs for now (no remote targets in spec). */}
-        <span className="chip">local</span>
+        <span className="chip">{target}</span>
         {isBroadcasting && <span className="chip broadcast">Broadcasting</span>}
         <span className="spacer" />
         <div className="pane-actions">

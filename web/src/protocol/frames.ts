@@ -16,7 +16,7 @@ export type Decoded =
   | { kind: "replayed" }
   | { kind: "forgotten" }
   | { kind: "pong"; t: number }
-  | { kind: "session"; id: string; epoch?: string }
+  | { kind: "session"; id: string; epoch?: string; target?: string }
   | { kind: "error"; message: string }
   | { kind: "journal"; events: JournalEvent[] }
   | { kind: "unknown" };
@@ -100,6 +100,7 @@ export function decodeFrame(buf: ArrayBuffer): Decoded {
           kind: "session",
           id: m.id,
           epoch: typeof m.epoch === "string" ? m.epoch : undefined,
+          target: typeof m.target === "string" ? m.target : undefined,
         };
       }
       if (m?.type === "error" && typeof m.message === "string") {

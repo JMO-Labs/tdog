@@ -100,7 +100,9 @@ test("header shows title and target chip, no dockview tab strip", () => {
   expect(heads).toHaveLength(2);
   expect(heads[0].querySelector(".title")?.textContent).toBe("Shell 1");
   expect(heads[1].querySelector(".title")?.textContent).toBe("Shell 2");
-  expect(heads[0].querySelector(".chip")?.textContent).toBe("local");
+  expect(heads[0].querySelector(".chip")?.textContent).toBe("…");
+  act(() => titleStore.set("a", { target: "ssh-host" }));
+  expect(heads[0].querySelector(".chip")?.textContent).toBe("host");
   expect(
     r.container.querySelector(".dv-tabs-and-actions-container"),
   ).toBeNull();

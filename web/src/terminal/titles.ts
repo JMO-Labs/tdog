@@ -6,6 +6,8 @@ export interface PaneInfo {
   cwd?: string;
   /** Explicit terminal theme (preset or saved scene); unset = page theme. */
   theme?: string;
+  /** Where the shell runs, from the server: container, ssh-host or nsenter. */
+  target?: string;
 }
 
 /** Path from an OSC 7 `file://host/path` URL; undefined if malformed. */
@@ -53,5 +55,18 @@ export const titleStore = {
 export function usePaneTitle(id: string, fallback: string): string {
   return useSyncExternalStore(titleStore.subscribe, () =>
     displayTitle(titleStore.get(id), fallback),
+  );
+}
+
+/** Short label for a pane's target; "…" until the server says. */
+export function targetLabel(target: string | undefined): string {
+  if (!target) return "…";
+  return target === "ssh-host" ? "host" : target;
+}
+
+/** Reactive target label for pane `id`. */
+export function usePaneTarget(id: string | undefined): string {
+  return useSyncExternalStore(titleStore.subscribe, () =>
+    targetLabel(id ? titleStore.get(id)?.target : undefined),
   );
 }
