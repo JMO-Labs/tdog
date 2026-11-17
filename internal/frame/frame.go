@@ -89,13 +89,14 @@ func Pong(p []byte) (f []byte, ok bool) {
 	return Encode(Control, out), true
 }
 
-// SessionControl builds the control frame announcing the session id and journal epoch.
-func SessionControl(id, epoch string) []byte {
+// SessionControl announces the session id, journal epoch and target (container, ssh-host, nsenter).
+func SessionControl(id, epoch, target string) []byte {
 	p, _ := json.Marshal(struct {
-		Type  string `json:"type"`
-		ID    string `json:"id"`
-		Epoch string `json:"epoch"`
-	}{"session", id, epoch})
+		Type   string `json:"type"`
+		ID     string `json:"id"`
+		Epoch  string `json:"epoch"`
+		Target string `json:"target"`
+	}{"session", id, epoch, target})
 	return Encode(Control, p)
 }
 

@@ -15,6 +15,7 @@ import { addLeaf, moveToScene } from "../layout/transfer";
 import { preparePane } from "../presets/launch";
 import { newId } from "../layout/tree";
 import { useShellName } from "../terminal/shellName";
+import { usePaneTarget } from "../terminal/titles";
 import { useCloseKill } from "./useCloseKill";
 import { useWorkspaceCommands } from "./useWorkspaceCommands";
 import { useMainMenuGroups } from "./useMainMenuGroups";
@@ -221,6 +222,7 @@ export function Workspace({
   const ids = leafMap[sc.active] ?? [];
   const shown = focused && ids.includes(focused) ? focused : ids[0];
   const size = shown ? sizes[shown] : undefined;
+  const target = usePaneTarget(shown);
   const latency = shown !== undefined ? (latencies[shown] ?? null) : null;
 
   return (
@@ -288,9 +290,10 @@ export function Workspace({
       <footer className="status">
         <span className="sb-item">
           <Icon name="server" />
-          container
+          {target}
         </span>
-        <span className="sb-item">{shellName}</span>
+        {/* ponytail: shell name is only known for the container */}
+        {target === "container" && <span className="sb-item">{shellName}</span>}
         {size && (
           <span className="sb-item num hide-xs">
             {size.cols}×{size.rows}

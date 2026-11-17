@@ -41,6 +41,7 @@ vi.mock("../overlays/Sheet", () => ({
 
 import { Workspace } from "./Workspace";
 import { clearCommands } from "../overlays/commands";
+import { titleStore } from "../terminal/titles";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -224,7 +225,14 @@ test("status bar shows host, shell, size and latency as plain items", () => {
   act(() => cb.onLatency!(12));
   const bar = container.querySelector("footer.status")!;
   expect(bar.querySelectorAll(".chip")).toHaveLength(0);
-  expect(bar.textContent).toContain("container");
+  const pane = container
+    .querySelector("[data-pane]")!
+    .getAttribute("data-pane")!;
+  act(() => titleStore.set(pane, { target: "ssh-host" }));
+  expect(bar.textContent).toContain("host");
+  expect(bar.querySelectorAll(".sb-item")).toHaveLength(4); // host, size, latency, ⌘K
+  act(() => titleStore.set(pane, { target: "container" }));
+  expect(bar.querySelectorAll(".sb-item")).toHaveLength(5); // + shell name
   expect(bar.textContent).toContain("80×24");
   expect(bar.textContent).toContain("12 ms");
   expect(bar.textContent).toContain("⌘K");

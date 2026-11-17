@@ -217,7 +217,7 @@ func (s *Session) serve(c *websocket.Conn) {
 		}, trWriter{s}, func(cols, rows uint16) { s.tr().resize(cols, rows) }, write, func(p []byte) { s.j.control(p, write) })
 	}()
 
-	if write(frame.SessionControl(s.id, s.j.epochID())) != nil {
+	if write(frame.SessionControl(s.id, s.j.epochID(), s.target)) != nil {
 		return
 	}
 	for len(replay) > 0 {

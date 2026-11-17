@@ -339,7 +339,7 @@ func TestJrnlEpochUnique(t *testing.T) {
 
 func TestSessionControlCarriesEpoch(t *testing.T) {
 	j := newJrnl()
-	_, p, err := frame.Decode(frame.SessionControl("x", j.epochID()))
+	_, p, err := frame.Decode(frame.SessionControl("x", j.epochID(), "container"))
 	if err != nil || !strings.Contains(string(p), `"epoch":"`+j.epoch+`"`) {
 		t.Fatalf("%q %v", p, err)
 	}
