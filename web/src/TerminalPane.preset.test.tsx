@@ -90,7 +90,12 @@ test("preset theme and font apply to that pane only and launch via ?preset=", as
   localStorage.setItem("tdog.panePresets", JSON.stringify({ p1: "app-dev" }));
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => new Response(JSON.stringify(resolved), { status: 200 })),
+    vi.fn(
+      async (u: string) =>
+        new Response(JSON.stringify(u.includes("app-dev") ? resolved : {}), {
+          status: 200,
+        }),
+    ),
   );
   render(<TerminalPane sceneKey="p1" sceneId="test-scene" />);
   await waitFor(() => expect(h.themeIds).toContain("mtv-neon"));

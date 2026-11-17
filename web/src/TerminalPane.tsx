@@ -136,9 +136,9 @@ export function TerminalPane({
     });
   }, []);
   useEffect(() => {
-    if (!preset) return;
     let live = true;
-    resolvePreset(preset).then(
+    // No preset still resolves config.toml (global font, theme, background).
+    resolvePreset(preset ?? "").then(
       (r) => live && setResolved(r),
       () => {}, // validation errors were toasted when the pane was opened
     );
