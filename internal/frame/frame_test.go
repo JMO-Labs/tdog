@@ -70,7 +70,7 @@ func TestParseResize(t *testing.T) {
 		{"max", `{"cols":65535,"rows":65535}`, 65535, 65535, false},
 		{"cols too big", `{"cols":65536,"rows":5}`, 0, 0, true},
 		{"rows too big", `{"cols":5,"rows":65536}`, 0, 0, true},
-		{"bad json", `nope`, 0, 0, true},
+		{"bad json", `nope!`, 0, 0, true}, // 4 bytes would read as binary
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -150,5 +150,15 @@ func TestReplayedControl(t *testing.T) {
 	typ, p, err := Decode(ReplayedControl())
 	if err != nil || typ != Control || string(p) != `{"type":"replayed"}` {
 		t.Fatalf("%v %q %v", typ, p, err)
+	}
+}
+
+// The browser sends resize as 4 bytes: cols, rows as big-endian uint16 (spec §protocol).
+func TestParseResizeBinary(t *testing.T) {
+	if c, r, err := ParseResize([]byte{0, 171, 0, 26}); err != nil || c != 171 || r != 26 {
+		t.Fatalf("got %d %d %v", c, r, err)
+	}
+	if _, _, err := ParseResize([]byte{0, 0, 0, 26}); err == nil {
+		t.Fatal("zero cols accepted")
 	}
 }

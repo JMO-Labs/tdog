@@ -3,6 +3,7 @@
 package frame
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -41,8 +42,16 @@ func Decode(b []byte) (Type, []byte, error) {
 	return t, b[1:], nil
 }
 
-// ParseResize parses a Resize payload; both dimensions must be 1..65535.
+// ParseResize parses a Resize payload: 4 bytes of big-endian uint16 cols, rows
+// (what the browser sends), or legacy JSON {"cols","rows"}. Both must be >= 1.
 func ParseResize(p []byte) (cols, rows uint16, err error) {
+	if len(p) == 4 {
+		cols, rows = binary.BigEndian.Uint16(p), binary.BigEndian.Uint16(p[2:])
+		if cols == 0 || rows == 0 {
+			return 0, 0, errors.New("frame: resize out of range")
+		}
+		return cols, rows, nil
+	}
 	var v struct {
 		Cols int `json:"cols"`
 		Rows int `json:"rows"`
