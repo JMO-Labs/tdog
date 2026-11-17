@@ -209,3 +209,15 @@ func (sp Spec) remoteOnClose() string {
 	}
 	return strings.Join(append(parts, script), " && ")
 }
+
+// defaultTarget is config.toml's default_target, or "" when unset or unreadable.
+func defaultTarget(s *config.Store) string {
+	if s == nil {
+		return ""
+	}
+	g, err := s.LoadGlobal()
+	if err != nil {
+		return ""
+	}
+	return g.DefaultTarget
+}
