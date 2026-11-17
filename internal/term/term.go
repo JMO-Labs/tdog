@@ -76,6 +76,9 @@ func NewHandler(cfg Config) http.Handler {
 				return
 			}
 		}
+		if target == "" && existing == nil && q.Get("preset") == "" {
+			target = defaultTarget(cfg.Presets)
+		}
 		spec, line := Spec{Target: target, Persistent: persistent}, ""
 		if name := q.Get("preset"); name != "" && existing == nil {
 			var err error

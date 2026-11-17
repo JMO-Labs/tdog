@@ -3,6 +3,7 @@ package term
 import (
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -249,5 +250,22 @@ on_close = "echo \"$EVIL\""
 	}
 	if m, _ := filepath.Glob(marker); len(m) != 0 {
 		t.Fatal("env value was executed")
+	}
+}
+
+func TestDefaultTargetReadsGlobalConfig(t *testing.T) {
+	if got := defaultTarget(nil); got != "" {
+		t.Fatalf("nil store: %q", got)
+	}
+	dir := t.TempDir()
+	s := config.NewStore(dir)
+	if got := defaultTarget(s); got != "" {
+		t.Fatalf("no config: %q", got)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte(`default_target = "ssh-host"`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := defaultTarget(s); got != "ssh-host" {
+		t.Fatalf("got %q", got)
 	}
 }
