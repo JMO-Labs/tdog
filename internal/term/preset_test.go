@@ -77,10 +77,10 @@ func TestShQuoteIsData(t *testing.T) {
 
 func TestRemoteScripts(t *testing.T) {
 	sp := Spec{Cwd: "~/app", Env: map[string]string{"B": "2", "A": "it's"}}
-	if got, want := sp.shellCmd(), `cd ~/'app' && export A='it'\''s' B='2' && exec "$SHELL" -l`; got != want {
+	if got, want := sp.shellCmd(), desktopEnv+`; export COLORTERM=truecolor && cd ~/'app' && export A='it'\''s' B='2' && exec "$SHELL" -l`; got != want {
 		t.Errorf("shellCmd %q want %q", got, want)
 	}
-	if got, want := (Spec{}).shellCmd(), ""; got != want {
+	if got, want := (Spec{}).shellCmd(), desktopEnv+`; export COLORTERM=truecolor && exec "$SHELL" -l`; got != want {
 		t.Errorf("empty shellCmd %q", got)
 	}
 	if got, want := sp.tmuxCmd("abc"), `cd ~/'app' && tmux start-server \; if -F '#{e|<:#{history-limit},50000}' 'set -g history-limit 50000' \; new -A -s tdog-abc -e 'A=it'\''s' -e 'B=2' \; set -wq allow-passthrough on`; got != want {
