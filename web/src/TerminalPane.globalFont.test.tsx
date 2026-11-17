@@ -33,6 +33,8 @@ vi.mock("./theme/serverFonts", () => ({
   whenFamilyReady: () => Promise.resolve(),
 }));
 vi.mock("./theme/fonts", () => ({
+  SPACING: { letterSpacing: 0.5, lineHeight: 1.15 },
+  NATIVE_SPACING: { letterSpacing: 0, lineHeight: 1 },
   fontFamily: (id: string) => `fam:${id}`,
   fontScale: () => 1,
   scaledSize: (_id: string, size = 15) => size,
@@ -61,7 +63,10 @@ import { TerminalPane } from "./TerminalPane";
 test("a plain pane (no preset) gets config.toml's font family", async () => {
   render(<TerminalPane />);
   await waitFor(() =>
-    expect(h.setFont).toHaveBeenCalledWith("MesloLGS NF", undefined),
+    expect(h.setFont).toHaveBeenCalledWith("MesloLGS NF", undefined, {
+      letterSpacing: 0,
+      lineHeight: 1,
+    }),
   );
   expect(h.loads).toContain("resolve:");
 });

@@ -1,6 +1,13 @@
 import type { MutableRefObject } from "react";
 import type { TerminalRenderer, TerminalTheme } from "./renderer";
-import { fontFamily, fontScale, loadFont, scaledSize } from "../theme/fonts";
+import {
+  NATIVE_SPACING,
+  SPACING,
+  fontFamily,
+  fontScale,
+  loadFont,
+  scaledSize,
+} from "../theme/fonts";
 import { whenFamilyReady } from "../theme/serverFonts";
 import { themeStore } from "../theme/store";
 import type { Resolved } from "../presets/api";
@@ -20,12 +27,13 @@ export function applyFont(r: TerminalRenderer | null, f: Resolved) {
   const f2 = typeof family === "string" ? family : undefined;
   const raw = typeof size === "number" ? size : undefined;
   const s2 = raw && !f2 && r ? Math.round(raw * (themeScale.get(r) ?? 1)) : raw;
-  if (f2 || s2) r?.setFont?.(f2, s2);
+  const sp = f2 ? NATIVE_SPACING : undefined;
+  if (f2 || s2) r?.setFont?.(f2, s2, sp);
   // Server-installed families arrive via /api/fonts.css; refit once loaded.
   if (r) wantFamily.set(r, f2);
   if (f2 && r)
     void whenFamilyReady(f2).then(() => {
-      if (wantFamily.get(r) === f2) r.setFont?.(f2, s2);
+      if (wantFamily.get(r) === f2) r.setFont?.(f2, s2, sp);
     });
 }
 
@@ -60,6 +68,7 @@ export function applyThemeScope(r: TerminalRenderer, refs: ScopeRefs) {
     r.setFont?.(
       fontFamily(font),
       scaledSize(font, typeof size === "number" ? size : undefined),
+      SPACING,
     );
   });
 }

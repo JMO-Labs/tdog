@@ -26,6 +26,10 @@ test("a late-loading earlier family never overrides the current one", async () =
   h.pending.A();
   await Promise.resolve();
   await Promise.resolve();
-  expect(setFont.mock.calls.at(-1)).toEqual(["B", 14]);
+  expect(setFont.mock.calls.at(-1)).toEqual([
+    "B",
+    14,
+    { letterSpacing: 0, lineHeight: 1 },
+  ]);
   expect(setFont.mock.calls.filter((c) => c[0] === "A")).toHaveLength(1);
 });
