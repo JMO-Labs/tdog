@@ -292,7 +292,8 @@ export function Workspace({
           <Icon name="server" />
           {target}
         </span>
-        <span className="sb-item">{shellName}</span>
+        {/* ponytail: shell name is only known for the container */}
+        {target === "container" && <span className="sb-item">{shellName}</span>}
         {size && (
           <span className="sb-item num hide-xs">
             {size.cols}×{size.rows}

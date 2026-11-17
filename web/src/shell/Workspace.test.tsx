@@ -230,6 +230,9 @@ test("status bar shows host, shell, size and latency as plain items", () => {
     .getAttribute("data-pane")!;
   act(() => titleStore.set(pane, { target: "ssh-host" }));
   expect(bar.textContent).toContain("host");
+  expect(bar.querySelectorAll(".sb-item")).toHaveLength(4); // host, size, latency, ⌘K
+  act(() => titleStore.set(pane, { target: "container" }));
+  expect(bar.querySelectorAll(".sb-item")).toHaveLength(5); // + shell name
   expect(bar.textContent).toContain("80×24");
   expect(bar.textContent).toContain("12 ms");
   expect(bar.textContent).toContain("⌘K");
