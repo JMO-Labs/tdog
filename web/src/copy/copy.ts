@@ -64,7 +64,7 @@ export const COPY = {
     fun: "{what} will die. SIGHUP first, SIGKILL after 3 s.",
     plain: "{what} will be terminated. SIGHUP first, SIGKILL after 3 s.",
   },
-  "kill.hold": { fun: "Hold to nuke", plain: "Hold to confirm" },
+  "kill.confirm": { fun: "Nuke", plain: "Kill" },
   "kill.done": { fun: "Killed {n} shells.", plain: "Killed {n} shells." },
   "kill.done1": { fun: "Killed 1 shell.", plain: "Killed 1 shell." },
   "scene.gone": {

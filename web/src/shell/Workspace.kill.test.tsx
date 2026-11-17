@@ -51,13 +51,13 @@ afterEach(() => {
 
 const openAll = () => act(() => Object.values(opens).forEach((f) => f(true)));
 const nuke = async () => {
-  fireEvent.pointerDown(screen.getByRole("button", { name: /hold to nuke/i }));
+  fireEvent.click(screen.getByRole("button", { name: "Nuke" }));
   await act(async () => {
-    await vi.advanceTimersByTimeAsync(1600);
+    await vi.advanceTimersByTimeAsync(1);
   });
 };
 
-test("kill-all button opens dialog with count, hold kills and toasts", async () => {
+test("kill-all button opens dialog with count, one click kills and toasts", async () => {
   render(<Workspace />);
   openAll();
   const btn = screen.getByRole("button", { name: "Kill all shells" });
@@ -80,22 +80,6 @@ test("scene tab menu kills only that scene", async () => {
   expect(killScene).toHaveBeenCalledTimes(1);
 });
 
-test("early release does not call the API", async () => {
-  render(<Workspace />);
-  openAll();
-  fireEvent.click(screen.getByRole("button", { name: "Kill all shells" }));
-  const b = screen.getByRole("button", { name: /hold to nuke/i });
-  fireEvent.pointerDown(b);
-  await act(async () => {
-    await vi.advanceTimersByTimeAsync(500);
-  });
-  fireEvent.pointerUp(b);
-  await act(async () => {
-    await vi.advanceTimersByTimeAsync(2000);
-  });
-  expect(killScene).not.toHaveBeenCalled();
-});
-
 test("cancel closes the kill dialog without killing", async () => {
   vi.useRealTimers();
   render(<Workspace />);
@@ -103,7 +87,7 @@ test("cancel closes the kill dialog without killing", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Kill all shells" }));
   fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await waitFor(() =>
-    expect(screen.queryByRole("button", { name: /hold to nuke/i })).toBeNull(),
+    expect(screen.queryByRole("button", { name: "Nuke" })).toBeNull(),
   );
   expect(killScene).not.toHaveBeenCalled();
 });

@@ -56,7 +56,7 @@ test("kill all renders plain text in serious mode", () => {
     />,
   );
   expect(screen.getByText(/2 shells will be terminated/)).toBeTruthy();
-  expect(screen.getByRole("button", { name: "Hold to confirm" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Kill" })).toBeTruthy();
   expect(screen.queryByText(/nuke|die/i)).toBeNull();
 });
 
