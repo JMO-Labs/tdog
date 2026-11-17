@@ -40,6 +40,8 @@ vi.mock("./theme/store", () => ({
   },
 }));
 vi.mock("./theme/fonts", () => ({
+  SPACING: { letterSpacing: 0.5, lineHeight: 1.15 },
+  NATIVE_SPACING: { letterSpacing: 0, lineHeight: 1 },
   fontScale: () => 1,
   scaledSize: (_id: string, size?: number) => size,
   fontFamily: (id: string) => `fam:${id}`,

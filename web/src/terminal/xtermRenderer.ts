@@ -15,7 +15,7 @@ import type {
   TerminalTheme,
 } from "./renderer";
 
-import { SPACING } from "../theme/fonts";
+import { SPACING, type Spacing } from "../theme/fonts";
 
 const enc = new TextEncoder();
 
@@ -102,11 +102,12 @@ export class XtermRenderer implements TerminalRenderer {
   /** Size before zoom; zoom is added on top so font changes keep it. */
   private baseSize = 0;
   private zoom = 0;
-  setFont(family?: string, size?: number): void {
+  setFont(family?: string, size?: number, spacing?: Spacing): void {
     if (family) this.term.options.fontFamily = family;
+    if (spacing) Object.assign(this.term.options, spacing);
     if (size) this.baseSize = size;
     if (size) this.term.options.fontSize = zoomed(size, this.zoom);
-    if (family || size) this.fit.fit();
+    if (family || size || spacing) this.fit.fit();
   }
   setZoom(steps: number): void {
     this.baseSize ||= this.term.options.fontSize ?? 15;

@@ -311,3 +311,11 @@ test("markLine/scrollToMarker use a cursor marker and select the line", async ()
   m.term.registerMarker = vi.fn(() => undefined);
   expect(r.markLine()).toBeNull();
 });
+
+test("setFont applies spacing when given", () => {
+  const r = new XtermRenderer(document.createElement("div"));
+  const m = r as unknown as { term: { options: any } };
+  r.setFont("MesloLGS NF", undefined, { letterSpacing: 0, lineHeight: 1 });
+  expect(m.term.options.letterSpacing).toBe(0);
+  expect(m.term.options.lineHeight).toBe(1);
+});

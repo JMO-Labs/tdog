@@ -1,3 +1,4 @@
+import type { Spacing } from "../theme/fonts";
 /** Swappable terminal renderer (ADR-0001). */
 export interface TerminalTheme {
   background?: string;
@@ -72,7 +73,7 @@ export interface TerminalRenderer {
   setTheme(theme: TerminalTheme): void;
   setCursor(c: CursorStyle): void;
   /** Set font family and/or size, then refit. Unset values keep the current one. */
-  setFont?(family?: string, size?: number): void;
+  setFont?(family?: string, size?: number, spacing?: Spacing): void;
   /** Zoom steps (1px each) on top of the font size; 0 = none. */
   setZoom?(steps: number): void;
   /** Selected text, or "" when nothing is selected. */

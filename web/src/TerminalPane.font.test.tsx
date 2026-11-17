@@ -24,6 +24,8 @@ vi.mock("./terminal/xtermRenderer", () => ({
   },
 }));
 vi.mock("./theme/fonts", () => ({
+  SPACING: { letterSpacing: 0.5, lineHeight: 1.15 },
+  NATIVE_SPACING: { letterSpacing: 0, lineHeight: 1 },
   fontFamily: (id: string) => `fam:${id}`,
   fontScale: () => 1,
   scaledSize: (_id: string, size = 15) => size,
@@ -60,7 +62,10 @@ test("applies cursor at once and the font (refit) only after it loads", async ()
   expect(h.setFont).not.toHaveBeenCalled();
   h.release!();
   await waitFor(() =>
-    expect(h.setFont).toHaveBeenCalledWith(`fam:${h.loads[0]}`, 15),
+    expect(h.setFont).toHaveBeenCalledWith(`fam:${h.loads[0]}`, 15, {
+      letterSpacing: 0.5,
+      lineHeight: 1.15,
+    }),
   );
 });
 
