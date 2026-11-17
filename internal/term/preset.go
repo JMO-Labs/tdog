@@ -160,7 +160,7 @@ func (sp Spec) envKeys() []string {
 
 // shellCmd starts the ssh login shell in Cwd with Env; "" means plain shell.
 func (sp Spec) shellCmd() string {
-	var parts []string
+	parts := []string{"export COLORTERM=truecolor"}
 	if sp.Cwd != "" {
 		parts = append(parts, "cd "+cdArg(sp.Cwd))
 	}
@@ -171,11 +171,13 @@ func (sp Spec) shellCmd() string {
 		}
 		parts = append(parts, "export "+strings.Join(kv, " "))
 	}
-	if len(parts) == 0 {
-		return ""
-	}
-	return strings.Join(append(parts, `exec "$SHELL" -l`), " && ")
+	return desktopEnv + "; " + strings.Join(append(parts, `exec "$SHELL" -l`), " && ")
 }
+
+// desktopEnv imports the host's graphical session variables (X/Wayland, D-Bus,
+// ssh/gpg agents, locale) that an SSH login lacks, so host panes match a local
+// terminal. Best effort: no systemd user manager means nothing is imported.
+const desktopEnv = `eval "$(systemctl --user show-environment 2>/dev/null | grep -E '^(DISPLAY|WAYLAND_DISPLAY|XAUTHORITY|DBUS_SESSION_BUS_ADDRESS|SSH_AUTH_SOCK|GPG_AGENT_INFO|XDG_CURRENT_DESKTOP|XDG_SESSION_DESKTOP|XDG_SESSION_TYPE|XDG_DATA_DIRS|XDG_MENU_PREFIX|LANG|LC_[A-Z]+)=' | sed 's/^/export /')"`
 
 // tmuxCmd attaches/creates the host tmux session for id in Cwd with Env.
 func (sp Spec) tmuxCmd(id string) string {

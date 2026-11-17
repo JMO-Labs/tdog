@@ -51,10 +51,9 @@ func scriptedSSHD(t *testing.T, hostKey ssh.Signer, mode string) (host, port str
 							switch r.Type {
 							case "pty-req":
 								_ = r.Reply(mode != "nopty", nil)
-							case "exec":
-								_ = r.Reply(mode != "noexec", nil)
-							case "shell":
-								_ = r.Reply(mode != "noshell", nil)
+							case "exec", "shell":
+								// A plain host pane execs the login shell, so "exec" acts as "shell".
+								_ = r.Reply(mode != "noshell" && mode != "noexec", nil)
 								if mode == "exit0" {
 									// Exit only after the client sent input, i.e. after the
 									// websocket attached; exiting earlier races attach and
